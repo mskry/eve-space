@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'vitest'
-import { isReviewedCorporationRolePredicate } from '../../src/characters/corporation-role-canonical.js'
 import {
   evaluateRuleEligibility,
+  isOrganizationRuleRolePredicate,
   isRuleCondition,
+  organizationRuleRolePredicates,
   type RuleEvidenceSource,
   type RuleEligibilityInput,
 } from '../../src/organization/rule-policy.js'
@@ -39,26 +40,26 @@ const input = (overrides: Partial<RuleEligibilityInput> = {}): RuleEligibilityIn
 
 describe('organization automatic-group policy', () => {
   test('accepts only exact reviewed condition shapes', () => {
-    expect(
-      isRuleCondition({ kind: 'registration-compliant' }, isReviewedCorporationRolePredicate),
-    ).toBe(true)
-    expect(isRuleCondition({ kind: 'director-audience' }, isReviewedCorporationRolePredicate)).toBe(
-      true,
-    )
-    expect(
-      isRuleCondition(
-        { kind: 'corporation-role', predicate: 'accountant' },
-        isReviewedCorporationRolePredicate,
-      ),
-    ).toBe(true)
+    expect(isRuleCondition({ kind: 'registration-compliant' })).toBe(true)
+    expect(isRuleCondition({ kind: 'director-audience' })).toBe(true)
+    expect(isRuleCondition({ kind: 'corporation-role', predicate: 'accountant' })).toBe(true)
+    expect(organizationRuleRolePredicates).toStrictEqual([
+      'director',
+      'accountant',
+      'factory-manager',
+    ])
     for (const invalid of [
+      { kind: 'corporation-role', predicate: 'project-manager' },
+      { kind: 'corporation-role', predicate: 'station-manager' },
       { kind: 'corporation-role', predicate: 'Account_Take_1' },
       { kind: 'corporation-role', predicate: 'accountant', location: 'rolesAtBase' },
       { kind: 'director-audience', role: 'Director' },
       { kind: 'module-fact', predicate: 'wallet-balance' },
     ]) {
-      expect(isRuleCondition(invalid, isReviewedCorporationRolePredicate)).toBe(false)
+      expect(isRuleCondition(invalid)).toBe(false)
     }
+    expect(isOrganizationRuleRolePredicate('project-manager')).toBe(false)
+    expect(isOrganizationRuleRolePredicate('station-manager')).toBe(false)
   })
 
   test('does not combine incomplete character sources into an account grant', () => {

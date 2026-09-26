@@ -1,4 +1,15 @@
 import { definePlatformBoundedCollectionResource, definePlatformSingleRequestResource, } from '@eve-space/platform-module-contract/resources';
+export const readConformanceContinuation = (context, stored) => {
+    const binding = context.continuationAuthorityBinding;
+    if (!binding)
+        throw new Error('Continuation authority binding is required');
+    const matches = stored?.checkpoint.authorityBinding === binding;
+    return {
+        checkpoint: matches ? (stored?.checkpoint ?? null) : null,
+        expectedRevision: stored?.revision ?? 0,
+        needsReset: Boolean(stored && !matches),
+    };
+};
 export const conformanceStatusResource = definePlatformSingleRequestResource({
     async map({ data, capabilities }) {
         const typeGroups = await capabilities.coreData.publishedTypeGroups({ typeIds: [34] });

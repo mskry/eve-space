@@ -320,6 +320,9 @@ function makeOperation(
     path: '/items',
     rateLimit: { kind: 'legacy-only' },
     requestArrayLimits: [],
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: null,
     requestBody: null,
     security: [],
     successResponses: [

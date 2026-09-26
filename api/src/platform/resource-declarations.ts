@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import {
   platformResourceExecutionModes,
   type PlatformInstalledResourceDescriptor,
@@ -6,12 +7,18 @@ import {
   type PlatformResourceImplementation,
 } from '@eve-space/platform-module-contract/resources'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
+import type {
+  PlatformEsiAuthorizationContract,
+  PlatformEsiRequestSubject,
+  PlatformEsiRolePredicate,
+} from '@eve-space/platform-module-contract/esi'
 import { assertCoreDataProductDeclarations } from '../core-data/capabilities.js'
 import {
   assertEsiPlatformExecutionConfiguration,
   assertEsiExecutableDefinition,
   assertRegisteredEsiOperation,
   getEsiOperationAuthorization,
+  getEsiOperationAuthority,
   getEsiSetOperationConfiguration,
   getPlatformEsiOperationDefinition,
 } from '../esi-gateway/catalog-interface.js'
@@ -20,6 +27,28 @@ import { platformResources } from './resources.js'
 
 const resourceExecutionModes: ReadonlySet<string> = new Set(platformResourceExecutionModes)
 
+export type PlatformResourceCredentialBinding =
+  | { readonly kind: 'public' }
+  | {
+      readonly kind: 'current-owned-character' | 'current-managed-member-character'
+      readonly requestSubjects: readonly PlatformEsiRequestSubject[]
+      readonly scope: string
+      readonly sectionId?: string
+      readonly corporationInput: 'current-affiliation' | null
+    }
+  | {
+      readonly kind: 'current-managed-corporation-source'
+      readonly requestSubjects: readonly ['corporation_id']
+      readonly scope: string
+      readonly requiredRolePredicate: PlatformEsiRolePredicate | null
+    }
+
+export interface PlatformCorporationResourceRequirements {
+  readonly scopes: readonly string[]
+  readonly rolePredicates: readonly PlatformEsiRolePredicate[]
+  readonly fingerprint: string
+}
+
 const resourceModeMethods = {
   'bounded-collection': { forbidden: ['request', 'map'], required: ['collect'] },
   'single-request': { forbidden: ['collect'], required: ['request', 'map'] },
@@ -27,6 +56,36 @@ const resourceModeMethods = {
   PlatformResourceExecutionMode,
   { readonly required: readonly string[]; readonly forbidden: readonly string[] }
 >
+
+const assertResourceOperationAuthorities = (
+  resource: PlatformInstalledResourceDescriptor,
+  definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>,
+) => {
+  assertRegisteredEsiOperation(resource.operationId)
+  assertResourceDefinition(resource, resource.operationId, definitions)
+  const primary = getEsiOperationAuthorization(resource.operationId)
+  if (resource.subjectKind === 'deployment' && primary.kind !== 'public') {
+    throw new Error('Deployment resources require public operations')
+  }
+  for (const operationId of resource.dependentOperationIds ?? []) {
+    assertResourceDefinition(resource, operationId, definitions)
+    assertRegisteredEsiOperation(operationId)
+    const dependent = getEsiOperationAuthorization(operationId)
+    const authorityChanged = dependent.kind === 'oauth' && primary.kind !== 'oauth'
+    const scopeChanged =
+      dependent.kind === 'oauth' &&
+      primary.kind === 'oauth' &&
+      dependent.requiredScope !== primary.requiredScope &&
+      resource.eligibility.kind !== 'current-managed-corporation-source'
+    if (authorityChanged || scopeChanged) {
+      throw new Error('Dependent operations must retain the resource authorization contract')
+    }
+  }
+  getInstalledResourceCredentialBindings(resource)
+  if (resource.eligibility.kind === 'current-managed-corporation-source') {
+    getManagedCorporationResourceRequirements(resource)
+  }
+}
 
 export function assertInstalledResourceDeclarations(
   resources: readonly PlatformInstalledResourceDescriptor[] = platformResources,
@@ -37,29 +96,116 @@ export function assertInstalledResourceDeclarations(
   }
   for (const resource of resources) {
     assertCoreDataProductDeclarations(resource.coreDataProducts ?? [], 'resource-projection')
-    assertRegisteredEsiOperation(resource.operationId)
-    assertResourceDefinition(resource, resource.operationId, definitions)
-    const primary = getEsiOperationAuthorization(resource.operationId)
-    if (resource.subjectKind === 'deployment' && primary.kind !== 'public') {
-      throw new Error('Deployment resources require public operations')
-    }
-    for (const operationId of resource.dependentOperationIds ?? []) {
-      assertResourceDefinition(resource, operationId, definitions)
-      assertRegisteredEsiOperation(operationId)
-      const dependent = getEsiOperationAuthorization(operationId)
-      if (dependent.kind === 'character' && primary.kind !== 'character') {
-        throw new Error('Dependent operations must retain the resource authorization contract')
-      }
-      if (
-        dependent.kind === 'character' &&
-        primary.kind === 'character' &&
-        dependent.requiredScope !== primary.requiredScope
-      ) {
-        throw new Error('Dependent operations must retain the resource authorization contract')
-      }
-    }
+    assertResourceOperationAuthorities(resource, definitions)
     assertResourceImplementation(resource, resource.implementation)
     assertResourceBatchImplementation(resource, resource.implementation, definitions)
+  }
+}
+
+export const getInstalledResourceCredentialBindings = (
+  resource: PlatformInstalledResourceDescriptor,
+): Readonly<Record<string, PlatformResourceCredentialBinding>> => {
+  for (const key of [
+    'authorization',
+    'scope',
+    'requiredRolePredicate',
+    'subjectBindings',
+    'credentialBinding',
+  ]) {
+    if (Object.hasOwn(resource, key) || Object.hasOwn(resource.eligibility, key)) {
+      throw new Error(
+        `Resource ${resource.resourceId} cannot override generated operation authority`,
+      )
+    }
+  }
+  const bindings: Record<string, PlatformResourceCredentialBinding> = {}
+  for (const operationId of [resource.operationId, ...(resource.dependentOperationIds ?? [])]) {
+    assertRegisteredEsiOperation(operationId)
+    bindings[operationId] = compileResourceCredentialBinding(
+      resource,
+      getEsiOperationAuthority(operationId),
+    )
+  }
+  return Object.freeze(bindings)
+}
+
+export const getManagedCorporationResourceRequirements = (
+  resource: PlatformInstalledResourceDescriptor,
+): PlatformCorporationResourceRequirements => {
+  if (resource.eligibility.kind !== 'current-managed-corporation-source') {
+    throw new Error(`Resource ${resource.resourceId} is not a managed-corporation resource`)
+  }
+  const bindings = Object.values(getInstalledResourceCredentialBindings(resource))
+  const scopes = [
+    ...new Set(
+      bindings.map((binding) => {
+        if (binding.kind !== 'current-managed-corporation-source') {
+          throw new Error(
+            `Resource ${resource.resourceId} cannot mix corporation credentials with public operations`,
+          )
+        }
+        return binding.scope
+      }),
+    ),
+  ].toSorted((left, right) => left.localeCompare(right))
+  const rolePredicates = [
+    ...new Set(
+      bindings.flatMap((binding) =>
+        binding.kind === 'current-managed-corporation-source' && binding.requiredRolePredicate
+          ? [binding.requiredRolePredicate]
+          : [],
+      ),
+    ),
+  ].toSorted((left, right) => left.localeCompare(right))
+  const fingerprint = createHash('sha256')
+    .update(JSON.stringify({ version: 1, scopes, rolePredicates }))
+    .digest('hex')
+  return Object.freeze({ scopes, rolePredicates, fingerprint })
+}
+
+const compileResourceCredentialBinding = (
+  resource: PlatformInstalledResourceDescriptor,
+  authority: PlatformEsiAuthorizationContract,
+): PlatformResourceCredentialBinding => {
+  if (authority.kind === 'public') {
+    return { kind: 'public' }
+  }
+  const subjects = authority.subjectBindings
+  const kind = resource.eligibility.kind
+  if (kind === 'current-managed-corporation-source') {
+    if (
+      resource.subjectKind !== 'corporation' ||
+      subjects.length !== 1 ||
+      subjects[0] !== 'corporation_id'
+    ) {
+      throw new Error(
+        `Resource ${resource.resourceId} must bind its corporation request to its current source`,
+      )
+    }
+    return {
+      kind: 'current-managed-corporation-source',
+      requestSubjects: ['corporation_id'],
+      requiredRolePredicate: authority.requiredRolePredicate,
+      scope: authority.scope,
+    }
+  }
+  if (
+    resource.subjectKind !== 'character' ||
+    (kind !== 'current-owned-character' && kind !== 'current-managed-member-character') ||
+    subjects.length === 0 ||
+    subjects.some((subject) => subject !== 'character_id' && subject !== 'corporation_id') ||
+    authority.requiredRolePredicate !== null
+  ) {
+    throw new Error(
+      `Resource ${resource.resourceId} has incompatible character credential authority`,
+    )
+  }
+  return {
+    kind,
+    requestSubjects: subjects,
+    scope: authority.scope,
+    corporationInput: subjects.includes('corporation_id') ? 'current-affiliation' : null,
+    ...(kind === 'current-managed-member-character' && { sectionId: resource.sectionId }),
   }
 }
 

@@ -45,7 +45,7 @@ describe('ESI operation policies', () => {
 
   test('requires definitions to own a real matching SDK descriptor and catalog contract', () => {
     const contract = {
-      ...validModuleOperation(),
+      ...getEsiOperationContract('status'),
       audit: { esiOperationId: 'GetStatus', reviewedDate: '2026-08-18' },
     } as const
     const definition = {
@@ -71,6 +71,40 @@ describe('ESI operation policies', () => {
     expect(() =>
       assertExecutableEsiOperationDefinitions({ 'module-operation': contract }, {}),
     ).toThrow('has no executable definition')
+    const wrongSubjects = {
+      ...contract,
+      authorization: { ...contract.authorization, subjectBindings: ['corporation_id'] as const },
+    }
+    expect(() =>
+      assertExecutableEsiOperationDefinitions(
+        { 'module-operation': wrongSubjects },
+        { 'module-operation': { ...definition, contract: wrongSubjects } },
+      ),
+    ).toThrow('does not match generated request subjects')
+
+    const corporationJobs =
+      installedModuleEsiOperationCatalog['organization-activity-corporation-jobs']
+    expect(corporationJobs.authorization).toMatchObject({
+      kind: 'oauth',
+      requiredRolePredicate: 'project-manager',
+      subjectBindings: ['corporation_id'],
+    })
+    const wrongRole = {
+      ...corporationJobs,
+      authorization: { ...corporationJobs.authorization, requiredRolePredicate: null },
+    }
+    expect(() =>
+      assertExecutableEsiOperationDefinitions(
+        { 'module-operation': wrongRole },
+        {
+          'module-operation': {
+            contract: wrongRole,
+            descriptor: operationRegistry.GetCorporationsFreelanceJobsListing!,
+            sdkOperationId: 'GetCorporationsFreelanceJobsListing',
+          },
+        },
+      ),
+    ).toThrow('does not match generated OAuth authority')
   })
 
   test('declares every backend ESI operation with quota behavior', () => {
@@ -150,7 +184,7 @@ describe('ESI operation policies', () => {
       },
     })
     expect(getEsiOperationContract('wallet-balance')).toMatchObject({
-      authorization: { kind: 'character', scope: 'esi-wallet.read_character_wallet.v1' },
+      authorization: { kind: 'oauth', scope: 'esi-wallet.read_character_wallet.v1' },
       cache: runtimePrivateCache,
     })
     expect(getEsiOperationContract('wallet-transactions')).toMatchObject({
@@ -212,8 +246,17 @@ describe('ESI operation policies', () => {
         },
         authorization:
           generated.authenticationScopes.length === 0
-            ? { kind: 'public' }
-            : { kind: 'character', scope: generated.authenticationScopes[0] },
+            ? {
+                kind: 'public',
+                subjectBindings: generated.requestSubjectBindings,
+                requiredRolePredicate: null,
+              }
+            : {
+                kind: 'oauth',
+                scope: generated.authenticationScopes[0],
+                subjectBindings: generated.requestSubjectBindings,
+                requiredRolePredicate: contract.authorization.requiredRolePredicate,
+              },
         operation,
         rateGroup: generated.rateLimit,
         revalidate: contract.cache.kind === 'shared' && generated.supportsConditionalRequests,
@@ -226,7 +269,7 @@ describe('ESI operation policies', () => {
   test('derives character scopes from every core and installed-module catalog contract', () => {
     const characterOperations = Object.entries(esiOperationCatalog).flatMap(
       ([operation, contract]) =>
-        contract.authorization.kind === 'character'
+        contract.authorization.kind === 'oauth'
           ? [[operation, contract.authorization.scope] as const]
           : [],
     )
@@ -392,7 +435,7 @@ describe('ESI operation policies', () => {
       supportsConditionalRequests: true,
     })
     expect(getEsiOperationContract('attributes')).toMatchObject({
-      authorization: { kind: 'character', scope: 'esi-skills.read_skills.v1' },
+      authorization: { kind: 'oauth', scope: 'esi-skills.read_skills.v1' },
       cache: {
         ...runtimePrivateCache,
         revalidate: true,
@@ -410,7 +453,7 @@ describe('ESI operation policies', () => {
       supportsConditionalRequests: true,
     })
     expect(getEsiOperationContract('skill-queue')).toMatchObject({
-      authorization: { kind: 'character', scope: 'esi-skills.read_skillqueue.v1' },
+      authorization: { kind: 'oauth', scope: 'esi-skills.read_skillqueue.v1' },
       cache: {
         ...runtimePrivateCache,
         revalidate: true,
@@ -441,7 +484,9 @@ describe('ESI operation policies', () => {
       })
     }
   })
+})
 
+describe('reviewed private ESI operation policy', () => {
   test('records reviewed Finance operation descriptors and private resilience contracts', () => {
     const expected = {
       'character-contract-bids': [
@@ -491,7 +536,7 @@ describe('ESI operation policies', () => {
         supportsConditionalRequests: true,
       })
       expect(contract).toMatchObject({
-        authorization: { kind: 'character', scope },
+        authorization: { kind: 'oauth', scope },
         cache: {
           ...runtimePrivateCache,
           revalidate: true,
@@ -535,7 +580,7 @@ describe('ESI operation policies', () => {
         supportsConditionalRequests: true,
       })
       expect(contract).toMatchObject({
-        authorization: { kind: 'character', scope },
+        authorization: { kind: 'oauth', scope },
         cache: {
           ...runtimePrivateCache,
           revalidate: true,
@@ -594,7 +639,7 @@ describe('ESI operation policies', () => {
         supportsConditionalRequests: true,
       })
       expect(contract).toMatchObject({
-        authorization: { kind: 'character', scope: 'esi-assets.read_assets.v1' },
+        authorization: { kind: 'oauth', scope: 'esi-assets.read_assets.v1' },
         cache: {
           ...runtimePrivateCache,
           revalidate: true,
@@ -655,7 +700,7 @@ describe('ESI operation policies', () => {
       supportsConditionalRequests: true,
     })
     expect(getEsiOperationContract('character-search')).toMatchObject({
-      authorization: { kind: 'character', scope: 'esi-search.search_structures.v1' },
+      authorization: { kind: 'oauth', scope: 'esi-search.search_structures.v1' },
       cache: {
         ...runtimePrivateCache,
         revalidate: true,
@@ -684,7 +729,7 @@ describe('ESI operation policies', () => {
     })
     const cspa = getEsiOperationContract('character-cspa-charge')
     expect(cspa).toMatchObject({
-      authorization: { kind: 'character', scope: 'esi-characters.read_contacts.v1' },
+      authorization: { kind: 'oauth', scope: 'esi-characters.read_contacts.v1' },
       cache: { kind: 'none' },
       rateGroup: {
         group: 'char-detail',
@@ -730,7 +775,7 @@ describe('ESI operation policies', () => {
       })
       expect(contract).toMatchObject({
         audit: { reviewedDate: '2026-08-18' },
-        authorization: { kind: 'character', scope },
+        authorization: { kind: 'oauth', scope },
         rateGroup: {
           group: 'char-social',
           kind: 'declared',
@@ -826,159 +871,203 @@ describe('ESI operation policies', () => {
       }),
     ).not.toThrow()
   })
+})
 
-  test.each([
+test.each([
+  'esi-assets.read_assets.v1',
+  'esi-characters.read_corporation_roles.v1',
+  'esi-clones.read_clones.v1',
+  'esi-clones.read_implants.v1',
+  'esi-markets.read_character_orders.v1',
+  'esi-contracts.read_character_contracts.v1',
+  'esi-corporations.read_corporation_membership.v1',
+])('rejects configured SSO when %s is missing', (missingScope) => {
+  const requestableScopes = [
     'esi-assets.read_assets.v1',
+    'esi-characters.read_contacts.v1',
     'esi-characters.read_corporation_roles.v1',
     'esi-clones.read_clones.v1',
     'esi-clones.read_implants.v1',
-    'esi-markets.read_character_orders.v1',
     'esi-contracts.read_character_contracts.v1',
     'esi-corporations.read_corporation_membership.v1',
-  ])('rejects configured SSO when %s is missing', (missingScope) => {
-    const requestableScopes = [
-      'esi-assets.read_assets.v1',
-      'esi-characters.read_contacts.v1',
-      'esi-characters.read_corporation_roles.v1',
-      'esi-clones.read_clones.v1',
-      'esi-clones.read_implants.v1',
-      'esi-contracts.read_character_contracts.v1',
-      'esi-corporations.read_corporation_membership.v1',
-      'esi-location.read_location.v1',
-      'esi-location.read_ship_type.v1',
-      'esi-mail.organize_mail.v1',
-      'esi-mail.read_mail.v1',
-      'esi-mail.send_mail.v1',
-      'esi-markets.read_character_orders.v1',
-      'esi-search.search_structures.v1',
-      'esi-skills.read_skillqueue.v1',
-      'esi-skills.read_skills.v1',
-      'esi-wallet.read_character_wallet.v1',
-      'esi-characters.read_freelance_jobs.v1',
-      'esi-corporations.read_freelance_jobs.v1',
-      'esi-corporations.read_projects.v1',
-      'esi.activity.char:read',
-    ].filter((scope) => scope !== missingScope)
+    'esi-location.read_location.v1',
+    'esi-location.read_ship_type.v1',
+    'esi-mail.organize_mail.v1',
+    'esi-mail.read_mail.v1',
+    'esi-mail.send_mail.v1',
+    'esi-markets.read_character_orders.v1',
+    'esi-search.search_structures.v1',
+    'esi-skills.read_skillqueue.v1',
+    'esi-skills.read_skills.v1',
+    'esi-wallet.read_character_wallet.v1',
+    'esi-characters.read_freelance_jobs.v1',
+    'esi-corporations.read_freelance_jobs.v1',
+    'esi-corporations.read_projects.v1',
+    'esi.activity.char:read',
+  ].filter((scope) => scope !== missingScope)
 
-    expect(() =>
-      assertEsiCatalogConfiguration({
-        compatibilityDate: '2026-08-23',
-        requestableScopes,
-        ssoEnabled: true,
-      }),
-    ).toThrow(`EVE_SCOPES is missing scopes required by registered ESI operations: ${missingScope}`)
-  })
+  expect(() =>
+    assertEsiCatalogConfiguration({
+      compatibilityDate: '2026-08-23',
+      requestableScopes,
+      ssoEnabled: true,
+    }),
+  ).toThrow(`EVE_SCOPES is missing scopes required by registered ESI operations: ${missingScope}`)
+})
 
-  test.each([
-    [
-      'compatibility date',
-      () => ({ ...validModuleOperation(), compatibility: { minimumDate: '2026-02-30' } }),
-      'invalid minimum compatibility date',
-    ],
-    [
-      'review date',
-      () => ({
-        ...validModuleOperation(),
-        audit: { ...validModuleOperation().audit, reviewedDate: 'soon' },
-      }),
-      'invalid review date',
-    ],
-    [
-      'authorization strategy',
-      () => ({ ...validModuleOperation(), authorization: { kind: 'module-token' } }),
-      'unsupported authorization strategy',
-    ],
-    [
-      'character scope',
-      () => ({ ...validModuleOperation(), authorization: { kind: 'character', scope: 'wallet' } }),
-      'invalid character scope',
-    ],
-    [
-      'ordered identity',
-      () => ({ ...validModuleOperation(), identity: { fields: ['id', 'id'], kind: 'ordered' } }),
-      'invalid or duplicate ordered identity fields',
-    ],
-    [
-      'set identity',
-      () => ({
-        ...validModuleOperation(),
-        identity: { field: 'ids', kind: 'set', maximumItems: 0 },
-      }),
-      'set identity maximum must be a positive safe integer',
-    ],
-    [
-      'freshness',
-      () => ({ ...validModuleOperation(), freshness: { kind: 'relative', seconds: 0 } }),
-      'relative freshness must use positive whole seconds',
-    ],
-    [
-      'mutation',
-      () => ({ ...validModuleOperation(), mutation: { kind: 'character' } }),
-      'invalid mutation metadata',
-    ],
-    [
-      'cache behavior',
-      () => ({
-        ...validModuleOperation(),
-        cache: {
-          ...validModuleOperation().cache,
-          retentionMilliseconds: 60_000,
-          stale: { kind: 'bounded', milliseconds: 120_000 },
-        },
-      }),
-      'stale duration exceeds cache retention',
-    ],
-    [
-      'rate group',
-      () => ({
-        ...validModuleOperation(),
-        rateGroup: { group: 'Module Group', kind: 'declared', maximumTokens: 100, window: '15m' },
-      }),
-      'invalid declared rate-group metadata',
-    ],
-    [
-      'retry policy',
-      () => ({
-        ...validModuleOperation(),
-        retry: {
-          attempts: 3,
-          initialDelayMilliseconds: 2000,
-          kind: 'idempotent',
-          maximumDelayMilliseconds: 1000,
-        },
-      }),
-      'invalid idempotent retry metadata',
-    ],
-    [
-      'retry attempt budget',
-      () => ({
-        ...validModuleOperation(),
-        retry: {
-          attempts: 4,
-          initialDelayMilliseconds: 500,
-          kind: 'idempotent',
-          maximumDelayMilliseconds: 10_000,
-        },
-      }),
-      'invalid idempotent retry metadata',
-    ],
-    [
-      'response validation',
-      () => ({
-        ...validModuleOperation(),
-        responseValidation: { kind: 'disabled', reason: '  ' },
-      }),
-      'invalid response-validation exception',
-    ],
-  ])(
-    'rejects invalid contributed %s metadata before startup',
-    (_field, createContract, message) => {
-      expect(() => assertEsiOperationContracts({ 'module-operation': createContract() })).toThrow(
-        message,
-      )
-    },
+test.each([
+  [
+    'compatibility date',
+    () => ({ ...validModuleOperation(), compatibility: { minimumDate: '2026-02-30' } }),
+    'invalid minimum compatibility date',
+  ],
+  [
+    'review date',
+    () => ({
+      ...validModuleOperation(),
+      audit: { ...validModuleOperation().audit, reviewedDate: 'soon' },
+    }),
+    'invalid review date',
+  ],
+  [
+    'authorization strategy',
+    () => ({ ...validModuleOperation(), authorization: { kind: 'module-token' } }),
+    'unsupported authorization strategy',
+  ],
+  [
+    'character scope',
+    () => ({ ...validModuleOperation(), authorization: { kind: 'oauth', scope: 'wallet' } }),
+    'invalid character scope',
+  ],
+  [
+    'unknown request subject',
+    () => ({
+      ...validModuleOperation(),
+      authorization: {
+        kind: 'public',
+        subjectBindings: ['account_id'],
+        requiredRolePredicate: null,
+      },
+    }),
+    'authorization',
+  ],
+  [
+    'duplicate request subject',
+    () => ({
+      ...validModuleOperation(),
+      authorization: {
+        kind: 'public',
+        subjectBindings: ['character_id', 'character_id'],
+        requiredRolePredicate: null,
+      },
+    }),
+    'request subject bindings must be unique and canonical',
+  ],
+  [
+    'unreviewed operation role',
+    () => ({
+      ...validModuleOperation(),
+      authorization: {
+        kind: 'oauth',
+        scope: 'esi-wallet.read_character_wallet.v1',
+        subjectBindings: ['character_id'],
+        requiredRolePredicate: 'junior-accountant',
+      },
+    }),
+    'authorization',
+  ],
+  [
+    'public operation role',
+    () => ({
+      ...validModuleOperation(),
+      authorization: { kind: 'public', subjectBindings: [], requiredRolePredicate: 'accountant' },
+    }),
+    'authorization',
+  ],
+  [
+    'ordered identity',
+    () => ({ ...validModuleOperation(), identity: { fields: ['id', 'id'], kind: 'ordered' } }),
+    'invalid or duplicate ordered identity fields',
+  ],
+  [
+    'set identity',
+    () => ({
+      ...validModuleOperation(),
+      identity: { field: 'ids', kind: 'set', maximumItems: 0 },
+    }),
+    'set identity maximum must be a positive safe integer',
+  ],
+  [
+    'freshness',
+    () => ({ ...validModuleOperation(), freshness: { kind: 'relative', seconds: 0 } }),
+    'relative freshness must use positive whole seconds',
+  ],
+  [
+    'mutation',
+    () => ({ ...validModuleOperation(), mutation: { kind: 'character' } }),
+    'invalid mutation metadata',
+  ],
+  [
+    'cache behavior',
+    () => ({
+      ...validModuleOperation(),
+      cache: {
+        ...validModuleOperation().cache,
+        retentionMilliseconds: 60_000,
+        stale: { kind: 'bounded', milliseconds: 120_000 },
+      },
+    }),
+    'stale duration exceeds cache retention',
+  ],
+  [
+    'rate group',
+    () => ({
+      ...validModuleOperation(),
+      rateGroup: { group: 'Module Group', kind: 'declared', maximumTokens: 100, window: '15m' },
+    }),
+    'invalid declared rate-group metadata',
+  ],
+  [
+    'retry policy',
+    () => ({
+      ...validModuleOperation(),
+      retry: {
+        attempts: 3,
+        initialDelayMilliseconds: 2000,
+        kind: 'idempotent',
+        maximumDelayMilliseconds: 1000,
+      },
+    }),
+    'invalid idempotent retry metadata',
+  ],
+  [
+    'retry attempt budget',
+    () => ({
+      ...validModuleOperation(),
+      retry: {
+        attempts: 4,
+        initialDelayMilliseconds: 500,
+        kind: 'idempotent',
+        maximumDelayMilliseconds: 10_000,
+      },
+    }),
+    'invalid idempotent retry metadata',
+  ],
+  [
+    'response validation',
+    () => ({
+      ...validModuleOperation(),
+      responseValidation: { kind: 'disabled', reason: '  ' },
+    }),
+    'invalid response-validation exception',
+  ],
+])('rejects invalid contributed %s metadata before startup', (_field, createContract, message) => {
+  expect(() => assertEsiOperationContracts({ 'module-operation': createContract() })).toThrow(
+    message,
   )
+})
 
+describe('contributed ESI catalog validation', () => {
   test('rejects conflicting contributed rate-group definitions', () => {
     const first = validModuleOperation()
     const second = {
@@ -1038,7 +1127,7 @@ describe('ESI operation policies', () => {
 function validModuleOperation() {
   return {
     audit: { esiOperationId: 'GetModuleOperation', reviewedDate: '2026-08-18' },
-    authorization: { kind: 'public' },
+    authorization: { kind: 'public', subjectBindings: [], requiredRolePredicate: null },
     cache: {
       collapse: true,
       kind: 'shared',
@@ -1102,7 +1191,7 @@ describe('ESI mutation contracts', () => {
         continue
       }
       expect(contract.cache.kind).toBe('none')
-      expect(contract.authorization.kind).toBe('character')
+      expect(contract.authorization.kind).toBe('oauth')
     }
   })
 })

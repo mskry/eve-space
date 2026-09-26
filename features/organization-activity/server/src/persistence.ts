@@ -47,6 +47,10 @@ const collectionRequestSchema = z.strictObject({
   validatedAt: z.optional(instantSchema),
 })
 const checkpointSchema = z.strictObject({
+  authorityBinding: z
+    .string()
+    .regex(/^v1:[a-f\d]{64}$/)
+    .optional(),
   cursors: z
     .record(z.string().min(1).max(100), cursorSchema)
     .refine((value) => Object.keys(value).length <= maximumRecordEntries),

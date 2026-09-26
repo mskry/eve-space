@@ -15,8 +15,10 @@ import {
   upsertPlatformCollectionStateInTransaction,
 } from './collection-state-store.js'
 import {
+  corporationAuthorityFenceEquals,
   managedCollectionAuthorityEquals,
   resolveInstalledResourceEligibility,
+  type PlatformCorporationAuthorityFence,
   type PlatformManagedCollectionAuthority,
 } from './resource-eligibility.js'
 import { findInstalledResource } from './resource-identity.js'
@@ -42,6 +44,13 @@ export class PlatformResourceAuthorizationError extends Error {
   constructor(cause: unknown) {
     super('Platform resource authorization failed', { cause })
     this.name = 'PlatformResourceAuthorizationError'
+  }
+}
+
+export class PlatformResourceObsoleteError extends Error {
+  constructor() {
+    super('Resource collection authority changed')
+    this.name = 'PlatformResourceObsoleteError'
   }
 }
 
@@ -86,6 +95,7 @@ interface ResourceFailureOptions {
   readonly upsertState?: typeof upsertPlatformCollectionState
   readonly expectedAuthorizationGeneration?: number | null
   readonly expectedManagedAuthority?: PlatformManagedCollectionAuthority | null
+  readonly expectedCorporationAuthorityFence?: PlatformCorporationAuthorityFence
 }
 
 export async function recordInstalledResourceCollectionFailure(
@@ -128,6 +138,7 @@ export async function recordInstalledResourceCollectionFailure(
       () =>
         resolveInstalledResourceEligibility(identity, {
           connection: transaction,
+          lockAuthority: true,
           now,
           resources: [resource],
         }),
@@ -157,7 +168,13 @@ async function persistFailureTransition(
           options.expectedManagedAuthority,
         ))) ||
     ('expectedAuthorizationGeneration' in options &&
-      eligibility.authorizationGeneration !== options.expectedAuthorizationGeneration)
+      eligibility.authorizationGeneration !== options.expectedAuthorizationGeneration) ||
+    ((eligibility.corporationAuthorityFence || options.expectedCorporationAuthorityFence) &&
+      (!('expectedCorporationAuthorityFence' in options) ||
+        !corporationAuthorityFenceEquals(
+          eligibility.corporationAuthorityFence,
+          options.expectedCorporationAuthorityFence,
+        )))
   ) {
     return transition
   }

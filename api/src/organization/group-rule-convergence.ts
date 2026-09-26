@@ -22,7 +22,6 @@ import {
 } from './group-rule-attestation-store.js'
 import { evaluateOrganizationRuleAccount } from './rule-evidence.js'
 import { isRuleCondition, type RuleEvidenceSource } from './rule-policy.js'
-import { isReviewedCorporationRolePredicate } from '../characters/corporation-role-canonical.js'
 
 type RuleRow = typeof organizationGroupRules.$inferSelect
 type Organization = { readonly organizationVersion: number; readonly policyVersion: number }
@@ -219,7 +218,7 @@ const convergeOneRule = async (
     rule.conditionKind === 'corporation-role'
       ? { kind: rule.conditionKind, predicate: rule.predicateKey }
       : { kind: rule.conditionKind }
-  if (!isRuleCondition(condition, isReviewedCorporationRolePredicate)) {
+  if (!isRuleCondition(condition)) {
     throw new Error('Rule contains an unsupported condition')
   }
   const eligibility = rule.enabled

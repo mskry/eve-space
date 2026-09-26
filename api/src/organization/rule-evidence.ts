@@ -5,10 +5,7 @@ import {
   evaluateCorporationRoleEvidence,
   type CorporationRolePredicateEvaluation,
 } from '../characters/corporation-role-evidence.js'
-import {
-  isReviewedCorporationRolePredicate,
-  type ReviewedCorporationRolePredicate,
-} from '../characters/corporation-role-canonical.js'
+import { type ReviewedCorporationRolePredicate } from '../characters/corporation-role-canonical.js'
 import { db, type DatabaseTransaction } from '../db/client.js'
 import {
   characters,
@@ -28,6 +25,7 @@ import { loadEffectiveOrganizationAuthority } from './effective-authority.js'
 import { hasActiveOrganizationMemberBlock } from './member-block.js'
 import {
   evaluateRuleEligibility,
+  isOrganizationRuleRolePredicate,
   type RuleCondition,
   type RuleEligibility,
   type RuleEvidenceSource,
@@ -494,7 +492,7 @@ const loadConditionSources = async (
       input.accessValidUntil,
     )
   }
-  if (!isReviewedCorporationRolePredicate(input.condition.predicate)) return []
+  if (!isOrganizationRuleRolePredicate(input.condition.predicate)) return []
   return loadRoleSources(
     database,
     input.organization,

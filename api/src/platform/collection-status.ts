@@ -72,10 +72,17 @@ function projectCollectionStatus(
   const authorizationGeneration =
     'authorizationGeneration' in eligibility ? eligibility.authorizationGeneration : null
   if (eligibility.status === 'authorization-required') {
+    const authorizationReason = eligibility.authorizationReason ?? 'scope-missing'
     return {
       authorizationGeneration,
+      authorizationReason,
       lastFailureClass: 'authorization-required',
-      reauthorizationPath: `/auth/eve/reauthorize/${encodeURIComponent(String(eligibility.authorizationCharacterId ?? identity.subjectId))}`,
+      ...(authorizationReason === 'scope-missing' && {
+        reauthorizationPath: `/auth/eve/reauthorize/${encodeURIComponent(String(eligibility.authorizationCharacterId ?? identity.subjectId))}`,
+      }),
+      ...(eligibility.requiredRolePredicates && {
+        requiredRolePredicates: eligibility.requiredRolePredicates,
+      }),
       requiredScope: eligibility.requiredScope,
       status: 'authorization-required',
       validatedAt,

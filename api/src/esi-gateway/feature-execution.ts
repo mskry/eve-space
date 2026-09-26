@@ -234,7 +234,7 @@ export function createCharacterEsiMutation<
 
 function getRequiredCharacterScope(operation: EsiOperation) {
   const authorization = getEsiOperationContract(operation)?.authorization
-  if (authorization?.kind !== 'character') {
+  if (authorization?.kind !== 'oauth') {
     throw new Error(`ESI operation ${operation} does not declare character authorization`)
   }
   return authorization.scope

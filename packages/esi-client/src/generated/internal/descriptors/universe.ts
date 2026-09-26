@@ -169,6 +169,9 @@ export const GetUniverseAsteroidBeltsAsteroidBeltIdDescriptor: OperationExecutio
   requestBody: null,
   requestSchema: GetUniverseAsteroidBeltsAsteroidBeltIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseAsteroidBeltsAsteroidBeltIdResponse },
@@ -194,6 +197,9 @@ export const GetUniverseConstellationsConstellationIdDescriptor: OperationExecut
   requestBody: null,
   requestSchema: GetUniverseConstellationsConstellationIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseConstellationsConstellationIdResponse },
@@ -219,6 +225,9 @@ export const GetUniverseGraphicsGraphicIdDescriptor: OperationExecutionDescripto
   requestBody: null,
   requestSchema: GetUniverseGraphicsGraphicIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseGraphicsGraphicIdResponse },
@@ -244,6 +253,9 @@ export const GetUniverseCategoriesCategoryIdDescriptor: OperationExecutionDescri
   requestBody: null,
   requestSchema: GetUniverseCategoriesCategoryIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseCategoriesCategoryIdResponse },
@@ -269,6 +281,9 @@ export const GetUniverseGroupsGroupIdDescriptor: OperationExecutionDescriptor<Op
   requestBody: null,
   requestSchema: GetUniverseGroupsGroupIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseGroupsGroupIdResponse },
@@ -294,6 +309,9 @@ export const GetUniverseMoonsMoonIdDescriptor: OperationExecutionDescriptor<Oper
   requestBody: null,
   requestSchema: GetUniverseMoonsMoonIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseMoonsMoonIdResponse },
@@ -319,6 +337,9 @@ export const GetUniversePlanetsPlanetIdDescriptor: OperationExecutionDescriptor<
   requestBody: null,
   requestSchema: GetUniversePlanetsPlanetIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniversePlanetsPlanetIdResponse },
@@ -344,6 +365,9 @@ export const GetUniverseRegionsRegionIdDescriptor: OperationExecutionDescriptor<
   requestBody: null,
   requestSchema: GetUniverseRegionsRegionIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseRegionsRegionIdResponse },
@@ -369,6 +393,9 @@ export const GetUniverseSystemsSystemIdDescriptor: OperationExecutionDescriptor<
   requestBody: null,
   requestSchema: GetUniverseSystemsSystemIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseSystemsSystemIdResponse },
@@ -394,6 +421,9 @@ export const GetUniverseStarsStarIdDescriptor: OperationExecutionDescriptor<Oper
   requestBody: null,
   requestSchema: GetUniverseStarsStarIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseStarsStarIdResponse },
@@ -419,6 +449,9 @@ export const GetUniverseStargatesStargateIdDescriptor: OperationExecutionDescrip
   requestBody: null,
   requestSchema: GetUniverseStargatesStargateIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseStargatesStargateIdResponse },
@@ -444,6 +477,9 @@ export const GetUniverseStationsStationIdDescriptor: OperationExecutionDescripto
   requestBody: null,
   requestSchema: GetUniverseStationsStationIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseStationsStationIdResponse },
@@ -469,6 +505,9 @@ export const GetUniverseStructuresStructureIdDescriptor: OperationExecutionDescr
   requestBody: null,
   requestSchema: GetUniverseStructuresStructureIdRequestSchema,
   authentication: { scopes: ["esi-universe.read_structures.v1"] },
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseStructuresStructureIdResponse },
@@ -494,6 +533,9 @@ export const GetUniverseTypesTypeIdDescriptor: OperationExecutionDescriptor<Oper
   requestBody: null,
   requestSchema: GetUniverseTypesTypeIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseTypesTypeIdResponse },
@@ -517,6 +559,9 @@ export const GetUniverseAncestriesDescriptor: OperationExecutionDescriptor<Opera
   requestBody: null,
   requestSchema: GetUniverseAncestriesRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseAncestriesResponse },
@@ -540,6 +585,9 @@ export const GetUniverseBloodlinesDescriptor: OperationExecutionDescriptor<Opera
   requestBody: null,
   requestSchema: GetUniverseBloodlinesRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseBloodlinesResponse },
@@ -563,6 +611,9 @@ export const GetUniverseConstellationsDescriptor: OperationExecutionDescriptor<O
   requestBody: null,
   requestSchema: GetUniverseConstellationsRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseConstellationsResponse },
@@ -586,6 +637,9 @@ export const GetUniverseFactionsDescriptor: OperationExecutionDescriptor<Operati
   requestBody: null,
   requestSchema: GetUniverseFactionsRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseFactionsResponse },
@@ -609,6 +663,9 @@ export const GetUniverseGraphicsDescriptor: OperationExecutionDescriptor<Operati
   requestBody: null,
   requestSchema: GetUniverseGraphicsRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseGraphicsResponse },
@@ -632,6 +689,9 @@ export const GetUniverseCategoriesDescriptor: OperationExecutionDescriptor<Opera
   requestBody: null,
   requestSchema: GetUniverseCategoriesRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseCategoriesResponse },
@@ -657,6 +717,9 @@ export const GetUniverseGroupsDescriptor: OperationExecutionDescriptor<Operation
   requestBody: null,
   requestSchema: GetUniverseGroupsRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseGroupsResponse },
@@ -682,6 +745,9 @@ export const GetUniverseStructuresDescriptor: OperationExecutionDescriptor<Opera
   requestBody: null,
   requestSchema: GetUniverseStructuresRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseStructuresResponse },
@@ -705,6 +771,9 @@ export const GetUniverseRacesDescriptor: OperationExecutionDescriptor<OperationA
   requestBody: null,
   requestSchema: GetUniverseRacesRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseRacesResponse },
@@ -728,6 +797,9 @@ export const GetUniverseRegionsDescriptor: OperationExecutionDescriptor<Operatio
   requestBody: null,
   requestSchema: GetUniverseRegionsRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseRegionsResponse },
@@ -751,6 +823,9 @@ export const GetUniverseSystemsDescriptor: OperationExecutionDescriptor<Operatio
   requestBody: null,
   requestSchema: GetUniverseSystemsRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseSystemsResponse },
@@ -774,6 +849,9 @@ export const GetUniverseSystemJumpsDescriptor: OperationExecutionDescriptor<Oper
   requestBody: null,
   requestSchema: GetUniverseSystemJumpsRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseSystemJumpsResponse },
@@ -797,6 +875,9 @@ export const GetUniverseSystemKillsDescriptor: OperationExecutionDescriptor<Oper
   requestBody: null,
   requestSchema: GetUniverseSystemKillsRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseSystemKillsResponse },
@@ -822,6 +903,9 @@ export const GetUniverseTypesDescriptor: OperationExecutionDescriptor<OperationA
   requestBody: null,
   requestSchema: GetUniverseTypesRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseTypesResponse },
@@ -846,6 +930,9 @@ export const PostUniverseIdsDescriptor: OperationExecutionDescriptor<OperationAr
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostUniverseIdsRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":500,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[{"location":"body","maximumItems":500,"path":[]}]},
   successResponses: [
     { status: 200, body: 'json', schema: zPostUniverseIdsResponse },
@@ -870,6 +957,9 @@ export const PostUniverseNamesDescriptor: OperationExecutionDescriptor<Operation
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostUniverseNamesRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":1000,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[{"location":"body","maximumItems":1000,"path":[]}]},
   successResponses: [
     { status: 200, body: 'json', schema: zPostUniverseNamesResponse },

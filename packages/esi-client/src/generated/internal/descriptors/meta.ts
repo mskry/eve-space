@@ -44,6 +44,9 @@ export const GetMetaChangelogDescriptor: OperationExecutionDescriptor<OperationA
   requestBody: null,
   requestSchema: GetMetaChangelogRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2025-09-26",
   protocol: {"cache":{"extensions":{"x-cache-age":600,"x-cache-mode":"event-based","x-client-cache-ttl":600,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"meta","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMetaChangelogResponse },
@@ -67,6 +70,9 @@ export const GetMetaStatusDescriptor: OperationExecutionDescriptor<OperationArgu
   requestBody: null,
   requestSchema: GetMetaStatusRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2025-11-06",
   protocol: {"cache":{"extensions":{"x-cache-mode":"event-based","x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"meta","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMetaStatusResponse },
@@ -90,6 +96,9 @@ export const GetMetaNameDescriptor: OperationExecutionDescriptor<OperationArgume
   requestBody: null,
   requestSchema: GetMetaNameRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2026-07-17",
   protocol: {"cache":{"extensions":{"x-cache-age":600,"x-cache-mode":"event-based","x-client-cache-ttl":600,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"meta","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMetaNameResponse },
@@ -113,6 +122,9 @@ export const GetMetaCompatibilityDatesDescriptor: OperationExecutionDescriptor<O
   requestBody: null,
   requestSchema: GetMetaCompatibilityDatesRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":600,"x-cache-mode":"event-based","x-client-cache-ttl":600,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"meta","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMetaCompatibilityDatesResponse },

@@ -45,6 +45,9 @@ export const GetCosmeticsSkinrDescriptor: OperationExecutionDescriptor<Operation
   requestBody: null,
   requestSchema: GetCosmeticsSkinrRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2026-08-18",
   protocol: {"cache":{"extensions":{"x-cache-age":31536000,"x-cache-mode":"ttl-based","x-client-cache-ttl":31536000,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":604800},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"skinr","kind":"declared","maximumTokens":12000,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCosmeticsSkinrResponse },
@@ -70,6 +73,9 @@ export const GetCharactersCosmeticsSkinrComponentsDescriptor: OperationExecution
   requestBody: null,
   requestSchema: GetCharactersCosmeticsSkinrComponentsRequestSchema,
   authentication: { scopes: ["esi.cosmetic.char:read"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2026-08-18",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-cache-mode":"event-based","x-client-cache-ttl":3600,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-skinr","kind":"declared","maximumTokens":30,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCosmeticsSkinrComponentsResponse },
@@ -95,6 +101,9 @@ export const GetCharactersCosmeticsSkinrDescriptor: OperationExecutionDescriptor
   requestBody: null,
   requestSchema: GetCharactersCosmeticsSkinrRequestSchema,
   authentication: { scopes: ["esi.cosmetic.char:read"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2026-08-18",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-cache-mode":"event-based","x-client-cache-ttl":3600,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-skinr","kind":"declared","maximumTokens":30,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCosmeticsSkinrResponse },

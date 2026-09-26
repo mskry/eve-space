@@ -1,4 +1,5 @@
 import type { PlatformSingleRequestResourceImplementation } from '@eve-space/platform-module-contract/resources'
+import type { PlatformCorporationAuthorityFence } from '../../src/platform/resource-eligibility.js'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -34,6 +35,10 @@ vi.mock('../../src/platform/core-resource-materialization.js', () => ({
   materializeCoreResourceObservation: mocks.materializeCoreResourceObservation,
 }))
 vi.mock('../../src/platform/resource-eligibility.js', () => ({
+  corporationAuthorityFenceEquals: (
+    left: PlatformCorporationAuthorityFence | null | undefined,
+    right: PlatformCorporationAuthorityFence | null | undefined,
+  ) => JSON.stringify(left ?? null) === JSON.stringify(right ?? null),
   managedCollectionAuthorityEquals: (left: unknown, right: unknown) =>
     JSON.stringify(left ?? null) === JSON.stringify(right ?? null),
   resolveInstalledResourceEligibility: mocks.resolveEligibility,
@@ -70,26 +75,24 @@ const managedAuthority = {
   targetUserId: '00000000-0000-4000-8000-000000000002',
 }
 
-describe('local resource observations', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mocks.transaction.mockResolvedValue([])
-    mocks.begin.mockImplementation((operation) => operation(mocks.transaction))
-    mocks.databaseTransaction.mockImplementation((operation) =>
-      operation({ execute: mocks.execute }),
-    )
-    mocks.loadState.mockResolvedValue(null)
-    mocks.resolveEligibility.mockResolvedValue({
-      authorizationGeneration: 4,
-      due: true,
-      managedAuthority: null,
-      nextEligibleAt: null,
-      status: 'eligible',
-    })
-    mocks.recordSuccess.mockResolvedValue(undefined)
-    mocks.createRoutinePersistence.mockReturnValue(scopedRoutinePersistence())
+beforeEach(() => {
+  vi.clearAllMocks()
+  mocks.transaction.mockResolvedValue([])
+  mocks.begin.mockImplementation((operation) => operation(mocks.transaction))
+  mocks.databaseTransaction.mockImplementation((operation) => operation({ execute: mocks.execute }))
+  mocks.loadState.mockResolvedValue(null)
+  mocks.resolveEligibility.mockResolvedValue({
+    authorizationGeneration: 4,
+    due: true,
+    managedAuthority: null,
+    nextEligibleAt: null,
+    status: 'eligible',
   })
+  mocks.recordSuccess.mockResolvedValue(undefined)
+  mocks.createRoutinePersistence.mockReturnValue(scopedRoutinePersistence())
+})
 
+describe('local resource observations', () => {
   test('persists a partial checkpoint without announcing successful collection', async () => {
     const materialize = vi.fn(async () => undefined)
     await applyInstalledResourceObservation({
@@ -138,7 +141,66 @@ describe('local resource observations', () => {
     expect(materialize).not.toHaveBeenCalled()
     expect(mocks.recordSuccess).not.toHaveBeenCalled()
   })
+})
 
+describe('corporation resource authority', () => {
+  test('discards a changed corporation role fence before module materialization or success', async () => {
+    const materialize = vi.fn(async () => undefined)
+    const input = observation(materialize)
+    const corporationIdentity = {
+      ...identity,
+      subjectKind: 'corporation' as const,
+      subjectId: '98000001',
+      subjectLifecycleId: '1cfba895-359c-4a48-b21a-177d351c87a6',
+    }
+    const fence = {
+      sourceId: 'd56315c7-6bfb-462d-a8fa-0e1588a6312a',
+      organizationVersion: 2,
+      corporationLifecycleId: corporationIdentity.subjectLifecycleId,
+      corporationId: 98_000_001,
+      characterId: 1_404_328_063,
+      characterLifecycleId: identity.subjectLifecycleId,
+      affiliationPeriodRevision: '43e4b829-a09a-4e34-a91e-e414c5f58fe1',
+      authorizationGeneration: 4,
+      requirementsFingerprint: 'jobs-v1',
+      roleRevision: 'first',
+    }
+    mocks.resolveEligibility.mockResolvedValue({
+      authorizationGeneration: 4,
+      due: true,
+      managedAuthority: null,
+      corporationAuthorityFence: { ...fence, roleRevision: 'lost' },
+      status: 'eligible',
+    })
+    await applyInstalledResourceObservation({
+      ...input,
+      identity: corporationIdentity,
+      resource: {
+        ...input.resource,
+        eligibility: { kind: 'current-managed-corporation-source' },
+        subjectKind: 'corporation',
+      },
+      subject: {
+        kind: 'corporation',
+        corporationId: 98_000_001,
+        lifecycleId: corporationIdentity.subjectLifecycleId,
+      },
+      authorizationCharacterId: fence.characterId,
+      authorizationCharacterLifecycleId: fence.characterLifecycleId,
+      corporationAuthorityFence: fence,
+      data: {},
+      outcome: 'complete',
+    })
+    expect(materialize).not.toHaveBeenCalled()
+    expect(mocks.recordSuccess).not.toHaveBeenCalled()
+    expect(mocks.resolveEligibility).toHaveBeenCalledWith(
+      corporationIdentity,
+      expect.objectContaining({ lockAuthority: true }),
+    )
+  })
+})
+
+describe('local resource observations', () => {
   test('advances unchanged checked state without rewriting module data', async () => {
     const materialize = vi.fn(async () => undefined)
 

@@ -174,7 +174,7 @@ describe('callable ESI feature execution', () => {
     const contract = getEsiOperationContract(skills.operation)
     expect(skills.requiredScope).toBe('esi-skills.read_skills.v1')
     expect(skills.requiredScope).toBe(
-      contract.authorization.kind === 'character' ? contract.authorization.scope : undefined,
+      contract.authorization.kind === 'oauth' ? contract.authorization.scope : undefined,
     )
     expect(mocks.authorize).toHaveBeenCalledWith(7, lifecycleId, skills.requiredScope)
   })

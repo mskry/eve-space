@@ -19122,6 +19122,7 @@
       },
       "maximumBatchSize": 20,
       "method": "DELETE",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "DeleteCharactersCharacterIdContacts",
       "pagination": {
         "kind": "none",
@@ -19268,6 +19269,10 @@
         }
       ],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -19345,6 +19350,7 @@
       },
       "maximumBatchSize": null,
       "method": "DELETE",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "DeleteCharactersCharacterIdFittingsFittingId",
       "pagination": {
         "kind": "none",
@@ -19478,6 +19484,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -19555,6 +19565,7 @@
       },
       "maximumBatchSize": null,
       "method": "DELETE",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "DeleteCharactersCharacterIdMailLabelsLabelId",
       "pagination": {
         "kind": "none",
@@ -19688,6 +19699,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -19765,6 +19780,7 @@
       },
       "maximumBatchSize": null,
       "method": "DELETE",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "DeleteCharactersCharacterIdMailMailId",
       "pagination": {
         "kind": "none",
@@ -19898,6 +19914,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -19975,6 +19995,7 @@
       },
       "maximumBatchSize": null,
       "method": "DELETE",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "DeleteFleetsFleetIdMembersMemberId",
       "pagination": {
         "kind": "none",
@@ -20110,6 +20131,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -20187,6 +20210,7 @@
       },
       "maximumBatchSize": null,
       "method": "DELETE",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "DeleteFleetsFleetIdSquadsSquadId",
       "pagination": {
         "kind": "none",
@@ -20322,6 +20346,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -20399,6 +20425,7 @@
       },
       "maximumBatchSize": null,
       "method": "DELETE",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "DeleteFleetsFleetIdWingsWingId",
       "pagination": {
         "kind": "none",
@@ -20534,6 +20561,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -20615,6 +20644,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetAlliances",
       "pagination": {
         "kind": "none",
@@ -20715,6 +20745,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -20795,6 +20827,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetAlliancesAllianceId",
       "pagination": {
         "kind": "none",
@@ -20910,6 +20943,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -20993,6 +21028,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetAlliancesAllianceIdContacts",
       "pagination": {
         "kind": "offset",
@@ -21131,6 +21167,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -21234,6 +21272,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetAlliancesAllianceIdContactsLabels",
       "pagination": {
         "kind": "none",
@@ -21351,6 +21390,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -21440,6 +21481,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetAlliancesAllianceIdCorporations",
       "pagination": {
         "kind": "none",
@@ -21554,6 +21596,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -21623,6 +21667,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetAlliancesAllianceIdIcons",
       "pagination": {
         "kind": "none",
@@ -21737,6 +21782,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -21820,6 +21867,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-05-19",
       "operationId": "GetCharactersAccessListsDetail",
       "pagination": {
         "kind": "none",
@@ -21953,6 +22001,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -22047,6 +22099,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-05-19",
       "operationId": "GetCharactersAccessListsListing",
       "pagination": {
         "kind": "none",
@@ -22165,6 +22218,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -22259,6 +22316,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdAgentsResearch",
       "pagination": {
         "kind": "none",
@@ -22376,6 +22434,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -22470,6 +22532,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdAssets",
       "pagination": {
         "kind": "offset",
@@ -22608,6 +22671,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -22711,6 +22778,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdAttributes",
       "pagination": {
         "kind": "none",
@@ -22828,6 +22896,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -22922,6 +22994,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdBlueprints",
       "pagination": {
         "kind": "offset",
@@ -23060,6 +23133,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -23163,6 +23240,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdCalendar",
       "pagination": {
         "kind": "none",
@@ -23296,6 +23374,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -23390,6 +23472,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdCalendarEventId",
       "pagination": {
         "kind": "none",
@@ -23523,6 +23606,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -23617,6 +23704,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdCalendarEventIdAttendees",
       "pagination": {
         "kind": "none",
@@ -23750,6 +23838,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -23844,6 +23936,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdClones",
       "pagination": {
         "kind": "none",
@@ -23961,6 +24054,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -24055,6 +24152,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdContacts",
       "pagination": {
         "kind": "offset",
@@ -24193,6 +24291,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -24296,6 +24398,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdContactsLabels",
       "pagination": {
         "kind": "none",
@@ -24413,6 +24516,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -24507,6 +24614,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdContracts",
       "pagination": {
         "kind": "offset",
@@ -24645,6 +24753,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -24748,6 +24860,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdContractsContractIdBids",
       "pagination": {
         "kind": "none",
@@ -24881,6 +24994,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -24975,6 +25092,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdContractsContractIdItems",
       "pagination": {
         "kind": "none",
@@ -25108,6 +25226,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -25197,6 +25319,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdCorporationhistory",
       "pagination": {
         "kind": "none",
@@ -25311,6 +25434,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -25394,6 +25521,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdFatigue",
       "pagination": {
         "kind": "none",
@@ -25511,6 +25639,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -25605,6 +25737,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdFittings",
       "pagination": {
         "kind": "none",
@@ -25722,6 +25855,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -25816,6 +25953,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdFleet",
       "pagination": {
         "kind": "none",
@@ -25933,6 +26071,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -26018,6 +26160,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdFwStats",
       "pagination": {
         "kind": "none",
@@ -26135,6 +26278,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -26229,6 +26376,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdImplants",
       "pagination": {
         "kind": "none",
@@ -26346,6 +26494,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -26440,6 +26592,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdIndustryJobs",
       "pagination": {
         "kind": "none",
@@ -26572,6 +26725,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -26666,6 +26823,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdKillmailsRecent",
       "pagination": {
         "kind": "offset",
@@ -26804,6 +26962,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -26907,6 +27069,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdLocation",
       "pagination": {
         "kind": "none",
@@ -27024,6 +27187,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -27118,6 +27285,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdLoyaltyPoints",
       "pagination": {
         "kind": "none",
@@ -27235,6 +27403,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -27329,6 +27501,7 @@
       },
       "maximumBatchSize": 25,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdMail",
       "pagination": {
         "kind": "none",
@@ -27492,6 +27665,10 @@
         }
       ],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -27586,6 +27763,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdMailLabels",
       "pagination": {
         "kind": "none",
@@ -27703,6 +27881,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -27797,6 +27979,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdMailLists",
       "pagination": {
         "kind": "none",
@@ -27914,6 +28097,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -28008,6 +28195,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdMailMailId",
       "pagination": {
         "kind": "none",
@@ -28141,6 +28329,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -28235,6 +28427,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdMedals",
       "pagination": {
         "kind": "none",
@@ -28352,6 +28545,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -28446,6 +28643,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdMining",
       "pagination": {
         "kind": "offset",
@@ -28584,6 +28782,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -28687,6 +28889,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdNotifications",
       "pagination": {
         "kind": "none",
@@ -28804,6 +29007,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -28898,6 +29105,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdNotificationsContacts",
       "pagination": {
         "kind": "none",
@@ -29015,6 +29223,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -29109,6 +29321,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdOnline",
       "pagination": {
         "kind": "none",
@@ -29226,6 +29439,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -29315,6 +29532,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdOrders",
       "pagination": {
         "kind": "none",
@@ -29429,6 +29647,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -29518,6 +29740,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdOrdersHistory",
       "pagination": {
         "kind": "offset",
@@ -29653,6 +29876,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -29756,6 +29983,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdPlanets",
       "pagination": {
         "kind": "none",
@@ -29873,6 +30101,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -29967,6 +30199,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdPlanetsPlanetId",
       "pagination": {
         "kind": "none",
@@ -30100,6 +30333,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -30185,6 +30422,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdPortrait",
       "pagination": {
         "kind": "none",
@@ -30302,6 +30540,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -30385,6 +30627,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdRoles",
       "pagination": {
         "kind": "none",
@@ -30502,6 +30745,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -30591,6 +30838,7 @@
       },
       "maximumBatchSize": 11,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdSearch",
       "pagination": {
         "kind": "none",
@@ -30779,6 +31027,10 @@
         }
       ],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -30891,6 +31143,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdShip",
       "pagination": {
         "kind": "none",
@@ -31008,6 +31261,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -31102,6 +31359,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdSkillqueue",
       "pagination": {
         "kind": "none",
@@ -31220,6 +31478,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -31317,6 +31579,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdSkills",
       "pagination": {
         "kind": "none",
@@ -31435,6 +31698,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -31529,6 +31796,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdStandings",
       "pagination": {
         "kind": "none",
@@ -31646,6 +31914,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -31740,6 +32012,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdTitles",
       "pagination": {
         "kind": "none",
@@ -31857,6 +32130,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -31951,6 +32228,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdWallet",
       "pagination": {
         "kind": "none",
@@ -32068,6 +32346,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -32162,6 +32444,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdWalletJournal",
       "pagination": {
         "kind": "offset",
@@ -32300,6 +32583,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -32403,6 +32690,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCharactersCharacterIdWalletTransactions",
       "pagination": {
         "kind": "none",
@@ -32536,6 +32824,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -32630,6 +32922,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-08-18",
       "operationId": "GetCharactersCosmeticsSkinr",
       "pagination": {
         "kind": "none",
@@ -32748,6 +33041,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -32842,6 +33139,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-08-18",
       "operationId": "GetCharactersCosmeticsSkinrComponents",
       "pagination": {
         "kind": "none",
@@ -32960,6 +33258,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -33051,6 +33353,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-06-09",
       "operationId": "GetCharactersDetail",
       "pagination": {
         "kind": "none",
@@ -33166,6 +33469,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -33249,6 +33556,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2025-12-16",
       "operationId": "GetCharactersFreelanceJobsListing",
       "pagination": {
         "kind": "none",
@@ -33367,6 +33675,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -33461,6 +33773,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2025-12-16",
       "operationId": "GetCharactersFreelanceJobsParticipation",
       "pagination": {
         "kind": "none",
@@ -33594,6 +33907,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -33688,6 +34005,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-05-19",
       "operationId": "GetCharactersMercenaryTacticalOperationsDetail",
       "pagination": {
         "kind": "none",
@@ -33821,6 +34139,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -33915,6 +34237,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-05-19",
       "operationId": "GetCharactersMercenaryTacticalOperationsListing",
       "pagination": {
         "kind": "none",
@@ -34033,6 +34356,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -34128,6 +34455,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-08-04",
       "operationId": "GetCharactersMilitaryCampaignsObjectivesListing",
       "pagination": {
         "kind": "none",
@@ -34295,6 +34623,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -34389,6 +34721,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-08-04",
       "operationId": "GetCharactersMilitaryCampaignsObjectivesParticipation",
       "pagination": {
         "kind": "none",
@@ -34522,6 +34855,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -34615,6 +34952,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-08-18",
       "operationId": "GetCharactersParagonHubSkinr",
       "pagination": {
         "kind": "none",
@@ -34782,6 +35120,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -34876,6 +35218,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-05-19",
       "operationId": "GetCharactersStructuresMercenaryDensDetail",
       "pagination": {
         "kind": "none",
@@ -35009,6 +35352,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -35103,6 +35450,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-05-19",
       "operationId": "GetCharactersStructuresMercenaryDensListing",
       "pagination": {
         "kind": "none",
@@ -35221,6 +35569,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -35310,6 +35662,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetContractsPublicBidsContractId",
       "pagination": {
         "kind": "offset",
@@ -35447,6 +35800,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -35567,6 +35922,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetContractsPublicItemsContractId",
       "pagination": {
         "kind": "offset",
@@ -35704,6 +36060,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -35824,6 +36182,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetContractsPublicRegionId",
       "pagination": {
         "kind": "offset",
@@ -35961,6 +36320,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -36056,6 +36417,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationCorporationIdMiningExtractions",
       "pagination": {
         "kind": "offset",
@@ -36194,6 +36556,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Station_Manager"
+      ],
       "security": [
         {
           "schemes": [
@@ -36300,6 +36668,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationCorporationIdMiningObservers",
       "pagination": {
         "kind": "offset",
@@ -36438,6 +36807,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Accountant"
+      ],
       "security": [
         {
           "schemes": [
@@ -36544,6 +36919,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationCorporationIdMiningObserversObserverId",
       "pagination": {
         "kind": "offset",
@@ -36698,6 +37074,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Accountant"
+      ],
       "security": [
         {
           "schemes": [
@@ -36798,6 +37180,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-07-21",
       "operationId": "GetCorporationsCorporationId",
       "pagination": {
         "kind": "none",
@@ -36913,6 +37296,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -36991,6 +37378,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdAlliancehistory",
       "pagination": {
         "kind": "none",
@@ -37105,6 +37493,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -37191,6 +37583,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdAssets",
       "pagination": {
         "kind": "offset",
@@ -37329,6 +37722,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -37435,6 +37834,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdBlueprints",
       "pagination": {
         "kind": "offset",
@@ -37573,6 +37973,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -37676,6 +38082,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdContacts",
       "pagination": {
         "kind": "offset",
@@ -37814,6 +38221,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -37917,6 +38328,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdContactsLabels",
       "pagination": {
         "kind": "none",
@@ -38034,6 +38446,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -38131,6 +38547,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdContainersLogs",
       "pagination": {
         "kind": "offset",
@@ -38269,6 +38686,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -38372,6 +38795,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdContracts",
       "pagination": {
         "kind": "offset",
@@ -38510,6 +38934,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -38613,6 +39041,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdContractsContractIdBids",
       "pagination": {
         "kind": "offset",
@@ -38767,6 +39196,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -38870,6 +39303,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdContractsContractIdItems",
       "pagination": {
         "kind": "none",
@@ -39003,6 +39437,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -39100,6 +39538,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdCustomsOffices",
       "pagination": {
         "kind": "offset",
@@ -39238,6 +39677,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -39344,6 +39789,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdDivisions",
       "pagination": {
         "kind": "none",
@@ -39461,6 +39907,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -39558,6 +40010,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdFacilities",
       "pagination": {
         "kind": "none",
@@ -39675,6 +40128,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Factory_Manager"
+      ],
       "security": [
         {
           "schemes": [
@@ -39760,6 +40219,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdFwStats",
       "pagination": {
         "kind": "none",
@@ -39877,6 +40337,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -39966,6 +40430,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdIcons",
       "pagination": {
         "kind": "none",
@@ -40080,6 +40545,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -40166,6 +40635,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdIndustryJobs",
       "pagination": {
         "kind": "offset",
@@ -40320,6 +40790,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Factory_Manager"
+      ],
       "security": [
         {
           "schemes": [
@@ -40426,6 +40902,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdKillmailsRecent",
       "pagination": {
         "kind": "offset",
@@ -40564,6 +41041,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -40667,6 +41150,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdMedals",
       "pagination": {
         "kind": "offset",
@@ -40805,6 +41289,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -40911,6 +41399,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdMedalsIssued",
       "pagination": {
         "kind": "offset",
@@ -41049,6 +41538,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -41152,6 +41647,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdMembers",
       "pagination": {
         "kind": "none",
@@ -41269,6 +41765,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -41366,6 +41866,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdMembersLimit",
       "pagination": {
         "kind": "none",
@@ -41483,6 +41984,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -41580,6 +42087,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdMembersTitles",
       "pagination": {
         "kind": "none",
@@ -41697,6 +42205,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -41794,6 +42308,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdMembertracking",
       "pagination": {
         "kind": "none",
@@ -41911,6 +42426,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -42004,6 +42525,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdOrders",
       "pagination": {
         "kind": "offset",
@@ -42139,6 +42661,13 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Accountant",
+        "Trader"
+      ],
       "security": [
         {
           "schemes": [
@@ -42241,6 +42770,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdOrdersHistory",
       "pagination": {
         "kind": "offset",
@@ -42376,6 +42906,13 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Accountant",
+        "Trader"
+      ],
       "security": [
         {
           "schemes": [
@@ -42479,6 +43016,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdRoles",
       "pagination": {
         "kind": "none",
@@ -42596,6 +43134,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -42693,6 +43235,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdRolesHistory",
       "pagination": {
         "kind": "offset",
@@ -42831,6 +43374,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -42937,6 +43486,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdShareholders",
       "pagination": {
         "kind": "offset",
@@ -43075,6 +43625,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -43178,6 +43734,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdStandings",
       "pagination": {
         "kind": "offset",
@@ -43316,6 +43873,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -43422,6 +43983,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdStarbases",
       "pagination": {
         "kind": "offset",
@@ -43560,6 +44122,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -43666,6 +44234,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdStarbasesStarbaseId",
       "pagination": {
         "kind": "none",
@@ -43815,6 +44384,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -43912,6 +44487,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdStructures",
       "pagination": {
         "kind": "offset",
@@ -44050,6 +44626,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Station_Manager"
+      ],
       "security": [
         {
           "schemes": [
@@ -44174,6 +44756,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdTitles",
       "pagination": {
         "kind": "none",
@@ -44291,6 +44874,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -44389,6 +44978,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdWallets",
       "pagination": {
         "kind": "none",
@@ -44506,6 +45096,13 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Accountant",
+        "Junior_Accountant"
+      ],
       "security": [
         {
           "schemes": [
@@ -44604,6 +45201,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdWalletsDivisionJournal",
       "pagination": {
         "kind": "offset",
@@ -44758,6 +45356,13 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Accountant",
+        "Junior_Accountant"
+      ],
       "security": [
         {
           "schemes": [
@@ -44865,6 +45470,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsCorporationIdWalletsDivisionTransactions",
       "pagination": {
         "kind": "none",
@@ -45014,6 +45620,13 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Accountant",
+        "Junior_Accountant"
+      ],
       "security": [
         {
           "schemes": [
@@ -45108,6 +45721,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2025-12-16",
       "operationId": "GetCorporationsFreelanceJobsListing",
       "pagination": {
         "kind": "none",
@@ -45275,6 +45889,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Project_Manager"
+      ],
       "security": [
         {
           "schemes": [
@@ -45369,6 +45989,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2025-12-16",
       "operationId": "GetCorporationsFreelanceJobsParticipants",
       "pagination": {
         "kind": "none",
@@ -45551,6 +46172,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Project_Manager"
+      ],
       "security": [
         {
           "schemes": [
@@ -45631,6 +46258,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetCorporationsNpccorps",
       "pagination": {
         "kind": "none",
@@ -45731,6 +46359,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -45814,6 +46444,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2025-08-26",
       "operationId": "GetCorporationsProjectsContribution",
       "pagination": {
         "kind": "none",
@@ -45962,6 +46593,11 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id",
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -46056,6 +46692,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2025-08-26",
       "operationId": "GetCorporationsProjectsContributors",
       "pagination": {
         "kind": "none",
@@ -46238,6 +46875,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Project_Manager"
+      ],
       "security": [
         {
           "schemes": [
@@ -46332,6 +46975,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2025-08-26",
       "operationId": "GetCorporationsProjectsDetail",
       "pagination": {
         "kind": "none",
@@ -46465,6 +47109,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -46556,6 +47204,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2025-08-26",
       "operationId": "GetCorporationsProjectsListing",
       "pagination": {
         "kind": "none",
@@ -46747,6 +47396,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -46844,6 +47497,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-05-19",
       "operationId": "GetCorporationsStructuresSkyhooksDetail",
       "pagination": {
         "kind": "none",
@@ -46977,6 +47631,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Station_Manager"
+      ],
       "security": [
         {
           "schemes": [
@@ -47074,6 +47734,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-05-19",
       "operationId": "GetCorporationsStructuresSkyhooksListing",
       "pagination": {
         "kind": "none",
@@ -47192,6 +47853,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Station_Manager"
+      ],
       "security": [
         {
           "schemes": [
@@ -47289,6 +47956,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-05-19",
       "operationId": "GetCorporationsStructuresSovereigntyHubsDetail",
       "pagination": {
         "kind": "none",
@@ -47422,6 +48090,12 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Station_Manager"
+      ],
       "security": [
         {
           "schemes": [
@@ -47516,6 +48190,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-05-19",
       "operationId": "GetCorporationsStructuresSovereigntyHubsListing",
       "pagination": {
         "kind": "none",
@@ -47634,6 +48309,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -47730,6 +48409,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-08-18",
       "operationId": "GetCosmeticsSkinr",
       "pagination": {
         "kind": "none",
@@ -47848,6 +48528,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -47917,6 +48599,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetDogmaAttributes",
       "pagination": {
         "kind": "none",
@@ -48017,6 +48700,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -48086,6 +48771,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetDogmaAttributesAttributeId",
       "pagination": {
         "kind": "none",
@@ -48202,6 +48888,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -48271,6 +48959,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetDogmaDynamicItemsTypeIdItemId",
       "pagination": {
         "kind": "none",
@@ -48401,6 +49090,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -48470,6 +49161,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetDogmaEffects",
       "pagination": {
         "kind": "none",
@@ -48570,6 +49262,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -48639,6 +49333,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetDogmaEffectsEffectId",
       "pagination": {
         "kind": "none",
@@ -48755,6 +49450,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -48838,6 +49535,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetFleetsFleetId",
       "pagination": {
         "kind": "none",
@@ -48957,6 +49655,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -49051,6 +49751,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetFleetsFleetIdMembers",
       "pagination": {
         "kind": "none",
@@ -49170,6 +49871,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -49282,6 +49985,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetFleetsFleetIdWings",
       "pagination": {
         "kind": "none",
@@ -49401,6 +50105,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -49513,6 +50219,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2025-12-16",
       "operationId": "GetFreelanceJobsDetail",
       "pagination": {
         "kind": "none",
@@ -49631,6 +50338,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -49711,6 +50420,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2025-12-16",
       "operationId": "GetFreelanceJobsListing",
       "pagination": {
         "kind": "none",
@@ -49878,6 +50588,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -49952,6 +50664,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetFwLeaderboards",
       "pagination": {
         "kind": "none",
@@ -50055,6 +50768,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -50129,6 +50844,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetFwLeaderboardsCharacters",
       "pagination": {
         "kind": "none",
@@ -50232,6 +50948,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -50306,6 +51024,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetFwLeaderboardsCorporations",
       "pagination": {
         "kind": "none",
@@ -50409,6 +51128,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -50483,6 +51204,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetFwStats",
       "pagination": {
         "kind": "none",
@@ -50586,6 +51308,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -50669,6 +51393,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetFwSystems",
       "pagination": {
         "kind": "none",
@@ -50772,6 +51497,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -50846,6 +51573,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetFwWars",
       "pagination": {
         "kind": "none",
@@ -50949,6 +51677,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -51032,6 +51762,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetIncursions",
       "pagination": {
         "kind": "none",
@@ -51135,6 +51866,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -51218,6 +51951,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetIndustryFacilities",
       "pagination": {
         "kind": "none",
@@ -51321,6 +52055,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -51404,6 +52140,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetIndustrySystems",
       "pagination": {
         "kind": "none",
@@ -51507,6 +52244,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -51590,6 +52329,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetInsurancePrices",
       "pagination": {
         "kind": "none",
@@ -51693,6 +52433,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -51794,6 +52536,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetKillmailsKillmailIdKillmailHash",
       "pagination": {
         "kind": "none",
@@ -51928,6 +52671,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -51997,6 +52742,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetLoyaltyStoresCorporationIdOffers",
       "pagination": {
         "kind": "none",
@@ -52111,6 +52857,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -52180,6 +52930,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetMarketsGroups",
       "pagination": {
         "kind": "none",
@@ -52280,6 +53031,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -52349,6 +53102,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetMarketsGroupsMarketGroupId",
       "pagination": {
         "kind": "none",
@@ -52465,6 +53219,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -52561,6 +53317,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetMarketsPrices",
       "pagination": {
         "kind": "none",
@@ -52661,6 +53418,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -52730,6 +53489,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetMarketsRegionIdHistory",
       "pagination": {
         "kind": "none",
@@ -52862,6 +53622,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -52945,6 +53707,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetMarketsRegionIdOrders",
       "pagination": {
         "kind": "offset",
@@ -53122,6 +53885,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -53209,6 +53974,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetMarketsRegionIdTypes",
       "pagination": {
         "kind": "offset",
@@ -53346,6 +54112,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -53433,6 +54201,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetMarketsStructuresStructureId",
       "pagination": {
         "kind": "offset",
@@ -53570,6 +54339,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -53673,6 +54444,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2025-09-26",
       "operationId": "GetMetaChangelog",
       "pagination": {
         "kind": "none",
@@ -53776,6 +54548,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -53859,6 +54633,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetMetaCompatibilityDates",
       "pagination": {
         "kind": "none",
@@ -53962,6 +54737,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -54045,6 +54822,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-07-17",
       "operationId": "GetMetaName",
       "pagination": {
         "kind": "none",
@@ -54148,6 +54926,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -54227,6 +55007,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2025-11-06",
       "operationId": "GetMetaStatus",
       "pagination": {
         "kind": "none",
@@ -54330,6 +55111,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -54413,6 +55196,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-08-04",
       "operationId": "GetMilitaryCampaignsDetail",
       "pagination": {
         "kind": "none",
@@ -54531,6 +55315,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -54614,6 +55400,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-08-04",
       "operationId": "GetMilitaryCampaignsListing",
       "pagination": {
         "kind": "none",
@@ -54717,6 +55504,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -54800,6 +55589,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-08-04",
       "operationId": "GetMilitaryCampaignsObjectivesDetail",
       "pagination": {
         "kind": "none",
@@ -54933,6 +55723,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -55017,6 +55809,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-08-04",
       "operationId": "GetMilitaryCampaignsObjectivesListing",
       "pagination": {
         "kind": "none",
@@ -55184,6 +55977,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -55266,6 +56061,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-08-18",
       "operationId": "GetParagonHubSkinr",
       "pagination": {
         "kind": "none",
@@ -55418,6 +56214,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -55500,6 +56298,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-08-18",
       "operationId": "GetParagonHubSkinrAlliances",
       "pagination": {
         "kind": "none",
@@ -55667,6 +56466,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -55760,6 +56561,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-08-18",
       "operationId": "GetParagonHubSkinrCharacters",
       "pagination": {
         "kind": "none",
@@ -55927,6 +56729,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -56020,6 +56826,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-08-18",
       "operationId": "GetParagonHubSkinrCorporations",
       "pagination": {
         "kind": "none",
@@ -56187,6 +56994,10 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -56283,6 +57094,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-05-19",
       "operationId": "GetSkyhooksRaidable",
       "pagination": {
         "kind": "none",
@@ -56386,6 +57198,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -56469,6 +57283,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetSovereigntyCampaigns",
       "pagination": {
         "kind": "none",
@@ -56572,6 +57387,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -56657,6 +57474,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2026-05-19",
       "operationId": "GetSovereigntySystems",
       "pagination": {
         "kind": "none",
@@ -56760,6 +57578,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -56845,6 +57665,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetStatus",
       "pagination": {
         "kind": "none",
@@ -56948,6 +57769,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -57017,6 +57840,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseAncestries",
       "pagination": {
         "kind": "none",
@@ -57117,6 +57941,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -57204,6 +58030,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseAsteroidBeltsAsteroidBeltId",
       "pagination": {
         "kind": "none",
@@ -57319,6 +58146,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -57388,6 +58217,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseBloodlines",
       "pagination": {
         "kind": "none",
@@ -57488,6 +58318,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -57575,6 +58407,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseCategories",
       "pagination": {
         "kind": "none",
@@ -57675,6 +58508,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -57744,6 +58579,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseCategoriesCategoryId",
       "pagination": {
         "kind": "none",
@@ -57860,6 +58696,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -57947,6 +58785,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseConstellations",
       "pagination": {
         "kind": "none",
@@ -58047,6 +58886,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -58116,6 +58957,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseConstellationsConstellationId",
       "pagination": {
         "kind": "none",
@@ -58231,6 +59073,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -58318,6 +59162,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseFactions",
       "pagination": {
         "kind": "none",
@@ -58418,6 +59263,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -58505,6 +59352,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseGraphics",
       "pagination": {
         "kind": "none",
@@ -58605,6 +59453,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -58674,6 +59524,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseGraphicsGraphicId",
       "pagination": {
         "kind": "none",
@@ -58789,6 +59640,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -58858,6 +59711,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseGroups",
       "pagination": {
         "kind": "offset",
@@ -58979,6 +59833,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -59057,6 +59913,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseGroupsGroupId",
       "pagination": {
         "kind": "none",
@@ -59173,6 +60030,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -59260,6 +60119,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseMoonsMoonId",
       "pagination": {
         "kind": "none",
@@ -59375,6 +60235,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -59444,6 +60306,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniversePlanetsPlanetId",
       "pagination": {
         "kind": "none",
@@ -59559,6 +60422,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -59628,6 +60493,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseRaces",
       "pagination": {
         "kind": "none",
@@ -59728,6 +60594,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -59815,6 +60683,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseRegions",
       "pagination": {
         "kind": "none",
@@ -59915,6 +60784,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -59984,6 +60855,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseRegionsRegionId",
       "pagination": {
         "kind": "none",
@@ -60099,6 +60971,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -60195,6 +61069,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseSchematicsSchematicId",
       "pagination": {
         "kind": "none",
@@ -60311,6 +61186,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -60380,6 +61257,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseStargatesStargateId",
       "pagination": {
         "kind": "none",
@@ -60495,6 +61373,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -60564,6 +61444,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseStarsStarId",
       "pagination": {
         "kind": "none",
@@ -60679,6 +61560,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -60748,6 +61631,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseStationsStationId",
       "pagination": {
         "kind": "none",
@@ -60863,6 +61747,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -60941,6 +61827,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseStructures",
       "pagination": {
         "kind": "none",
@@ -61060,6 +61947,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -61138,6 +62027,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseStructuresStructureId",
       "pagination": {
         "kind": "none",
@@ -61254,6 +62144,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -61343,6 +62235,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseSystemJumps",
       "pagination": {
         "kind": "none",
@@ -61443,6 +62336,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -61521,6 +62416,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseSystemKills",
       "pagination": {
         "kind": "none",
@@ -61621,6 +62517,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -61690,6 +62588,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseSystems",
       "pagination": {
         "kind": "none",
@@ -61790,6 +62689,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -61859,6 +62760,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseSystemsSystemId",
       "pagination": {
         "kind": "none",
@@ -61974,6 +62876,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -62061,6 +62965,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseTypes",
       "pagination": {
         "kind": "offset",
@@ -62182,6 +63087,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -62260,6 +63167,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetUniverseTypesTypeId",
       "pagination": {
         "kind": "none",
@@ -62376,6 +63284,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -62477,6 +63387,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetWars",
       "pagination": {
         "kind": "none",
@@ -62596,6 +63507,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -62679,6 +63592,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetWarsWarId",
       "pagination": {
         "kind": "none",
@@ -62798,6 +63712,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -62881,6 +63797,7 @@
       },
       "maximumBatchSize": null,
       "method": "GET",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "GetWarsWarIdKillmails",
       "pagination": {
         "kind": "offset",
@@ -63021,6 +63938,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -63108,6 +64027,7 @@
       },
       "maximumBatchSize": 1000,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostCharactersAffiliation",
       "pagination": {
         "kind": "none",
@@ -63235,6 +64155,8 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -63309,6 +64231,7 @@
       },
       "maximumBatchSize": 1000,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostCharactersCharacterIdAssetsLocations",
       "pagination": {
         "kind": "none",
@@ -63453,6 +64376,10 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -63538,6 +64465,7 @@
       },
       "maximumBatchSize": 1000,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostCharactersCharacterIdAssetsNames",
       "pagination": {
         "kind": "none",
@@ -63682,6 +64610,10 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -63767,6 +64699,7 @@
       },
       "maximumBatchSize": null,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostCharactersCharacterIdContacts",
       "pagination": {
         "kind": "none",
@@ -63969,6 +64902,10 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -64054,6 +64991,7 @@
       },
       "maximumBatchSize": 100,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostCharactersCharacterIdCspa",
       "pagination": {
         "kind": "none",
@@ -64198,6 +65136,10 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -64283,6 +65225,7 @@
       },
       "maximumBatchSize": 512,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostCharactersCharacterIdFittings",
       "pagination": {
         "kind": "none",
@@ -64515,6 +65458,10 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -64600,6 +65547,7 @@
       },
       "maximumBatchSize": 50,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostCharactersCharacterIdMail",
       "pagination": {
         "kind": "none",
@@ -64786,6 +65734,10 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -64871,6 +65823,7 @@
       },
       "maximumBatchSize": null,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostCharactersCharacterIdMailLabels",
       "pagination": {
         "kind": "none",
@@ -65036,6 +65989,10 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -65124,6 +66081,7 @@
       },
       "maximumBatchSize": 1000,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostCorporationsCorporationIdAssetsLocations",
       "pagination": {
         "kind": "none",
@@ -65268,6 +66226,12 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -65356,6 +66320,7 @@
       },
       "maximumBatchSize": 1000,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostCorporationsCorporationIdAssetsNames",
       "pagination": {
         "kind": "none",
@@ -65500,6 +66465,12 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
       "security": [
         {
           "schemes": [
@@ -65585,6 +66556,7 @@
       },
       "maximumBatchSize": null,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostFleetsFleetIdMembers",
       "pagination": {
         "kind": "none",
@@ -65746,6 +66718,8 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -65823,6 +66797,7 @@
       },
       "maximumBatchSize": null,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostFleetsFleetIdWings",
       "pagination": {
         "kind": "none",
@@ -65942,6 +66917,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -66027,6 +67004,7 @@
       },
       "maximumBatchSize": null,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostFleetsFleetIdWingsWingIdSquads",
       "pagination": {
         "kind": "none",
@@ -66162,6 +67140,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -66252,6 +67232,7 @@
       },
       "maximumBatchSize": null,
       "method": "POST",
+      "minimumCompatibilityDate": "2025-09-30",
       "operationId": "PostRoute",
       "pagination": {
         "kind": "none",
@@ -66413,6 +67394,8 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -66487,6 +67470,7 @@
       },
       "maximumBatchSize": null,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostUiAutopilotWaypoint",
       "pagination": {
         "kind": "none",
@@ -66638,6 +67622,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -66715,6 +67701,7 @@
       },
       "maximumBatchSize": null,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostUiOpenwindowContract",
       "pagination": {
         "kind": "none",
@@ -66834,6 +67821,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -66911,6 +67900,7 @@
       },
       "maximumBatchSize": null,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostUiOpenwindowInformation",
       "pagination": {
         "kind": "none",
@@ -67030,6 +68020,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -67107,6 +68099,7 @@
       },
       "maximumBatchSize": null,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostUiOpenwindowMarketdetails",
       "pagination": {
         "kind": "none",
@@ -67226,6 +68219,8 @@
       },
       "requestArrayLimits": [],
       "requestBody": null,
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -67303,6 +68298,7 @@
       },
       "maximumBatchSize": 50,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostUiOpenwindowNewmail",
       "pagination": {
         "kind": "none",
@@ -67461,6 +68457,8 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -67533,6 +68531,7 @@
       },
       "maximumBatchSize": 500,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostUniverseIds",
       "pagination": {
         "kind": "none",
@@ -67661,6 +68660,8 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -67748,6 +68749,7 @@
       },
       "maximumBatchSize": 1000,
       "method": "POST",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PostUniverseNames",
       "pagination": {
         "kind": "none",
@@ -67875,6 +68877,8 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [],
       "successResponses": [
         {
@@ -67958,6 +68962,7 @@
       },
       "maximumBatchSize": null,
       "method": "PUT",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PutCharactersCharacterIdCalendarEventId",
       "pagination": {
         "kind": "none",
@@ -68117,6 +69122,10 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -68194,6 +69203,7 @@
       },
       "maximumBatchSize": null,
       "method": "PUT",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PutCharactersCharacterIdContacts",
       "pagination": {
         "kind": "none",
@@ -68396,6 +69406,10 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -68473,6 +69487,7 @@
       },
       "maximumBatchSize": 25,
       "method": "PUT",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PutCharactersCharacterIdMailMailId",
       "pagination": {
         "kind": "none",
@@ -68644,6 +69659,10 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -68721,6 +69740,7 @@
       },
       "maximumBatchSize": null,
       "method": "PUT",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PutFleetsFleetId",
       "pagination": {
         "kind": "none",
@@ -68863,6 +69883,8 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -68940,6 +69962,7 @@
       },
       "maximumBatchSize": null,
       "method": "PUT",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PutFleetsFleetIdMembersMemberId",
       "pagination": {
         "kind": "none",
@@ -69111,6 +70134,8 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -69188,6 +70213,7 @@
       },
       "maximumBatchSize": null,
       "method": "PUT",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PutFleetsFleetIdSquadsSquadId",
       "pagination": {
         "kind": "none",
@@ -69345,6 +70371,8 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [
@@ -69422,6 +70450,7 @@
       },
       "maximumBatchSize": null,
       "method": "PUT",
+      "minimumCompatibilityDate": "2020-01-01",
       "operationId": "PutFleetsFleetIdWingsWingId",
       "pagination": {
         "kind": "none",
@@ -69579,6 +70608,8 @@
         "extensions": {},
         "required": true
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
       "security": [
         {
           "schemes": [

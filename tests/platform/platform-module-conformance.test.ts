@@ -8,6 +8,7 @@ import { HTTPException } from 'hono/http-exception'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { platformModuleRouteComposers } from '../../api/src/platform/module-route-composition'
 import { executeInstalledResourceOperation } from '../../api/src/platform/resource-operation-executor'
+import { readConformanceContinuation } from '../fixtures/platform-module-conformance/features/conformance/server/src/resource'
 import {
   generateRegistryFiles,
   generatedRegistryPaths,
@@ -65,6 +66,16 @@ vi.mock('../../api/src/esi-gateway/catalog-interface.js', async (importOriginal)
   const fixtureOperation = 'conformance-status-operation'
   return {
     ...actual,
+    assertRegisteredEsiOperation(operation: string) {
+      if (operation !== fixtureOperation) {
+        actual.assertRegisteredEsiOperation(operation)
+      }
+    },
+    getEsiOperationAuthority(operation: string) {
+      if (operation === fixtureOperation) return conformanceStatusOperation.contract.authorization
+      actual.assertRegisteredEsiOperation(operation)
+      return actual.getEsiOperationAuthority(operation)
+    },
     assertPlatformEsiOperation(operation: string) {
       if (operation !== fixtureOperation) {
         actual.assertPlatformEsiOperation(operation)
@@ -142,6 +153,37 @@ beforeEach(() => {
 })
 
 describe('production-shaped module conformance', () => {
+  it('retains a positive revision without exposing or resuming mismatched authority progress', () => {
+    const binding = `v1:${'a'.repeat(64)}`
+    const context = { continuationAuthorityBinding: binding }
+    const stored = {
+      checkpoint: { authorityBinding: `v1:${'b'.repeat(64)}`, cursor: 'old-private-progress' },
+      revision: 9,
+    }
+    expect(readConformanceContinuation(context, stored)).toStrictEqual({
+      checkpoint: null,
+      expectedRevision: 9,
+      needsReset: true,
+    })
+    expect(
+      readConformanceContinuation(context, {
+        checkpoint: { authorityBinding: binding, cursor: 'current-progress' },
+        revision: 10,
+      }),
+    ).toStrictEqual({
+      checkpoint: { authorityBinding: binding, cursor: 'current-progress' },
+      expectedRevision: 10,
+      needsReset: false,
+    })
+    expect(readConformanceContinuation(context, null)).toStrictEqual({
+      checkpoint: null,
+      expectedRevision: 0,
+      needsReset: false,
+    })
+    expect(Object.keys(context)).toEqual(['continuationAuthorityBinding'])
+    expect(JSON.stringify(context)).not.toContain('sourceId')
+    expect(JSON.stringify(context)).not.toContain('roleRevision')
+  })
   it('loads the real fixture root and generates every declared contribution', async () => {
     const registry = await loadInstalledModuleManifests(fixtureRoot)
     const files = generateRegistryFiles(

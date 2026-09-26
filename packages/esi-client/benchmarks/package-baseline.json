@@ -1,1806 +1,4 @@
 {
-  "schemaVersion": 2,
-  "policy": {
-    "byteHeadroomPercent": 2,
-    "fileCountHeadroom": 0,
-    "description": "Byte maxima are accepted unique transitive measurements plus 2%; reachable files, external edges, file count, and packed paths have no headroom, so every graph or artifact change requires review."
-  },
-  "totals": {
-    "compressedBytes": {
-      "measured": 353803,
-      "maximum": 360880
-    },
-    "unpackedBytes": {
-      "measured": 3939032,
-      "maximum": 4017813
-    },
-    "javascriptBytes": {
-      "measured": 2191477,
-      "maximum": 2235307
-    },
-    "declarationBytes": {
-      "measured": 1723207,
-      "maximum": 1757672
-    },
-    "fileCount": {
-      "measured": 214,
-      "maximum": 214
-    }
-  },
-  "publicEntries": {
-    ".": {
-      "runtime": {
-        "target": "dist/root.js",
-        "files": [
-          "dist/access-list.js",
-          "dist/access-list2.js",
-          "dist/activities.js",
-          "dist/activities2.js",
-          "dist/alliance.js",
-          "dist/alliance2.js",
-          "dist/assets.js",
-          "dist/assets2.js",
-          "dist/calendar.js",
-          "dist/calendar2.js",
-          "dist/character.js",
-          "dist/character2.js",
-          "dist/clones.js",
-          "dist/clones2.js",
-          "dist/configuration.js",
-          "dist/contacts.js",
-          "dist/contacts2.js",
-          "dist/contracts.js",
-          "dist/contracts2.js",
-          "dist/corporation-projects.js",
-          "dist/corporation-projects2.js",
-          "dist/corporation.js",
-          "dist/corporation2.js",
-          "dist/cosmetics.js",
-          "dist/cosmetics2.js",
-          "dist/dogma.js",
-          "dist/dogma2.js",
-          "dist/faction-warfare.js",
-          "dist/faction-warfare2.js",
-          "dist/fittings.js",
-          "dist/fittings2.js",
-          "dist/fleets.js",
-          "dist/fleets2.js",
-          "dist/freelance-jobs.js",
-          "dist/freelance-jobs2.js",
-          "dist/incursions.js",
-          "dist/incursions2.js",
-          "dist/industry.js",
-          "dist/industry2.js",
-          "dist/insurance.js",
-          "dist/insurance2.js",
-          "dist/killmails.js",
-          "dist/killmails2.js",
-          "dist/location.js",
-          "dist/location2.js",
-          "dist/loyalty.js",
-          "dist/loyalty2.js",
-          "dist/mail.js",
-          "dist/mail2.js",
-          "dist/market.js",
-          "dist/market2.js",
-          "dist/meta.js",
-          "dist/meta2.js",
-          "dist/military-campaigns.js",
-          "dist/military-campaigns2.js",
-          "dist/operations.js",
-          "dist/paragon-hub.js",
-          "dist/paragon-hub2.js",
-          "dist/planetary-interaction.js",
-          "dist/planetary-interaction2.js",
-          "dist/request-schema.js",
-          "dist/root.js",
-          "dist/routes.js",
-          "dist/routes2.js",
-          "dist/search.js",
-          "dist/search2.js",
-          "dist/skills.js",
-          "dist/skills2.js",
-          "dist/sovereignty.js",
-          "dist/sovereignty2.js",
-          "dist/status.js",
-          "dist/status2.js",
-          "dist/structures.js",
-          "dist/structures2.js",
-          "dist/universe.js",
-          "dist/universe2.js",
-          "dist/user-interface.js",
-          "dist/user-interface2.js",
-          "dist/wallet.js",
-          "dist/wallet2.js",
-          "dist/wars.js",
-          "dist/wars2.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 2095390,
-        "maximumUniqueBytes": 2137298
-      },
-      "declaration": {
-        "target": "dist/root.d.ts",
-        "files": [
-          "dist/access-list.d.ts",
-          "dist/activities.d.ts",
-          "dist/alliance.d.ts",
-          "dist/assets.d.ts",
-          "dist/calendar.d.ts",
-          "dist/character.d.ts",
-          "dist/clones.d.ts",
-          "dist/contacts.d.ts",
-          "dist/contracts.d.ts",
-          "dist/corporation-projects.d.ts",
-          "dist/corporation.d.ts",
-          "dist/cosmetics.d.ts",
-          "dist/dogma.d.ts",
-          "dist/faction-warfare.d.ts",
-          "dist/fittings.d.ts",
-          "dist/fleets.d.ts",
-          "dist/freelance-jobs.d.ts",
-          "dist/incursions.d.ts",
-          "dist/industry.d.ts",
-          "dist/insurance.d.ts",
-          "dist/killmails.d.ts",
-          "dist/location.d.ts",
-          "dist/loyalty.d.ts",
-          "dist/mail.d.ts",
-          "dist/market.d.ts",
-          "dist/meta.d.ts",
-          "dist/military-campaigns.d.ts",
-          "dist/operations.d.ts",
-          "dist/options.d.ts",
-          "dist/paragon-hub.d.ts",
-          "dist/planetary-interaction.d.ts",
-          "dist/root.d.ts",
-          "dist/routes.d.ts",
-          "dist/search.d.ts",
-          "dist/skills.d.ts",
-          "dist/sovereignty.d.ts",
-          "dist/status.d.ts",
-          "dist/structures.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts",
-          "dist/universe.d.ts",
-          "dist/user-interface.d.ts",
-          "dist/wallet.d.ts",
-          "dist/wars.d.ts"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/operations.d.ts",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 975582,
-        "maximumUniqueBytes": 995094
-      }
-    },
-    "./types": {
-      "runtime": {
-        "target": "dist/types/index.js",
-        "files": [
-          "dist/types/index.js"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 0,
-        "maximumUniqueBytes": 0
-      },
-      "declaration": {
-        "target": "dist/types/index.d.ts",
-        "files": [
-          "dist/types.gen.d.ts",
-          "dist/types/index.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 682856,
-        "maximumUniqueBytes": 696514
-      }
-    },
-    "./zod": {
-      "runtime": {
-        "target": "dist/zod.js",
-        "files": [
-          "dist/zod.gen.js",
-          "dist/zod.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 409313,
-        "maximumUniqueBytes": 417500
-      },
-      "declaration": {
-        "target": "dist/zod.d.ts",
-        "files": [
-          "dist/zod.d.ts"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/zod.d.ts",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 590356,
-        "maximumUniqueBytes": 602164
-      }
-    },
-    "./operations": {
-      "runtime": {
-        "target": "dist/operations/index.js",
-        "files": [
-          "dist/access-list.js",
-          "dist/activities.js",
-          "dist/alliance.js",
-          "dist/assets.js",
-          "dist/calendar.js",
-          "dist/character.js",
-          "dist/clones.js",
-          "dist/contacts.js",
-          "dist/contracts.js",
-          "dist/corporation-projects.js",
-          "dist/corporation.js",
-          "dist/cosmetics.js",
-          "dist/dogma.js",
-          "dist/faction-warfare.js",
-          "dist/fittings.js",
-          "dist/fleets.js",
-          "dist/freelance-jobs.js",
-          "dist/incursions.js",
-          "dist/industry.js",
-          "dist/insurance.js",
-          "dist/killmails.js",
-          "dist/location.js",
-          "dist/loyalty.js",
-          "dist/mail.js",
-          "dist/market.js",
-          "dist/meta.js",
-          "dist/military-campaigns.js",
-          "dist/operations.js",
-          "dist/operations/index.js",
-          "dist/paragon-hub.js",
-          "dist/planetary-interaction.js",
-          "dist/request-schema.js",
-          "dist/routes.js",
-          "dist/search.js",
-          "dist/skills.js",
-          "dist/sovereignty.js",
-          "dist/status.js",
-          "dist/structures.js",
-          "dist/universe.js",
-          "dist/user-interface.js",
-          "dist/wallet.js",
-          "dist/wars.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 1890856,
-        "maximumUniqueBytes": 1928674
-      },
-      "declaration": {
-        "target": "dist/operations/index.d.ts",
-        "files": [
-          "dist/operations.d.ts",
-          "dist/operations/index.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/operations.d.ts",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 645036,
-        "maximumUniqueBytes": 657937
-      }
-    },
-    "./domains/access-list": {
-      "runtime": {
-        "target": "dist/domains/access-list.js",
-        "files": [
-          "dist/access-list.js",
-          "dist/access-list2.js",
-          "dist/configuration.js",
-          "dist/domains/access-list.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 392616,
-        "maximumUniqueBytes": 400469
-      },
-      "declaration": {
-        "target": "dist/domains/access-list.d.ts",
-        "files": [
-          "dist/access-list.d.ts",
-          "dist/domains/access-list.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 568859,
-        "maximumUniqueBytes": 580237
-      }
-    },
-    "./domains/activities": {
-      "runtime": {
-        "target": "dist/domains/activities.js",
-        "files": [
-          "dist/activities.js",
-          "dist/activities2.js",
-          "dist/configuration.js",
-          "dist/domains/activities.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 395315,
-        "maximumUniqueBytes": 403222
-      },
-      "declaration": {
-        "target": "dist/domains/activities.d.ts",
-        "files": [
-          "dist/activities.d.ts",
-          "dist/domains/activities.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 570266,
-        "maximumUniqueBytes": 581672
-      }
-    },
-    "./domains/alliance": {
-      "runtime": {
-        "target": "dist/domains/alliance.js",
-        "files": [
-          "dist/alliance.js",
-          "dist/alliance2.js",
-          "dist/configuration.js",
-          "dist/domains/alliance.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 396158,
-        "maximumUniqueBytes": 404082
-      },
-      "declaration": {
-        "target": "dist/domains/alliance.d.ts",
-        "files": [
-          "dist/alliance.d.ts",
-          "dist/domains/alliance.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 570318,
-        "maximumUniqueBytes": 581725
-      }
-    },
-    "./domains/assets": {
-      "runtime": {
-        "target": "dist/domains/assets.js",
-        "files": [
-          "dist/assets.js",
-          "dist/assets2.js",
-          "dist/configuration.js",
-          "dist/domains/assets.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 404452,
-        "maximumUniqueBytes": 412542
-      },
-      "declaration": {
-        "target": "dist/domains/assets.d.ts",
-        "files": [
-          "dist/assets.d.ts",
-          "dist/domains/assets.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 574521,
-        "maximumUniqueBytes": 586012
-      }
-    },
-    "./domains/calendar": {
-      "runtime": {
-        "target": "dist/domains/calendar.js",
-        "files": [
-          "dist/calendar.js",
-          "dist/calendar2.js",
-          "dist/configuration.js",
-          "dist/domains/calendar.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 398883,
-        "maximumUniqueBytes": 406861
-      },
-      "declaration": {
-        "target": "dist/domains/calendar.d.ts",
-        "files": [
-          "dist/calendar.d.ts",
-          "dist/domains/calendar.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 572340,
-        "maximumUniqueBytes": 583787
-      }
-    },
-    "./domains/character": {
-      "runtime": {
-        "target": "dist/domains/character.js",
-        "files": [
-          "dist/character.js",
-          "dist/character2.js",
-          "dist/configuration.js",
-          "dist/domains/character.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 423191,
-        "maximumUniqueBytes": 431655
-      },
-      "declaration": {
-        "target": "dist/domains/character.d.ts",
-        "files": [
-          "dist/character.d.ts",
-          "dist/domains/character.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 582980,
-        "maximumUniqueBytes": 594640
-      }
-    },
-    "./domains/clones": {
-      "runtime": {
-        "target": "dist/domains/clones.js",
-        "files": [
-          "dist/clones.js",
-          "dist/clones2.js",
-          "dist/configuration.js",
-          "dist/domains/clones.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 392393,
-        "maximumUniqueBytes": 400241
-      },
-      "declaration": {
-        "target": "dist/domains/clones.d.ts",
-        "files": [
-          "dist/clones.d.ts",
-          "dist/domains/clones.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 568623,
-        "maximumUniqueBytes": 579996
-      }
-    },
-    "./domains/contacts": {
-      "runtime": {
-        "target": "dist/domains/contacts.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/contacts.js",
-          "dist/contacts2.js",
-          "dist/domains/contacts.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 413504,
-        "maximumUniqueBytes": 421775
-      },
-      "declaration": {
-        "target": "dist/domains/contacts.d.ts",
-        "files": [
-          "dist/contacts.d.ts",
-          "dist/domains/contacts.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 578761,
-        "maximumUniqueBytes": 590337
-      }
-    },
-    "./domains/contracts": {
-      "runtime": {
-        "target": "dist/domains/contracts.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/contracts.js",
-          "dist/contracts2.js",
-          "dist/domains/contracts.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 413867,
-        "maximumUniqueBytes": 422145
-      },
-      "declaration": {
-        "target": "dist/domains/contracts.d.ts",
-        "files": [
-          "dist/contracts.d.ts",
-          "dist/domains/contracts.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 579810,
-        "maximumUniqueBytes": 591407
-      }
-    },
-    "./domains/corporation-projects": {
-      "runtime": {
-        "target": "dist/domains/corporation-projects.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/corporation-projects.js",
-          "dist/corporation-projects2.js",
-          "dist/domains/corporation-projects.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 399829,
-        "maximumUniqueBytes": 407826
-      },
-      "declaration": {
-        "target": "dist/domains/corporation-projects.d.ts",
-        "files": [
-          "dist/corporation-projects.d.ts",
-          "dist/domains/corporation-projects.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 572861,
-        "maximumUniqueBytes": 584319
-      }
-    },
-    "./domains/corporation": {
-      "runtime": {
-        "target": "dist/domains/corporation.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/corporation.js",
-          "dist/corporation2.js",
-          "dist/domains/corporation.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 447857,
-        "maximumUniqueBytes": 456815
-      },
-      "declaration": {
-        "target": "dist/domains/corporation.d.ts",
-        "files": [
-          "dist/corporation.d.ts",
-          "dist/domains/corporation.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 595313,
-        "maximumUniqueBytes": 607220
-      }
-    },
-    "./domains/cosmetics": {
-      "runtime": {
-        "target": "dist/domains/cosmetics.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/cosmetics.js",
-          "dist/cosmetics2.js",
-          "dist/domains/cosmetics.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 394852,
-        "maximumUniqueBytes": 402750
-      },
-      "declaration": {
-        "target": "dist/domains/cosmetics.d.ts",
-        "files": [
-          "dist/cosmetics.d.ts",
-          "dist/domains/cosmetics.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 569670,
-        "maximumUniqueBytes": 581064
-      }
-    },
-    "./domains/dogma": {
-      "runtime": {
-        "target": "dist/domains/dogma.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/dogma.js",
-          "dist/dogma2.js",
-          "dist/domains/dogma.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 397677,
-        "maximumUniqueBytes": 405631
-      },
-      "declaration": {
-        "target": "dist/domains/dogma.d.ts",
-        "files": [
-          "dist/dogma.d.ts",
-          "dist/domains/dogma.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 571282,
-        "maximumUniqueBytes": 582708
-      }
-    },
-    "./domains/faction-warfare": {
-      "runtime": {
-        "target": "dist/domains/faction-warfare.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/faction-warfare.js",
-          "dist/faction-warfare.js",
-          "dist/faction-warfare2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 403776,
-        "maximumUniqueBytes": 411852
-      },
-      "declaration": {
-        "target": "dist/domains/faction-warfare.d.ts",
-        "files": [
-          "dist/domains/faction-warfare.d.ts",
-          "dist/faction-warfare.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 573482,
-        "maximumUniqueBytes": 584952
-      }
-    },
-    "./domains/fittings": {
-      "runtime": {
-        "target": "dist/domains/fittings.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/fittings.js",
-          "dist/fittings.js",
-          "dist/fittings2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 395207,
-        "maximumUniqueBytes": 403112
-      },
-      "declaration": {
-        "target": "dist/domains/fittings.d.ts",
-        "files": [
-          "dist/domains/fittings.d.ts",
-          "dist/fittings.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 570335,
-        "maximumUniqueBytes": 581742
-      }
-    },
-    "./domains/fleets": {
-      "runtime": {
-        "target": "dist/domains/fleets.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/fleets.js",
-          "dist/fleets.js",
-          "dist/fleets2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 421214,
-        "maximumUniqueBytes": 429639
-      },
-      "declaration": {
-        "target": "dist/domains/fleets.d.ts",
-        "files": [
-          "dist/domains/fleets.d.ts",
-          "dist/fleets.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 582959,
-        "maximumUniqueBytes": 594619
-      }
-    },
-    "./domains/freelance-jobs": {
-      "runtime": {
-        "target": "dist/domains/freelance-jobs.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/freelance-jobs.js",
-          "dist/freelance-jobs.js",
-          "dist/freelance-jobs2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 404636,
-        "maximumUniqueBytes": 412729
-      },
-      "declaration": {
-        "target": "dist/domains/freelance-jobs.d.ts",
-        "files": [
-          "dist/domains/freelance-jobs.d.ts",
-          "dist/freelance-jobs.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 574803,
-        "maximumUniqueBytes": 586300
-      }
-    },
-    "./domains/incursions": {
-      "runtime": {
-        "target": "dist/domains/incursions.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/incursions.js",
-          "dist/incursions.js",
-          "dist/incursions2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 389301,
-        "maximumUniqueBytes": 397088
-      },
-      "declaration": {
-        "target": "dist/domains/incursions.d.ts",
-        "files": [
-          "dist/domains/incursions.d.ts",
-          "dist/incursions.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 567071,
-        "maximumUniqueBytes": 578413
-      }
-    },
-    "./domains/industry": {
-      "runtime": {
-        "target": "dist/domains/industry.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/industry.js",
-          "dist/industry.js",
-          "dist/industry2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 409833,
-        "maximumUniqueBytes": 418030
-      },
-      "declaration": {
-        "target": "dist/domains/industry.d.ts",
-        "files": [
-          "dist/domains/industry.d.ts",
-          "dist/industry.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 576980,
-        "maximumUniqueBytes": 588520
-      }
-    },
-    "./domains/insurance": {
-      "runtime": {
-        "target": "dist/domains/insurance.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/insurance.js",
-          "dist/insurance.js",
-          "dist/insurance2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 389372,
-        "maximumUniqueBytes": 397160
-      },
-      "declaration": {
-        "target": "dist/domains/insurance.d.ts",
-        "files": [
-          "dist/domains/insurance.d.ts",
-          "dist/insurance.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 567131,
-        "maximumUniqueBytes": 578474
-      }
-    },
-    "./domains/killmails": {
-      "runtime": {
-        "target": "dist/domains/killmails.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/killmails.js",
-          "dist/killmails.js",
-          "dist/killmails2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 396106,
-        "maximumUniqueBytes": 404029
-      },
-      "declaration": {
-        "target": "dist/domains/killmails.d.ts",
-        "files": [
-          "dist/domains/killmails.d.ts",
-          "dist/killmails.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 570655,
-        "maximumUniqueBytes": 582069
-      }
-    },
-    "./domains/location": {
-      "runtime": {
-        "target": "dist/domains/location.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/location.js",
-          "dist/location.js",
-          "dist/location2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 394883,
-        "maximumUniqueBytes": 402781
-      },
-      "declaration": {
-        "target": "dist/domains/location.d.ts",
-        "files": [
-          "dist/domains/location.d.ts",
-          "dist/location.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 569752,
-        "maximumUniqueBytes": 581148
-      }
-    },
-    "./domains/loyalty": {
-      "runtime": {
-        "target": "dist/domains/loyalty.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/loyalty.js",
-          "dist/loyalty.js",
-          "dist/loyalty2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 392333,
-        "maximumUniqueBytes": 400180
-      },
-      "declaration": {
-        "target": "dist/domains/loyalty.d.ts",
-        "files": [
-          "dist/domains/loyalty.d.ts",
-          "dist/loyalty.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 568796,
-        "maximumUniqueBytes": 580172
-      }
-    },
-    "./domains/mail": {
-      "runtime": {
-        "target": "dist/domains/mail.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/mail.js",
-          "dist/mail.js",
-          "dist/mail2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 411274,
-        "maximumUniqueBytes": 419500
-      },
-      "declaration": {
-        "target": "dist/domains/mail.d.ts",
-        "files": [
-          "dist/domains/mail.d.ts",
-          "dist/mail.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 578339,
-        "maximumUniqueBytes": 589906
-      }
-    },
-    "./domains/market": {
-      "runtime": {
-        "target": "dist/domains/market.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/market.js",
-          "dist/market.js",
-          "dist/market2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 414991,
-        "maximumUniqueBytes": 423291
-      },
-      "declaration": {
-        "target": "dist/domains/market.d.ts",
-        "files": [
-          "dist/domains/market.d.ts",
-          "dist/market.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 579156,
-        "maximumUniqueBytes": 590740
-      }
-    },
-    "./domains/meta": {
-      "runtime": {
-        "target": "dist/domains/meta.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/meta.js",
-          "dist/meta.js",
-          "dist/meta2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 395139,
-        "maximumUniqueBytes": 403042
-      },
-      "declaration": {
-        "target": "dist/domains/meta.d.ts",
-        "files": [
-          "dist/domains/meta.d.ts",
-          "dist/meta.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 569282,
-        "maximumUniqueBytes": 580668
-      }
-    },
-    "./domains/military-campaigns": {
-      "runtime": {
-        "target": "dist/domains/military-campaigns.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/military-campaigns.js",
-          "dist/military-campaigns.js",
-          "dist/military-campaigns2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 404628,
-        "maximumUniqueBytes": 412721
-      },
-      "declaration": {
-        "target": "dist/domains/military-campaigns.d.ts",
-        "files": [
-          "dist/domains/military-campaigns.d.ts",
-          "dist/military-campaigns.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 575101,
-        "maximumUniqueBytes": 586604
-      }
-    },
-    "./domains/paragon-hub": {
-      "runtime": {
-        "target": "dist/domains/paragon-hub.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/paragon-hub.js",
-          "dist/paragon-hub.js",
-          "dist/paragon-hub2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 402422,
-        "maximumUniqueBytes": 410471
-      },
-      "declaration": {
-        "target": "dist/domains/paragon-hub.d.ts",
-        "files": [
-          "dist/domains/paragon-hub.d.ts",
-          "dist/options.d.ts",
-          "dist/paragon-hub.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 573273,
-        "maximumUniqueBytes": 584739
-      }
-    },
-    "./domains/planetary-interaction": {
-      "runtime": {
-        "target": "dist/domains/planetary-interaction.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/planetary-interaction.js",
-          "dist/planetary-interaction.js",
-          "dist/planetary-interaction2.js",
-          "dist/request-schema.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 398372,
-        "maximumUniqueBytes": 406340
-      },
-      "declaration": {
-        "target": "dist/domains/planetary-interaction.d.ts",
-        "files": [
-          "dist/domains/planetary-interaction.d.ts",
-          "dist/options.d.ts",
-          "dist/planetary-interaction.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 571826,
-        "maximumUniqueBytes": 583263
-      }
-    },
-    "./domains/routes": {
-      "runtime": {
-        "target": "dist/domains/routes.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/routes.js",
-          "dist/request-schema.js",
-          "dist/routes.js",
-          "dist/routes2.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 390041,
-        "maximumUniqueBytes": 397842
-      },
-      "declaration": {
-        "target": "dist/domains/routes.d.ts",
-        "files": [
-          "dist/domains/routes.d.ts",
-          "dist/options.d.ts",
-          "dist/routes.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 567409,
-        "maximumUniqueBytes": 578758
-      }
-    },
-    "./domains/search": {
-      "runtime": {
-        "target": "dist/domains/search.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/search.js",
-          "dist/request-schema.js",
-          "dist/search.js",
-          "dist/search2.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 390435,
-        "maximumUniqueBytes": 398244
-      },
-      "declaration": {
-        "target": "dist/domains/search.d.ts",
-        "files": [
-          "dist/domains/search.d.ts",
-          "dist/options.d.ts",
-          "dist/search.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 567774,
-        "maximumUniqueBytes": 579130
-      }
-    },
-    "./domains/skills": {
-      "runtime": {
-        "target": "dist/domains/skills.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/skills.js",
-          "dist/request-schema.js",
-          "dist/skills.js",
-          "dist/skills2.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 394987,
-        "maximumUniqueBytes": 402887
-      },
-      "declaration": {
-        "target": "dist/domains/skills.d.ts",
-        "files": [
-          "dist/domains/skills.d.ts",
-          "dist/options.d.ts",
-          "dist/skills.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 569844,
-        "maximumUniqueBytes": 581241
-      }
-    },
-    "./domains/sovereignty": {
-      "runtime": {
-        "target": "dist/domains/sovereignty.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/sovereignty.js",
-          "dist/request-schema.js",
-          "dist/sovereignty.js",
-          "dist/sovereignty2.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 391529,
-        "maximumUniqueBytes": 399360
-      },
-      "declaration": {
-        "target": "dist/domains/sovereignty.d.ts",
-        "files": [
-          "dist/domains/sovereignty.d.ts",
-          "dist/options.d.ts",
-          "dist/sovereignty.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 568042,
-        "maximumUniqueBytes": 579403
-      }
-    },
-    "./domains/status": {
-      "runtime": {
-        "target": "dist/domains/status.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/status.js",
-          "dist/request-schema.js",
-          "dist/status.js",
-          "dist/status2.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 389209,
-        "maximumUniqueBytes": 396994
-      },
-      "declaration": {
-        "target": "dist/domains/status.d.ts",
-        "files": [
-          "dist/domains/status.d.ts",
-          "dist/options.d.ts",
-          "dist/status.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 566949,
-        "maximumUniqueBytes": 578288
-      }
-    },
-    "./domains/structures": {
-      "runtime": {
-        "target": "dist/domains/structures.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/structures.js",
-          "dist/request-schema.js",
-          "dist/structures.js",
-          "dist/structures2.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 404504,
-        "maximumUniqueBytes": 412595
-      },
-      "declaration": {
-        "target": "dist/domains/structures.d.ts",
-        "files": [
-          "dist/domains/structures.d.ts",
-          "dist/options.d.ts",
-          "dist/structures.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 575166,
-        "maximumUniqueBytes": 586670
-      }
-    },
-    "./domains/universe": {
-      "runtime": {
-        "target": "dist/domains/universe.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/universe.js",
-          "dist/request-schema.js",
-          "dist/universe.js",
-          "dist/universe2.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 449284,
-        "maximumUniqueBytes": 458270
-      },
-      "declaration": {
-        "target": "dist/domains/universe.d.ts",
-        "files": [
-          "dist/domains/universe.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts",
-          "dist/universe.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 594796,
-        "maximumUniqueBytes": 606692
-      }
-    },
-    "./domains/user-interface": {
-      "runtime": {
-        "target": "dist/domains/user-interface.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/user-interface.js",
-          "dist/request-schema.js",
-          "dist/user-interface.js",
-          "dist/user-interface2.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 398719,
-        "maximumUniqueBytes": 406694
-      },
-      "declaration": {
-        "target": "dist/domains/user-interface.d.ts",
-        "files": [
-          "dist/domains/user-interface.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts",
-          "dist/user-interface.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 571545,
-        "maximumUniqueBytes": 582976
-      }
-    },
-    "./domains/wallet": {
-      "runtime": {
-        "target": "dist/domains/wallet.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/wallet.js",
-          "dist/request-schema.js",
-          "dist/wallet.js",
-          "dist/wallet2.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 405312,
-        "maximumUniqueBytes": 413419
-      },
-      "declaration": {
-        "target": "dist/domains/wallet.d.ts",
-        "files": [
-          "dist/domains/wallet.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts",
-          "dist/wallet.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 575340,
-        "maximumUniqueBytes": 586847
-      }
-    },
-    "./domains/wars": {
-      "runtime": {
-        "target": "dist/domains/wars.js",
-        "files": [
-          "dist/configuration.js",
-          "dist/domains/wars.js",
-          "dist/request-schema.js",
-          "dist/wars.js",
-          "dist/wars2.js",
-          "dist/zod.gen.js"
-        ],
-        "externalEdges": [
-          {
-            "from": "dist/request-schema.js",
-            "specifier": "zod"
-          },
-          {
-            "from": "dist/zod.gen.js",
-            "specifier": "zod"
-          }
-        ],
-        "measuredUniqueBytes": 394063,
-        "maximumUniqueBytes": 401945
-      },
-      "declaration": {
-        "target": "dist/domains/wars.d.ts",
-        "files": [
-          "dist/domains/wars.d.ts",
-          "dist/options.d.ts",
-          "dist/types.d.ts",
-          "dist/types.gen.d.ts",
-          "dist/wars.d.ts"
-        ],
-        "externalEdges": [],
-        "measuredUniqueBytes": 568886,
-        "maximumUniqueBytes": 580264
-      }
-    }
-  },
   "allowedFiles": [
     "LICENSE",
     "README.md",
@@ -2016,5 +214,1807 @@
     "dist/zod.gen.js",
     "dist/zod.js",
     "package.json"
-  ]
+  ],
+  "policy": {
+    "byteHeadroomPercent": 2,
+    "description": "Byte maxima are accepted unique transitive measurements plus 2%; reachable files, external edges, file count, and packed paths have no headroom, so every graph or artifact change requires review.",
+    "fileCountHeadroom": 0
+  },
+  "publicEntries": {
+    ".": {
+      "declaration": {
+        "externalEdges": [
+          {
+            "from": "dist/operations.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/access-list.d.ts",
+          "dist/activities.d.ts",
+          "dist/alliance.d.ts",
+          "dist/assets.d.ts",
+          "dist/calendar.d.ts",
+          "dist/character.d.ts",
+          "dist/clones.d.ts",
+          "dist/contacts.d.ts",
+          "dist/contracts.d.ts",
+          "dist/corporation-projects.d.ts",
+          "dist/corporation.d.ts",
+          "dist/cosmetics.d.ts",
+          "dist/dogma.d.ts",
+          "dist/faction-warfare.d.ts",
+          "dist/fittings.d.ts",
+          "dist/fleets.d.ts",
+          "dist/freelance-jobs.d.ts",
+          "dist/incursions.d.ts",
+          "dist/industry.d.ts",
+          "dist/insurance.d.ts",
+          "dist/killmails.d.ts",
+          "dist/location.d.ts",
+          "dist/loyalty.d.ts",
+          "dist/mail.d.ts",
+          "dist/market.d.ts",
+          "dist/meta.d.ts",
+          "dist/military-campaigns.d.ts",
+          "dist/operations.d.ts",
+          "dist/options.d.ts",
+          "dist/paragon-hub.d.ts",
+          "dist/planetary-interaction.d.ts",
+          "dist/root.d.ts",
+          "dist/routes.d.ts",
+          "dist/search.d.ts",
+          "dist/skills.d.ts",
+          "dist/sovereignty.d.ts",
+          "dist/status.d.ts",
+          "dist/structures.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts",
+          "dist/universe.d.ts",
+          "dist/user-interface.d.ts",
+          "dist/wallet.d.ts",
+          "dist/wars.d.ts"
+        ],
+        "maximumUniqueBytes": 1003897,
+        "measuredUniqueBytes": 984212,
+        "target": "dist/root.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/access-list.js",
+          "dist/access-list2.js",
+          "dist/activities.js",
+          "dist/activities2.js",
+          "dist/alliance.js",
+          "dist/alliance2.js",
+          "dist/assets.js",
+          "dist/assets2.js",
+          "dist/calendar.js",
+          "dist/calendar2.js",
+          "dist/character.js",
+          "dist/character2.js",
+          "dist/clones.js",
+          "dist/clones2.js",
+          "dist/configuration.js",
+          "dist/contacts.js",
+          "dist/contacts2.js",
+          "dist/contracts.js",
+          "dist/contracts2.js",
+          "dist/corporation-projects.js",
+          "dist/corporation-projects2.js",
+          "dist/corporation.js",
+          "dist/corporation2.js",
+          "dist/cosmetics.js",
+          "dist/cosmetics2.js",
+          "dist/dogma.js",
+          "dist/dogma2.js",
+          "dist/faction-warfare.js",
+          "dist/faction-warfare2.js",
+          "dist/fittings.js",
+          "dist/fittings2.js",
+          "dist/fleets.js",
+          "dist/fleets2.js",
+          "dist/freelance-jobs.js",
+          "dist/freelance-jobs2.js",
+          "dist/incursions.js",
+          "dist/incursions2.js",
+          "dist/industry.js",
+          "dist/industry2.js",
+          "dist/insurance.js",
+          "dist/insurance2.js",
+          "dist/killmails.js",
+          "dist/killmails2.js",
+          "dist/location.js",
+          "dist/location2.js",
+          "dist/loyalty.js",
+          "dist/loyalty2.js",
+          "dist/mail.js",
+          "dist/mail2.js",
+          "dist/market.js",
+          "dist/market2.js",
+          "dist/meta.js",
+          "dist/meta2.js",
+          "dist/military-campaigns.js",
+          "dist/military-campaigns2.js",
+          "dist/operations.js",
+          "dist/paragon-hub.js",
+          "dist/paragon-hub2.js",
+          "dist/planetary-interaction.js",
+          "dist/planetary-interaction2.js",
+          "dist/request-schema.js",
+          "dist/root.js",
+          "dist/routes.js",
+          "dist/routes2.js",
+          "dist/search.js",
+          "dist/search2.js",
+          "dist/skills.js",
+          "dist/skills2.js",
+          "dist/sovereignty.js",
+          "dist/sovereignty2.js",
+          "dist/status.js",
+          "dist/status2.js",
+          "dist/structures.js",
+          "dist/structures2.js",
+          "dist/universe.js",
+          "dist/universe2.js",
+          "dist/user-interface.js",
+          "dist/user-interface2.js",
+          "dist/wallet.js",
+          "dist/wallet2.js",
+          "dist/wars.js",
+          "dist/wars2.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 2198837,
+        "measuredUniqueBytes": 2155722,
+        "target": "dist/root.js"
+      }
+    },
+    "./types": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/types.gen.d.ts",
+          "dist/types/index.d.ts"
+        ],
+        "maximumUniqueBytes": 696514,
+        "measuredUniqueBytes": 682856,
+        "target": "dist/types/index.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [],
+        "files": [
+          "dist/types/index.js"
+        ],
+        "maximumUniqueBytes": 0,
+        "measuredUniqueBytes": 0,
+        "target": "dist/types/index.js"
+      }
+    },
+    "./zod": {
+      "declaration": {
+        "externalEdges": [
+          {
+            "from": "dist/zod.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/zod.d.ts"
+        ],
+        "maximumUniqueBytes": 602164,
+        "measuredUniqueBytes": 590356,
+        "target": "dist/zod.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/zod.gen.js",
+          "dist/zod.js"
+        ],
+        "maximumUniqueBytes": 417500,
+        "measuredUniqueBytes": 409313,
+        "target": "dist/zod.js"
+      }
+    },
+    "./operations": {
+      "declaration": {
+        "externalEdges": [
+          {
+            "from": "dist/operations.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/operations.d.ts",
+          "dist/operations/index.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 658305,
+        "measuredUniqueBytes": 645397,
+        "target": "dist/operations/index.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/access-list.js",
+          "dist/activities.js",
+          "dist/alliance.js",
+          "dist/assets.js",
+          "dist/calendar.js",
+          "dist/character.js",
+          "dist/clones.js",
+          "dist/contacts.js",
+          "dist/contracts.js",
+          "dist/corporation-projects.js",
+          "dist/corporation.js",
+          "dist/cosmetics.js",
+          "dist/dogma.js",
+          "dist/faction-warfare.js",
+          "dist/fittings.js",
+          "dist/fleets.js",
+          "dist/freelance-jobs.js",
+          "dist/incursions.js",
+          "dist/industry.js",
+          "dist/insurance.js",
+          "dist/killmails.js",
+          "dist/location.js",
+          "dist/loyalty.js",
+          "dist/mail.js",
+          "dist/market.js",
+          "dist/meta.js",
+          "dist/military-campaigns.js",
+          "dist/operations.js",
+          "dist/operations/index.js",
+          "dist/paragon-hub.js",
+          "dist/planetary-interaction.js",
+          "dist/request-schema.js",
+          "dist/routes.js",
+          "dist/search.js",
+          "dist/skills.js",
+          "dist/sovereignty.js",
+          "dist/status.js",
+          "dist/structures.js",
+          "dist/universe.js",
+          "dist/user-interface.js",
+          "dist/wallet.js",
+          "dist/wars.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 1982377,
+        "measuredUniqueBytes": 1943506,
+        "target": "dist/operations/index.js"
+      }
+    },
+    "./domains/access-list": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/access-list.d.ts",
+          "dist/domains/access-list.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 580415,
+        "measuredUniqueBytes": 569034,
+        "target": "dist/domains/access-list.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/access-list.js",
+          "dist/access-list2.js",
+          "dist/configuration.js",
+          "dist/domains/access-list.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 403846,
+        "measuredUniqueBytes": 395927,
+        "target": "dist/domains/access-list.js"
+      }
+    },
+    "./domains/activities": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/activities.d.ts",
+          "dist/domains/activities.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 581886,
+        "measuredUniqueBytes": 570476,
+        "target": "dist/domains/activities.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/activities.js",
+          "dist/activities2.js",
+          "dist/configuration.js",
+          "dist/domains/activities.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 406724,
+        "measuredUniqueBytes": 398749,
+        "target": "dist/domains/activities.js"
+      }
+    },
+    "./domains/alliance": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/alliance.d.ts",
+          "dist/domains/alliance.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 581975,
+        "measuredUniqueBytes": 570563,
+        "target": "dist/domains/alliance.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/alliance.js",
+          "dist/alliance2.js",
+          "dist/configuration.js",
+          "dist/domains/alliance.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 407681,
+        "measuredUniqueBytes": 399687,
+        "target": "dist/domains/alliance.js"
+      }
+    },
+    "./domains/assets": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/assets.d.ts",
+          "dist/domains/assets.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 586333,
+        "measuredUniqueBytes": 574836,
+        "target": "dist/domains/assets.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/assets.js",
+          "dist/assets2.js",
+          "dist/configuration.js",
+          "dist/domains/assets.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 416514,
+        "measuredUniqueBytes": 408347,
+        "target": "dist/domains/assets.js"
+      }
+    },
+    "./domains/calendar": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/calendar.d.ts",
+          "dist/domains/calendar.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 584037,
+        "measuredUniqueBytes": 572585,
+        "target": "dist/domains/calendar.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/calendar.js",
+          "dist/calendar2.js",
+          "dist/configuration.js",
+          "dist/domains/calendar.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 410518,
+        "measuredUniqueBytes": 402468,
+        "target": "dist/domains/calendar.js"
+      }
+    },
+    "./domains/character": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/character.d.ts",
+          "dist/domains/character.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 595247,
+        "measuredUniqueBytes": 583575,
+        "target": "dist/domains/character.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/character.js",
+          "dist/character2.js",
+          "dist/configuration.js",
+          "dist/domains/character.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 436695,
+        "measuredUniqueBytes": 428132,
+        "target": "dist/domains/character.js"
+      }
+    },
+    "./domains/clones": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/clones.d.ts",
+          "dist/domains/clones.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 580174,
+        "measuredUniqueBytes": 568798,
+        "target": "dist/domains/clones.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/clones.js",
+          "dist/clones2.js",
+          "dist/configuration.js",
+          "dist/domains/clones.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 403619,
+        "measuredUniqueBytes": 395704,
+        "target": "dist/domains/clones.js"
+      }
+    },
+    "./domains/contacts": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/contacts.d.ts",
+          "dist/domains/contacts.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 590765,
+        "measuredUniqueBytes": 579181,
+        "target": "dist/domains/contacts.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/contacts.js",
+          "dist/contacts2.js",
+          "dist/domains/contacts.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 426105,
+        "measuredUniqueBytes": 417750,
+        "target": "dist/domains/contacts.js"
+      }
+    },
+    "./domains/contracts": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/contracts.d.ts",
+          "dist/domains/contracts.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 591835,
+        "measuredUniqueBytes": 580230,
+        "target": "dist/domains/contracts.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/contracts.js",
+          "dist/contracts2.js",
+          "dist/domains/contracts.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 426464,
+        "measuredUniqueBytes": 418101,
+        "target": "dist/domains/contracts.js"
+      }
+    },
+    "./domains/corporation-projects": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/corporation-projects.d.ts",
+          "dist/domains/corporation-projects.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 584569,
+        "measuredUniqueBytes": 573106,
+        "target": "dist/domains/corporation-projects.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/corporation-projects.js",
+          "dist/corporation-projects2.js",
+          "dist/domains/corporation-projects.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 411525,
+        "measuredUniqueBytes": 403455,
+        "target": "dist/domains/corporation-projects.js"
+      }
+    },
+    "./domains/corporation": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/corporation.d.ts",
+          "dist/domains/corporation.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 608112,
+        "measuredUniqueBytes": 596188,
+        "target": "dist/domains/corporation.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/corporation.js",
+          "dist/corporation2.js",
+          "dist/domains/corporation.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 463172,
+        "measuredUniqueBytes": 454090,
+        "target": "dist/domains/corporation.js"
+      }
+    },
+    "./domains/cosmetics": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/cosmetics.d.ts",
+          "dist/domains/cosmetics.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 581278,
+        "measuredUniqueBytes": 569880,
+        "target": "dist/domains/cosmetics.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/cosmetics.js",
+          "dist/cosmetics2.js",
+          "dist/domains/cosmetics.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 406252,
+        "measuredUniqueBytes": 398286,
+        "target": "dist/domains/cosmetics.js"
+      }
+    },
+    "./domains/dogma": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/dogma.d.ts",
+          "dist/domains/dogma.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 582994,
+        "measuredUniqueBytes": 571562,
+        "target": "dist/domains/dogma.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/dogma.js",
+          "dist/dogma2.js",
+          "dist/domains/dogma.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 409356,
+        "measuredUniqueBytes": 401329,
+        "target": "dist/domains/dogma.js"
+      }
+    },
+    "./domains/faction-warfare": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/faction-warfare.d.ts",
+          "dist/faction-warfare.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 585345,
+        "measuredUniqueBytes": 573867,
+        "target": "dist/domains/faction-warfare.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/faction-warfare.js",
+          "dist/faction-warfare.js",
+          "dist/faction-warfare2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 415984,
+        "measuredUniqueBytes": 407827,
+        "target": "dist/domains/faction-warfare.js"
+      }
+    },
+    "./domains/fittings": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/fittings.d.ts",
+          "dist/fittings.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 581956,
+        "measuredUniqueBytes": 570545,
+        "target": "dist/domains/fittings.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/fittings.js",
+          "dist/fittings.js",
+          "dist/fittings2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 406629,
+        "measuredUniqueBytes": 398655,
+        "target": "dist/domains/fittings.js"
+      }
+    },
+    "./domains/fleets": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/fleets.d.ts",
+          "dist/fleets.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 595226,
+        "measuredUniqueBytes": 583554,
+        "target": "dist/domains/fleets.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/fleets.js",
+          "dist/fleets.js",
+          "dist/fleets2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 434507,
+        "measuredUniqueBytes": 425987,
+        "target": "dist/domains/fleets.js"
+      }
+    },
+    "./domains/freelance-jobs": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/freelance-jobs.d.ts",
+          "dist/freelance-jobs.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 586621,
+        "measuredUniqueBytes": 575118,
+        "target": "dist/domains/freelance-jobs.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/freelance-jobs.js",
+          "dist/freelance-jobs.js",
+          "dist/freelance-jobs2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 416676,
+        "measuredUniqueBytes": 408505,
+        "target": "dist/domains/freelance-jobs.js"
+      }
+    },
+    "./domains/incursions": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/incursions.d.ts",
+          "dist/incursions.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 578556,
+        "measuredUniqueBytes": 567211,
+        "target": "dist/domains/incursions.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/incursions.js",
+          "dist/incursions.js",
+          "dist/incursions2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 400311,
+        "measuredUniqueBytes": 392461,
+        "target": "dist/domains/incursions.js"
+      }
+    },
+    "./domains/industry": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/industry.d.ts",
+          "dist/industry.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 588913,
+        "measuredUniqueBytes": 577365,
+        "target": "dist/domains/industry.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/industry.js",
+          "dist/industry.js",
+          "dist/industry2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 422285,
+        "measuredUniqueBytes": 414004,
+        "target": "dist/domains/industry.js"
+      }
+    },
+    "./domains/insurance": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/insurance.d.ts",
+          "dist/insurance.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 578617,
+        "measuredUniqueBytes": 567271,
+        "target": "dist/domains/insurance.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/insurance.js",
+          "dist/insurance.js",
+          "dist/insurance2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 400383,
+        "measuredUniqueBytes": 392532,
+        "target": "dist/domains/insurance.js"
+      }
+    },
+    "./domains/killmails": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/killmails.d.ts",
+          "dist/killmails.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 582283,
+        "measuredUniqueBytes": 570865,
+        "target": "dist/domains/killmails.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/killmails.js",
+          "dist/killmails.js",
+          "dist/killmails2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 407544,
+        "measuredUniqueBytes": 399552,
+        "target": "dist/domains/killmails.js"
+      }
+    },
+    "./domains/location": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/location.d.ts",
+          "dist/location.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 581362,
+        "measuredUniqueBytes": 569962,
+        "target": "dist/domains/location.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/location.js",
+          "dist/location.js",
+          "dist/location2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 406298,
+        "measuredUniqueBytes": 398331,
+        "target": "dist/domains/location.js"
+      }
+    },
+    "./domains/loyalty": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/loyalty.d.ts",
+          "dist/loyalty.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 580351,
+        "measuredUniqueBytes": 568971,
+        "target": "dist/domains/loyalty.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/loyalty.js",
+          "dist/loyalty.js",
+          "dist/loyalty2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 403559,
+        "measuredUniqueBytes": 395646,
+        "target": "dist/domains/loyalty.js"
+      }
+    },
+    "./domains/mail": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/mail.d.ts",
+          "dist/mail.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 590335,
+        "measuredUniqueBytes": 578759,
+        "target": "dist/domains/mail.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/mail.js",
+          "dist/mail.js",
+          "dist/mail2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 423855,
+        "measuredUniqueBytes": 415544,
+        "target": "dist/domains/mail.js"
+      }
+    },
+    "./domains/market": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/market.d.ts",
+          "dist/market.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 591239,
+        "measuredUniqueBytes": 579646,
+        "target": "dist/domains/market.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/market.js",
+          "dist/market.js",
+          "dist/market2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 427875,
+        "measuredUniqueBytes": 419485,
+        "target": "dist/domains/market.js"
+      }
+    },
+    "./domains/meta": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/meta.d.ts",
+          "dist/meta.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 580918,
+        "measuredUniqueBytes": 569527,
+        "target": "dist/domains/meta.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/meta.js",
+          "dist/meta.js",
+          "dist/meta2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 406642,
+        "measuredUniqueBytes": 398668,
+        "target": "dist/domains/meta.js"
+      }
+    },
+    "./domains/military-campaigns": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/military-campaigns.d.ts",
+          "dist/military-campaigns.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 586925,
+        "measuredUniqueBytes": 575416,
+        "target": "dist/domains/military-campaigns.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/military-campaigns.js",
+          "dist/military-campaigns.js",
+          "dist/military-campaigns2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 416600,
+        "measuredUniqueBytes": 408431,
+        "target": "dist/domains/military-campaigns.js"
+      }
+    },
+    "./domains/paragon-hub": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/paragon-hub.d.ts",
+          "dist/options.d.ts",
+          "dist/paragon-hub.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 585025,
+        "measuredUniqueBytes": 573553,
+        "target": "dist/domains/paragon-hub.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/paragon-hub.js",
+          "dist/paragon-hub.js",
+          "dist/paragon-hub2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 414241,
+        "measuredUniqueBytes": 406118,
+        "target": "dist/domains/paragon-hub.js"
+      }
+    },
+    "./domains/planetary-interaction": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/planetary-interaction.d.ts",
+          "dist/options.d.ts",
+          "dist/planetary-interaction.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 583513,
+        "measuredUniqueBytes": 572071,
+        "target": "dist/domains/planetary-interaction.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/planetary-interaction.js",
+          "dist/planetary-interaction.js",
+          "dist/planetary-interaction2.js",
+          "dist/request-schema.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 409995,
+        "measuredUniqueBytes": 401955,
+        "target": "dist/domains/planetary-interaction.js"
+      }
+    },
+    "./domains/routes": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/routes.d.ts",
+          "dist/options.d.ts",
+          "dist/routes.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 578900,
+        "measuredUniqueBytes": 567549,
+        "target": "dist/domains/routes.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/routes.js",
+          "dist/request-schema.js",
+          "dist/routes.js",
+          "dist/routes2.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 401066,
+        "measuredUniqueBytes": 393201,
+        "target": "dist/domains/routes.js"
+      }
+    },
+    "./domains/search": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/search.d.ts",
+          "dist/options.d.ts",
+          "dist/search.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 579273,
+        "measuredUniqueBytes": 567914,
+        "target": "dist/domains/search.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/search.js",
+          "dist/request-schema.js",
+          "dist/search.js",
+          "dist/search2.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 401482,
+        "measuredUniqueBytes": 393609,
+        "target": "dist/domains/search.js"
+      }
+    },
+    "./domains/skills": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/skills.d.ts",
+          "dist/options.d.ts",
+          "dist/skills.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 581456,
+        "measuredUniqueBytes": 570054,
+        "target": "dist/domains/skills.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/skills.js",
+          "dist/request-schema.js",
+          "dist/skills.js",
+          "dist/skills2.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 406404,
+        "measuredUniqueBytes": 398435,
+        "target": "dist/domains/skills.js"
+      }
+    },
+    "./domains/sovereignty": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/sovereignty.d.ts",
+          "dist/options.d.ts",
+          "dist/sovereignty.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 579582,
+        "measuredUniqueBytes": 568217,
+        "target": "dist/domains/sovereignty.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/sovereignty.js",
+          "dist/request-schema.js",
+          "dist/sovereignty.js",
+          "dist/sovereignty2.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 402709,
+        "measuredUniqueBytes": 394812,
+        "target": "dist/domains/sovereignty.js"
+      }
+    },
+    "./domains/status": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/status.d.ts",
+          "dist/options.d.ts",
+          "dist/status.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 578431,
+        "measuredUniqueBytes": 567089,
+        "target": "dist/domains/status.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/status.js",
+          "dist/request-schema.js",
+          "dist/status.js",
+          "dist/status2.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 400217,
+        "measuredUniqueBytes": 392369,
+        "target": "dist/domains/status.js"
+      }
+    },
+    "./domains/structures": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/structures.d.ts",
+          "dist/options.d.ts",
+          "dist/structures.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts"
+        ],
+        "maximumUniqueBytes": 586991,
+        "measuredUniqueBytes": 575481,
+        "target": "dist/domains/structures.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/structures.js",
+          "dist/request-schema.js",
+          "dist/structures.js",
+          "dist/structures2.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 416591,
+        "measuredUniqueBytes": 408422,
+        "target": "dist/domains/structures.js"
+      }
+    },
+    "./domains/universe": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/universe.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts",
+          "dist/universe.d.ts"
+        ],
+        "maximumUniqueBytes": 607871,
+        "measuredUniqueBytes": 595951,
+        "target": "dist/domains/universe.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/universe.js",
+          "dist/request-schema.js",
+          "dist/universe.js",
+          "dist/universe2.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 465132,
+        "measuredUniqueBytes": 456011,
+        "target": "dist/domains/universe.js"
+      }
+    },
+    "./domains/user-interface": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/user-interface.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts",
+          "dist/user-interface.d.ts"
+        ],
+        "maximumUniqueBytes": 583262,
+        "measuredUniqueBytes": 571825,
+        "target": "dist/domains/user-interface.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/user-interface.js",
+          "dist/request-schema.js",
+          "dist/user-interface.js",
+          "dist/user-interface2.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 410419,
+        "measuredUniqueBytes": 402371,
+        "target": "dist/domains/user-interface.js"
+      }
+    },
+    "./domains/wallet": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/wallet.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts",
+          "dist/wallet.d.ts"
+        ],
+        "maximumUniqueBytes": 587169,
+        "measuredUniqueBytes": 575655,
+        "target": "dist/domains/wallet.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/wallet.js",
+          "dist/request-schema.js",
+          "dist/wallet.js",
+          "dist/wallet2.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 417462,
+        "measuredUniqueBytes": 409276,
+        "target": "dist/domains/wallet.js"
+      }
+    },
+    "./domains/wars": {
+      "declaration": {
+        "externalEdges": [],
+        "files": [
+          "dist/domains/wars.d.ts",
+          "dist/options.d.ts",
+          "dist/types.d.ts",
+          "dist/types.gen.d.ts",
+          "dist/wars.d.ts"
+        ],
+        "maximumUniqueBytes": 580478,
+        "measuredUniqueBytes": 569096,
+        "target": "dist/domains/wars.d.ts"
+      },
+      "runtime": {
+        "externalEdges": [
+          {
+            "from": "dist/request-schema.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/zod.gen.js",
+            "specifier": "zod"
+          }
+        ],
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/wars.js",
+          "dist/request-schema.js",
+          "dist/wars.js",
+          "dist/wars2.js",
+          "dist/zod.gen.js"
+        ],
+        "maximumUniqueBytes": 405419,
+        "measuredUniqueBytes": 397469,
+        "target": "dist/domains/wars.js"
+      }
+    }
+  },
+  "schemaVersion": 2,
+  "totals": {
+    "compressedBytes": {
+      "maximum": 364246,
+      "measured": 357103
+    },
+    "unpackedBytes": {
+      "maximum": 4089178,
+      "measured": 4008998
+    },
+    "javascriptBytes": {
+      "maximum": 2296846,
+      "measured": 2251809
+    },
+    "declarationBytes": {
+      "maximum": 1766474,
+      "measured": 1731837
+    },
+    "fileCount": {
+      "maximum": 214,
+      "measured": 214
+    }
+  }
 }

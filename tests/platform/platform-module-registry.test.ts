@@ -2703,20 +2703,14 @@ function permissionDeclaration(
 function executableOperationPolicy() {
   return {
     audit: { reviewedDate: '2026-08-18' },
-    authorization: { kind: 'public' },
     cache: {
       collapse: true,
       kind: 'shared',
       retentionMilliseconds: 60_000,
-      revalidate: true,
       stale: { kind: 'none' },
     },
-    compatibility: { minimumDate: '2026-01-01' },
-    freshness: { kind: 'relative', seconds: 60 },
     identity: { fields: ['subjectId'], kind: 'ordered' },
-    rateGroup: { kind: 'legacy-only' },
     representationVersion: 'v1',
-    responseValidation: { kind: 'enabled' },
     retry: { kind: 'none' },
   } as const
 }

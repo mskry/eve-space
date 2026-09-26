@@ -192,7 +192,13 @@ export type PlatformCollectionStatus =
       readonly status: 'authorization-required'
       readonly lastFailureClass: 'authorization-required'
       readonly requiredScope: string
-      readonly reauthorizationPath: string
+      readonly authorizationReason?:
+        | 'scope-missing'
+        | 'role-unsatisfied'
+        | 'role-evidence-unavailable'
+        | 'source-invalid'
+      readonly requiredRolePredicates?: readonly string[]
+      readonly reauthorizationPath?: string
     })
 
 export type PlatformCollectionStatusSubject =

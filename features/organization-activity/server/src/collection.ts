@@ -12,18 +12,58 @@ import {
 import type {
   ActivityResourceProfile,
   ActivityObservation,
+  Checkpoint,
   CollectedSnapshot,
 } from './collection-types.js'
 import { readActivityCheckpoint, type ActivityCollectionContext } from './collection-store.js'
+
+type StoredActivityCheckpoint = Awaited<ReturnType<typeof readActivityCheckpoint>>
+
+const resetActivityObservation = (
+  profile: ActivityResourceProfile,
+  context: ActivityCollectionContext,
+  stored: StoredActivityCheckpoint,
+) => ({
+  complete: false,
+  data: {
+    checkpoint: {
+      authorityBinding: stored.authorityBinding,
+      cursors: {},
+      initialized: false,
+      requests: [],
+      retainedIds: [],
+      retainedCampaignIds: [],
+    },
+    expectedRevision: stored.expectedRevision,
+    organizationVersion: context.organizationVersion,
+    resourceId: profile.id,
+    snapshots: [],
+  } satisfies ActivityObservation,
+})
+
+const workingCheckpoint = (stored: StoredActivityCheckpoint): Checkpoint => {
+  if (stored.checkpoint?.initialized) return stored.checkpoint
+  return {
+    authorityBinding: stored.authorityBinding,
+    cursors: stored.checkpoint?.cursors ?? {},
+    initialized: false,
+    requests: stored.checkpoint?.requests ?? [],
+  }
+}
+
+const initialRetention = (checkpoint: Checkpoint) => ({
+  retainedIds: checkpoint.initialized ? checkpoint.retainedIds : undefined,
+  retainedCampaignIds: checkpoint.initialized ? checkpoint.retainedCampaignIds : undefined,
+})
 
 export async function collectActivityResource(
   profile: ActivityResourceProfile,
   context: ActivityCollectionContext,
 ) {
   const stored = await readActivityCheckpoint(profile.id, context)
-  const checkpoint = stored?.checkpoint ?? { cursors: {}, initialized: false, requests: [] }
-  let retainedIds: readonly string[] | undefined = checkpoint.retainedIds
-  let retainedCampaignIds: readonly string[] | undefined = checkpoint.retainedCampaignIds
+  if (stored.needsReset) return resetActivityObservation(profile, context, stored)
+  const checkpoint = workingCheckpoint(stored)
+  let { retainedIds, retainedCampaignIds } = initialRetention(checkpoint)
   const cursors = { ...checkpoint.cursors }
   const requests = [...checkpoint.requests]
   const snapshots: CollectedSnapshot[] = []
@@ -64,8 +104,15 @@ export async function collectActivityResource(
   return {
     complete: requests.length === 0,
     data: {
-      checkpoint: { cursors, initialized: true, requests, retainedCampaignIds, retainedIds },
-      expectedRevision: stored?.revision ?? 0,
+      checkpoint: {
+        ...(checkpoint.authorityBinding && { authorityBinding: checkpoint.authorityBinding }),
+        cursors,
+        initialized: true,
+        requests,
+        ...(retainedCampaignIds !== undefined && { retainedCampaignIds }),
+        ...(retainedIds !== undefined && { retainedIds }),
+      },
+      expectedRevision: stored.expectedRevision,
       organizationVersion: context.organizationVersion,
       resourceId: profile.id,
       snapshots,

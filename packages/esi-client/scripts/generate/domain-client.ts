@@ -490,6 +490,9 @@ export const ${entry.descriptorName}: OperationExecutionDescriptor<${entry.argum
   requestBody: ${requestBody},
   requestSchema: ${entry.schemaName}RequestSchema,
   authentication: ${authentication},
+  requestSubjectBindings: ${JSON.stringify(entry.operation.requestSubjectBindings)},
+  requiredRoles: ${JSON.stringify(entry.operation.requiredRoles)},
+  minimumCompatibilityDate: ${JSON.stringify(entry.operation.minimumCompatibilityDate)},
   protocol: ${JSON.stringify(operationProtocolFacts(entry.operation))},
   successResponses: [
 ${responses.join('\n')}

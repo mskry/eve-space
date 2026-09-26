@@ -53,7 +53,7 @@ export async function recordEsiRateMeasurement(
   if (!rateLimit) {
     return
   }
-  const scope = contract.authorization.kind === 'character' ? 'character' : 'public'
+  const scope = contract.authorization.kind === 'oauth' ? 'character' : 'public'
   if (scope === 'character' && !options.principal) {
     return
   }
@@ -105,9 +105,7 @@ export async function readEsiRateMeasurement(
         operation,
         rateLimit,
         scope:
-          contract.authorization.kind === 'character'
-            ? ('character' as const)
-            : ('public' as const),
+          contract.authorization.kind === 'oauth' ? ('character' as const) : ('public' as const),
       },
     ]
   })

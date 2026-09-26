@@ -69,6 +69,28 @@ target, authorization checks, protected-query lifecycle, workspace navigation, a
 asynchronous states. A panel receives only its bounded target and contribution capabilities; it must
 not dispatch arbitrary operations or read another module's storage.
 
+### ESI Resources And Continuations
+
+Declare an executable ESI operation by its generated SDK identity and application-owned identity,
+cache-retention, freshness exception, retry, representation-version, and review inputs. The host
+derives public/OAuth authority, request subjects, scope, reviewed role predicate, rate group,
+compatibility date, request/response schemas, and revalidation from that descriptor. A resource's
+subject and eligibility determine its credential binding: current owned character (including
+corporation inputs bound to current affiliation), current managed-member character with its section
+and disclosure admission, or the exact current managed-corporation source. A role-free OAuth
+operation requires no unrelated role evidence. EVE roles and OAuth scopes grant no module route or
+application permission; credentials and raw role arrays never enter the module capability.
+
+Queued resource jobs carry stable identities and acquire current authority at execution. A managed-
+corporation collection receives only a versioned opaque `continuationAuthorityBinding`, not its source,
+affiliation, generation, requirement, or role-revision components. Persist it inside the checkpoint.
+Resume progress only when the stored binding matches; always retain the stored revision even when
+progress is unusable. On a positive-revision mismatch, persist an incomplete no-ESI reset with empty
+requests, `initialized: false`, and empty retention sets at that revision, so the existing atomic
+retention path removes old-authority snapshots. Consume those empty sets as one-shot deletion
+instructions: preserve the new binding and revision, but remove both fields before fresh requests.
+Final module writes and collection success still require the platform's transactional authority fence.
+
 ## Conformance And Release
 
 Run source and package checks in the publisher repository. A source-and-installed-package config can

@@ -102,6 +102,9 @@ export const GetCharactersCharacterIdAgentsResearchDescriptor: OperationExecutio
   requestBody: null,
   requestSchema: GetCharactersCharacterIdAgentsResearchRequestSchema,
   authentication: { scopes: ["esi-characters.read_agents_research.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-industry","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdAgentsResearchResponse },
@@ -128,6 +131,9 @@ export const PostCharactersCharacterIdCspaDescriptor: OperationExecutionDescript
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostCharactersCharacterIdCspaRequestSchema,
   authentication: { scopes: ["esi-characters.read_contacts.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":100,"rateLimit":{"group":"char-detail","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[{"location":"body","maximumItems":100,"path":[]}]},
   successResponses: [
     { status: 201, body: 'json', schema: zPostCharactersCharacterIdCspaResponse },
@@ -153,6 +159,9 @@ export const GetCharactersCharacterIdRolesDescriptor: OperationExecutionDescript
   requestBody: null,
   requestSchema: GetCharactersCharacterIdRolesRequestSchema,
   authentication: { scopes: ["esi-characters.read_corporation_roles.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-detail","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdRolesResponse },
@@ -178,6 +187,9 @@ export const GetCharactersCharacterIdFatigueDescriptor: OperationExecutionDescri
   requestBody: null,
   requestSchema: GetCharactersCharacterIdFatigueRequestSchema,
   authentication: { scopes: ["esi-characters.read_fatigue.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-location","kind":"declared","maximumTokens":1200,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdFatigueResponse },
@@ -203,6 +215,9 @@ export const GetCharactersCharacterIdPortraitDescriptor: OperationExecutionDescr
   requestBody: null,
   requestSchema: GetCharactersCharacterIdPortraitRequestSchema,
   authentication: null,
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-detail","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdPortraitResponse },
@@ -228,6 +243,9 @@ export const GetCharactersDetailDescriptor: OperationExecutionDescriptor<Operati
   requestBody: null,
   requestSchema: GetCharactersDetailRequestSchema,
   authentication: null,
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2026-06-09",
   protocol: {"cache":{"extensions":{"x-cache-age":86400,"x-cache-mode":"ttl-based","x-client-cache-ttl":86400,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":86400},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersDetailResponse },
@@ -255,6 +273,9 @@ export const GetCharactersCharacterIdBlueprintsDescriptor: OperationExecutionDes
   requestBody: null,
   requestSchema: GetCharactersCharacterIdBlueprintsRequestSchema,
   authentication: { scopes: ["esi-characters.read_blueprints.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-industry","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdBlueprintsResponse },
@@ -280,6 +301,9 @@ export const GetCharactersCharacterIdNotificationsContactsDescriptor: OperationE
   requestBody: null,
   requestSchema: GetCharactersCharacterIdNotificationsContactsRequestSchema,
   authentication: { scopes: ["esi-characters.read_notifications.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":600,"x-client-cache-ttl":600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-social","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdNotificationsContactsResponse },
@@ -305,6 +329,9 @@ export const GetCharactersCharacterIdCorporationhistoryDescriptor: OperationExec
   requestBody: null,
   requestSchema: GetCharactersCharacterIdCorporationhistoryRequestSchema,
   authentication: null,
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":86400,"x-client-cache-ttl":86400,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":86400},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdCorporationhistoryResponse },
@@ -330,6 +357,9 @@ export const GetCharactersCharacterIdTitlesDescriptor: OperationExecutionDescrip
   requestBody: null,
   requestSchema: GetCharactersCharacterIdTitlesRequestSchema,
   authentication: { scopes: ["esi-characters.read_titles.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-detail","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdTitlesResponse },
@@ -355,6 +385,9 @@ export const GetCharactersCharacterIdMedalsDescriptor: OperationExecutionDescrip
   requestBody: null,
   requestSchema: GetCharactersCharacterIdMedalsRequestSchema,
   authentication: { scopes: ["esi-characters.read_medals.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-detail","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdMedalsResponse },
@@ -380,6 +413,9 @@ export const GetCharactersCharacterIdNotificationsDescriptor: OperationExecution
   requestBody: null,
   requestSchema: GetCharactersCharacterIdNotificationsRequestSchema,
   authentication: { scopes: ["esi-characters.read_notifications.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":600,"x-client-cache-ttl":600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-notification","kind":"declared","maximumTokens":15,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdNotificationsResponse },
@@ -405,6 +441,9 @@ export const GetCharactersCharacterIdStandingsDescriptor: OperationExecutionDesc
   requestBody: null,
   requestSchema: GetCharactersCharacterIdStandingsRequestSchema,
   authentication: { scopes: ["esi-characters.read_standings.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-social","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdStandingsResponse },
@@ -429,6 +468,9 @@ export const PostCharactersAffiliationDescriptor: OperationExecutionDescriptor<O
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostCharactersAffiliationRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":1000,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[{"location":"body","maximumItems":1000,"path":[]}]},
   successResponses: [
     { status: 200, body: 'json', schema: zPostCharactersAffiliationResponse },

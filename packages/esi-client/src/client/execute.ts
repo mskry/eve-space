@@ -79,6 +79,9 @@ export interface OperationExecutionDescriptor<
   TResponse = unknown,
 > extends ExecutableOperationDescriptor<TArguments> {
   readonly authentication: OperationAuthentication | null;
+  readonly requestSubjectBindings: readonly ('character_id' | 'corporation_id')[];
+  readonly requiredRoles: readonly string[];
+  readonly minimumCompatibilityDate: string | null;
   readonly protocol: OperationProtocolDescriptor;
   readonly successResponses: readonly OperationSuccessResponse<TResponse>[];
   readonly transport?: OperationTransportDescriptor;

@@ -38,6 +38,9 @@ export const PostRouteDescriptor: OperationExecutionDescriptor<OperationArgument
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostRouteRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2025-09-30",
   protocol: {"cache":{"extensions":{"x-cache-mode":"not-cached","x-server-cache-mode":"not-cached"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"routes","kind":"declared","maximumTokens":3600,"window":"15m"},"requestArrayLimits":[{"location":"body","maximumItems":1000,"path":["avoid_systems"]},{"location":"body","maximumItems":1000,"path":["connections"]}]},
   successResponses: [
     { status: 200, body: 'json', schema: zPostRouteResponse },

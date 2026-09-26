@@ -11,6 +11,8 @@ export const reviewedCorporationRolePredicates = [
   'director',
   'accountant',
   'factory-manager',
+  'station-manager',
+  'project-manager',
 ] as const
 export type ReviewedCorporationRolePredicate = (typeof reviewedCorporationRolePredicates)[number]
 
@@ -23,6 +25,8 @@ const predicateRequirements: Record<
   accountant: { location: 'roles', role: 'Accountant' },
   director: { location: 'roles', role: 'Director' },
   'factory-manager': { location: 'roles', role: 'Factory_Manager' },
+  'station-manager': { location: 'roles', role: 'Station_Manager' },
+  'project-manager': { location: 'roles', role: 'Project_Manager' },
 }
 
 const reviewedPredicateSet: ReadonlySet<string> = new Set(reviewedCorporationRolePredicates)
@@ -91,6 +95,8 @@ export const evaluateReviewedCorporationRolePredicates = (
   accountant: evaluateCorporationRolePredicate(sets, 'accountant'),
   director: evaluateCorporationRolePredicate(sets, 'director'),
   'factory-manager': evaluateCorporationRolePredicate(sets, 'factory-manager'),
+  'station-manager': evaluateCorporationRolePredicate(sets, 'station-manager'),
+  'project-manager': evaluateCorporationRolePredicate(sets, 'project-manager'),
 })
 
 export const resolveCorporationRoleRevision = (input: {

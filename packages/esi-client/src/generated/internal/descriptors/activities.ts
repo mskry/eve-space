@@ -45,6 +45,9 @@ export const GetCharactersMercenaryTacticalOperationsDetailDescriptor: Operation
   requestBody: null,
   requestSchema: GetCharactersMercenaryTacticalOperationsDetailRequestSchema,
   authentication: { scopes: ["esi-activities.read_character.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2026-05-19",
   protocol: {"cache":{"extensions":{"x-cache-age":300,"x-cache-mode":"event-based","x-client-cache-ttl":300,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-activity","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersMercenaryTacticalOperationsDetailResponse },
@@ -70,6 +73,9 @@ export const GetCharactersMercenaryTacticalOperationsListingDescriptor: Operatio
   requestBody: null,
   requestSchema: GetCharactersMercenaryTacticalOperationsListingRequestSchema,
   authentication: { scopes: ["esi-activities.read_character.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2026-05-19",
   protocol: {"cache":{"extensions":{"x-cache-age":300,"x-cache-mode":"event-based","x-client-cache-ttl":300,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-activity","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersMercenaryTacticalOperationsListingResponse },
@@ -93,6 +99,9 @@ export const GetSkyhooksRaidableDescriptor: OperationExecutionDescriptor<Operati
   requestBody: null,
   requestSchema: GetSkyhooksRaidableRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2026-05-19",
   protocol: {"cache":{"extensions":{"x-cache-age":300,"x-cache-mode":"ttl-based","x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":60},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"activity","kind":"declared","maximumTokens":30,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetSkyhooksRaidableResponse },

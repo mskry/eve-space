@@ -256,14 +256,9 @@ export const statusOperation = definePlatformExecutableEsiOperation({
   policy: {
     audit: { reviewedDate: '2026-09-06' },
     representationVersion: 'v1',
-    authorization: { kind: 'public' },
     identity: { kind: 'ordered', fields: [] },
-    freshness: { kind: 'relative', seconds: 60 },
     cache: { kind: 'none' },
-    rateGroup: { kind: 'legacy-only' },
     retry: { kind: 'none' },
-    compatibility: { minimumDate: '2026-09-01' },
-    responseValidation: { kind: 'enabled' },
   },
 })
 

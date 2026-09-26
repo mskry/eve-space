@@ -1,6 +1,48 @@
+export const platformEsiRequestSubjects = ['character_id', 'corporation_id'] as const
+export type PlatformEsiRequestSubject = (typeof platformEsiRequestSubjects)[number]
+
+export const platformEsiRolePredicates = [
+  'director',
+  'accountant',
+  'factory-manager',
+  'station-manager',
+  'project-manager',
+] as const
+export type PlatformEsiRolePredicate = (typeof platformEsiRolePredicates)[number]
+
+const reviewedOperationRoles = new Map<string, PlatformEsiRolePredicate>([
+  ['Accountant', 'accountant'],
+  ['Director', 'director'],
+  ['Factory_Manager', 'factory-manager'],
+  ['Project_Manager', 'project-manager'],
+  ['Station_Manager', 'station-manager'],
+])
+
+export const resolveOperationRolePredicate = (
+  requiredRoles: readonly string[],
+): PlatformEsiRolePredicate | null => {
+  if (requiredRoles.length === 0) return null
+  if (new Set(requiredRoles).size !== requiredRoles.length) {
+    throw new Error('Duplicate generated operation role inventory')
+  }
+  const key = [...requiredRoles].toSorted((a, b) => a.localeCompare(b)).join(',')
+  const predicate = reviewedOperationRoles.get(key)
+  if (!predicate) throw new Error(`Unsupported generated operation role inventory: ${key}`)
+  return predicate
+}
+
 export type PlatformEsiAuthorizationContract =
-  | { readonly kind: 'public' }
-  | { readonly kind: 'character'; readonly scope: string }
+  | {
+      readonly kind: 'public'
+      readonly subjectBindings: readonly PlatformEsiRequestSubject[]
+      readonly requiredRolePredicate: null
+    }
+  | {
+      readonly kind: 'oauth'
+      readonly scope: string
+      readonly subjectBindings: readonly PlatformEsiRequestSubject[]
+      readonly requiredRolePredicate: PlatformEsiRolePredicate | null
+    }
 
 export type PlatformEsiIdentityContract =
   | {

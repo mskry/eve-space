@@ -1,9 +1,11 @@
-import type {
-  PlatformEsiFreshnessContract,
-  PlatformEsiIdentityContract,
-  PlatformEsiOperationContract,
-  PlatformEsiResponseValidationContract,
-  PlatformEsiRetryContract,
+import {
+  resolveOperationRolePredicate,
+  type PlatformEsiRequestSubject,
+  type PlatformEsiFreshnessContract,
+  type PlatformEsiIdentityContract,
+  type PlatformEsiOperationContract,
+  type PlatformEsiResponseValidationContract,
+  type PlatformEsiRetryContract,
 } from '@eve-space/platform-module-contract/esi'
 import {
   esiMetadataReview,
@@ -148,7 +150,12 @@ export function defineContract<
       esiOperationId: metadata.esiOperationId,
       reviewedDate: esiMetadataReview.resolvedCompatibilityDate,
     },
-    authorization: resolveAuthorization(operation, generated.authenticationScopes),
+    authorization: resolveAuthorization(
+      operation,
+      generated.authenticationScopes,
+      generated.requestSubjectBindings,
+      generated.requiredRoles,
+    ),
     cache:
       options.cache.kind === 'shared'
         ? { ...options.cache, revalidate: generated.supportsConditionalRequests }
@@ -243,12 +250,21 @@ function resolveIdentity(
   return { ...identity, maximumItems: maximumBatchSize }
 }
 
-function resolveAuthorization(operation: string, scopes: readonly string[]) {
+function resolveAuthorization(
+  operation: string,
+  scopes: readonly string[],
+  subjectBindings: readonly PlatformEsiRequestSubject[],
+  requiredRoles: readonly string[],
+) {
+  const requiredRolePredicate = resolveOperationRolePredicate(requiredRoles)
   if (scopes.length === 0) {
-    return { kind: 'public' } as const
+    if (requiredRolePredicate !== null) {
+      throw new Error(`Public ESI operation ${operation} cannot require corporation roles`)
+    }
+    return { kind: 'public', subjectBindings, requiredRolePredicate: null } as const
   }
   if (scopes.length !== 1) {
     throw new Error(`ESI operation ${operation} does not declare exactly one authorization scope`)
   }
-  return { kind: 'character', scope: scopes[0]! } as const
+  return { kind: 'oauth', scope: scopes[0]!, subjectBindings, requiredRolePredicate } as const
 }

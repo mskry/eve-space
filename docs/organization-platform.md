@@ -219,6 +219,17 @@ conditions, not EVE Space organization roles. Each private character or corporat
 exact registered data-source or selected owned character; another attached character's token or scope
 must never be substituted.
 
+Installed operations preserve generated request subjects and exact OAuth scope separately from
+credential binding. The shared corporation project-list operation therefore uses an owned character's
+current corporation for character projects and the exact managed source for corporation projects.
+Corporation freelance jobs additionally require fresh source-bound `Project_Manager` evidence;
+stale/degraded evidence is unavailable rather than proof of role loss. Source, affiliation, token,
+scope, requirement, and semantic role-revision changes obsolete in-flight work. Queue entries remain
+reconciliation requests with stable identities only. Managed-corporation checkpoints persist a
+versioned opaque authority binding, retain a positive storage revision across mismatches, and use an
+incomplete no-ESI reset to prune old-authority snapshots before fresh collection. Reset-only empty
+retention sets are removed before new snapshots are promoted under the transactional fence.
+
 ## Pre-Release Rollout
 
 1. Back up PostgreSQL and the dedicated Queue Redis AOF, verify restore procedures, and record the

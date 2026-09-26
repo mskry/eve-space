@@ -112,7 +112,7 @@ interface EsiCacheDependencyTelemetry extends EsiDependencyTelemetry {
 interface EsiUpstreamOperationTelemetry {
   operation: EsiOperation
   policy: {
-    authorization: EsiOperationContract['authorization']['kind']
+    authorization: 'public' | 'character'
     cache: EsiOperationContract['cache']['kind']
     freshness: EsiOperationContract['freshness']['kind']
     rateGroup: EsiOperationContract['rateGroup']['kind']
@@ -358,7 +358,7 @@ function coordinationTelemetry(available: boolean, checkedAt: string) {
 
 function operationPolicy(policy: EsiOperationContract): EsiUpstreamOperationTelemetry['policy'] {
   return {
-    authorization: policy.authorization.kind,
+    authorization: policy.authorization.kind === 'oauth' ? 'character' : 'public',
     cache: policy.cache.kind,
     declaredRateGroup: getDeclaredEsiRateLimit(policy)?.group ?? null,
     freshness: policy.freshness.kind,

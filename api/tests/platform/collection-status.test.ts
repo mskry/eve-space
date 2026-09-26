@@ -103,12 +103,43 @@ describe('platform collection status', () => {
       }),
     ).resolves.toStrictEqual({
       authorizationGeneration: 4,
+      authorizationReason: 'scope-missing',
       lastFailureClass: 'authorization-required',
       reauthorizationPath: '/auth/eve/reauthorize/1404328063',
       requiredScope: 'esi-wallet.read_character_wallet.v1',
       status: 'authorization-required',
       validatedAt: null,
     })
+  })
+
+  test('reports reviewed role and source failures without OAuth remediation or observed roles', async () => {
+    for (const authorizationReason of [
+      'role-unsatisfied',
+      'role-evidence-unavailable',
+      'source-invalid',
+    ] as const) {
+      const status = await getInstalledResourceCollectionStatus(identity, {
+        resolveEligibility: vi.fn().mockResolvedValue({
+          status: 'authorization-required',
+          authorizationReason,
+          authorizationGeneration: 4,
+          requiredScope: 'esi-corporations.read_freelance_jobs.v1',
+          ...(authorizationReason !== 'source-invalid' && {
+            requiredRolePredicates: ['project-manager'],
+          }),
+          dueReason: null,
+          schedulingKey: null,
+          nextEligibleAt: null,
+          validatedAt: null,
+          lastFailureClass: null,
+        }),
+        resources: [resource],
+      })
+      expect(status).toMatchObject({ status: 'authorization-required', authorizationReason })
+      expect(status).not.toHaveProperty('reauthorizationPath')
+      expect(JSON.stringify(status)).not.toContain('Project_Manager')
+      expect(status).not.toHaveProperty('roleRevision')
+    }
   })
 
   test('retains the last safe validation time when a resource becomes unavailable', async () => {

@@ -2,7 +2,6 @@ import { Hono, type Context } from 'hono'
 import { z } from 'zod'
 import { zValidator } from '../http/validation.js'
 import type { OrganizationSessionEnv } from '../middleware/organization-session.js'
-import { reviewedCorporationRolePredicates } from '../characters/corporation-role-canonical.js'
 import { organizationAuditReasonSchema } from './audit.js'
 import { OrganizationGroupMutationError } from './group-mutation-error.js'
 import {
@@ -16,6 +15,7 @@ import {
   reviseOrganizationGroupRule,
 } from './group-rule-store.js'
 import { requireFreshOrganizationOwner, requireTrustedOrigin } from './route-middleware.js'
+import { organizationRuleRolePredicates } from './rule-policy.js'
 
 const conditionSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('registration-compliant') }).strict(),
@@ -23,7 +23,7 @@ const conditionSchema = z.discriminatedUnion('kind', [
   z
     .object({
       kind: z.literal('corporation-role'),
-      predicate: z.enum(reviewedCorporationRolePredicates),
+      predicate: z.enum(organizationRuleRolePredicates),
     })
     .strict(),
 ])

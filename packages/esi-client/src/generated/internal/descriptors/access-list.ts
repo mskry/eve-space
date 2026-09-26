@@ -41,6 +41,9 @@ export const GetCharactersAccessListsDetailDescriptor: OperationExecutionDescrip
   requestBody: null,
   requestSchema: GetCharactersAccessListsDetailRequestSchema,
   authentication: { scopes: ["esi-access.read_lists.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2026-05-19",
   protocol: {"cache":{"extensions":{"x-cache-age":300,"x-cache-mode":"event-based","x-client-cache-ttl":300,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-access","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersAccessListsDetailResponse },
@@ -66,6 +69,9 @@ export const GetCharactersAccessListsListingDescriptor: OperationExecutionDescri
   requestBody: null,
   requestSchema: GetCharactersAccessListsListingRequestSchema,
   authentication: { scopes: ["esi-access.read_lists.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2026-05-19",
   protocol: {"cache":{"extensions":{"x-cache-age":300,"x-cache-mode":"event-based","x-client-cache-ttl":300,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-access","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersAccessListsListingResponse },

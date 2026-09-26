@@ -149,6 +149,9 @@ export const GetCorporationsCorporationIdIconsDescriptor: OperationExecutionDesc
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdIconsRequestSchema,
   authentication: null,
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdIconsResponse },
@@ -174,6 +177,9 @@ export const GetCorporationsCorporationIdMembersLimitDescriptor: OperationExecut
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdMembersLimitRequestSchema,
   authentication: { scopes: ["esi-corporations.track_members.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-member","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdMembersLimitResponse },
@@ -199,6 +205,9 @@ export const GetCorporationsCorporationIdDescriptor: OperationExecutionDescripto
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2026-07-21",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-cache-mode":"ttl-based","x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdResponse },
@@ -227,6 +236,9 @@ export const GetCorporationsCorporationIdStarbasesStarbaseIdDescriptor: Operatio
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdStarbasesStarbaseIdRequestSchema,
   authentication: { scopes: ["esi-corporations.read_starbases.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-structure","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdStarbasesStarbaseIdResponse },
@@ -252,6 +264,9 @@ export const GetCorporationsCorporationIdAlliancehistoryDescriptor: OperationExe
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdAlliancehistoryRequestSchema,
   authentication: null,
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdAlliancehistoryResponse },
@@ -279,6 +294,9 @@ export const GetCorporationsCorporationIdContainersLogsDescriptor: OperationExec
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdContainersLogsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_container_logs.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":600,"x-client-cache-ttl":600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-structure","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdContainersLogsResponse },
@@ -306,6 +324,9 @@ export const GetCorporationsCorporationIdBlueprintsDescriptor: OperationExecutio
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdBlueprintsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_blueprints.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-industry","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdBlueprintsResponse },
@@ -331,6 +352,9 @@ export const GetCorporationsCorporationIdDivisionsDescriptor: OperationExecution
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdDivisionsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_divisions.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-wallet","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdDivisionsResponse },
@@ -356,6 +380,9 @@ export const GetCorporationsCorporationIdFacilitiesDescriptor: OperationExecutio
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdFacilitiesRequestSchema,
   authentication: { scopes: ["esi-corporations.read_facilities.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Factory_Manager"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-structure","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdFacilitiesResponse },
@@ -383,6 +410,9 @@ export const GetCorporationsCorporationIdMedalsIssuedDescriptor: OperationExecut
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdMedalsIssuedRequestSchema,
   authentication: { scopes: ["esi-corporations.read_medals.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-detail","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdMedalsIssuedResponse },
@@ -410,6 +440,9 @@ export const GetCorporationsCorporationIdMedalsDescriptor: OperationExecutionDes
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdMedalsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_medals.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-detail","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdMedalsResponse },
@@ -437,6 +470,9 @@ export const GetCorporationsCorporationIdRolesHistoryDescriptor: OperationExecut
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdRolesHistoryRequestSchema,
   authentication: { scopes: ["esi-corporations.read_corporation_membership.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-member","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdRolesHistoryResponse },
@@ -462,6 +498,9 @@ export const GetCorporationsCorporationIdRolesDescriptor: OperationExecutionDesc
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdRolesRequestSchema,
   authentication: { scopes: ["esi-corporations.read_corporation_membership.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-member","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdRolesResponse },
@@ -487,6 +526,9 @@ export const GetCorporationsCorporationIdMembersTitlesDescriptor: OperationExecu
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdMembersTitlesRequestSchema,
   authentication: { scopes: ["esi-corporations.read_titles.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-member","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdMembersTitlesResponse },
@@ -512,6 +554,9 @@ export const GetCorporationsCorporationIdMembertrackingDescriptor: OperationExec
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdMembertrackingRequestSchema,
   authentication: { scopes: ["esi-corporations.track_members.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-member","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdMembertrackingResponse },
@@ -537,6 +582,9 @@ export const GetCorporationsCorporationIdMembersDescriptor: OperationExecutionDe
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdMembersRequestSchema,
   authentication: { scopes: ["esi-corporations.read_corporation_membership.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-member","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdMembersResponse },
@@ -560,6 +608,9 @@ export const GetCorporationsNpccorpsDescriptor: OperationExecutionDescriptor<Ope
   requestBody: null,
   requestSchema: GetCorporationsNpccorpsRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsNpccorpsResponse },
@@ -587,6 +638,9 @@ export const GetCorporationsCorporationIdShareholdersDescriptor: OperationExecut
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdShareholdersRequestSchema,
   authentication: { scopes: ["esi-wallet.read_corporation_wallets.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-detail","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdShareholdersResponse },
@@ -614,6 +668,9 @@ export const GetCorporationsCorporationIdStandingsDescriptor: OperationExecution
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdStandingsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_standings.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-member","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdStandingsResponse },
@@ -641,6 +698,9 @@ export const GetCorporationsCorporationIdStarbasesDescriptor: OperationExecution
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdStarbasesRequestSchema,
   authentication: { scopes: ["esi-corporations.read_starbases.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-structure","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdStarbasesResponse },
@@ -668,6 +728,9 @@ export const GetCorporationsCorporationIdStructuresDescriptor: OperationExecutio
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdStructuresRequestSchema,
   authentication: { scopes: ["esi-corporations.read_structures.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Station_Manager"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-structure","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdStructuresResponse },
@@ -693,6 +756,9 @@ export const GetCorporationsCorporationIdTitlesDescriptor: OperationExecutionDes
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdTitlesRequestSchema,
   authentication: { scopes: ["esi-corporations.read_titles.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-detail","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdTitlesResponse },

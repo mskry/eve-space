@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { platformEsiRolePredicates } from '@eve-space/platform-module-contract/esi'
 import {
   canonicalizeCorporationRoleSets,
   classifyCorporationRoleTransition,
@@ -18,6 +19,20 @@ const sets = (overrides: Partial<CorporationRoleSets> = {}): CorporationRoleSets
 })
 
 describe('corporation-role canonicalization', () => {
+  test('evaluates every reviewed operation predicate through the character-owned evaluator', () => {
+    for (const predicate of platformEsiRolePredicates) {
+      expect(isReviewedCorporationRolePredicate(predicate)).toBe(true)
+    }
+    expect(
+      evaluateCorporationRolePredicate(sets({ roles: ['Project_Manager'] }), 'project-manager'),
+    ).toBe(true)
+    expect(
+      evaluateCorporationRolePredicate(
+        sets({ rolesAtBase: ['Station_Manager'] }),
+        'station-manager',
+      ),
+    ).toBe(false)
+  })
   test('sorts by code unit and deduplicates every role location', () => {
     expect(
       canonicalizeCorporationRoleSets({
@@ -56,10 +71,22 @@ describe('corporation-role canonicalization', () => {
     expect(
       evaluateReviewedCorporationRolePredicates(
         sets({
-          roles: ['Director', 'Accountant', 'Factory_Manager'],
+          roles: [
+            'Director',
+            'Accountant',
+            'Factory_Manager',
+            'Station_Manager',
+            'Project_Manager',
+          ],
         }),
       ),
-    ).toStrictEqual({ accountant: true, director: true, 'factory-manager': true })
+    ).toStrictEqual({
+      accountant: true,
+      director: true,
+      'factory-manager': true,
+      'station-manager': true,
+      'project-manager': true,
+    })
     expect(
       evaluateReviewedCorporationRolePredicates(
         sets({
@@ -68,7 +95,13 @@ describe('corporation-role canonicalization', () => {
           rolesAtOther: ['Factory_Manager'],
         }),
       ),
-    ).toStrictEqual({ accountant: false, director: false, 'factory-manager': false })
+    ).toStrictEqual({
+      accountant: false,
+      director: false,
+      'factory-manager': false,
+      'station-manager': false,
+      'project-manager': false,
+    })
     expect(evaluateCorporationRolePredicate(sets({ roles: ['Director'] }), 'director')).toBe(true)
     expect(isReviewedCorporationRolePredicate('rolesAtBase')).toBe(false)
   })

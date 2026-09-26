@@ -18,6 +18,8 @@ import {
   readActivityCheckpoint,
 } from '../../../src/collection-store.js'
 import { readActivitySnapshots } from '../../../src/snapshot-reads.js'
+import { collectActivityResource } from '../../../src/collection.js'
+import { createCorporationContinuationAuthorityBinding } from '../../../../../../api/src/platform/resource-eligibility.js'
 import { summarySnapshot } from '../../../src/snapshot.js'
 import type { ActivityObservation } from '../../../src/collection-types.js'
 import type { ActivitySnapshot } from '../../../src/snapshot.js'
@@ -158,6 +160,68 @@ function readCheckpoint(resourceId: string, generation = 4) {
   } as never)
 }
 
+const corporationSubject = { corporationId: 9801, kind: 'corporation' as const, lifecycleId }
+
+const writeCorporationObservation = (
+  data: ActivityObservation,
+  authorityBinding: string,
+  authorizationGeneration = 4,
+) =>
+  connection.begin(async (transaction) => {
+    const scoped = createTransactionScopedModulePersistenceOperationInvoker(
+      transaction,
+      moduleId,
+      installedModulePersistenceOperations,
+    )
+    try {
+      // SAFETY: the fixture supplies the exact declared materialization capability and corporation subject.
+      const result = await materializeActivityResource({
+        authorizationGeneration,
+        capabilities: { persistence: materializationFactory(scoped.invoke) },
+        continuationAuthorityBinding: authorityBinding,
+        data,
+        subject: corporationSubject,
+        validatedAt: new Date().toISOString(),
+      } as never)
+      const suppressed = scoped.suppressedFailure()
+      if (suppressed) throw suppressed.error
+      return result
+    } finally {
+      scoped.close()
+    }
+  })
+
+const readCorporationCheckpoint = (
+  resourceId: string,
+  authorityBinding: string,
+  authorizationGeneration = 4,
+) =>
+  // SAFETY: the fixture supplies the exact declared checkpoint read capability and corporation subject.
+  readActivityCheckpoint(resourceId, {
+    authorizationGeneration,
+    capabilities: { persistence: checkpointPersistence },
+    continuationAuthorityBinding: authorityBinding,
+    organizationVersion: 7,
+    subject: corporationSubject,
+  } as never)
+
+const corporationCollectionContext = (
+  authorityBinding: string,
+  execute: ReturnType<typeof vi.fn>,
+  authorizationGeneration = 4,
+) =>
+  // SAFETY: the typed collector receives its declared operation methods through this fixture proxy.
+  ({
+    authorizationGeneration,
+    capabilities: { persistence: checkpointPersistence },
+    continuationAuthorityBinding: authorityBinding,
+    corporationId: 9801,
+    operations: new Proxy({}, { get: () => () => execute() }),
+    organizationVersion: 7,
+    requestBudget: 32,
+    subject: corporationSubject,
+  }) as never
+
 test('migration is idempotent and the runtime role has only generated routine access', async () => {
   const rows =
     await connection`select name from public.schema_migrations where module = ${moduleId} order by name`
@@ -219,8 +283,8 @@ test.each([
     expect((await read(resourceId, 7, 5)).snapshots).toStrictEqual([])
     expect((await read(resourceId, 7, 4, randomUUID())).snapshots).toStrictEqual([])
     const checkpoint = await readCheckpoint(resourceId)
-    expect(checkpoint?.revision).toBe(1)
-    expect(checkpoint?.checkpoint.cursors.root).toStrictEqual({ after: 'opaque' })
+    expect(checkpoint.expectedRevision).toBe(1)
+    expect(checkpoint.checkpoint?.cursors.root).toStrictEqual({ after: 'opaque' })
   },
 )
 
@@ -240,7 +304,187 @@ test('before pages retain existing data, after pages replace it, and obsolete wr
     snapshots: [{ replace: true, snapshot: replacement, validatedAt: new Date().toISOString() }],
   })
   expect((await read(resourceId)).snapshots[0]?.title).toBe('New title')
-  expect((await readCheckpoint(resourceId))?.revision).toBe(3)
+  expect((await readCheckpoint(resourceId)).expectedRevision).toBe(3)
+})
+
+test('corporation continuation resets a positive revision and isolates overlapping fresh snapshots', async () => {
+  const resourceId = 'corporation-reset-test'
+  const oldBinding = `v1:${'b'.repeat(64)}`
+  const newBinding = `v1:${'a'.repeat(64)}`
+  await writeCorporationObservation(
+    {
+      ...observation(resourceId),
+      checkpoint: {
+        authorityBinding: oldBinding,
+        cursors: { root: { after: 'old-cursor' } },
+        initialized: true,
+        requests: [],
+      },
+    },
+    oldBinding,
+  )
+  const mismatched = await readCorporationCheckpoint(resourceId, newBinding)
+  expect(mismatched).toMatchObject({ checkpoint: null, expectedRevision: 1, needsReset: true })
+  const execute = vi.fn().mockResolvedValue({
+    data: {
+      freelance_jobs: [
+        {
+          id: activityId,
+          name: 'Fresh authority',
+          progress: { current: 2, desired: 10 },
+          state: 'Active',
+        },
+      ],
+    },
+    validatedAt: new Date().toISOString(),
+  })
+  const context = corporationCollectionContext(newBinding, execute)
+  const profile = { id: resourceId, paginated: false, rootOperation: 'corporation-jobs' as const }
+  const reset = await collectActivityResource(profile, context)
+  expect(reset).toMatchObject({
+    complete: false,
+    data: {
+      expectedRevision: 1,
+      checkpoint: {
+        authorityBinding: newBinding,
+        initialized: false,
+        requests: [],
+        retainedIds: [],
+        retainedCampaignIds: [],
+      },
+      snapshots: [],
+    },
+  })
+  expect(execute).not.toHaveBeenCalled()
+  expect(await writeCorporationObservation(reset.data, newBinding)).toBeUndefined()
+  expect(await writeCorporationObservation(reset.data, newBinding)).toStrictEqual({
+    outcome: 'obsolete',
+  })
+  expect((await readCorporationCheckpoint(resourceId, newBinding)).expectedRevision).toBe(2)
+  const afterReset = await connection<{ count: number }[]>`
+    select count(*)::integer as count from eve_module_organization_activity.activity_snapshots
+    where resource_id = ${resourceId} and subject_lifecycle_id = ${lifecycleId}
+  `
+  expect(afterReset[0]?.count).toBe(0)
+
+  const fresh = await collectActivityResource(profile, context)
+  expect(fresh.complete).toBe(true)
+  expect(fresh.data.expectedRevision).toBe(2)
+  expect(fresh.data.checkpoint).not.toHaveProperty('retainedIds')
+  expect(fresh.data.checkpoint).not.toHaveProperty('retainedCampaignIds')
+  expect(execute).toHaveBeenCalledOnce()
+  expect(await writeCorporationObservation(fresh.data, newBinding)).toBeUndefined()
+  const [current] = await connection<{ title: string }[]>`
+    select snapshot ->> 'title' as title from eve_module_organization_activity.activity_snapshots
+    where resource_id = ${resourceId} and subject_lifecycle_id = ${lifecycleId}
+      and activity_id = ${activityId}
+  `
+  expect(current?.title).toBe('Fresh authority')
+  expect((await readCorporationCheckpoint(resourceId, newBinding)).expectedRevision).toBe(3)
+})
+
+const initialFence = {
+  sourceId: randomUUID(),
+  organizationVersion: 7,
+  corporationLifecycleId: lifecycleId,
+  corporationId: 9801,
+  characterId: 9001,
+  characterLifecycleId: randomUUID(),
+  affiliationPeriodRevision: randomUUID(),
+  authorizationGeneration: 4,
+  requirementsFingerprint: 'reviewed-scopes-v1',
+  roleRevision: randomUUID(),
+}
+
+test.each([
+  ['source', { sourceId: randomUUID() }],
+  ['scope', { requirementsFingerprint: 'reviewed-scopes-v2' }],
+  ['affiliation', { affiliationPeriodRevision: randomUUID() }],
+  ['role', { roleRevision: randomUUID() }],
+] as const)(
+  'restarts positive-revision continuation after %s authority changes',
+  async (reason, changed) => {
+    const resourceId = `corporation-restart-${reason}`
+    const oldBinding = createCorporationContinuationAuthorityBinding(initialFence)
+    const newBinding = createCorporationContinuationAuthorityBinding({
+      ...initialFence,
+      ...changed,
+    })
+    await writeCorporationObservation(
+      {
+        ...observation(resourceId),
+        checkpoint: { authorityBinding: oldBinding, cursors: {}, initialized: true, requests: [] },
+      },
+      oldBinding,
+    )
+    const stored = await readCorporationCheckpoint(resourceId, newBinding)
+    expect(stored).toMatchObject({ checkpoint: null, expectedRevision: 1, needsReset: true })
+    const execute = vi.fn()
+    const profile = { id: resourceId, paginated: false, rootOperation: 'corporation-jobs' as const }
+    const reset = await collectActivityResource(
+      profile,
+      corporationCollectionContext(newBinding, execute),
+    )
+    expect(reset).toMatchObject({ complete: false, data: { expectedRevision: 1, snapshots: [] } })
+    expect(execute).not.toHaveBeenCalled()
+    expect(await writeCorporationObservation(reset.data, newBinding)).toBeUndefined()
+    expect((await readCorporationCheckpoint(resourceId, newBinding)).expectedRevision).toBe(2)
+    const [retained] = await connection<{ count: number }[]>`
+    select count(*)::integer as count from eve_module_organization_activity.activity_snapshots
+    where resource_id = ${resourceId} and subject_lifecycle_id = ${lifecycleId}
+      and authorization_generation = 4
+  `
+    expect(retained?.count).toBe(0)
+  },
+)
+
+test('token-generation replacement starts a separate authority-bound checkpoint', async () => {
+  const resourceId = 'corporation-token-restart'
+  const oldBinding = createCorporationContinuationAuthorityBinding(initialFence)
+  const nextFence = { ...initialFence, authorizationGeneration: 5 }
+  const newBinding = createCorporationContinuationAuthorityBinding(nextFence)
+  await writeCorporationObservation(
+    {
+      ...observation(resourceId),
+      checkpoint: { authorityBinding: oldBinding, cursors: {}, initialized: true, requests: [] },
+    },
+    oldBinding,
+  )
+  expect(await readCorporationCheckpoint(resourceId, newBinding, 5)).toMatchObject({
+    checkpoint: null,
+    expectedRevision: 0,
+    needsReset: false,
+  })
+  const execute = vi.fn().mockResolvedValue({
+    data: {
+      freelance_jobs: [
+        {
+          id: activityId,
+          name: 'New generation',
+          progress: { current: 3, desired: 10 },
+          state: 'Active',
+        },
+      ],
+    },
+    validatedAt: new Date().toISOString(),
+  })
+  const collected = await collectActivityResource(
+    { id: resourceId, paginated: false, rootOperation: 'corporation-jobs' },
+    corporationCollectionContext(newBinding, execute, 5),
+  )
+  expect(collected.complete).toBe(true)
+  expect(collected.data.expectedRevision).toBe(0)
+  expect(await writeCorporationObservation(collected.data, newBinding, 5)).toBeUndefined()
+  const snapshots = await connection<{ generation: number; title: string }[]>`
+    select authorization_generation as generation, snapshot ->> 'title' as title
+    from eve_module_organization_activity.activity_snapshots
+    where resource_id = ${resourceId} and subject_lifecycle_id = ${lifecycleId}
+    order by authorization_generation
+  `
+  expect([...snapshots]).toStrictEqual([
+    { generation: 4, title: 'Supplies' },
+    { generation: 5, title: 'New generation' },
+  ])
 })
 
 test('complete membership lists prune absent entries only in their own identity', async () => {
@@ -362,7 +606,7 @@ test('a failed materialization rolls back snapshots and checkpoint together', as
   ).rejects.toThrow('rollback')
   expect((await read('rollback-test')).snapshots).toStrictEqual([])
   const checkpoint = await readCheckpoint('rollback-test')
-  expect(checkpoint).toBeUndefined()
+  expect(checkpoint).toMatchObject({ checkpoint: null, expectedRevision: 0, needsReset: false })
 })
 
 test('stale snapshot cleanup uses the retention index at representative volume', async () => {

@@ -1,5 +1,12 @@
+import { createHash } from 'node:crypto'
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 import type postgres from 'postgres'
+import {
+  evaluateCorporationResourceAuthority,
+  lockCorporationResourceAuthorityInTransaction,
+  type CorporationResourceAuthorityCandidate,
+  type CorporationResourceAuthorityVerdict,
+} from '../characters/corporation-role-evidence.js'
 import { sql } from '../db/client.js'
 import {
   assertRegisteredEsiOperation,
@@ -13,6 +20,7 @@ import {
   type PlatformCollectionStateIdentity,
 } from './collection-state.js'
 import { createPlatformResourceClassifierInput } from './resource-classifier-input.js'
+import { getManagedCorporationResourceRequirements } from './resource-declarations.js'
 import { platformResources } from './resources.js'
 
 export { createPlatformResourceClassifierInput } from './resource-classifier-input.js'
@@ -47,6 +55,7 @@ export type PlatformResourceEligibility =
       readonly validatedAt: Date | null
       readonly lastFailureClass: PlatformCollectionFailureClass | null
       readonly managedAuthority: PlatformManagedCollectionAuthority | null
+      readonly corporationAuthorityFence?: PlatformCorporationAuthorityFence
     }
   | {
       readonly status: 'authorization-required'
@@ -54,6 +63,12 @@ export type PlatformResourceEligibility =
       readonly authorizationCharacterId?: number | null
       readonly authorizationCharacterLifecycleId?: string | null
       readonly requiredScope: string
+      readonly authorizationReason?:
+        | 'scope-missing'
+        | 'role-unsatisfied'
+        | 'role-evidence-unavailable'
+        | 'source-invalid'
+      readonly requiredRolePredicates?: readonly string[]
       readonly dueReason: null
       readonly schedulingKey: null
       readonly nextEligibleAt: Date | null
@@ -83,6 +98,57 @@ export interface PlatformManagedCollectionAuthority {
   readonly sectionId: string
   readonly disclosureVersion: number
   readonly sectionActivationVersion: number
+}
+
+export interface PlatformCorporationAuthorityFence {
+  readonly sourceId: string
+  readonly organizationVersion: number
+  readonly corporationLifecycleId: string
+  readonly corporationId: number
+  readonly characterId: number
+  readonly characterLifecycleId: string
+  readonly affiliationPeriodRevision: string | null
+  readonly authorizationGeneration: number
+  readonly requirementsFingerprint: string
+  readonly roleRevision: string | null
+}
+
+export const createCorporationContinuationAuthorityBinding = (
+  fence: PlatformCorporationAuthorityFence,
+): string => {
+  const components = [
+    'corporation-continuation-v1',
+    fence.organizationVersion,
+    fence.sourceId,
+    fence.corporationLifecycleId,
+    fence.corporationId,
+    fence.characterId,
+    fence.characterLifecycleId,
+    fence.affiliationPeriodRevision,
+    fence.authorizationGeneration,
+    fence.requirementsFingerprint,
+    fence.roleRevision ?? 'none',
+  ]
+  return `v1:${createHash('sha256').update(JSON.stringify(components)).digest('hex')}`
+}
+
+export const corporationAuthorityFenceEquals = (
+  left: PlatformCorporationAuthorityFence | null | undefined,
+  right: PlatformCorporationAuthorityFence | null | undefined,
+): boolean => {
+  if (!left || !right) return left == null && right == null
+  return (
+    left.sourceId === right.sourceId &&
+    left.organizationVersion === right.organizationVersion &&
+    left.corporationLifecycleId === right.corporationLifecycleId &&
+    left.corporationId === right.corporationId &&
+    left.characterId === right.characterId &&
+    left.characterLifecycleId === right.characterLifecycleId &&
+    left.affiliationPeriodRevision === right.affiliationPeriodRevision &&
+    left.authorizationGeneration === right.authorizationGeneration &&
+    left.requirementsFingerprint === right.requirementsFingerprint &&
+    left.roleRevision === right.roleRevision
+  )
 }
 
 export function managedCollectionAuthorityEquals(
@@ -129,6 +195,7 @@ interface ClassificationRow {
   readonly sectionActivationVersion: number | null
   readonly dueReason: string | null
   readonly schedulingKey: DatabaseTimestamp
+  readonly schedulingKeyCursor?: string
   readonly nextEligibleAt: DatabaseTimestamp
   readonly validatedAt: DatabaseTimestamp
   readonly lastFailureClass: string | null
@@ -136,12 +203,14 @@ interface ClassificationRow {
 
 type DatabaseTimestamp = Date | string | null
 
-interface EligibilityOptions {
-  readonly connection?: postgres.Sql | postgres.TransactionSql
+type EligibilityOptions = {
   readonly now?: Date
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly signal?: AbortSignal
-}
+} & (
+  | { readonly connection?: postgres.Sql | postgres.TransactionSql; readonly lockAuthority?: false }
+  | { readonly connection: postgres.TransactionSql; readonly lockAuthority: true }
+)
 
 export interface DueInstalledResource {
   readonly identity: PlatformCollectionStateIdentity
@@ -149,8 +218,17 @@ export interface DueInstalledResource {
   readonly authorizationCharacterId?: number | null
 }
 
-interface SelectDueResourcesOptions extends EligibilityOptions {
+type SelectDueResourcesOptions = EligibilityOptions & {
   readonly limit: number
+}
+
+interface DueCandidateCursor {
+  readonly schedulingKey: string
+  readonly moduleId: string
+  readonly resourceId: string
+  readonly subjectKind: string
+  readonly subjectLifecycleId: string
+  readonly subjectId: string
 }
 
 export async function resolveInstalledResourceEligibility(
@@ -204,25 +282,39 @@ export async function resolveInstalledResourceEligibility(
     )
   `
   options.signal?.throwIfAborted()
-  return row ? parseClassification(row) : { status: 'obsolete' }
+  if (!row) return { status: 'obsolete' }
+  const base = parseClassification(row)
+  if (
+    base.status !== 'eligible' ||
+    resource.eligibility.kind !== 'current-managed-corporation-source'
+  ) {
+    return base
+  }
+  const [verdict] = await classifyCorporationAuthorityRows(
+    [row],
+    [resource],
+    connection,
+    options.lockAuthority ? options.connection : undefined,
+  )
+  options.signal?.throwIfAborted()
+  return applyCorporationRoleVerdict(base, verdict, resource, row)
 }
 
-export async function selectDueInstalledResources(
-  options: SelectDueResourcesOptions,
-): Promise<readonly DueInstalledResource[]> {
-  options.signal?.throwIfAborted()
-  if (!isPositiveSafeInteger(options.limit)) {
-    throw new Error('Resource planning limit must be a positive safe integer')
-  }
-  const resources = (options.resources ?? platformResources).filter(
-    ({ scheduled }) => scheduled !== false,
-  )
-  if (resources.length === 0) {
-    return []
-  }
-
-  const connection = options.connection ?? sql
-  const rows = await connection<ClassificationRow[]>`
+const loadDueCandidatePage = (
+  connection: postgres.Sql | postgres.TransactionSql,
+  resourceInput: string,
+  effectiveAt: string,
+  cursor: DueCandidateCursor | null,
+  pageSize: number,
+) => {
+  const cursorFilter = cursor
+    ? connection`and (scheduling_key, module_id, resource_id, subject_kind,
+        subject_lifecycle_id, subject_id) > (
+        ${cursor.schedulingKey}::timestamptz, ${cursor.moduleId}, ${cursor.resourceId},
+        ${cursor.subjectKind}, ${cursor.subjectLifecycleId}::uuid, ${cursor.subjectId}
+      )`
+    : connection``
+  return connection<ClassificationRow[]>`
     select
       module_id as "moduleId",
       resource_id as "resourceId",
@@ -244,43 +336,227 @@ export async function selectDueInstalledResources(
       section_activation_version as "sectionActivationVersion",
       due_reason as "dueReason",
       scheduling_key as "schedulingKey",
+      scheduling_key::text as "schedulingKeyCursor",
       next_eligible_at as "nextEligibleAt",
       validated_at as "validatedAt",
       last_failure_class as "lastFailureClass"
     from platform_classify_resources(
-      ${JSON.stringify(createPlatformResourceClassifierInput(resources))}::text::jsonb,
-      ${(options.now ?? new Date()).toISOString()}::text::timestamptz
+      ${resourceInput}::text::jsonb,
+      ${effectiveAt}::text::timestamptz
     )
     where eligibility_status = 'eligible'
       and due_reason <> 'future'
+      ${cursorFilter}
     order by scheduling_key, module_id, resource_id, subject_kind,
       subject_lifecycle_id, subject_id
-    limit ${options.limit}
+    limit ${pageSize}
   `
-  options.signal?.throwIfAborted()
+}
 
-  return rows.map((row) => {
-    const classification = parseClassification(row)
-    if (classification.status !== 'eligible' || !classification.due) {
-      throw new Error('Resource classifier returned a non-due planning row')
+const projectDueResource = (row: ClassificationRow): DueInstalledResource => {
+  const classification = parseClassification(row)
+  if (classification.status !== 'eligible' || !classification.due) {
+    throw new Error('Resource classifier returned a non-due planning row')
+  }
+  assertRegisteredEsiOperation(row.operationId)
+  const due: DueInstalledResource = {
+    identity: platformCollectionStateIdentitySchema.parse({
+      moduleId: row.moduleId,
+      resourceId: row.resourceId,
+      subjectId: row.subjectId,
+      subjectKind: row.subjectKind,
+      subjectLifecycleId: row.subjectLifecycleId,
+    }),
+    operationId: row.operationId,
+  }
+  return row.subjectKind === 'corporation'
+    ? Object.assign(due, {
+        authorizationCharacterId: parseAuthorizationCharacterId(row.authorizationCharacterId),
+      })
+    : due
+}
+
+const admitDueCandidatePage = async (
+  rows: readonly ClassificationRow[],
+  resources: readonly PlatformInstalledResourceDescriptor[],
+  connection: postgres.Sql | postgres.TransactionSql,
+): Promise<readonly DueInstalledResource[]> => {
+  const verdicts = await classifyCorporationAuthorityRows(rows, resources, connection)
+  return rows.flatMap((row, index) => {
+    const verdict = verdicts[index]
+    const resource = resources.find(
+      (candidate) => candidate.moduleId === row.moduleId && candidate.resourceId === row.resourceId,
+    )
+    if (
+      resource?.eligibility.kind === 'current-managed-corporation-source' &&
+      verdict?.outcome !== 'satisfied'
+    ) {
+      return []
     }
-    assertRegisteredEsiOperation(row.operationId)
-    const due: DueInstalledResource = {
-      identity: platformCollectionStateIdentitySchema.parse({
-        moduleId: row.moduleId,
-        resourceId: row.resourceId,
-        subjectId: row.subjectId,
-        subjectKind: row.subjectKind,
-        subjectLifecycleId: row.subjectLifecycleId,
-      }),
-      operationId: row.operationId,
-    }
-    return row.subjectKind === 'corporation'
-      ? Object.assign(due, {
-          authorizationCharacterId: parseAuthorizationCharacterId(row.authorizationCharacterId),
-        })
-      : due
+    return [projectDueResource(row)]
   })
+}
+
+const dueCandidateCursor = (row: ClassificationRow): DueCandidateCursor => {
+  if (!row.schedulingKeyCursor) throw new Error('Resource classifier omitted the scheduling cursor')
+  return {
+    schedulingKey: row.schedulingKeyCursor,
+    moduleId: row.moduleId,
+    resourceId: row.resourceId,
+    subjectKind: row.subjectKind,
+    subjectLifecycleId: row.subjectLifecycleId,
+    subjectId: row.subjectId,
+  }
+}
+
+export async function selectDueInstalledResources(
+  options: SelectDueResourcesOptions,
+): Promise<readonly DueInstalledResource[]> {
+  options.signal?.throwIfAborted()
+  if (!isPositiveSafeInteger(options.limit)) {
+    throw new Error('Resource planning limit must be a positive safe integer')
+  }
+  const resources = (options.resources ?? platformResources).filter(
+    ({ scheduled }) => scheduled !== false,
+  )
+  if (resources.length === 0) return []
+
+  const connection = options.connection ?? sql
+  const resourceInput = JSON.stringify(createPlatformResourceClassifierInput(resources))
+  const effectiveAt = (options.now ?? new Date()).toISOString()
+  const pageSize = Math.max(64, Math.min(options.limit, 256))
+  const admitted: DueInstalledResource[] = []
+  let cursor: DueCandidateCursor | null = null
+  while (admitted.length < options.limit) {
+    options.signal?.throwIfAborted()
+    // oxlint-disable-next-line eslint/no-await-in-loop -- Keyset pages stay ordered and each bounded authority batch settles before advancing.
+    const rows = await loadDueCandidatePage(
+      connection,
+      resourceInput,
+      effectiveAt,
+      cursor,
+      pageSize,
+    )
+    options.signal?.throwIfAborted()
+    if (rows.length === 0) break
+    // oxlint-disable-next-line eslint/no-await-in-loop -- Avoid unbounded role-evidence query concurrency across pages.
+    const eligible = await admitDueCandidatePage(rows, resources, connection)
+    options.signal?.throwIfAborted()
+    admitted.push(...eligible.slice(0, options.limit - admitted.length))
+    if (rows.length < pageSize) break
+    cursor = dueCandidateCursor(rows.at(-1)!)
+  }
+  return admitted
+}
+
+const createCorporationAuthorityCandidate = (
+  row: ClassificationRow,
+  resource: PlatformInstalledResourceDescriptor,
+): CorporationResourceAuthorityCandidate | null => {
+  const characterId = parseAuthorizationCharacterId(row.authorizationCharacterId)
+  const organizationVersion =
+    row.organizationVersion === null ? null : Number(row.organizationVersion)
+  const corporationId = Number(row.subjectId)
+  if (
+    !characterId ||
+    !row.authorizationCharacterLifecycleId ||
+    row.expectedAuthorizationGeneration === null ||
+    (organizationVersion !== null && !isPositiveSafeInteger(organizationVersion)) ||
+    !isPositiveSafeInteger(corporationId)
+  ) {
+    return null
+  }
+  const requirements = getManagedCorporationResourceRequirements(resource)
+  return {
+    authorizationGeneration: row.expectedAuthorizationGeneration,
+    characterId,
+    characterLifecycleId: row.authorizationCharacterLifecycleId,
+    corporationId,
+    corporationLifecycleId: row.subjectLifecycleId,
+    organizationVersion,
+    predicates: requirements.rolePredicates,
+    requiredScopes: requirements.scopes,
+  }
+}
+
+const classifyCorporationAuthorityRows = async (
+  rows: readonly ClassificationRow[],
+  resources: readonly PlatformInstalledResourceDescriptor[],
+  connection: postgres.Sql | postgres.TransactionSql,
+  transaction?: postgres.TransactionSql,
+): Promise<readonly (CorporationResourceAuthorityVerdict | null)[]> => {
+  const candidates = rows.map((row) => {
+    const resource = resources.find(
+      (candidate) => candidate.moduleId === row.moduleId && candidate.resourceId === row.resourceId,
+    )
+    return resource?.eligibility.kind === 'current-managed-corporation-source'
+      ? createCorporationAuthorityCandidate(row, resource)
+      : null
+  })
+  const matched = candidates.flatMap((candidate, index) =>
+    candidate ? [{ candidate, index }] : [],
+  )
+  const verdicts = new Map<number, CorporationResourceAuthorityVerdict>()
+  for (let offset = 0; offset < matched.length; offset += 64) {
+    const batch = matched.slice(offset, offset + 64)
+    const input = batch.map(({ candidate }) => candidate)
+    const evaluation = transaction
+      ? lockCorporationResourceAuthorityInTransaction(transaction, input)
+      : evaluateCorporationResourceAuthority(connection, input)
+    // oxlint-disable-next-line eslint/no-await-in-loop -- Sequential bounded batches avoid unbounded database concurrency and preserve lock ordering.
+    const outcomes = await evaluation
+    batch.forEach(({ index }, position) => {
+      if (outcomes[position]) verdicts.set(index, outcomes[position])
+    })
+  }
+  return rows.map((_, index) => verdicts.get(index) ?? null)
+}
+
+const applyCorporationRoleVerdict = (
+  base: Extract<PlatformResourceEligibility, { status: 'eligible' }>,
+  verdict: CorporationResourceAuthorityVerdict | null | undefined,
+  resource: PlatformInstalledResourceDescriptor,
+  row: ClassificationRow,
+): PlatformResourceEligibility => {
+  if (verdict?.outcome === 'satisfied' && verdict.sourceId && verdict.sourceBinding) {
+    const requirements = getManagedCorporationResourceRequirements(resource)
+    return {
+      ...base,
+      corporationAuthorityFence: {
+        ...verdict.sourceBinding,
+        sourceId: verdict.sourceId,
+        corporationLifecycleId: row.subjectLifecycleId,
+        requirementsFingerprint: requirements.fingerprint,
+        roleRevision: verdict.roleRevision,
+      },
+    }
+  }
+  let authorizationReason:
+    | 'scope-missing'
+    | 'role-unsatisfied'
+    | 'role-evidence-unavailable'
+    | 'source-invalid' = 'source-invalid'
+  if (verdict?.outcome === 'scope-missing') authorizationReason = 'scope-missing'
+  if (verdict?.outcome === 'role-unsatisfied') authorizationReason = 'role-unsatisfied'
+  if (verdict?.outcome === 'role-unavailable') authorizationReason = 'role-evidence-unavailable'
+  const requirements = getManagedCorporationResourceRequirements(resource)
+  return {
+    authorizationReason,
+    ...(requirements.rolePredicates.length > 0 && {
+      requiredRolePredicates: requirements.rolePredicates,
+    }),
+    authorizationGeneration: base.authorizationGeneration,
+    authorizationCharacterId: base.authorizationCharacterId,
+    authorizationCharacterLifecycleId: base.authorizationCharacterLifecycleId,
+    dueReason: null,
+    lastFailureClass: base.lastFailureClass,
+    managedAuthority: base.managedAuthority,
+    nextEligibleAt: base.nextEligibleAt,
+    requiredScope: verdict?.missingScope ?? requirements.scopes[0]!,
+    schedulingKey: null,
+    status: 'authorization-required',
+    validatedAt: base.validatedAt,
+  }
 }
 
 function parseClassification(row: ClassificationRow): PlatformResourceEligibility {

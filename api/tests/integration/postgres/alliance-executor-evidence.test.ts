@@ -328,7 +328,7 @@ describe('durable alliance executor observations', () => {
     const input = {
       organizationVersion: 1,
       userId,
-      condition: { kind: 'corporation-role' as const, predicate: 'accountant' },
+      condition: { kind: 'corporation-role' as const, predicate: 'accountant' as const },
       now: checkedAt,
     }
     expect((await evaluateOrganizationRuleAccount(database, input)).outcome).toBe('unavailable')

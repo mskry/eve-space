@@ -662,6 +662,265 @@ describe('corporation-role observation persistence', () => {
       organizationOwner: false,
     })
   })
+
+  test('batches exact-source operation predicates and locks the same evidence during a transaction', async () => {
+    const jobsScope = 'esi-corporations.read_freelance_jobs.v1'
+    await connection`
+      update eve_tokens set scopes = ${connection.json([rolesScope, membershipScope, jobsScope])}
+      where character_id = ${characterId}
+    `
+    mocks.readCharacterCorporationRoles.mockResolvedValue(roleRead(['Director', 'Project_Manager']))
+    await claimOwner()
+    const registration = await modules.sources.registerOrganizationCorporationSource({
+      actorUserId: userId,
+      characterId,
+      corporationId,
+    })
+    const [lifecycle] = await connection<{ subject_lifecycle_id: string }[]>`
+      select subject_lifecycle_id from platform_subject_lifecycles
+      where corporation_source_id = ${registration.source.sourceId}
+    `
+    const request = {
+      binding: await currentBinding(),
+      corporationLifecycleId: lifecycle!.subject_lifecycle_id,
+      predicates: ['project-manager' as const],
+      requiredScopes: [jobsScope],
+      sourceId: registration.source.sourceId,
+    }
+    const [current] = await modules.evidence.evaluateCorporationResourceRoles(modules.db.db, [
+      request,
+    ])
+    expect(current).toMatchObject({
+      outcome: 'satisfied',
+      predicateOutcomes: { 'project-manager': true },
+      sourceId: registration.source.sourceId,
+    })
+    expect(current?.revision).toBeTruthy()
+    const [locked] = await modules.db.db.transaction((transaction) =>
+      modules.evidence.lockCorporationResourceRolesInTransaction(transaction, [request]),
+    )
+    expect(locked).toEqual(current)
+    const [sqlLocked] = await connection.begin((transaction) =>
+      modules.evidence.lockCorporationResourceRolesInSqlTransaction(transaction, [request]),
+    )
+    expect(sqlLocked).toEqual(current)
+
+    const candidate = {
+      corporationLifecycleId: request.corporationLifecycleId,
+      corporationId,
+      organizationVersion: request.binding.organizationVersion,
+      characterId,
+      characterLifecycleId: request.binding.subjectLifecycleId,
+      authorizationGeneration: request.binding.authorizationGeneration,
+      requiredScopes: [jobsScope],
+      predicates: ['project-manager' as const],
+    }
+    const [admitted] = await modules.evidence.evaluateCorporationResourceAuthority(connection, [
+      candidate,
+    ])
+    expect(admitted).toMatchObject({ outcome: 'satisfied', roleRevision: current?.revision })
+    const [admittedLocked] = await connection.begin((transaction) =>
+      modules.evidence.lockCorporationResourceAuthorityInTransaction(transaction, [candidate]),
+    )
+    expect(admittedLocked).toEqual(admitted)
+    const combined = await modules.evidence.evaluateCorporationResourceAuthority(connection, [
+      candidate,
+      { ...candidate, predicates: [] },
+      { ...candidate, predicates: ['station-manager'] },
+    ])
+    expect(combined.map(({ outcome }) => outcome)).toEqual([
+      'satisfied',
+      'satisfied',
+      'role-unsatisfied',
+    ])
+
+    const secondCorporationId = 98_000_002
+    const secondUserId = randomUUID()
+    const secondSourceId = randomUUID()
+    const secondCorporationLifecycleId = randomUUID()
+    await connection`
+      insert into organization_managed_corporations (
+        deployment_id, organization_version, corporation_id, first_observed_at, last_observed_at
+      ) values (1, 1, ${secondCorporationId}, now(), now())
+    `
+    const secondLifecycleId = await seedCharacter(
+      secondUserId,
+      secondCharacterId,
+      false,
+      [rolesScope, membershipScope, jobsScope],
+      secondCorporationId,
+    )
+    const secondObservation = await connection.begin(async (transaction) => {
+      const [observed] = await transaction<{ observation_id: string; role_revision: string }[]>`
+        insert into character_corporation_role_observations (
+          organization_version, user_id, character_id, source_subject_lifecycle_id,
+          affiliation_period_revision, authority_corporation_id, authorization_generation,
+          required_scope, role_revision, status, validated_at, esi_fresh_until, fresh_until,
+          next_refresh_at, last_checked_at, last_applied_observation_sequence
+        ) select 1, ${secondUserId}, ${secondCharacterId}, ${secondLifecycleId},
+          affiliation_period_revision, ${secondCorporationId}, 0, ${rolesScope},
+          gen_random_uuid(), 'fresh', now(), now() + interval '1 hour',
+          now() + interval '1 hour', now() + interval '1 hour', now(),
+          nextval('character_corporation_role_observation_sequence')
+        from characters where character_id = ${secondCharacterId}
+        returning observation_id, role_revision
+      `
+      await transaction`
+        insert into character_corporation_role_contents (
+          observation_id, roles, roles_at_base, roles_at_hq, roles_at_other
+        ) values (${observed!.observation_id}, '{Director,Project_Manager}', '{}', '{}', '{}')
+      `
+      return observed!
+    })
+    await connection`
+      insert into organization_corporation_sources (
+        source_id, deployment_id, organization_version, corporation_id,
+        character_id, evidence_character_id, source_user_id, source_subject_lifecycle_id,
+        authorization_generation, role_evidence_revision, affiliation_period_revision,
+        observed_corporation_id, required_scope, director_role_present, observed_at,
+        fresh_until, status, registered_by_user_id
+      ) select ${secondSourceId}, 1, 1, ${secondCorporationId}, ${secondCharacterId},
+        ${secondCharacterId}, ${secondUserId}, ${secondLifecycleId}, 0,
+        ${secondObservation.role_revision}, affiliation_period_revision,
+        ${secondCorporationId}, ${membershipScope}, true, now(),
+        now() + interval '1 hour', 'fresh', ${secondUserId}
+      from characters where character_id = ${secondCharacterId}
+    `
+    await connection`
+      insert into platform_subject_lifecycles (
+        subject_lifecycle_id, subject_kind, subject_id, corporation_source_id
+      ) values (${secondCorporationLifecycleId}, 'corporation', ${String(secondCorporationId)}, ${secondSourceId})
+    `
+    const secondCandidate = {
+      ...candidate,
+      corporationLifecycleId: secondCorporationLifecycleId,
+      corporationId: secondCorporationId,
+      characterId: secondCharacterId,
+      characterLifecycleId: secondLifecycleId,
+      authorizationGeneration: 0,
+    }
+
+    const upstream = vi.spyOn(connection, 'unsafe')
+    const batch = Array.from({ length: 64 }, (_, index) => ({
+      ...(index % 2 === 0 ? candidate : secondCandidate),
+      predicates: index % 2 === 0 ? ['project-manager' as const] : ['station-manager' as const],
+    }))
+    const started = performance.now()
+    const benchmark = await modules.evidence.evaluateCorporationResourceAuthority(connection, batch)
+    const durationMilliseconds = performance.now() - started
+    expect(benchmark.map(({ outcome }) => outcome)).toEqual(
+      batch.map((_, index) => (index % 2 === 0 ? 'satisfied' : 'role-unsatisfied')),
+    )
+    expect(upstream).toHaveBeenCalledTimes(1)
+    expect(durationMilliseconds).toBeLessThan(30_000)
+    upstream.mockRestore()
+
+    const verdict = async (
+      input: Parameters<
+        typeof modules.evidence.evaluateCorporationResourceAuthority
+      >[1][number] = candidate,
+    ) => (await modules.evidence.evaluateCorporationResourceAuthority(connection, [input]))[0]
+    const setRoles = (roles: readonly string[]) =>
+      connection.begin(async (transaction) => {
+        const [observation] = await transaction<{ role_revision: string }[]>`
+        update character_corporation_role_observations
+        set role_revision = gen_random_uuid()
+        where character_id = ${characterId}
+        returning role_revision
+      `
+        await transaction`
+        update character_corporation_role_contents
+        set roles = string_to_array(${roles.toSorted((left, right) => left.localeCompare(right)).join(',')}, ',')
+        where observation_id in (
+          select observation_id from character_corporation_role_observations
+          where character_id = ${characterId}
+        )
+      `
+        await transaction`
+        update organization_corporation_sources
+        set role_evidence_revision = ${observation!.role_revision}
+        where source_id = ${registration.source.sourceId}
+      `
+      })
+    await setRoles(['Director'])
+    expect((await verdict())?.outcome).toBe('role-unsatisfied')
+    await setRoles(['Director', 'Project_Manager'])
+    expect((await verdict())?.outcome).toBe('satisfied')
+
+    await connection`
+      update character_corporation_role_observations
+      set status = 'degraded', degraded_until = now() + interval '1 hour',
+        failure_class = 'transient:esi-unavailable'
+      where character_id = ${characterId}
+    `
+    expect((await verdict())?.outcome).toBe('role-unavailable')
+    expect((await verdict({ ...candidate, predicates: [] }))?.outcome).toBe('satisfied')
+    await connection`
+      update character_corporation_role_observations
+      set status = 'fresh', degraded_until = null, failure_class = null
+      where character_id = ${characterId}
+    `
+    expect(
+      (
+        await modules.evidence.evaluateCorporationResourceAuthority(
+          connection,
+          [candidate],
+          new Date(Date.now() + 2 * 60 * 60_000),
+        )
+      )[0]?.outcome,
+    ).toBe('role-unavailable')
+
+    await connection`update eve_tokens set token_version = 8 where character_id = ${characterId}`
+    expect((await verdict())?.outcome).toBe('source-invalid')
+    expect((await verdict({ ...candidate, predicates: [] }))?.outcome).toBe('source-invalid')
+    await connection`update eve_tokens set token_version = 0 where character_id = ${characterId}`
+    await connection`
+      update organization_corporation_sources
+      set revoked_at = now(), revoked_by_user_id = ${userId}, revocation_reason = 'Replacement'
+      where source_id = ${registration.source.sourceId}
+    `
+    expect((await verdict())?.outcome).toBe('source-invalid')
+    await connection`
+      update organization_corporation_sources
+      set revoked_at = null, revoked_by_user_id = null, revocation_reason = null
+      where source_id = ${registration.source.sourceId}
+    `
+    const mixed = {
+      ...candidate,
+      requiredScopes: [jobsScope, 'esi-corporations.read_projects.v1'],
+      predicates: ['project-manager' as const, 'accountant' as const],
+    }
+    expect((await verdict(mixed))?.missingScope).toBe('esi-corporations.read_projects.v1')
+    await connection`
+      update eve_tokens set scopes = ${connection.json([rolesScope, membershipScope, jobsScope, 'esi-corporations.read_projects.v1'])}
+      where character_id = ${characterId}
+    `
+    expect((await verdict(mixed))?.outcome).toBe('role-unsatisfied')
+    await setRoles(['Director', 'Project_Manager', 'Accountant'])
+    expect((await verdict(mixed))?.outcome).toBe('satisfied')
+
+    await connection`
+      update eve_tokens set scopes = ${connection.json([rolesScope, membershipScope])}
+      where character_id = ${characterId}
+    `
+    const [scopeMissing] = await modules.evidence.evaluateCorporationResourceRoles(modules.db.db, [
+      request,
+    ])
+    expect(scopeMissing?.outcome).toBe('unavailable')
+    const [missing] = await modules.evidence.evaluateCorporationResourceAuthority(connection, [
+      candidate,
+    ])
+    expect(missing?.outcome).toBe('scope-missing')
+    await connection`
+      update eve_tokens set scopes = ${connection.json([rolesScope, membershipScope, jobsScope])}
+      where character_id = ${characterId}
+    `
+    await connection`
+      update characters set corporation_id = 98000002
+      where character_id = ${characterId}
+    `
+    expect((await verdict())?.outcome).toBe('source-invalid')
+  })
 })
 
 describe('corporation-role outage recovery', () => {
@@ -1613,6 +1872,7 @@ async function seedCharacter(
   seedCharacterId: number,
   isMain: boolean,
   scopes: readonly string[] = [rolesScope],
+  seedCorporationId = corporationId,
 ) {
   await connection`insert into users (id) values (${seedUserId}) on conflict do nothing`
   await connection`
@@ -1621,7 +1881,7 @@ async function seedCharacter(
       next_affiliation_check, affiliation_resolution_state, is_main
     ) values (
       ${seedCharacterId}, ${seedUserId}, ${`owner-${seedCharacterId}`}, 'Role Pilot',
-      ${corporationId}, now(), now() + interval '1 hour', 'resolved', ${isMain}
+      ${seedCorporationId}, now(), now() + interval '1 hour', 'resolved', ${isMain}
     )
   `
   await connection`

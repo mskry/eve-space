@@ -214,6 +214,9 @@ function operation(
 ): OperationExecutionDescriptor {
   return {
     authentication: null,
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: null,
     method: 'GET',
     operationId: 'get_items',
     parameters: [],

@@ -31,14 +31,19 @@ import {
 } from './collection-state-store.js'
 import { recordInstalledResourceCollectionSuccess } from './collection-status.js'
 import {
+  corporationAuthorityFenceEquals,
+  createCorporationContinuationAuthorityBinding,
   managedCollectionAuthorityEquals,
   resolveInstalledResourceEligibility,
+  type PlatformCorporationAuthorityFence,
   type PlatformManagedCollectionAuthority,
+  type PlatformResourceEligibility,
 } from './resource-eligibility.js'
 import { executeInstalledResourceOperation } from './resource-operation-executor.js'
 import { guardInstalledResourceExecution } from './resource-execution-guard.js'
 import {
   PlatformResourcePersistenceError,
+  PlatformResourceObsoleteError,
   recordInstalledResourceCollectionFailure,
 } from './resource-failures.js'
 
@@ -59,6 +64,7 @@ export async function processInstalledResourceRefresh(
     | {
         readonly authorizationGeneration: number | null
         readonly managedAuthority: PlatformManagedCollectionAuthority | null
+        readonly corporationAuthorityFence?: PlatformCorporationAuthorityFence
       }
     | undefined
   try {
@@ -71,6 +77,7 @@ export async function processInstalledResourceRefresh(
     })
   } catch (error) {
     options.signal?.throwIfAborted()
+    if (error instanceof PlatformResourceObsoleteError) return
     await (options.recordFailure ?? recordInstalledResourceCollectionFailure)(
       identity,
       error,
@@ -78,6 +85,7 @@ export async function processInstalledResourceRefresh(
         ? {
             expectedAuthorizationGeneration: attemptAuthority.authorizationGeneration,
             expectedManagedAuthority: attemptAuthority.managedAuthority,
+            expectedCorporationAuthorityFence: attemptAuthority.corporationAuthorityFence,
           }
         : {},
     )
@@ -98,6 +106,9 @@ export async function processInstalledResourceRefresh(
       identity,
       managedAuthority: execution.managedAuthority,
       organizationVersion: execution.organizationVersion,
+      ...(execution.corporationAuthorityFence && {
+        corporationAuthorityFence: execution.corporationAuthorityFence,
+      }),
       outcome: 'complete',
       resource: execution.resource,
       signal: options.signal,
@@ -110,6 +121,7 @@ export async function processInstalledResourceRefresh(
     await (options.recordFailure ?? recordInstalledResourceCollectionFailure)(identity, failure, {
       expectedAuthorizationGeneration: execution.authorizationGeneration,
       expectedManagedAuthority: execution.managedAuthority,
+      expectedCorporationAuthorityFence: execution.corporationAuthorityFence,
     })
     throw failure
   }
@@ -133,20 +145,45 @@ type PlatformResourceObservation = {
   readonly authorizationCharacterId?: number | null
   readonly authorizationCharacterLifecycleId?: string | null
   readonly managedAuthority: PlatformManagedCollectionAuthority | null
+  readonly corporationAuthorityFence?: PlatformCorporationAuthorityFence
   readonly validatedAt: string
   readonly organizationVersion?: number
   readonly complete?: boolean
   readonly signal?: AbortSignal
 } & ({ readonly outcome: 'complete'; readonly data: unknown } | { readonly outcome: 'unchanged' })
 
-export async function applyInstalledResourceObservation(observation: PlatformResourceObservation) {
+const isCurrentObservationEligibility = (
+  eligibility: PlatformResourceEligibility,
+  observation: PlatformResourceObservation,
+): eligibility is Extract<PlatformResourceEligibility, { status: 'eligible' }> => {
+  if (eligibility.status !== 'eligible') return false
+  const admitted = [
+    eligibility.due,
+    eligibility.authorizationGeneration === observation.authorizationGeneration,
+    managedCollectionAuthorityEquals(eligibility.managedAuthority, observation.managedAuthority),
+  ].every(Boolean)
+  if (!admitted) return false
+  if (observation.subject.kind !== 'corporation') return true
+  return (
+    Boolean(observation.corporationAuthorityFence) &&
+    corporationAuthorityFenceEquals(
+      observation.corporationAuthorityFence,
+      eligibility.corporationAuthorityFence,
+    )
+  )
+}
+
+export async function applyInstalledResourceObservation(
+  observation: PlatformResourceObservation,
+  options: { readonly connection?: postgres.Sql } = {},
+) {
   observation.signal?.throwIfAborted()
   if (observation.resource.moduleId === 'core') {
     await applyCoreResourceObservation(observation)
     return
   }
   const implementation = observation.resource.implementation as PlatformResourceImplementation
-  await sql.begin(async (transaction) => {
+  await (options.connection ?? sql).begin(async (transaction) => {
     await transaction`
       select pg_advisory_xact_lock(
         ${resourceRefreshLockNamespace},
@@ -181,17 +218,11 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
     observation.signal?.throwIfAborted()
     const eligibility = await resolveInstalledResourceEligibility(observation.identity, {
       connection: transaction,
+      lockAuthority: true,
       resources: [observation.resource],
       signal: observation.signal,
     })
-    if (
-      eligibility.status !== 'eligible' ||
-      !eligibility.due ||
-      eligibility.authorizationGeneration !== observation.authorizationGeneration ||
-      !managedCollectionAuthorityEquals(eligibility.managedAuthority, observation.managedAuthority)
-    ) {
-      return
-    }
+    if (!isCurrentObservationEligibility(eligibility, observation)) return
     if (
       observation.subject.kind === 'corporation' &&
       !(await lockCurrentCorporationSource(transaction, observation, eligibility))
@@ -346,6 +377,11 @@ function materializationContext(
     authorizationGeneration: observation.authorizationGeneration,
     data: observation.data,
     managedAuthority: observation.managedAuthority,
+    ...(observation.corporationAuthorityFence && {
+      continuationAuthorityBinding: createCorporationContinuationAuthorityBinding(
+        observation.corporationAuthorityFence,
+      ),
+    }),
     organizationVersion:
       observation.organizationVersion ?? observation.managedAuthority?.organizationVersion ?? null,
     subject: observation.subject,

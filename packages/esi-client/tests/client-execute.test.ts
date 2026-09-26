@@ -889,6 +889,9 @@ function operation<TArguments extends OperationRequestArguments = OperationReque
   const { responseSchema = passthroughSchema, ...descriptorOverrides } = overrides;
   return {
     authentication: null,
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: null,
     method: 'GET',
     operationId: 'get_items',
     parameters: [],

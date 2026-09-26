@@ -41,6 +41,7 @@ describe('ESI purpose interface secrecy', () => {
       'coreEsiOperationIds',
       'getCharacterEsiScope',
       'getEsiMaximumBatchSize',
+      'getEsiOperationAuthority',
       'getEsiOperationAuthorization',
       'getEsiSetOperationConfiguration',
       'getOptionalCharacterEsiScope',
@@ -62,7 +63,7 @@ describe('ESI purpose interface secrecy', () => {
 
     expect(failure).toStrictEqual({ kind: 'unavailable' })
     expect(getEsiOperationAuthorization('wallet-balance')).toStrictEqual({
-      kind: 'character',
+      kind: 'oauth',
       requiredScope: 'esi-wallet.read_character_wallet.v1',
     })
     expect(getEsiSetOperationConfiguration('bulk-affiliation')).toStrictEqual({

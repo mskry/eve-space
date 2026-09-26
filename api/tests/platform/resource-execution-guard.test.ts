@@ -182,6 +182,54 @@ describe('platform resource execution guard', () => {
     })
   })
 
+  test('rejects a role revision change during token resolution before ESI admission', async () => {
+    const corporation = {
+      ...coreResources[1],
+      operationId: 'organization-activity-corporation-jobs',
+    }
+    const corporationIdentity = {
+      moduleId: corporation.moduleId,
+      resourceId: corporation.resourceId,
+      subjectId: '98000001',
+      subjectKind: 'corporation' as const,
+      subjectLifecycleId: '34b4904d-c8d2-451a-b1d2-465f4bac99c4',
+    }
+    const fence = {
+      sourceId: 'd56315c7-6bfb-462d-a8fa-0e1588a6312a',
+      organizationVersion: 2,
+      corporationLifecycleId: corporationIdentity.subjectLifecycleId,
+      corporationId: 98_000_001,
+      characterId: 1_404_328_063,
+      characterLifecycleId: '70eb0397-adff-4a82-94d6-065bd2149ea8',
+      affiliationPeriodRevision: '43e4b829-a09a-4e34-a91e-e414c5f58fe1',
+      authorizationGeneration: 7,
+      requirementsFingerprint: 'requirements',
+      roleRevision: 'first',
+    }
+    const current = {
+      ...eligible(7),
+      authorizationCharacterId: fence.characterId,
+      authorizationCharacterLifecycleId: fence.characterLifecycleId,
+      corporationAuthorityFence: fence,
+    }
+    const resolveEligibility = vi
+      .fn()
+      .mockResolvedValueOnce(current)
+      .mockResolvedValueOnce({
+        ...current,
+        corporationAuthorityFence: { ...fence, roleRevision: 'lost' },
+      })
+    await expect(
+      guardInstalledResourceExecution(corporationIdentity, {
+        resources: [corporation],
+        resolveEligibility,
+        isCorporationSourceCurrent: vi.fn().mockResolvedValue(true),
+        loadCharacterAuthorization: vi.fn().mockResolvedValue({ tokenVersion: 7 }),
+      }),
+    ).resolves.toStrictEqual({ outcome: 'noop', reason: 'obsolete' })
+    expect(resolveEligibility).toHaveBeenCalledTimes(2)
+  })
+
   test('runs managed-alliance discovery without character authorization', async () => {
     const loadCharacterAuthorization = vi.fn()
     await expect(

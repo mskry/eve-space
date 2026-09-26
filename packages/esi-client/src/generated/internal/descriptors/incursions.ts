@@ -32,6 +32,9 @@ export const GetIncursionsDescriptor: OperationExecutionDescriptor<OperationArgu
   requestBody: null,
   requestSchema: GetIncursionsRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"incursion","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetIncursionsResponse },

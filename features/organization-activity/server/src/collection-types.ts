@@ -10,7 +10,8 @@ export interface ActivityResourceProfile {
   readonly paginated: boolean
 }
 
-interface Checkpoint {
+export interface Checkpoint {
+  readonly authorityBinding?: string
   readonly retainedIds?: readonly string[]
   readonly retainedCampaignIds?: readonly string[]
   readonly initialized: boolean

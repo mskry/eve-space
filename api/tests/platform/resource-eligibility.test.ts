@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, test, vi } from 'vitest'
 import {
+  corporationAuthorityFenceEquals,
+  createCorporationContinuationAuthorityBinding,
   managedCollectionAuthorityEquals,
   resolveInstalledResourceEligibility,
   selectDueInstalledResources,
@@ -13,6 +15,80 @@ const identity = {
   subjectKind: 'character' as const,
   subjectLifecycleId: randomUUID(),
 }
+
+describe('corporation authority bindings', () => {
+  test('compares complete source and role authority independently of validation time', () => {
+    const fence = {
+      sourceId: randomUUID(),
+      organizationVersion: 4,
+      corporationLifecycleId: randomUUID(),
+      corporationId: 98_000_001,
+      characterId: 1_404_328_063,
+      characterLifecycleId: randomUUID(),
+      affiliationPeriodRevision: randomUUID(),
+      authorizationGeneration: 7,
+      requirementsFingerprint: 'requirements-1',
+      roleRevision: randomUUID(),
+    }
+    expect(corporationAuthorityFenceEquals(fence, { ...fence })).toBe(true)
+    expect(corporationAuthorityFenceEquals(null, null)).toBe(true)
+    for (const [field, value] of [
+      ['sourceId', randomUUID()],
+      ['organizationVersion', 5],
+      ['corporationLifecycleId', randomUUID()],
+      ['characterId', 1_404_328_064],
+      ['characterLifecycleId', randomUUID()],
+      ['affiliationPeriodRevision', randomUUID()],
+      ['authorizationGeneration', 8],
+      ['requirementsFingerprint', 'requirements-2'],
+      ['roleRevision', randomUUID()],
+    ] as const) {
+      expect(corporationAuthorityFenceEquals(fence, { ...fence, [field]: value })).toBe(false)
+    }
+  })
+
+  test('derives a versioned opaque continuation value from every canonical fence component', () => {
+    const fence = {
+      sourceId: randomUUID(),
+      organizationVersion: 4,
+      corporationLifecycleId: randomUUID(),
+      corporationId: 98_000_001,
+      characterId: 1_404_328_063,
+      characterLifecycleId: randomUUID(),
+      affiliationPeriodRevision: randomUUID(),
+      authorizationGeneration: 7,
+      requirementsFingerprint: 'requirements-1',
+      roleRevision: randomUUID(),
+    }
+    const binding = createCorporationContinuationAuthorityBinding(fence)
+    expect(binding).toMatch(/^v1:[a-f\d]{64}$/u)
+    expect(binding).toBe(createCorporationContinuationAuthorityBinding({ ...fence }))
+    expect(binding).not.toContain(fence.sourceId)
+    expect(binding).not.toContain(fence.roleRevision)
+    for (const [field, value] of [
+      ['sourceId', randomUUID()],
+      ['organizationVersion', 5],
+      ['corporationLifecycleId', randomUUID()],
+      ['corporationId', 98_000_002],
+      ['characterId', 1_404_328_064],
+      ['characterLifecycleId', randomUUID()],
+      ['affiliationPeriodRevision', randomUUID()],
+      ['authorizationGeneration', 8],
+      ['requirementsFingerprint', 'requirements-2'],
+      ['roleRevision', randomUUID()],
+    ] as const) {
+      expect(createCorporationContinuationAuthorityBinding({ ...fence, [field]: value })).not.toBe(
+        binding,
+      )
+    }
+    expect(
+      createCorporationContinuationAuthorityBinding({ ...fence, roleRevision: null }),
+    ).not.toBe(binding)
+    expect(createCorporationContinuationAuthorityBinding({ ...fence, roleRevision: null })).toBe(
+      createCorporationContinuationAuthorityBinding({ ...fence, roleRevision: null }),
+    )
+  })
+})
 
 describe('installed resource eligibility', () => {
   test('selects no due work or PostgreSQL rows without installed resources', async () => {

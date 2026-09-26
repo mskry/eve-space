@@ -179,12 +179,16 @@ test('all resource definitions execute only through bounded collection and mater
       resource === resources.corporationProjectsResource
         ? { corporationId: 9801, kind: 'corporation', lifecycleId: id }
         : { characterId: 9001, kind: 'character', lifecycleId: id }
+    // SAFETY: every declared resource receives its matching subject and operation capability fixture.
     const result = await resource.collect({
       authorizationGeneration: 4,
       capabilities: {
         persistence: { readActivityCheckpoint: vi.fn().mockResolvedValue(null) },
       },
       corporationId: 9801,
+      ...(subject.kind === 'corporation' && {
+        continuationAuthorityBinding: `v1:${'a'.repeat(64)}`,
+      }),
       operations: new Proxy(
         {},
         { get: (_target, operationId) => (inputs: unknown) => execute(operationId, inputs) },

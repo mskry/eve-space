@@ -26,7 +26,9 @@ export declare function conformanceRoutes(capabilities: ConformanceRouteCapabili
                     readonly validatedAt: string | null;
                     readonly status: 'authorization-required';
                     readonly requiredScope: string;
-                    readonly reauthorizationPath: string;
+                    readonly authorizationReason?: 'scope-missing' | 'role-unsatisfied' | 'role-evidence-unavailable' | 'source-invalid';
+                    readonly requiredRolePredicates?: readonly string[];
+                    readonly reauthorizationPath?: string;
                 };
                 view: "summary";
             };

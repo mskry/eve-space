@@ -1,6 +1,7 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type {
   PlatformCharacterResourceSubject,
+  PlatformCorporationResourceSubject,
   PlatformInstalledResourceDescriptor,
   PlatformResourceCollectionContext,
   PlatformResourceCollectionResult,
@@ -29,7 +30,12 @@ vi.mock('../../src/auth/tokens.js', async (importOriginal) => ({
 vi.mock('../../src/universe/names.js', () => ({
   resolveUniverseNamesBestEffort: mocks.resolveUniverseNamesBestEffort,
 }))
-import { assertInstalledResourceDeclarations } from '../../src/platform/resource-declarations.js'
+import {
+  assertInstalledResourceDeclarations,
+  getInstalledResourceCredentialBindings,
+  getManagedCorporationResourceRequirements,
+} from '../../src/platform/resource-declarations.js'
+import { platformResources } from '../../src/platform/resources.js'
 import { guardInstalledResourceExecution } from '../../src/platform/resource-execution-guard.js'
 import { executeInstalledResourceOperation } from '../../src/platform/resource-operation-executor.js'
 
@@ -92,16 +98,393 @@ const batchResource = {
   implementation: batchImplementation,
 } as const satisfies PlatformInstalledResourceDescriptor
 
-describe('installed resource operation policy', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mocks.getCharacterCacheAuthorizationForLifecycle.mockResolvedValue({
-      scopes: ['esi-wallet.read_character_wallet.v1'],
-      tokenVersion: 4,
+const installedBindings = (moduleId: string, resourceId: string) => {
+  const descriptor = platformResources.find(
+    (item) => item.moduleId === moduleId && item.resourceId === resourceId,
+  )
+  if (!descriptor) throw new Error(`Missing installed resource ${moduleId}/${resourceId}`)
+  return getInstalledResourceCredentialBindings(descriptor)
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  mocks.getCharacterCacheAuthorizationForLifecycle.mockResolvedValue({
+    scopes: ['esi-wallet.read_character_wallet.v1'],
+    tokenVersion: 4,
+  })
+  mocks.resolveUniverseNamesBestEffort.mockResolvedValue({ complete: true, names: new Map() })
+})
+
+describe('credential-bound resource operations', () => {
+  test('compiles installed managed-member, owned-character, and exact corporation-source bindings', () => {
+    expect(installedBindings('member-audit', 'wallet-balance')['wallet-balance']).toStrictEqual({
+      kind: 'current-managed-member-character',
+      requestSubjects: ['character_id'],
+      scope: 'esi-wallet.read_character_wallet.v1',
+      sectionId: 'wallet',
+      corporationInput: null,
     })
-    mocks.resolveUniverseNamesBestEffort.mockResolvedValue({ complete: true, names: new Map() })
+    expect(
+      installedBindings('organization-activity', 'corporation-jobs')[
+        'organization-activity-corporation-jobs'
+      ],
+    ).toStrictEqual({
+      kind: 'current-managed-corporation-source',
+      requestSubjects: ['corporation_id'],
+      scope: 'esi-corporations.read_freelance_jobs.v1',
+      requiredRolePredicate: 'project-manager',
+    })
+    expect(
+      installedBindings('organization-activity', 'corporation-projects')[
+        'organization-activity-project-list'
+      ],
+    ).toMatchObject({
+      kind: 'current-managed-corporation-source',
+      requiredRolePredicate: null,
+    })
+    const owned = installedBindings('organization-activity', 'character-projects')
+    expect(owned['organization-activity-project-list']).toMatchObject({
+      kind: 'current-owned-character',
+      requestSubjects: ['corporation_id'],
+      corporationInput: 'current-affiliation',
+    })
+    expect(owned['organization-activity-project-contribution']).toMatchObject({
+      kind: 'current-owned-character',
+      requestSubjects: ['character_id', 'corporation_id'],
+      corporationInput: 'current-affiliation',
+    })
   })
 
+  test('rejects incompatible resource subject, eligibility, and generated operation authority', () => {
+    expect(() =>
+      getInstalledResourceCredentialBindings({
+        ...resource,
+        operationId: 'organization-activity-corporation-jobs',
+      }),
+    ).toThrow('incompatible character credential authority')
+    // SAFETY: this fixture intentionally pairs a corporation eligibility with character-only inputs.
+    expect(() =>
+      getInstalledResourceCredentialBindings({
+        ...resource,
+        subjectKind: 'corporation',
+        eligibility: { kind: 'current-managed-corporation-source' },
+      } as never),
+    ).toThrow('must bind its corporation request to its current source')
+    expect(
+      getInstalledResourceCredentialBindings({
+        ...resource,
+        operationId: 'organization-activity-campaign-list',
+      })['organization-activity-campaign-list'],
+    ).toEqual({ kind: 'public' })
+    // SAFETY: the extra scope field represents an untyped module attempt to override generated authority.
+    expect(() =>
+      getInstalledResourceCredentialBindings({ ...resource, scope: 'weaker' } as never),
+    ).toThrow('cannot override generated operation authority')
+  })
+
+  test('deduplicates and fingerprints root and dependent corporation requirements', () => {
+    const projects = platformResources.find((item) => item.resourceId === 'corporation-projects')!
+    const jobs = platformResources.find((item) => item.resourceId === 'corporation-jobs')!
+    const projectRequirements = getManagedCorporationResourceRequirements(projects)
+    expect(projectRequirements.scopes).toEqual(['esi-corporations.read_projects.v1'])
+    expect(projectRequirements.rolePredicates).toEqual([])
+    expect(projectRequirements).toEqual(getManagedCorporationResourceRequirements(projects))
+    expect(getManagedCorporationResourceRequirements(jobs).rolePredicates).toEqual([
+      'project-manager',
+    ])
+
+    const mixed = {
+      ...projects,
+      dependentOperationIds: [
+        ...(projects.dependentOperationIds ?? []),
+        'organization-activity-corporation-jobs',
+        'organization-activity-corporation-jobs',
+      ],
+    }
+    const requirements = getManagedCorporationResourceRequirements(mixed)
+    expect(requirements.scopes).toEqual([
+      'esi-corporations.read_freelance_jobs.v1',
+      'esi-corporations.read_projects.v1',
+    ])
+    expect(requirements.rolePredicates).toEqual(['project-manager'])
+    expect(requirements.fingerprint).not.toBe(projectRequirements.fingerprint)
+    expect(requirements).toEqual(
+      getManagedCorporationResourceRequirements({
+        ...mixed,
+        dependentOperationIds: mixed.dependentOperationIds.toReversed(),
+      }),
+    )
+    expect(() =>
+      getManagedCorporationResourceRequirements({
+        ...mixed,
+        dependentOperationIds: ['organization-activity-campaign-list'],
+      }),
+    ).toThrow('cannot mix corporation credentials with public operations')
+  })
+
+  test('binds shared project-list requests to owned affiliation or the exact managed source', async () => {
+    const owned = platformResources.find((item) => item.resourceId === 'character-projects')!
+    const corporation = platformResources.find(
+      (item) => item.resourceId === 'corporation-projects',
+    )!
+    const operationId = 'organization-activity-project-list'
+    const ownedIdentity = { ...identity, resourceId: owned.resourceId }
+    const ownedGuard = {
+      authorization: { tokenVersion: 4 },
+      authorizationCharacterId: 1_404_328_063,
+      authorizationCharacterLifecycleId: identity.subjectLifecycleId,
+      managedAuthority: null,
+      outcome: 'ready' as const,
+      resource: owned,
+      subject: {
+        kind: 'character' as const,
+        characterId: 1_404_328_063,
+        lifecycleId: identity.subjectLifecycleId,
+      },
+    }
+    const ownedEsi = vi.fn().mockResolvedValue(platformExecution([], 4))
+    const ownedOptions = {
+      guardExecution: vi.fn().mockResolvedValue(ownedGuard),
+      loadCollectionContext: vi
+        .fn()
+        .mockResolvedValue({ corporationId: 98_000_001, organizationVersion: 2 }),
+      executeEsiOperation: ownedEsi,
+      resources: [owned],
+      request: { operationId, inputs: { path: { corporation_id: 98_000_001 } } },
+    }
+    await expect(
+      executeInstalledResourceOperation(ownedIdentity, ownedOptions),
+    ).resolves.toMatchObject({ outcome: 'loaded' })
+    expect(ownedEsi).toHaveBeenCalledWith(
+      expect.objectContaining({
+        authorization: expect.objectContaining({ characterId: 1_404_328_063 }),
+      }),
+    )
+    await expect(
+      executeInstalledResourceOperation(ownedIdentity, {
+        ...ownedOptions,
+        request: { operationId, inputs: { path: { corporation_id: 98_000_002 } } },
+      }),
+    ).rejects.toThrow('outside its bound subject')
+    expect(ownedEsi).toHaveBeenCalledTimes(1)
+
+    const corporationIdentity = {
+      ...identity,
+      resourceId: corporation.resourceId,
+      subjectKind: 'corporation' as const,
+      subjectId: '98000001',
+      subjectLifecycleId: '1cfba895-359c-4a48-b21a-177d351c87a6',
+    }
+    const corporationGuard = {
+      ...ownedGuard,
+      authorizationCharacterId: 1_404_328_064,
+      resource: corporation,
+      subject: {
+        kind: 'corporation' as const,
+        corporationId: 98_000_001,
+        lifecycleId: corporationIdentity.subjectLifecycleId,
+      },
+    }
+    const corporationEsi = vi.fn().mockResolvedValue(platformExecution([], 4))
+    await expect(
+      executeInstalledResourceOperation(corporationIdentity, {
+        guardExecution: vi.fn().mockResolvedValue(corporationGuard),
+        executeEsiOperation: corporationEsi,
+        resources: [corporation],
+        request: { operationId, inputs: { path: { corporation_id: 98_000_001 } } },
+      }),
+    ).resolves.toMatchObject({ outcome: 'loaded' })
+    expect(corporationEsi).toHaveBeenCalledWith(
+      expect.objectContaining({
+        authorization: expect.objectContaining({ characterId: 1_404_328_064 }),
+      }),
+    )
+  })
+
+  test('requires the compiled managed-member section admission before gateway execution', async () => {
+    const memberResource = platformResources.find(
+      (item) => item.moduleId === 'member-audit' && item.resourceId === 'wallet-balance',
+    )!
+    const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution(100, 4))
+    const ready = {
+      authorization: { tokenVersion: 4 },
+      authorizationCharacterId: 1_404_328_063,
+      authorizationCharacterLifecycleId: identity.subjectLifecycleId,
+      managedAuthority,
+      outcome: 'ready' as const,
+      resource: memberResource,
+      subject: {
+        kind: 'character' as const,
+        characterId: 1_404_328_063,
+        lifecycleId: identity.subjectLifecycleId,
+      },
+    }
+    const options = {
+      executeEsiOperation,
+      guardExecution: vi.fn().mockResolvedValue(ready),
+      request: { operationId: 'wallet-balance', inputs: walletInputs },
+      resources: [memberResource],
+    }
+    await expect(executeInstalledResourceOperation(identity, options)).resolves.toMatchObject({
+      outcome: 'loaded',
+    })
+    expect(executeEsiOperation).toHaveBeenCalledTimes(1)
+    await expect(
+      executeInstalledResourceOperation(identity, {
+        ...options,
+        guardExecution: vi.fn().mockResolvedValue({
+          ...ready,
+          managedAuthority: { ...managedAuthority, sectionId: 'assets' },
+        }),
+      }),
+    ).rejects.toThrow('current managed-member admission')
+    expect(executeEsiOperation).toHaveBeenCalledTimes(1)
+  })
+
+  test('rejects a changed corporation role fence between collection operations', async () => {
+    const installed = platformResources.find((item) => item.resourceId === 'corporation-projects')!
+    type CorporationContext = PlatformResourceCollectionContext<
+      PlatformCorporationResourceSubject,
+      PlatformEsiOperationProtocol<'organization-activity-project-list'>
+    >
+    const collect = vi.fn(async (context: CorporationContext) => ({
+      complete: true,
+      data: await context.operations['organization-activity-project-list']({
+        path: { corporation_id: 98_000_001 },
+      }),
+    }))
+    const resourceWithCollect = {
+      ...installed,
+      dependentOperationIds: [],
+      implementation: {
+        collect,
+        materialize: vi.fn(),
+        mode: 'bounded-collection' as const,
+        operation: 'organization-activity-project-list',
+      },
+    }
+    const corporationIdentity = {
+      ...identity,
+      resourceId: resourceWithCollect.resourceId,
+      subjectKind: 'corporation' as const,
+      subjectId: '98000001',
+      subjectLifecycleId: '1cfba895-359c-4a48-b21a-177d351c87a6',
+    }
+    const fence = {
+      sourceId: 'd56315c7-6bfb-462d-a8fa-0e1588a6312a',
+      organizationVersion: 2,
+      corporationLifecycleId: corporationIdentity.subjectLifecycleId,
+      corporationId: 98_000_001,
+      characterId: 1_404_328_063,
+      characterLifecycleId: identity.subjectLifecycleId,
+      affiliationPeriodRevision: '43e4b829-a09a-4e34-a91e-e414c5f58fe1',
+      authorizationGeneration: 4,
+      requirementsFingerprint: 'projects-v1',
+      roleRevision: null,
+    }
+    const ready = {
+      authorization: { tokenVersion: 4 },
+      authorizationCharacterId: fence.characterId,
+      authorizationCharacterLifecycleId: fence.characterLifecycleId,
+      corporationAuthorityFence: fence,
+      managedAuthority: null,
+      outcome: 'ready' as const,
+      resource: resourceWithCollect,
+      subject: {
+        kind: 'corporation' as const,
+        corporationId: 98_000_001,
+        lifecycleId: corporationIdentity.subjectLifecycleId,
+      },
+    }
+    const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution([], 4))
+    await expect(
+      executeInstalledResourceOperation(corporationIdentity, {
+        resources: [resourceWithCollect],
+        createCapabilities: vi.fn().mockReturnValue({}),
+        guardExecution: vi
+          .fn()
+          .mockResolvedValueOnce(ready)
+          .mockResolvedValueOnce({
+            ...ready,
+            corporationAuthorityFence: { ...fence, sourceId: 'replacement' },
+          }),
+        executeEsiOperation,
+        loadCollectionContext: vi
+          .fn()
+          .mockResolvedValue({ corporationId: 98_000_001, organizationVersion: 2 }),
+      }),
+    ).rejects.toThrow('Resource collection authority changed')
+    expect(executeEsiOperation).not.toHaveBeenCalled()
+  })
+
+  test('accepts an incomplete corporation checkpoint reset without ESI or success', async () => {
+    const installed = platformResources.find((item) => item.resourceId === 'corporation-projects')!
+    const collect = vi.fn().mockResolvedValue({ complete: false, data: { checkpoint: 'reset' } })
+    const resourceWithCollect = {
+      ...installed,
+      implementation: {
+        collect,
+        materialize: vi.fn(),
+        mode: 'bounded-collection' as const,
+        operation: installed.operationId,
+      },
+    }
+    const corporationIdentity = {
+      ...identity,
+      resourceId: installed.resourceId,
+      subjectKind: 'corporation' as const,
+      subjectId: '98000001',
+    }
+    const fence = {
+      sourceId: 'd56315c7-6bfb-462d-a8fa-0e1588a6312a',
+      organizationVersion: 2,
+      corporationLifecycleId: corporationIdentity.subjectLifecycleId,
+      corporationId: 98_000_001,
+      characterId: 1_404_328_063,
+      characterLifecycleId: '70eb0397-adff-4a82-94d6-065bd2149ea8',
+      affiliationPeriodRevision: '43e4b829-a09a-4e34-a91e-e414c5f58fe1',
+      authorizationGeneration: 4,
+      requirementsFingerprint: 'projects-v1',
+      roleRevision: null,
+    }
+    const executeEsiOperation = vi.fn()
+    const result = await executeInstalledResourceOperation(corporationIdentity, {
+      resources: [resourceWithCollect],
+      createCapabilities: vi.fn().mockReturnValue({}),
+      guardExecution: vi.fn().mockResolvedValue({
+        authorization: { tokenVersion: 4 },
+        authorizationCharacterId: fence.characterId,
+        authorizationCharacterLifecycleId: fence.characterLifecycleId,
+        corporationAuthorityFence: fence,
+        managedAuthority: null,
+        outcome: 'ready',
+        resource: resourceWithCollect,
+        subject: {
+          kind: 'corporation',
+          corporationId: 98_000_001,
+          lifecycleId: corporationIdentity.subjectLifecycleId,
+        },
+      }),
+      executeEsiOperation,
+      loadCollectionContext: vi
+        .fn()
+        .mockResolvedValue({ corporationId: 98_000_001, organizationVersion: 2 }),
+    })
+    expect(result).toMatchObject({
+      outcome: 'loaded',
+      complete: false,
+      result: { data: { checkpoint: 'reset' } },
+    })
+    expect(collect).toHaveBeenCalledWith(
+      expect.objectContaining({
+        continuationAuthorityBinding: expect.stringMatching(/^v1:[a-f\d]{64}$/u),
+      }),
+    )
+    expect(executeEsiOperation).not.toHaveBeenCalled()
+  })
+})
+
+describe('installed resource operation policy', () => {
   test('maps cached platform wire data before returning a resource observation', async () => {
     const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution('123.45', 5, 'cache'))
     const guardExecution = vi.fn().mockResolvedValue({
@@ -457,7 +840,9 @@ describe('installed resource operation policy', () => {
     ).toStrictEqual(['universe-resolve-names', 'wallet-balance'])
     expect(executeEsiOperation).toHaveBeenCalledOnce()
   })
+})
 
+describe('bounded resource operation policy', () => {
   test('rejects invalid untyped collection inputs before ESI execution', async () => {
     const collect = vi.fn(async (context: WalletCollectionContext) => ({
       complete: true,
@@ -855,18 +1240,24 @@ function readyCollection(collectingResource: PlatformInstalledResourceDescriptor
 
 function executableDefinition<SdkOperation extends StableOperationId>(
   sdkOperationId: SdkOperation,
-  authorization: 'character' | 'public' = sdkOperationId === 'GetCharactersCharacterIdWallet'
-    ? 'character'
+  authorization: 'oauth' | 'public' = sdkOperationId === 'GetCharactersCharacterIdWallet'
+    ? 'oauth'
     : 'public',
 ) {
   return {
+    // SAFETY: this erased fixture supplies only the fields under test; SDK facts are checked by the catalog separately.
     contract: {
       audit: { esiOperationId: sdkOperationId, reviewedDate: '2026-09-03' },
       representationVersion: '1',
       authorization:
-        authorization === 'character'
-          ? { kind: 'character', scope: 'esi-wallet.read_character_wallet.v1' }
-          : { kind: 'public' },
+        authorization === 'oauth'
+          ? {
+              kind: 'oauth',
+              scope: 'esi-wallet.read_character_wallet.v1',
+              subjectBindings: ['character_id'],
+              requiredRolePredicate: null,
+            }
+          : { kind: 'public', subjectBindings: [], requiredRolePredicate: null },
       identity: { kind: 'set', field: 'ids', maximumItems: 1000 },
       freshness: { kind: 'none' },
       cache: { kind: 'none' },
@@ -875,6 +1266,7 @@ function executableDefinition<SdkOperation extends StableOperationId>(
       compatibility: { minimumDate: '2020-01-01' },
       responseValidation: { kind: 'enabled' },
     } as never,
+    // SAFETY: the registry lookup is known to return a descriptor for these reviewed test identities.
     descriptor: operationRegistry[sdkOperationId] as never,
     sdkOperationId,
   } satisfies PlatformExecutableEsiOperationDefinition

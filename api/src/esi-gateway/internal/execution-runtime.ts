@@ -721,7 +721,7 @@ class EsiExecutionRuntimeImplementation {
       throw new TypeError('Character ESI identity is invalid')
     }
     const policy: EsiOperationContract = getEsiOperationContract(resource.operation)
-    if (policy.authorization.kind !== 'character') {
+    if (policy.authorization.kind !== 'oauth') {
       throw new Error(`ESI operation ${resource.operation} is not character-authorized`)
     }
     const requiredScope = policy.authorization.scope
@@ -806,7 +806,7 @@ class EsiExecutionRuntimeImplementation {
       throw new Error('Character ESI identity is invalid')
     }
     const policy: EsiOperationContract = getEsiOperationContract(mutation.operation)
-    if (!policy.mutation || policy.authorization.kind !== 'character') {
+    if (!policy.mutation || policy.authorization.kind !== 'oauth') {
       throw new Error(`ESI operation ${mutation.operation} is not a character mutation`)
     }
     const principal = characterEsiPrincipal(mutation.characterId)
