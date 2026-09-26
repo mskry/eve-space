@@ -27,6 +27,8 @@ import { getStaticLocations } from '../universe/static-locations.js'
 const maximumCharacterAssetPages = 1000
 const characterAssetNameBatchSize = 1000
 const characterAssetWorkerConcurrency = 4
+const isSupportedAssetPageCount = (value: unknown): value is number =>
+  isPositiveSafeInteger(value) && value <= maximumCharacterAssetPages
 
 type EnrichmentStatus = 'complete' | 'partial' | 'unavailable'
 type CharacterAssetSnapshot = AssetSnapshot
@@ -63,15 +65,19 @@ const characterAssetCacheSchema = z.object({
   quantity: z.number(),
   typeId: z.number(),
 })
-const characterAssetPageCacheSchema = z.object({
-  assets: z.array(characterAssetCacheSchema),
-  page: z.number(),
-  totalPages: z.number(),
-})
+const characterAssetPageCacheSchema = z
+  .object({
+    assets: z.array(characterAssetCacheSchema),
+    page: z.number().refine(isPositiveSafeInteger),
+    totalPages: z.number().refine(isSupportedAssetPageCount),
+  })
+  .refine(({ page, totalPages }) => page <= totalPages)
 const characterAssetNamesCacheSchema = z.array(z.object({ itemId: z.number(), name: z.string() }))
 
 const characterAssetsPageRead = createCharacterEsiRead({
   cacheSchema: characterAssetPageCacheSchema,
+  cacheSchemaForInput: (input: CharacterAssetsPageRepresentationInput) =>
+    characterAssetPageCacheSchema.refine(({ page }) => page === input.page),
   descriptor: operationRegistry.GetCharactersCharacterIdAssets.transport,
   encodeRequest: (input: CharacterAssetsPageRepresentationInput) => ({
     path: { character_id: input.characterId },
@@ -177,19 +183,23 @@ export async function getCharacterAssets(
   }
 }
 
-async function loadCharacterAssetPage(
+const loadCharacterAssetPage = async (
   characterId: number,
   subjectLifecycleId: string,
   page: number,
-) {
-  return characterAssetsPageRead.execute({ characterId, page, subjectLifecycleId })
+) => {
+  const result = await characterAssetsPageRead.execute({ characterId, page, subjectLifecycleId })
+  if (result.data.page !== page) {
+    throw new CharacterAssetsPaginationError()
+  }
+  return result
 }
 
 function validatePageCount(value: unknown) {
-  if (!isPositiveSafeInteger(value) || Number(value) > maximumCharacterAssetPages) {
+  if (!isSupportedAssetPageCount(value)) {
     throw new CharacterAssetsPaginationError()
   }
-  return Number(value)
+  return value
 }
 
 function deduplicateAssets(pages: readonly EsiReadResult<CharacterAssetPageSnapshot>[]) {

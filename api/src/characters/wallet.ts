@@ -13,7 +13,11 @@ import {
   type EsiReadResultMetadata,
 } from '../esi-gateway/feature-execution.js'
 import { loadFinanceLocationNames } from './finance-location-names.js'
-import { assertFinancePositiveSafeInteger, resolveFinanceTotalPages } from './finance-pagination.js'
+import {
+  assertFinancePositiveSafeInteger,
+  financePageCacheSchema,
+  resolveFinanceTotalPages,
+} from './finance-pagination.js'
 import { loadFinanceTypeNames } from './finance-type-names.js'
 
 interface WalletBalanceRepresentationInput {
@@ -83,8 +87,8 @@ const walletJournalCacheSchema = z
         taxAmount: z.number().nullable(),
       }),
     ),
-    page: z.number(),
-    totalPages: z.number(),
+    page: financePageCacheSchema,
+    totalPages: financePageCacheSchema,
   })
   .transform((data, context): WalletJournalData => {
     const references =
@@ -111,6 +115,8 @@ const walletJournalCacheSchema = z
 
 const walletJournalRead = createCharacterEsiRead({
   cacheSchema: walletJournalCacheSchema,
+  cacheSchemaForInput: (input: WalletJournalRepresentationInput) =>
+    walletJournalCacheSchema.refine(({ page }) => page === input.page),
   descriptor: operationRegistry.GetCharactersCharacterIdWalletJournal.transport,
   encodeRequest: (input: WalletJournalRepresentationInput) => ({
     path: { character_id: input.characterId },
@@ -154,8 +160,8 @@ type WalletTransactionsResult = WalletTransactionsData & EsiReadResultMetadata
 const walletTransactionPageSize = 2500
 
 const walletTransactionsCacheSchema = z.object({
-  fromId: z.number().nullable(),
-  nextFromId: z.number().nullable(),
+  fromId: financePageCacheSchema.nullable(),
+  nextFromId: financePageCacheSchema.nullable(),
   transactions: z.array(
     z.object({
       transactionId: z.number(),
@@ -175,6 +181,8 @@ const walletTransactionsCacheSchema = z.object({
 
 const walletTransactionsRead = createCharacterEsiRead({
   cacheSchema: walletTransactionsCacheSchema,
+  cacheSchemaForInput: (input: WalletTransactionsRepresentationInput) =>
+    walletTransactionsCacheSchema.refine(({ fromId }) => fromId === input.fromId),
   descriptor: operationRegistry.GetCharactersCharacterIdWalletTransactions.transport,
   encodeRequest: (input: WalletTransactionsRepresentationInput) => ({
     path: { character_id: input.characterId },

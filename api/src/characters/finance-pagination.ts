@@ -1,4 +1,7 @@
+import { z } from 'zod'
 import { isPositiveSafeInteger } from '../type-guards.js'
+
+export const financePageCacheSchema = z.number().refine(isPositiveSafeInteger)
 
 export function assertFinancePositiveSafeInteger(
   value: unknown,

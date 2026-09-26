@@ -3,6 +3,7 @@ import type { PostUniverseIdsResponse } from '@evespace/esi-client/types'
 import { z } from 'zod'
 import { createPublicEsiRead } from '../esi-gateway/feature-execution.js'
 import { errorStatus } from '../error-status.js'
+import { isPositiveSafeInteger } from '../type-guards.js'
 import {
   readUniverseIds,
   readUniverseNames,
@@ -42,7 +43,11 @@ export interface UniverseId {
 }
 
 const universeResolutionCacheSchema = z.array(
-  z.object({ category: z.string(), id: z.number(), name: z.string() }),
+  z.object({
+    category: z.enum(Object.values(universeIdCategories)),
+    id: z.number().refine(isPositiveSafeInteger),
+    name: z.string(),
+  }),
 )
 
 interface ResolutionSplitState {

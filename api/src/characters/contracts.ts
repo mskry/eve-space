@@ -6,7 +6,11 @@ import {
   toEsiReadResultMetadata,
   type EsiReadResultMetadata,
 } from '../esi-gateway/feature-execution.js'
-import { assertFinancePositiveSafeInteger, resolveFinanceTotalPages } from './finance-pagination.js'
+import {
+  assertFinancePositiveSafeInteger,
+  financePageCacheSchema,
+  resolveFinanceTotalPages,
+} from './finance-pagination.js'
 import { financeTypeName, loadFinanceTypeNames } from './finance-type-names.js'
 
 type EsiCharacterContract = GetCharactersCharacterIdContractsResponse[number]
@@ -79,12 +83,14 @@ const characterContractCacheSchema = z.object({
 })
 const characterContractsCacheSchema = z.object({
   contracts: z.array(characterContractCacheSchema),
-  page: z.number(),
-  totalPages: z.number(),
+  page: financePageCacheSchema,
+  totalPages: financePageCacheSchema,
 })
 
 const characterContractsRead = createCharacterEsiRead({
   cacheSchema: characterContractsCacheSchema,
+  cacheSchemaForInput: (input: CharacterContractsRepresentationInput) =>
+    characterContractsCacheSchema.refine(({ page }) => page === input.page),
   descriptor: operationRegistry.GetCharactersCharacterIdContracts.transport,
   encodeRequest: (input: CharacterContractsRepresentationInput) => ({
     path: { character_id: input.characterId },
