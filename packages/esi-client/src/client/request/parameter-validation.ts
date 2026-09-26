@@ -9,15 +9,16 @@ import {
 } from './guards.js';
 import type { OperationParameterSchema, ValidatedParameter } from './types.js';
 
-export function validateParameter(
-  value: unknown,
+interface UnvalidatedReservedParameter {
+  readonly allowReserved?: unknown;
+}
+
+const validateParameterName = (
+  value: Parameters<typeof Object.keys>[0],
   operationId: string,
   index: number,
-): ValidatedParameter {
-  if (!isRecord(value)) {
-    throw new TypeError(`Operation descriptor ${operationId} parameter ${index} must be an object`);
-  }
-  const name = value.name;
+) => {
+  const name = 'name' in value ? value.name : undefined;
   if (
     typeof name !== 'string' ||
     name.length === 0 ||
@@ -28,52 +29,81 @@ export function validateParameter(
       `Operation descriptor ${operationId} parameter ${index} has an invalid name`,
     );
   }
-  const placement = value.placement;
-  if (!isParameterPlacement(placement)) {
-    throw new TypeError(
-      `Unsupported parameter placement ${String(placement)} in operation descriptor ${operationId}`,
-    );
-  }
-  if (typeof value.required !== 'boolean') {
-    throw new TypeError(
-      `Operation descriptor ${operationId} parameter ${name} required must be boolean`,
-    );
-  }
-  const style = value.style;
+  return name;
+};
+
+const validateParameterOptions = (
+  value: Parameters<typeof Object.keys>[0],
+  placement: ValidatedParameter['placement'],
+  operationId: string,
+  name: string,
+) => {
+  const style = 'style' in value ? value.style : undefined;
   const expectedStyle = placement === 'query' ? 'form' : 'simple';
   if (style !== undefined && style !== null && style !== expectedStyle) {
     throw new TypeError(
       `Unsupported ${placement} parameter style ${describeValue(style)} for ${operationId}:${name}`,
     );
   }
-  if (value.explode !== undefined && value.explode !== null && typeof value.explode !== 'boolean') {
+  const explode = 'explode' in value ? value.explode : undefined;
+  if (explode !== undefined && explode !== null && typeof explode !== 'boolean') {
     throw new TypeError(
       `Operation descriptor ${operationId} parameter ${name} explode must be boolean`,
     );
   }
+  return explode;
+};
+
+export function validateParameter(
+  value: unknown,
+  operationId: string,
+  index: number,
+): ValidatedParameter {
+  if (!isRecord(value)) {
+    throw new TypeError(`Operation descriptor ${operationId} parameter ${index} must be an object`);
+  }
+  const name = validateParameterName(value, operationId, index);
+  const placement = 'placement' in value ? value.placement : undefined;
+  if (!isParameterPlacement(placement)) {
+    throw new TypeError(
+      `Unsupported parameter placement ${String(placement)} in operation descriptor ${operationId}`,
+    );
+  }
+  const required = 'required' in value ? value.required : undefined;
+  if (typeof required !== 'boolean') {
+    throw new TypeError(
+      `Operation descriptor ${operationId} parameter ${name} required must be boolean`,
+    );
+  }
+  const explode = validateParameterOptions(value, placement, operationId, name);
+  const reserved = { allowReserved: 'allowReserved' in value ? value.allowReserved : undefined };
   switch (placement) {
     case 'path':
-      validatePathParameterDescriptor(value, operationId, name);
+      validatePathParameterDescriptor(reserved, operationId, name);
       break;
     case 'query':
-      validateQueryParameterDescriptor(value, operationId, name);
+      validateQueryParameterDescriptor(reserved, operationId, name);
       break;
     case 'header':
-      validateHeaderParameterDescriptor(value, operationId, name);
+      validateHeaderParameterDescriptor(reserved, operationId, name);
       break;
   }
-  const schema = validateParameterSchema(value.schema, operationId, name);
+  const schema = validateParameterSchema(
+    'schema' in value ? value.schema : undefined,
+    operationId,
+    name,
+  );
   return {
-    explode: value.explode ?? placement === 'query',
+    explode: explode ?? placement === 'query',
     name,
     placement,
-    required: value.required,
+    required,
     schema,
   };
 }
 
 function validatePathParameterDescriptor(
-  value: Readonly<Record<string, unknown>>,
+  value: UnvalidatedReservedParameter,
   operationId: string,
   name: string,
 ): void {
@@ -81,7 +111,7 @@ function validatePathParameterDescriptor(
 }
 
 function validateQueryParameterDescriptor(
-  value: Readonly<Record<string, unknown>>,
+  value: UnvalidatedReservedParameter,
   operationId: string,
   name: string,
 ): void {
@@ -95,7 +125,7 @@ function validateQueryParameterDescriptor(
 }
 
 function validateHeaderParameterDescriptor(
-  value: Readonly<Record<string, unknown>>,
+  value: UnvalidatedReservedParameter,
   operationId: string,
   name: string,
 ): void {
@@ -106,7 +136,7 @@ function validateHeaderParameterDescriptor(
 }
 
 function rejectAllowReserved(
-  value: Readonly<Record<string, unknown>>,
+  value: UnvalidatedReservedParameter,
   placement: 'path' | 'header',
   operationId: string,
   name: string,
@@ -123,14 +153,19 @@ export function validateParameterSchema(
   operationId: string,
   parameterName: string,
 ): OperationParameterSchema {
-  if (!isRecord(value) || typeof value.type !== 'string') {
+  if (!isRecord(value) || !('type' in value) || typeof value.type !== 'string') {
     throw new TypeError(`Invalid parameter schema for ${operationId}:${parameterName}`);
   }
   if (isScalarSchemaType(value.type)) {
     return { type: value.type };
   }
   if (value.type === 'array') {
-    if (!isRecord(value.items) || !isScalarSchemaType(value.items.type)) {
+    if (
+      !('items' in value) ||
+      !isRecord(value.items) ||
+      !('type' in value.items) ||
+      !isScalarSchemaType(value.items.type)
+    ) {
       throw new TypeError(`Unsupported array item schema for ${operationId}:${parameterName}`);
     }
     return { items: { type: value.items.type }, type: 'array' };

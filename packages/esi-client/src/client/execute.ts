@@ -385,11 +385,11 @@ function validateTransport(
   operationId: string,
   transport: OperationTransportDescriptor | undefined,
 ): void {
+  const compatibilityDateOverride: unknown = transport?.compatibilityDateOverride;
   if (
     transport !== undefined &&
     (!isRecord(transport) ||
-      (transport.compatibilityDateOverride !== undefined &&
-        transport.compatibilityDateOverride !== true))
+      (compatibilityDateOverride !== undefined && compatibilityDateOverride !== true))
   ) {
     throw new TypeError(`Operation descriptor ${operationId} has invalid transport metadata`);
   }
@@ -660,6 +660,15 @@ interface EsiExchangeDeadline {
   close(): void;
 }
 
+interface ExchangeCancellationState {
+  reason: 'timeout' | 'network' | undefined;
+}
+
+interface ResponseBodyChunks {
+  byteLength: number;
+  chunks: Uint8Array[];
+}
+
 function createExchangeDeadline(
   timeoutMs: number,
   callerSignal: AbortSignal | undefined,
@@ -668,7 +677,7 @@ function createExchangeDeadline(
   const signal = callerSignal
     ? AbortSignal.any([callerSignal, timeoutController.signal])
     : timeoutController.signal;
-  const cancellation = { reason: undefined as 'timeout' | 'network' | undefined };
+  const cancellation: ExchangeCancellationState = { reason: undefined };
   let rejectCancellation: ((reason: typeof cancellation) => void) | undefined;
   const cancellationPromise = new Promise<never>((_resolve, reject) => {
     rejectCancellation = reject;
@@ -751,7 +760,7 @@ async function readResponseBody(
     return undefined;
   }
   const reader = response.body.getReader();
-  const body = { byteLength: 0, chunks: [] as Uint8Array[] };
+  const body: ResponseBodyChunks = { byteLength: 0, chunks: [] };
   let cancellationStarted = false;
   const cancel = () => {
     cancellationStarted = true;
@@ -777,7 +786,7 @@ async function readResponseChunks(
   exchange: EsiExchangeDeadline,
   context: EsiResponseTransportContext,
   maximumBytes: number,
-  body: { chunks: Uint8Array[]; byteLength: number },
+  body: ResponseBodyChunks,
 ): Promise<void> {
   while (body.byteLength < maximumBytes) {
     const result = await exchange.race(reader.read(), context);
@@ -829,7 +838,7 @@ function releaseResponseReader(reader: ReadableStreamDefaultReader<Uint8Array>):
   }
 }
 
-function decodeResponseChunks(body: { chunks: Uint8Array[]; byteLength: number }): string {
+function decodeResponseChunks(body: ResponseBodyChunks): string {
   const bytes = new Uint8Array(body.byteLength);
   let offset = 0;
   for (const chunk of body.chunks) {

@@ -1,11 +1,23 @@
-import { CORE_DATA_PRODUCT_IDS, type CoreDataProductId } from '@eve-space/core-data-contract'
+import { CORE_DATA_PRODUCT_IDS } from '@eve-space/core-data-contract'
 import {
   coreDataCoverageExposures,
   coreDataCoverageManifest,
   coreDataCoverageSources,
   coreDataCoverageStatuses,
 } from './coverage-manifest.js'
-import { coreDataProductCatalog } from './product-catalog.js'
+import { coreDataProductCatalog, isCoreDataProductId } from './product-catalog.js'
+
+interface UnvalidatedCoverageEntry {
+  readonly domain?: unknown
+  readonly capability?: unknown
+  readonly owner?: unknown
+  readonly source?: unknown
+  readonly status?: unknown
+  readonly exposure?: unknown
+  readonly rationale?: unknown
+  readonly productId?: unknown
+  readonly esiOperationIds?: unknown
+}
 
 export interface CoreDataCoverageAuthorities {
   esiOperationIds: readonly string[]
@@ -37,7 +49,7 @@ function validateManifestEntries(
   issues: string[],
 ): void {
   for (const candidate of manifest) {
-    if (!isRecord(candidate)) {
+    if (!isCoverageEntry(candidate)) {
       issues.push('coverage entry must be an object')
       continue
     }
@@ -46,7 +58,7 @@ function validateManifestEntries(
 }
 
 function validateManifestEntry(
-  candidate: Record<string, unknown>,
+  candidate: UnvalidatedCoverageEntry,
   entryKeys: Set<string>,
   manifestedProducts: Map<string, number>,
   validEsiOperations: Set<string>,
@@ -84,7 +96,7 @@ function validateEntryIdentity(
 }
 
 function validateEntryMetadata(
-  candidate: Record<string, unknown>,
+  candidate: UnvalidatedCoverageEntry,
   key: string,
   status: unknown,
   exposure: unknown,
@@ -242,10 +254,6 @@ function includes<const Values extends readonly string[]>(
   return typeof candidate === 'string' && values.includes(candidate)
 }
 
-function isCoreDataProductId(value: string): value is CoreDataProductId {
-  return (CORE_DATA_PRODUCT_IDS as readonly string[]).includes(value)
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isCoverageEntry(value: unknown): value is UnvalidatedCoverageEntry {
   return typeof value === 'object' && value !== null
 }

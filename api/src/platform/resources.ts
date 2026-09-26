@@ -2,7 +2,7 @@ import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-mo
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
 import { coreResources } from './core-resources.js'
 
-export const platformResources = [
+export const platformResources: readonly PlatformInstalledResourceDescriptor[] = [
   ...coreResources,
   ...installedModuleResources,
-] as readonly PlatformInstalledResourceDescriptor[]
+]

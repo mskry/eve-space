@@ -18,6 +18,8 @@ import {
 import { isRecord } from '../type-guards.js'
 import { platformResources } from './resources.js'
 
+const resourceExecutionModes: ReadonlySet<string> = new Set(platformResourceExecutionModes)
+
 const resourceModeMethods = {
   'bounded-collection': { forbidden: ['request', 'map'], required: ['collect'] },
   'single-request': { forbidden: ['collect'], required: ['request', 'map'] },
@@ -180,5 +182,5 @@ function assertBatchFunctions(
 }
 
 function isResourceExecutionMode(mode: unknown): mode is PlatformResourceExecutionMode {
-  return platformResourceExecutionModes.includes(mode as PlatformResourceExecutionMode)
+  return typeof mode === 'string' && resourceExecutionModes.has(mode)
 }

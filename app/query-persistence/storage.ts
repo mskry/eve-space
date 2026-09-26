@@ -537,6 +537,8 @@ function readStoredState(
 function parseInvalidationControl(value: unknown): InvalidationControl | null {
   if (
     !isExactRecord(value, ['version', 'invalidationGeneration']) ||
+    !('version' in value) ||
+    !('invalidationGeneration' in value) ||
     value.version !== INVALIDATION_CONTROL_VERSION ||
     !isInvalidationGeneration(value.invalidationGeneration)
   ) {

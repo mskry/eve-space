@@ -47,15 +47,20 @@ export function boundedPositiveIds(
   productLabel: string,
   maximum: number,
 ) {
-  if (!isRecord(request) || !Array.isArray(request[property])) {
+  if (!isRecord(request)) {
     throw new TypeError(`${productLabel} request must contain a ${property} array`)
   }
-  const values = request[property]
+  const values: unknown = Object.getOwnPropertyDescriptor(request, property)?.value
+  if (!Array.isArray(values)) {
+    throw new TypeError(`${productLabel} request must contain a ${property} array`)
+  }
+  const parsed: number[] = []
   for (const value of values) {
     if (!isPositiveSafeInteger(value))
       throw new TypeError(`${productLabel} IDs must be positive safe integers`)
+    parsed.push(value)
   }
-  const uniqueValues = [...new Set(values)]
+  const uniqueValues = [...new Set(parsed)]
   if (uniqueValues.length > maximum) {
     throw new RangeError(`${productLabel} lookup cannot exceed ${maximum} IDs`)
   }
@@ -96,6 +101,6 @@ function isPositiveSafeInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: unknown): value is object {
   return typeof value === 'object' && value !== null
 }

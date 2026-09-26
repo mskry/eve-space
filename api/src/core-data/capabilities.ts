@@ -4,8 +4,7 @@ import type {
   CoreDataMethodsFor,
   CoreDataProductId,
 } from '@eve-space/core-data-contract'
-import { CORE_DATA_PRODUCT_IDS } from '@eve-space/core-data-contract'
-import { getCoreDataProductDefinition } from './product-catalog.js'
+import { getCoreDataProductDefinition, isCoreDataProductId } from './product-catalog.js'
 
 export function createCoreDataCapability<const ProductIds extends readonly CoreDataProductId[]>(
   productIds: ProductIds,
@@ -41,20 +40,16 @@ export function assertCoreDataProductDeclarations(
   }
   const seen = new Set<string>()
   for (const productId of productIds) {
-    if (
-      typeof productId !== 'string' ||
-      !(CORE_DATA_PRODUCT_IDS as readonly string[]).includes(productId)
-    ) {
+    if (typeof productId !== 'string' || !isCoreDataProductId(productId)) {
       throw new Error(`Unknown core-data product identity: ${String(productId)}`)
     }
     if (seen.has(productId)) {
       throw new Error(`Duplicate core-data product identity: ${productId}`)
     }
     seen.add(productId)
-    const definition = getCoreDataProductDefinition(productId as CoreDataProductId)
-    if (
-      !(definition.permittedContexts as readonly CoreDataContributionContext[]).includes(context)
-    ) {
+    const definition = getCoreDataProductDefinition(productId)
+    const permittedContexts: readonly CoreDataContributionContext[] = definition.permittedContexts
+    if (!permittedContexts.includes(context)) {
       throw new Error(`Core-data product ${productId} is not permitted in ${context}`)
     }
     if (context === 'resource-projection' && definition.networkAllowed !== false) {

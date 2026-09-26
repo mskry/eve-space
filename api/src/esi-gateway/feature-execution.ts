@@ -244,7 +244,7 @@ function publicExecutionSignal(input: unknown) {
   if (typeof input !== 'object' || input === null || !('signal' in input)) {
     return
   }
-  return (input as { readonly signal?: AbortSignal }).signal
+  return input.signal instanceof AbortSignal ? input.signal : undefined
 }
 
 function toEsiReadResult<Data>(result: EsiCachedResult<Data>): EsiReadResult<Data> {

@@ -133,9 +133,8 @@ function resolveFactory<
   ModuleId extends string,
   ContributionId extends string,
 >(group: Group, moduleId: ModuleId, contributionId: ContributionId) {
-  const factories = installedModulePersistenceCapabilityFactories[group] as Readonly<
-    Record<string, PersistenceCapabilityFactory>
-  >
+  const factories: Readonly<Record<string, PersistenceCapabilityFactory>> =
+    installedModulePersistenceCapabilityFactories[group]
   const factory = factories[`${moduleId}/${contributionId}`]
   if (!factory) {
     throw new Error(`Missing generated persistence capability ${moduleId}/${contributionId}`)

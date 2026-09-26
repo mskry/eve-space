@@ -165,7 +165,12 @@ export function parsePersistedEnvelope(stored: string, now: number) {
       'public',
       'characters',
       'organizations',
-    ])
+    ]) ||
+    !('version' in value) ||
+    !('invalidationGeneration' in value) ||
+    !('public' in value) ||
+    !('characters' in value) ||
+    !('organizations' in value)
   ) {
     throw new TypeError('Persisted ESI cache envelope is invalid.')
   }
@@ -203,15 +208,14 @@ export function parsePersistedEnvelope(stored: string, now: number) {
   }
 }
 
-export function parseCacheAdmissionContext(value: unknown): CacheAdmissionContext | null {
-  if (!isRecord(value) || !isNonemptyString(value.userId) || !Array.isArray(value.characters)) {
-    return null
-  }
+const parseAdmissionCharacters = (candidates: readonly unknown[]) => {
   const characterIds = new Set<number>()
   const characters: Array<CacheAdmissionContext['characters'][number]> = []
-  for (const candidate of value.characters) {
+  for (const candidate of candidates) {
     if (
       !isRecord(candidate) ||
+      !('characterId' in candidate) ||
+      !('admissionRevision' in candidate) ||
       !isPositiveInteger(candidate.characterId) ||
       characterIds.has(candidate.characterId) ||
       (candidate.admissionRevision !== null && !isNonemptyString(candidate.admissionRevision))
@@ -224,32 +228,65 @@ export function parseCacheAdmissionContext(value: unknown): CacheAdmissionContex
       characterId: candidate.characterId,
     })
   }
+  return characters
+}
 
+const parseAdmissionOrganization = <Candidate extends object>(
+  candidate: Candidate,
+): NonNullable<CacheAdmissionContext['organization']> | undefined => {
+  if (
+    !isRecord(candidate) ||
+    !('organizationVersion' in candidate) ||
+    !('admissionRevision' in candidate) ||
+    !('validUntil' in candidate) ||
+    !('admissionScopes' in candidate) ||
+    !isPositiveInteger(candidate.organizationVersion) ||
+    !isNonemptyString(candidate.admissionRevision) ||
+    !isNullableIsoTimestamp(candidate.validUntil) ||
+    !Array.isArray(candidate.admissionScopes)
+  ) {
+    return undefined
+  }
+  const admissionScopes = candidate.admissionScopes.filter(isNonemptyString)
+  if (
+    admissionScopes.length !== candidate.admissionScopes.length ||
+    new Set(admissionScopes).size !== admissionScopes.length
+  ) {
+    return undefined
+  }
+  return {
+    admissionRevision: candidate.admissionRevision,
+    admissionScopes,
+    organizationVersion: candidate.organizationVersion,
+    validUntil: candidate.validUntil,
+  }
+}
+
+export const parseCacheAdmissionContext = (value: unknown): CacheAdmissionContext | null => {
+  if (
+    !isRecord(value) ||
+    !('userId' in value) ||
+    !('characters' in value) ||
+    !('organization' in value) ||
+    !isNonemptyString(value.userId) ||
+    !Array.isArray(value.characters)
+  ) {
+    return null
+  }
+  const characters = parseAdmissionCharacters(value.characters)
+  if (!characters) {
+    return null
+  }
   let organization: CacheAdmissionContext['organization'] = null
   if (value.organization !== null) {
-    const candidate = value.organization
-    if (
-      !isRecord(candidate) ||
-      !isPositiveInteger(candidate.organizationVersion) ||
-      !isNonemptyString(candidate.admissionRevision) ||
-      !isNullableIsoTimestamp(candidate.validUntil) ||
-      !Array.isArray(candidate.admissionScopes)
-    ) {
+    if (!isRecord(value.organization)) {
       return null
     }
-    const admissionScopes = candidate.admissionScopes.filter(isNonemptyString)
-    if (
-      admissionScopes.length !== candidate.admissionScopes.length ||
-      new Set(admissionScopes).size !== admissionScopes.length
-    ) {
+    const parsed = parseAdmissionOrganization(value.organization)
+    if (!parsed) {
       return null
     }
-    organization = {
-      admissionRevision: candidate.admissionRevision,
-      admissionScopes,
-      organizationVersion: candidate.organizationVersion,
-      validUntil: candidate.validUntil,
-    }
+    organization = parsed
   }
   return { characters, organization, userId: value.userId }
 }
@@ -257,6 +294,14 @@ export function parseCacheAdmissionContext(value: unknown): CacheAdmissionContex
 export function readEsiPersistence(meta: QueryMeta) {
   const value: unknown = meta?.esiPersistence
   return isEsiPersistenceEligible(value) ? value : null
+}
+
+export const parsePersistedEntryKey = (keyHash: string): EntryKey => {
+  const keyValue: unknown = JSON.parse(keyHash)
+  if (!Array.isArray(keyValue) || keyValue.length === 0 || toCacheKey(keyValue) !== keyHash) {
+    throw new TypeError('Persisted ESI query identity is invalid.')
+  }
+  return keyValue
 }
 
 export function partitionMatchesAdmission(
@@ -432,7 +477,9 @@ export function readSerializedEnvelopeGeneration(value: string | null) {
   }
   try {
     const parsed: unknown = JSON.parse(value)
-    return isRecord(parsed) && isInvalidationGeneration(parsed.invalidationGeneration)
+    return isRecord(parsed) &&
+      'invalidationGeneration' in parsed &&
+      isInvalidationGeneration(parsed.invalidationGeneration)
       ? parsed.invalidationGeneration
       : null
   } catch {
@@ -515,8 +562,8 @@ export function invalidateSerializedEnvelope(
   }
 }
 
-function parseCharacterPartitions(
-  value: Record<string, unknown>,
+function parseCharacterPartitions<Value extends object>(
+  value: Value,
   now: number,
   budget: ParseEnvelopeBudget,
 ) {
@@ -542,7 +589,12 @@ function parseCharacterPartition(
   if (!isPositiveInteger(characterId) || String(characterId) !== characterIdKey) {
     throw new TypeError('Persisted character cache identity is invalid.')
   }
-  if (!isExactRecord(candidate, ['ownerUserId', 'admissionRevision', 'cache'])) {
+  if (
+    !isExactRecord(candidate, ['ownerUserId', 'admissionRevision', 'cache']) ||
+    !('ownerUserId' in candidate) ||
+    !('admissionRevision' in candidate) ||
+    !('cache' in candidate)
+  ) {
     throw new TypeError('Persisted character cache partition is invalid.')
   }
   if (!isNonemptyString(candidate.ownerUserId) || !isNonemptyString(candidate.admissionRevision)) {
@@ -568,8 +620,8 @@ function parseCharacterPartition(
   }
 }
 
-function parseOrganizationPartitions(
-  value: Record<string, unknown>,
+function parseOrganizationPartitions<Value extends object>(
+  value: Value,
   now: number,
   budget: ParseEnvelopeBudget,
 ) {
@@ -601,7 +653,12 @@ function parseOrganizationPartition(
       'admissionRevision',
       'validUntil',
       'cache',
-    ])
+    ]) ||
+    !('ownerUserId' in candidate) ||
+    !('organizationVersion' in candidate) ||
+    !('admissionRevision' in candidate) ||
+    !('validUntil' in candidate) ||
+    !('cache' in candidate)
   ) {
     throw new TypeError('Persisted organization cache partition is invalid.')
   }
@@ -635,7 +692,10 @@ function parseOrganizationPartition(
   }
 }
 
-function removePartitions(partitions: Record<string, unknown>, key?: string) {
+function removePartitions(
+  partitions: EsiQueryCacheEnvelope['characters'] | EsiQueryCacheEnvelope['organizations'],
+  key?: string,
+) {
   if (key !== undefined) {
     delete partitions[key]
     return
@@ -1003,10 +1063,7 @@ function parseTuple(keyHash: string, value: unknown, now: number, strict: boolea
     if (!isJsonDto(value[0])) {
       throw new TypeError('Persisted ESI query data is invalid.')
     }
-    const keyValue: unknown = JSON.parse(keyHash)
-    if (!Array.isArray(keyValue) || keyValue.length === 0 || toCacheKey(keyValue) !== keyHash) {
-      throw new TypeError('Persisted ESI query identity is invalid.')
-    }
+    const keyValue = parsePersistedEntryKey(keyHash)
     const meta = parsePersistedQueryMeta(value[3])
     const persistence = readEsiPersistence(meta)
     if (!persistence || !isEsiPersistenceCoherent(keyValue, persistence)) {
@@ -1027,7 +1084,7 @@ function parseTuple(keyHash: string, value: unknown, now: number, strict: boolea
 }
 
 function parsePersistedQueryMeta(value: unknown): QueryMeta {
-  if (!isRecord(value)) {
+  if (!isRecord(value) || !('esiPersistence' in value)) {
     throw new TypeError('Persisted ESI query metadata is invalid.')
   }
   const keys = Object.keys(value)
@@ -1038,19 +1095,20 @@ function parsePersistedQueryMeta(value: unknown): QueryMeta {
   if (!persistence) {
     throw new TypeError('Persisted ESI query declaration is invalid.')
   }
-  if (value.globalErrorMessage !== undefined && typeof value.globalErrorMessage !== 'string') {
+  const globalErrorMessage = 'globalErrorMessage' in value ? value.globalErrorMessage : undefined
+  if (globalErrorMessage !== undefined && typeof globalErrorMessage !== 'string') {
     throw new TypeError('Persisted ESI query error metadata is invalid.')
   }
   return {
     esiPersistence: persistence,
-    ...(typeof value.globalErrorMessage === 'string' && {
-      globalErrorMessage: value.globalErrorMessage,
+    ...(typeof globalErrorMessage === 'string' && {
+      globalErrorMessage,
     }),
   }
 }
 
 function parsePersistableEsiPersistence(value: unknown): PersistableEsiQuery | null {
-  if (!isRecord(value) || !isNonemptyString(value.kind)) {
+  if (!isRecord(value) || !('kind' in value) || !isNonemptyString(value.kind)) {
     return null
   }
   if (value.kind === 'public-esi' && hasExactKeys(value, ['kind'])) {
@@ -1059,6 +1117,7 @@ function parsePersistableEsiPersistence(value: unknown): PersistableEsiQuery | n
   if (
     value.kind === 'character-esi' &&
     hasExactKeys(value, ['kind', 'characterId']) &&
+    'characterId' in value &&
     isPositiveInteger(value.characterId)
   ) {
     return { characterId: value.characterId, kind: 'character-esi' }
@@ -1066,6 +1125,7 @@ function parsePersistableEsiPersistence(value: unknown): PersistableEsiQuery | n
   if (
     value.kind === 'organization-esi' &&
     hasExactKeys(value, ['kind', 'admissionScope']) &&
+    'admissionScope' in value &&
     isNonemptyString(value.admissionScope)
   ) {
     return { admissionScope: value.admissionScope, kind: 'organization-esi' }

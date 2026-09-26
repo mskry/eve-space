@@ -3,8 +3,8 @@ import type postgres from 'postgres'
 import { z } from 'zod'
 import { sql } from '../db/client.js'
 import {
+  assertRegisteredEsiOperation,
   getOptionalCharacterEsiScope,
-  type EsiOperation,
 } from '../esi-gateway/catalog-interface.js'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
 
@@ -28,7 +28,8 @@ export async function repairPlatformCollectionState(options: CollectionStateRepa
     ) {
       return []
     }
-    const requiredScope = getOptionalCharacterEsiScope(resource.operationId as EsiOperation)
+    assertRegisteredEsiOperation(resource.operationId)
+    const requiredScope = getOptionalCharacterEsiScope(resource.operationId)
     return requiredScope
       ? [
           {

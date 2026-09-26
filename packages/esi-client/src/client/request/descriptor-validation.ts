@@ -12,11 +12,8 @@ import type {
   ValidatedParameter,
 } from './types.js';
 
-export function validateDescriptor(value: unknown): ValidatedDescriptor {
-  if (!isRecord(value)) {
-    throw new TypeError('Operation descriptor must be an object');
-  }
-  const operationId = value.operationId;
+const validateOperationId = (value: Parameters<typeof Object.keys>[0]) => {
+  const operationId = 'operationId' in value ? value.operationId : undefined;
   if (
     typeof operationId !== 'string' ||
     operationId.length === 0 ||
@@ -26,31 +23,51 @@ export function validateDescriptor(value: unknown): ValidatedDescriptor {
   ) {
     throw new TypeError('Operation descriptor operationId must be a non-empty safe string');
   }
-  const method = value.method;
+  return operationId;
+};
+
+const validateRequestSchema = (value: Parameters<typeof Object.keys>[0], operationId: string) => {
+  const requestSchema = 'requestSchema' in value ? value.requestSchema : undefined;
+  if (
+    requestSchema !== undefined &&
+    (!isRecord(requestSchema) ||
+      !('safeParse' in requestSchema) ||
+      typeof requestSchema.safeParse !== 'function')
+  ) {
+    throw new TypeError(
+      `Operation descriptor ${operationId} requestSchema must provide safeParse()`,
+    );
+  }
+};
+
+export function validateDescriptor(value: unknown): ValidatedDescriptor {
+  if (!isRecord(value)) {
+    throw new TypeError('Operation descriptor must be an object');
+  }
+  const operationId = validateOperationId(value);
+  const method = 'method' in value ? value.method : undefined;
   if (!isHttpMethod(method)) {
     throw new TypeError(`Invalid HTTP method in operation descriptor ${operationId}`);
   }
-  const path = value.path;
+  const path = 'path' in value ? value.path : undefined;
   if (typeof path !== 'string') {
     throw new TypeError(`Invalid path template in operation descriptor ${operationId}`);
   }
   validatePathTemplate(path, operationId);
-  if (!Array.isArray(value.parameters)) {
+  const declaredParameters = 'parameters' in value ? value.parameters : undefined;
+  if (!Array.isArray(declaredParameters)) {
     throw new TypeError(`Operation descriptor ${operationId} parameters must be an array`);
   }
-  const parameters = value.parameters.map((parameter, index) =>
+  const parameters = declaredParameters.map((parameter, index) =>
     validateParameter(parameter, operationId, index),
   );
   validateParameterIdentities(parameters, operationId);
   validatePathParameters(path, parameters, operationId);
-  const requestBody = validateRequestBody(value.requestBody, operationId);
-  if (value.requestSchema !== undefined) {
-    if (!isRecord(value.requestSchema) || typeof value.requestSchema.safeParse !== 'function') {
-      throw new TypeError(
-        `Operation descriptor ${operationId} requestSchema must provide safeParse()`,
-      );
-    }
-  }
+  const requestBody = validateRequestBody(
+    'requestBody' in value ? value.requestBody : undefined,
+    operationId,
+  );
+  validateRequestSchema(value, operationId);
   if (
     requestBody !== null &&
     parameters.some(
@@ -158,12 +175,13 @@ function validateRequestBody(
   if (value === null) {
     return null;
   }
-  if (!isRecord(value) || typeof value.required !== 'boolean') {
+  if (!isRecord(value) || !('required' in value) || typeof value.required !== 'boolean') {
     throw new TypeError(`Invalid request body descriptor for operation ${operationId}`);
   }
-  if (value.mediaType !== 'application/json') {
+  const mediaType = 'mediaType' in value ? value.mediaType : undefined;
+  if (mediaType !== 'application/json') {
     throw new TypeError(
-      `Unsupported request body media type ${String(value.mediaType)} for operation ${operationId}`,
+      `Unsupported request body media type ${String(mediaType)} for operation ${operationId}`,
     );
   }
   return { mediaType: 'application/json', required: value.required };

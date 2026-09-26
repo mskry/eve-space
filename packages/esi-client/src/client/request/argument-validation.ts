@@ -13,6 +13,7 @@ import { validateHeaderValue } from './serialization.js';
 import type {
   OperationParameterPlacement,
   ScalarParameterSchema,
+  UnvalidatedOperationArguments,
   ValidatedDescriptor,
   ValidatedParameter,
 } from './types.js';
@@ -20,7 +21,7 @@ import type {
 export function validateArgumentsObject(
   descriptor: ValidatedDescriptor,
   value: unknown,
-): Readonly<Record<string, unknown>> {
+): UnvalidatedOperationArguments {
   if (!isPlainRecord(value)) {
     throw requestError(
       descriptor.operationId,
@@ -48,12 +49,17 @@ export function validateArgumentsObject(
       );
     }
   }
-  return value;
+  return {
+    ...('path' in value && { path: value.path }),
+    ...('query' in value && { query: value.query }),
+    ...('headers' in value && { headers: value.headers }),
+    ...('body' in value && { body: value.body }),
+  };
 }
 
 export function collectParameterValues(
   descriptor: ValidatedDescriptor,
-  arguments_: Readonly<Record<string, unknown>>,
+  arguments_: UnvalidatedOperationArguments,
 ): Readonly<Record<OperationParameterPlacement, ReadonlyMap<string, unknown>>> {
   const result: Record<OperationParameterPlacement, Map<string, unknown>> = {
     header: new Map(),
@@ -68,7 +74,7 @@ export function collectParameterValues(
 
 function collectPlacementValues(
   descriptor: ValidatedDescriptor,
-  arguments_: Readonly<Record<string, unknown>>,
+  arguments_: UnvalidatedOperationArguments,
   placement: OperationParameterPlacement,
   result: Map<string, unknown>,
 ): void {
@@ -85,7 +91,7 @@ function collectPlacementValues(
     parameters,
   );
   for (const parameter of parameters) {
-    const parameterValue = group?.[parameter.name];
+    const parameterValue = group?.get(parameter.name);
     if (parameterValue === undefined) {
       if (parameter.required) {
         throw requestError(
@@ -108,7 +114,7 @@ function validateParameterGroup(
   placement: OperationParameterPlacement,
   groupName: 'path' | 'query' | 'headers',
   parameters: readonly ValidatedParameter[],
-): Readonly<Record<string, unknown>> | undefined {
+): ReadonlyMap<string, unknown> | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -131,7 +137,7 @@ function validateParameterGroup(
       );
     }
   }
-  return value;
+  return new Map(Object.entries(value));
 }
 
 function validateParameterValue(

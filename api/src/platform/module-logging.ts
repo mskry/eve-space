@@ -2,6 +2,7 @@ import { isPlatformModuleId } from '@eve-space/platform-module-contract/identifi
 import type {
   PlatformModuleLogFields,
   PlatformModuleLogger,
+  PlatformModuleLogValue,
 } from '@eve-space/platform-module-contract/server'
 import { recordDiagnostic } from '../logging.js'
 import { containsSensitiveText } from '../sensitive-data.js'
@@ -13,9 +14,15 @@ const maximumFieldCount = 20
 const maximumStringLength = 200
 
 interface PlatformModuleLogSink {
-  info(message: string, context: Readonly<Record<string, unknown>>): void
-  warn(message: string, context: Readonly<Record<string, unknown>>): void
-  error(message: string, context: Readonly<Record<string, unknown>>): void
+  info(message: string, context: PlatformModuleLogContext): void
+  warn(message: string, context: PlatformModuleLogContext): void
+  error(message: string, context: PlatformModuleLogContext): void
+}
+
+interface PlatformModuleLogContext {
+  readonly [field: string]: PlatformModuleLogValue
+  readonly event: string
+  readonly moduleId: string
 }
 
 export function createPlatformModuleLogger(

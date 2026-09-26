@@ -402,6 +402,16 @@ describe('descriptor-driven request construction', () => {
   });
 });
 
+it('does not treat inherited properties as supplied parameter values', () => {
+  const descriptor = operation({
+    parameters: [parameter('constructor', 'query', 'string', true)],
+  });
+
+  expect(captureError(descriptor, { query: {} })).toMatchObject({
+    issues: [{ code: 'required', path: ['query', 'constructor'] }],
+  });
+});
+
 function operation(
   overrides: Partial<ExecutableOperationDescriptor> = {},
 ): ExecutableOperationDescriptor {

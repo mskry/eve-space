@@ -5,8 +5,8 @@ export class BoundedEsiL1Cache {
 
   constructor(private readonly capacity: number) {}
 
-  get<Data>(key: string): EsiCacheEnvelope<Data> | undefined {
-    const entry = this.#entries.get(key) as EsiCacheEnvelope<Data> | undefined
+  get(key: string): EsiCacheEnvelope<unknown> | undefined {
+    const entry = this.#entries.get(key)
     if (!entry) {
       return undefined
     }

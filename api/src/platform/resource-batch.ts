@@ -38,6 +38,12 @@ type BatchClassification<Data = unknown> =
       readonly outcome: 'changed'
     }
 
+type BatchRequestInputs = ReturnType<PlatformResourceBatchOperationImplementation['request']>
+
+interface BatchClassificationCandidate {
+  readonly data?: unknown
+}
+
 export interface EligibleBatchSubject {
   readonly identity: {
     readonly moduleId: string
@@ -76,6 +82,25 @@ export interface BatchExecutionOptions {
   readonly executeEsiOperation?: typeof executeUntypedPlatformEsiOperation
 }
 
+const toEligibleBatchSubjects = (payload: PlatformResourceBatchPayload) =>
+  payload.subjects.map((identity) => toEligibleBatchSubject(payload, identity))
+
+const enrichBatchClassifications = (
+  classifications: readonly BatchClassification[],
+  eligible: readonly EligibleBatchSubject[],
+) => {
+  const eligibleBySubject = new Map(
+    eligible.map((candidate) => [batchSubjectKey(candidate.subject), candidate]),
+  )
+  return classifications.map((classification) => {
+    const eligibleSubject = eligibleBySubject.get(batchSubjectKey(classification.subject))
+    if (!eligibleSubject) {
+      throw new Error('Resource batch classification is not eligible')
+    }
+    return { ...eligibleSubject, ...classification }
+  })
+}
+
 export async function executeInstalledResourceBatchOperation(
   payload: PlatformResourceBatchPayload,
   options: BatchExecutionOptions = {},
@@ -112,7 +137,7 @@ export async function executeInstalledResourceBatchOperation(
     )
   }
 
-  const candidates = parsed.subjects.map((identity) => toEligibleBatchSubject(parsed, identity))
+  const candidates = toEligibleBatchSubjects(parsed)
   assertUniqueBatchSubjects(candidates.map(({ subject }) => subject))
   const eligibility = await Promise.all(
     candidates.map(({ identity }) =>
@@ -129,7 +154,7 @@ export async function executeInstalledResourceBatchOperation(
   }
 
   const subjects = eligible.map(({ subject }) => subject)
-  let inputs: Readonly<Record<string, unknown>>
+  let inputs: BatchRequestInputs
   try {
     inputs = batch.request(subjects)
     assertBatchInputs(inputs, setConfiguration.field, subjects, setConfiguration.maximumItems)
@@ -162,30 +187,15 @@ export async function executeInstalledResourceBatchOperation(
     options.signal?.throwIfAborted()
     throw new PlatformResourceBatchExecutionError(new PlatformResourceMappingError(error), eligible)
   }
-  const eligibleBySubject = new Map(
-    eligible.map((candidate) => [batchSubjectKey(candidate.subject), candidate]),
-  )
-  const enrichClassification = (classification: (typeof classifications)[number]) => {
-    const eligibleSubject = eligibleBySubject.get(batchSubjectKey(classification.subject))
-    if (!eligibleSubject) {
-      throw new Error('Resource batch classification is not eligible')
-    }
-    return { ...eligibleSubject, ...classification }
-  }
-
   return {
-    classifications: classifications.map(enrichClassification),
+    classifications: enrichBatchClassifications(classifications, eligible),
     outcome: 'loaded',
     resource,
     validatedAt: result.validatedAt,
   }
 }
 
-function batchEsiRequest(
-  operation: string,
-  inputs: Readonly<Record<string, unknown>>,
-  signal?: AbortSignal,
-) {
+function batchEsiRequest(operation: string, inputs: BatchRequestInputs, signal?: AbortSignal) {
   return {
     authorization: { kind: 'public' as const },
     inputs,
@@ -263,7 +273,7 @@ function validateBatchClassification<Data>(
 
 function assertBatchClassificationOutcome(
   mode: PlatformResourceBatchMode,
-  value: Readonly<Record<string, unknown>>,
+  value: BatchClassificationCandidate,
   outcome: string,
 ) {
   if (mode === 'change-hint') {
@@ -304,7 +314,7 @@ function toEligibleBatchSubject(
 }
 
 function assertBatchInputs(
-  inputs: Readonly<Record<string, unknown>>,
+  inputs: BatchRequestInputs,
   field: string,
   subjects: readonly PlatformCharacterResourceSubject[],
   maximumItems: number,

@@ -1,8 +1,12 @@
 import type {
+  PlatformAssignOrdinaryGroupCapability,
   PlatformAuthorizedOrganizationContext,
+  PlatformBlockMemberCapability,
   PlatformOrganizationCommandCapabilities,
   PlatformOrganizationCommandId,
+  PlatformRevokeOrdinaryGroupCapability,
   PlatformReviewerTargetContext,
+  PlatformUnblockMemberCapability,
 } from '@eve-space/platform-module-contract/server'
 import { platformModuleError } from '@eve-space/platform-module-server'
 import { OrganizationMemberBlockMutationError } from '../organization/block-store.js'
@@ -33,6 +37,17 @@ interface BoundOrganizationCommand {
   readonly managedMemberLifecycleId: string
 }
 
+type OrganizationCommandCapabilityMethods = PlatformAssignOrdinaryGroupCapability &
+  PlatformRevokeOrdinaryGroupCapability &
+  PlatformBlockMemberCapability &
+  PlatformUnblockMemberCapability
+
+type AvailableOrganizationCommandCapabilities = {
+  -readonly [
+    Method in keyof OrganizationCommandCapabilityMethods
+  ]?: OrganizationCommandCapabilityMethods[Method]
+}
+
 export function createPlatformOrganizationCommandCapabilities<
   const CommandIds extends readonly PlatformOrganizationCommandId[],
 >(
@@ -48,7 +63,7 @@ export function createPlatformOrganizationCommandCapabilities<
     requiredPermission: binding.organization.requiredPermission,
     targetUserId: binding.target.account.userId,
   })
-  const capabilities: Record<string, unknown> = {}
+  const capabilities: AvailableOrganizationCommandCapabilities = {}
   for (const commandId of commandIds) {
     addCommandCapability(capabilities, commandId, bound)
   }
@@ -56,7 +71,7 @@ export function createPlatformOrganizationCommandCapabilities<
 }
 
 function addCommandCapability(
-  capabilities: Record<string, unknown>,
+  capabilities: AvailableOrganizationCommandCapabilities,
   commandId: PlatformOrganizationCommandId,
   binding: BoundOrganizationCommand,
 ) {
@@ -122,6 +137,9 @@ function addCommandCapability(
       }
     }
     return
+  }
+  if (commandId !== 'unblock-member') {
+    throw new Error(`Unsupported organization command ${commandId}`)
   }
   capabilities.unblockMember = async (input: { reason: string }) => {
     const result = await translateCommandError(() =>

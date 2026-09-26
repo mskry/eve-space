@@ -103,6 +103,13 @@ export interface OperationRequestArguments {
   readonly body?: unknown;
 }
 
+export interface UnvalidatedOperationArguments {
+  readonly path?: unknown;
+  readonly query?: unknown;
+  readonly headers?: unknown;
+  readonly body?: unknown;
+}
+
 export type OperationArguments<TData> = Omit<TData, 'url'>;
 
 export interface ExecutableOperationDescriptor<
