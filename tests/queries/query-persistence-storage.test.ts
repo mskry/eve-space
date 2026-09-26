@@ -8,6 +8,11 @@ import {
   type EsiQueryCacheEnvelope,
   type PersistedQueryTuple,
 } from '../../app/query-persistence/envelope'
+import {
+  advanceScopeWatermarks,
+  initialScopeWatermarks,
+  scopesSinceGeneration,
+} from '../../app/query-persistence/scope-watermarks'
 
 const NOW = Date.parse('2026-09-14T11:00:00.000Z')
 const PUBLIC_KEY = '["public","characters",7]'
@@ -19,18 +24,125 @@ const MODULE_KEY =
 const MODULE_SCOPE = 'organization:v1:organization-activity:member:organization-activity.view'
 
 describe('IndexedDB query persistence storage', () => {
+  it('recovers multiple missed organization generations without invalidating characters', async () => {
+    const storage = createStorage()
+    await storage.write(JSON.stringify(envelope('Public')), true)
+    await storage.invalidate({ kind: 'organization' })
+    await storage.invalidate({ admissionScope: MODULE_SCOPE, kind: 'organization' })
+
+    const history = await storage.readGeneration()
+    expect(typeof history).toBe('object')
+    expect(
+      scopesSinceGeneration(history && typeof history === 'object' ? history : undefined, 0),
+    ).toStrictEqual([{ kind: 'organization' }])
+    expect(JSON.parse((await storage.read()).value!).characters).toStrictEqual(
+      envelope('Public').characters,
+    )
+  })
+
+  it('recovers only affected scopes after mixed missed invalidations', async () => {
+    const storage = createStorage()
+    await storage.write(JSON.stringify(envelope('Public')), true)
+    await storage.invalidate({ kind: 'organization' })
+    await storage.invalidate({ characterId: 8, kind: 'character' })
+    await storage.invalidate({ characterId: 7, kind: 'character' })
+
+    const history = await storage.readGeneration()
+    expect(
+      scopesSinceGeneration(history && typeof history === 'object' ? history : undefined, 0),
+    ).toStrictEqual([
+      { kind: 'organization' },
+      { characterId: 7, kind: 'character' },
+      { characterId: 8, kind: 'character' },
+    ])
+  })
+
+  it('migrates a valid legacy control with an explicit history baseline', async () => {
+    const indexedDb = new FakeIndexedDb()
+    const current = envelope('Public')
+    current.invalidationGeneration = 4
+    indexedDb.setRecord('eve-space-esi-query-cache', JSON.stringify(current))
+    indexedDb.setRecord('eve-space-esi-query-cache-control', {
+      invalidationGeneration: 4,
+      version: 1,
+    })
+    const storage = createIndexedDbQueryPersistenceStorage({
+      indexedDb,
+      localStorage: new FakeStorage(),
+      now: () => NOW,
+    })
+
+    expect(JSON.parse((await storage.read()).value!).characters).toStrictEqual(current.characters)
+    const history = await storage.readGeneration()
+    expect(
+      scopesSinceGeneration(history && typeof history === 'object' ? history : undefined, 3),
+    ).toStrictEqual([{ kind: 'all' }])
+    expect(
+      scopesSinceGeneration(history && typeof history === 'object' ? history : undefined, 4),
+    ).toStrictEqual([])
+    await storage.invalidate({ kind: 'organization' })
+    const advanced = await storage.readGeneration()
+    expect(
+      scopesSinceGeneration(advanced && typeof advanced === 'object' ? advanced : undefined, 4),
+    ).toStrictEqual([{ kind: 'organization' }])
+  })
+
+  it('fails closed when scope metadata is incomplete or corrupted', async () => {
+    const indexedDb = new FakeIndexedDb()
+    const storage = createIndexedDbQueryPersistenceStorage({
+      indexedDb,
+      localStorage: new FakeStorage(),
+      now: () => NOW,
+    })
+    await storage.write(JSON.stringify(envelope('Public')), true)
+    indexedDb.setRecord('eve-space-esi-query-cache-control', {
+      ...initialScopeWatermarks(),
+      invalidationGeneration: 2,
+      organizationGeneration: 1,
+    })
+
+    await expect(storage.readGeneration()).resolves.toBeNull()
+    const restored = await storage.read()
+    expect(restored.generation).toBeNull()
+    expect(JSON.parse(restored.value!).characters).toStrictEqual({})
+    expect(JSON.parse(restored.value!).organizations).toStrictEqual({})
+  })
+
+  it('does not trust a private envelope whose durable scope control is missing', async () => {
+    const indexedDb = new FakeIndexedDb()
+    indexedDb.setRecord('eve-space-esi-query-cache', JSON.stringify(envelope('Public')))
+    const storage = createIndexedDbQueryPersistenceStorage({
+      indexedDb,
+      localStorage: new FakeStorage(),
+      now: () => NOW,
+    })
+
+    const restored = await storage.read()
+    expect(restored.scopeHistory?.historyFromGeneration).toBe(0)
+    expect(JSON.parse(restored.value!).characters).toStrictEqual({})
+    expect(JSON.parse(restored.value!).organizations).toStrictEqual({})
+  })
+
+  it('compacts character history with a fail-closed baseline', () => {
+    let history = initialScopeWatermarks()
+    for (let characterId = 1; characterId <= 129; characterId += 1) {
+      history = advanceScopeWatermarks(history, { characterId, kind: 'character' })
+    }
+    expect(scopesSinceGeneration(history, 0)).toStrictEqual([{ kind: 'all' }])
+    expect(scopesSinceGeneration(history, 1)).not.toContainEqual({ kind: 'all' })
+  })
   it('atomically advances generation and rejects an obsolete private write', async () => {
     const storage = createStorage()
     const initial = envelope('Initial public')
     await storage.write(JSON.stringify(initial), true)
 
-    await expect(storage.invalidate({ characterId: 7, kind: 'character' })).resolves.toStrictEqual({
+    await expect(storage.invalidate({ characterId: 7, kind: 'character' })).resolves.toMatchObject({
       generation: 1,
       scope: { characterId: 7, kind: 'character' },
     })
 
     const stale = envelope('Updated public')
-    await expect(storage.write(JSON.stringify(stale), true)).resolves.toStrictEqual({
+    await expect(storage.write(JSON.stringify(stale), true)).resolves.toMatchObject({
       generation: 1,
       privateAccepted: false,
     })
@@ -51,8 +163,11 @@ describe('IndexedDB query persistence storage', () => {
 
     await storage.removeEnvelope()
 
-    await expect(storage.read()).resolves.toStrictEqual({ generation: 0, value: null })
-    await expect(storage.readGeneration()).resolves.toBe(0)
+    await expect(storage.read()).resolves.toMatchObject({ generation: 0, value: null })
+    await expect(storage.readGeneration()).resolves.toMatchObject({
+      invalidationGeneration: 0,
+      version: 2,
+    })
   })
 
   it('rejects and removes an oversized envelope during restoration', async () => {
@@ -67,8 +182,8 @@ describe('IndexedDB query persistence storage', () => {
       now: () => NOW,
     })
 
-    await expect(storage.read()).resolves.toStrictEqual({ generation: 0, value: null })
-    await expect(storage.read()).resolves.toStrictEqual({ generation: 0, value: null })
+    await expect(storage.read()).resolves.toMatchObject({ generation: 0, value: null })
+    await expect(storage.read()).resolves.toMatchObject({ generation: 0, value: null })
   })
 
   it('invalidates one module scope atomically and rejects its stale captured-generation write', async () => {
@@ -79,11 +194,11 @@ describe('IndexedDB query persistence storage', () => {
 
     await expect(
       storage.invalidate({ admissionScope: MODULE_SCOPE, kind: 'organization' }),
-    ).resolves.toStrictEqual({
+    ).resolves.toMatchObject({
       generation: 1,
       scope: { admissionScope: MODULE_SCOPE, kind: 'organization' },
     })
-    await expect(storage.write(JSON.stringify(staleWrite), true)).resolves.toStrictEqual({
+    await expect(storage.write(JSON.stringify(staleWrite), true)).resolves.toMatchObject({
       generation: 1,
       privateAccepted: false,
     })
@@ -125,7 +240,7 @@ describe('IndexedDB query persistence storage', () => {
 
     await expect(
       storage.write(JSON.stringify(envelope('Updated public')), true),
-    ).resolves.toStrictEqual({
+    ).resolves.toMatchObject({
       generation: null,
       privateAccepted: false,
     })
@@ -164,7 +279,7 @@ describe('IndexedDB query persistence storage', () => {
     })
     await expect(
       reloaded.write(JSON.stringify(envelope('Updated public')), true),
-    ).resolves.toStrictEqual({
+    ).resolves.toMatchObject({
       generation: 1,
       privateAccepted: false,
     })
@@ -213,7 +328,7 @@ describe('IndexedDB query persistence storage', () => {
 
     await expect(
       storage.invalidate({ admissionScope: ORGANIZATION_SCOPE, kind: 'organization' }),
-    ).resolves.toStrictEqual({ generation: 1, scope: { kind: 'all' } })
+    ).resolves.toMatchObject({ generation: 1, scope: { kind: 'all' } })
     const restored = JSON.parse((await storage.read()).value!) as EsiQueryCacheEnvelope
     expect(restored.characters).toStrictEqual({})
     expect(restored.organizations).toStrictEqual({})

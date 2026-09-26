@@ -6,11 +6,20 @@ const allowedDependenciesByModule = {
   'entry-state': ['envelope'],
   envelope: ['shape'],
   notifications: ['envelope', 'shape'],
-  'private-lifecycle': ['envelope', 'notifications', 'shape', 'storage'],
-  runtime: ['entry-state', 'envelope', 'notifications', 'private-lifecycle', 'state', 'storage'],
+  'private-lifecycle': ['envelope', 'notifications', 'scope-watermarks', 'shape', 'storage'],
+  runtime: [
+    'entry-state',
+    'envelope',
+    'notifications',
+    'private-lifecycle',
+    'shape',
+    'state',
+    'storage',
+  ],
   ['shape']: [],
+  'scope-watermarks': ['envelope'],
   state: ['entry-state', 'envelope', 'shape'],
-  storage: ['envelope', 'shape'],
+  storage: ['envelope', 'scope-watermarks', 'shape'],
 } as const
 
 const allowedExternalDependenciesByModule: Partial<

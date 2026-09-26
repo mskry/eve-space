@@ -1,15 +1,18 @@
-import { useQuery } from '@pinia/colada'
+import { useQuery, useQueryCache } from '@pinia/colada'
+import { readOrganizationReadiness } from '../query-persistence/runtime'
 import { adminSetupQuery } from '../queries/admin'
 import { organizationContextQuery, organizationRosterCoverageQuery } from '../queries/organization'
 import type { ApiClient } from '../utils/api-client'
 
 export function useOrganizationRosterCoverage(apiClient: ApiClient) {
+  const organizationReady = readOrganizationReadiness(useQueryCache())
   const { authLoading, authSession, authUnavailable, initializeAuth } = useAuthSession(apiClient)
   const setupQuery = useQuery({ ...adminSetupQuery(apiClient), enabled: import.meta.client })
   const contextQuery = useQuery({
     ...organizationContextQuery(apiClient),
     enabled: () =>
       import.meta.client &&
+      organizationReady.value === 'ready' &&
       authSession.value.authenticated &&
       setupQuery.data.value?.required === false,
   })
@@ -17,13 +20,16 @@ export function useOrganizationRosterCoverage(apiClient: ApiClient) {
     ...organizationRosterCoverageQuery(apiClient),
     enabled: () =>
       import.meta.client &&
+      organizationReady.value === 'ready' &&
       authSession.value.authenticated &&
       contextQuery.data.value?.memberAccess === true &&
       contextQuery.data.value?.capabilities.viewRosterCoverage === true,
   })
 
   const coverage = computed(() =>
-    authSession.value.authenticated ? coverageQuery.data.value : undefined,
+    authSession.value.authenticated && organizationReady.value === 'ready'
+      ? coverageQuery.data.value
+      : undefined,
   )
   const loading = computed(
     () =>

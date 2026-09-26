@@ -8,6 +8,7 @@ import {
 } from '../queries/organization'
 import { refreshPrivateAuthorization } from '../queries/query-cache'
 import {
+  readOrganizationReadiness,
   reportPrivateQueryAuthorizationDenial,
   subscribePrivateQueryInvalidation,
 } from '../query-persistence/runtime'
@@ -32,6 +33,7 @@ interface ReplaceCorporationSourceInput {
 
 export function useOrganizationAuthority(apiClient: ApiClient) {
   const queryCache = useQueryCache()
+  const organizationReady = readOrganizationReadiness(queryCache)
   const { authLoading, authSession, authUnavailable, initializeAuth } = useAuthSession(apiClient)
   const setupQuery = useQuery(() => ({
     ...adminSetupQuery(apiClient),
@@ -43,10 +45,15 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
   const contextQuery = useQuery({
     ...organizationContextQuery(apiClient),
     enabled: () =>
-      import.meta.client && authSession.value.authenticated && deploymentConfigured.value === true,
+      import.meta.client &&
+      organizationReady.value === 'ready' &&
+      authSession.value.authenticated &&
+      deploymentConfigured.value === true,
   })
   const authorityContext = computed(() =>
-    authSession.value.authenticated ? contextQuery.data.value : undefined,
+    authSession.value.authenticated && organizationReady.value === 'ready'
+      ? contextQuery.data.value
+      : undefined,
   )
   const rolesQuery = useQuery({
     ...organizationRolesQuery(apiClient),

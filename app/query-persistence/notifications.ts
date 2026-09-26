@@ -7,6 +7,7 @@ const INVALIDATION_STORAGE_KEY = 'eve-space-esi-query-cache-invalidation-event'
 export interface QueryPersistenceNotification {
   readonly generation: number | null
   readonly scope: PrivateQueryInvalidationScope
+  readonly requiresScopeProbe?: true
 }
 
 export interface QueryPersistenceNotifications {
@@ -120,15 +121,23 @@ export function createSilentQueryPersistenceNotifications(): QueryPersistenceNot
 
 function parseInvalidationNotification(value: unknown): QueryPersistenceNotification | null {
   if (
-    !isExactRecord(value, ['generation', 'scope']) ||
+    (!isExactRecord(value, ['generation', 'scope']) &&
+      !isExactRecord(value, ['generation', 'scope', 'requiresScopeProbe'])) ||
     !('generation' in value) ||
     !('scope' in value) ||
+    ('requiresScopeProbe' in value && value.requiresScopeProbe !== true) ||
     (value.generation !== null && !isInvalidationGeneration(value.generation))
   ) {
     return null
   }
   const scope = parseInvalidationScope(value.scope)
-  return scope ? { generation: value.generation, scope } : null
+  return scope
+    ? {
+        generation: value.generation,
+        scope,
+        ...('requiresScopeProbe' in value && { requiresScopeProbe: true as const }),
+      }
+    : null
 }
 
 const parseCharacterScope = (value: {

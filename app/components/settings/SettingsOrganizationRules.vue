@@ -7,7 +7,10 @@ import type {
 } from '../../queries/organization'
 import { organizationRuleConditionsQuery, organizationRulesQuery } from '../../queries/organization'
 import { refreshPrivateAuthorization } from '../../queries/query-cache'
-import { reportPrivateQueryAuthorizationDenial } from '../../query-persistence/runtime'
+import {
+  readOrganizationReadiness,
+  reportPrivateQueryAuthorizationDenial,
+} from '../../query-persistence/runtime'
 import type { ApiClient } from '../../utils/api-client'
 import { toApiQueryError } from '../../utils/query-error'
 
@@ -38,24 +41,26 @@ interface RuleDraft {
 
 const apiClient = createApiClient(useRuntimeConfig().public.apiBase)
 const queryCache = useQueryCache()
+const organizationReady = readOrganizationReadiness(queryCache)
 const announcer = useAnnouncer()
 const canManage = computed(
   () =>
     props.access.authenticated &&
+    organizationReady.value === 'ready' &&
     props.access.isOrganizationOwner &&
     props.access.memberAccess &&
     !props.access.blocked,
 )
 const rulesQuery = useQuery(() =>
   organizationRulesQuery({
-    access: props.access,
+    access: { ...props.access, authenticated: props.access.authenticated && canManage.value },
     apiClient,
     organizationVersion: props.organizationVersion,
   }),
 )
 const conditionsQuery = useQuery(() =>
   organizationRuleConditionsQuery({
-    access: props.access,
+    access: { ...props.access, authenticated: props.access.authenticated && canManage.value },
     apiClient,
     organizationVersion: props.organizationVersion,
   }),

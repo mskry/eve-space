@@ -6,5 +6,7 @@ export const hasExactKeys = <Value extends object>(value: Value, keys: readonly 
   return actual.length === keys.length && keys.every((key) => Object.hasOwn(value, key))
 }
 
-export const isExactRecord = (value: unknown, keys: readonly string[]): value is object =>
-  isRecord(value) && hasExactKeys(value, keys)
+export const isExactRecord = <const Keys extends readonly string[]>(
+  value: unknown,
+  keys: Keys,
+): value is { [Key in Keys[number]]: unknown } => isRecord(value) && hasExactKeys(value, keys)

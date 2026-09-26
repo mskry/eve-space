@@ -22,6 +22,9 @@ most 30 seconds after its request began and is renewed before then, or earlier w
 deadline requires it.
 Logout, session failure, owner changes, authorization changes, and relevant organization or module
 changes invalidate affected private partitions in memory and IndexedDB across tabs.
+Durable invalidation scope watermarks let a resumed tab recover organization-only and character-scoped
+changes across multiple missed notifications while keeping unaffected partitions. Missing or invalid
+scope history fails closed rather than treating an unknown gap as organization-only.
 
 Persisted data never grants access. Protected requests, mutations, ownership checks, scope checks,
 and organization authorization still require current server approval. If EVE Space cannot verify a
@@ -60,6 +63,21 @@ Public browser data is released only after Nuxt hydration and only when no succe
 exists. A successful server-rendered or client-fetched result always wins over an older browser
 snapshot. Private browser data additionally requires live identity and admission before it can
 render.
+
+### Managed-organization updates
+
+After a successful administrator update, including a name- or ticker-only change, the dashboard and
+installed organization modules stop presenting the previous organization's results immediately. The
+organization area shows **Checking current organization access** while the member session's live
+admission and organization context reload. If either is unavailable or disagrees with the current
+organization, it shows **Current organization access could not be verified** with a **Retry** action
+on the dashboard. An administrator without a member session can still see the configured organization
+in administration, but protected member data waits for member authentication. Administrator and member
+sessions, public data, and unrelated character queries are preserved; a rejected update changes none
+of these states. A verified member session without current organization entitlement can still load
+organization context and registration remediation, but member-only activity remains withheld. If
+durable invalidation fails, Retry can recover current live context while private browser persistence
+stays disabled.
 
 ## Best-Effort Storage
 

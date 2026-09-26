@@ -763,6 +763,7 @@
     "app/query-persistence/runtime.ts:anti-slop(require-safety-comment-for-type-assertion):6466b493538839c2e57897c5bd51076aa64dad27383d425fb64cbcc2a3d85851": 1,
     "app/query-persistence/runtime.ts:anti-slop(require-safety-comment-for-type-assertion):745878f37a321d06360004617aa69c21399f71d7438804632128d012417c7583": 1,
     "app/query-persistence/runtime.ts:anti-slop(require-safety-comment-for-type-assertion):f709659b8d98a3bf9ca1ce0edbaa990f43609b2e1f40e9b15571f212523e4d7b": 2,
+    "app/query-persistence/shape.ts:anti-slop(no-unsafe-dictionary-type):41d4a1bbcac47f25caa5f72789696ecbb7b137992b6087bd110c5b1867c26d46": 1,
     "app/query-persistence/storage.ts:anti-slop(no-unknown-parameters):13b2c70b81944b26ea51c177ce1ee8036e9476d7b514ddabe2d68ca3e86f6f04": 1,
     "app/query-persistence/storage.ts:anti-slop(no-unknown-parameters):2dc2483903f90f29396b9bf4aef5a072047b883093caea7e02cd286a8f896fab": 1,
     "app/query-persistence/storage.ts:anti-slop(no-unknown-parameters):325279ef7173fba035000df4d01381fa5a98f7e8af3020b26d6431eaa20bfa73": 2,

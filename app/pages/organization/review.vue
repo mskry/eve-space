@@ -39,6 +39,27 @@ const selectedContributionIdentity = computed(
     </UiStatePanel>
     <UiStatePanel
       v-else-if="
+        workspace.organizationReady.value === 'loading' ||
+        workspace.organizationReady.value === 'clearing'
+      "
+      compact
+      title="Checking current organization access"
+    />
+    <UiStatePanel
+      v-else-if="workspace.organizationReady.value === 'unavailable'"
+      compact
+      title="Current organization access could not be verified"
+    >
+      <button
+        class="ui-action-secondary"
+        type="button"
+        @click="workspace.retryOrganizationReadiness"
+      >
+        RETRY
+      </button>
+    </UiStatePanel>
+    <UiStatePanel
+      v-else-if="
         workspace.entryQuery.asyncStatus.value === 'loading' && !workspace.entryQuery.data.value
       "
       compact

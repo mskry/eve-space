@@ -4,10 +4,19 @@ import { coreOrganizationAdmissionScopes } from '@eve-space/platform-module-cont
 import { flushPromises, RouterLinkStub } from '@vue/test-utils'
 import { http, HttpResponse } from 'msw'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { computed, defineComponent, h } from 'vue'
 import MemberOverviewPage from '../../app/pages/index.vue'
+import { useAuthSession } from '../../app/composables/useAuthSession'
+import { observeOrganizationReadiness } from '../../app/queries/organization-readiness'
+import { createApiClient } from '../../app/utils/api-client'
+import {
+  readOrganizationReadiness,
+  readOrganizationRevision,
+  setOrganizationReadiness,
+  suspendPrivateQueryAdmission,
+} from '../../app/query-persistence/runtime'
 import type { OrganizationActivities, OrganizationCompliance } from '../../app/queries/organization'
-import { ADMIN_QUERY_KEYS } from '../../app/queries/query-keys'
+import { ADMIN_QUERY_KEYS, PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { clearQueryCache } from '../support/clear-query-cache'
 import { queryServer } from '../support/query-server'
 
@@ -15,19 +24,92 @@ const mountedWrappers: { unmount: () => void }[] = []
 
 beforeAll(() => queryServer.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => queryServer.close())
-beforeEach(clearQueryCache)
+beforeEach(() => {
+  clearQueryCache()
+  const queryCache = useQueryCache()
+  setOrganizationReadiness(queryCache, 'ready', readOrganizationRevision(queryCache).value)
+})
 
 afterEach(async () => {
   for (const wrapper of mountedWrappers.splice(0)) {
     wrapper.unmount()
   }
   clearQueryCache()
+  const queryCache = useQueryCache()
+  setOrganizationReadiness(queryCache, 'ready', readOrganizationRevision(queryCache).value)
   queryServer.resetHandlers()
   vi.restoreAllMocks()
   await flushPromises()
 })
 
 describe('authenticated member overview', () => {
+  it('hides mounted organization results and pauses protected reads until current context is ready', async () => {
+    let activityRequests = 0
+    let complianceRequests = 0
+    useOverviewHandlers(
+      'compliant',
+      ['organization-activity'],
+      () => {
+        activityRequests += 1
+      },
+      () => {
+        complianceRequests += 1
+      },
+    )
+    const Host = defineComponent({
+      setup() {
+        return () => h(MemberOverviewPage)
+      },
+    })
+    const wrapper = await mountSuspended(Host, {
+      global: { stubs: { NuxtLink: RouterLinkStub } },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Build the fleet reserve'))
+    const queryCache = useQueryCache()
+    const revision = readOrganizationRevision(queryCache).value
+    const requestsBeforeTransition = activityRequests
+    const complianceBeforeTransition = complianceRequests
+
+    setOrganizationReadiness(queryCache, 'loading', revision)
+    await flushPromises()
+    expect(wrapper.text()).toContain('Checking current organization access')
+    expect(wrapper.text()).not.toContain('Build the fleet reserve')
+    await flushPromises()
+    expect(activityRequests).toBe(requestsBeforeTransition)
+    expect(complianceRequests).toBe(complianceBeforeTransition)
+
+    setOrganizationReadiness(queryCache, 'unavailable', revision)
+    await flushPromises()
+    expect(wrapper.text()).toContain('Current organization access could not be verified')
+    expect(wrapper.find('.activity-card').exists()).toBe(false)
+    expect(readOrganizationReadiness(queryCache).value).toBe('unavailable')
+  })
+
+  it('does not treat unrelated character-admission suspension as organization replacement', async () => {
+    useOverviewHandlers('compliant', ['organization-activity'])
+    const wrapper = await mountSuspended(MemberOverviewPage, {
+      global: { stubs: { NuxtLink: RouterLinkStub } },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Build the fleet reserve'))
+    const queryCache = useQueryCache()
+    const organizationEntries = queryCache
+      .getEntries({ key: PRIVATE_QUERY_KEYS.organization() })
+      .map((entry) => entry.keyHash)
+
+    suspendPrivateQueryAdmission(queryCache)
+    await flushPromises()
+    expect(readOrganizationReadiness(queryCache).value).toBe('ready')
+    expect(
+      queryCache
+        .getEntries({ key: PRIVATE_QUERY_KEYS.organization() })
+        .map((entry) => entry.keyHash),
+    ).toStrictEqual(organizationEntries)
+    expect(wrapper.text()).toContain('Compliant')
+  })
   it('prioritizes compliance, remediation, and eligible-character activity', async () => {
     queryServer.use(
       http.get('*/auth/config', () =>
@@ -56,6 +138,9 @@ describe('authenticated member overview', () => {
         }),
       ),
       http.get('*/api/organization/compliance', () => HttpResponse.json(complianceResponse)),
+      http.get('*/api/organization/context', () =>
+        HttpResponse.json({ memberAccess: true, organization: { organizationVersion: 1 } }),
+      ),
       http.get('*/api/organization/activities', () => HttpResponse.json(currentActivityResponse())),
     )
 
@@ -132,7 +217,20 @@ describe('authenticated member overview', () => {
         activityRequests += 1
       })
 
-      const wrapper = await mountSuspended(MemberOverviewPage, {
+      const Host = defineComponent({
+        setup() {
+          const apiClient = createApiClient('http://localhost:8788')
+          const { authSession, authVerificationStatus } = useAuthSession(apiClient)
+          observeOrganizationReadiness(
+            useQueryCache(),
+            apiClient,
+            authSession,
+            computed(() => authVerificationStatus.value === 'verified'),
+          )
+          return () => h(MemberOverviewPage)
+        },
+      })
+      const wrapper = await mountSuspended(Host, {
         global: { stubs: { NuxtLink: RouterLinkStub } },
         route: false,
       })
@@ -150,6 +248,29 @@ describe('authenticated member overview', () => {
       expect(wrapper.find('.activity-card').exists()).toBe(false)
     },
   )
+
+  it('keeps registration details visible for a blocked member without loading activity', async () => {
+    let activityRequests = 0
+    useOverviewHandlers(
+      'compliant',
+      ['organization-activity'],
+      () => {
+        activityRequests += 1
+      },
+      undefined,
+      false,
+    )
+    const wrapper = await mountSuspended(MemberOverviewPage, {
+      global: { stubs: { NuxtLink: RouterLinkStub } },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Organization access required'))
+    expect(wrapper.text()).toContain('Compliant')
+    expect(activityRequests).toBe(0)
+    expect(wrapper.find('.activity-card').exists()).toBe(false)
+  })
 
   it('does not request organization context before deployment setup', async () => {
     let complianceRequests = 0
@@ -208,6 +329,8 @@ function useOverviewHandlers(
   state: OrganizationCompliance['state'],
   enabledModuleIds: readonly string[],
   onActivityRequest?: () => void,
+  onComplianceRequest?: () => void,
+  memberAccess = state === 'compliant' || state === 'review_required',
 ) {
   const compliance = {
     ...complianceResponse,
@@ -240,7 +363,12 @@ function useOverviewHandlers(
         authenticated: true,
       }),
     ),
-    http.get('*/api/me/cache-admission', () => HttpResponse.json(memberCacheAdmission)),
+    http.get('*/api/me/cache-admission', () =>
+      HttpResponse.json({
+        ...memberCacheAdmission,
+        organization: memberAccess ? memberCacheAdmission.organization : null,
+      }),
+    ),
     http.get('*/api/admin/session', () => HttpResponse.json({ authenticated: false })),
     http.get('*/api/admin/setup', () => HttpResponse.json({ available: true, required: false })),
     http.get('*/api/modules', () =>
@@ -249,7 +377,13 @@ function useOverviewHandlers(
         shellNavigationOrder: { character: [], dashboard: [] },
       }),
     ),
-    http.get('*/api/organization/compliance', () => HttpResponse.json(compliance)),
+    http.get('*/api/organization/compliance', () => {
+      onComplianceRequest?.()
+      return HttpResponse.json(compliance)
+    }),
+    http.get('*/api/organization/context', () =>
+      HttpResponse.json({ memberAccess, organization: { organizationVersion: 1 } }),
+    ),
     http.get('*/api/organization/activities', () => {
       onActivityRequest?.()
       return HttpResponse.json(currentActivityResponse())

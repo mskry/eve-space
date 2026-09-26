@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { useQuery } from '@pinia/colada'
+import { useQuery, useQueryCache } from '@pinia/colada'
 import { platformPageMetadata } from '#build/eve-space-platform/navigation'
 import { adminSessionQuery, adminSetupQuery } from '../queries/admin'
+import { readOrganizationReadiness } from '../query-persistence/runtime'
+import { retryOrganizationReadiness } from '../queries/organization-readiness'
 import {
   organizationActivitiesQuery,
   organizationComplianceQuery,
+  organizationContextQuery,
   type OrganizationActivities,
 } from '../queries/organization'
 import { formatOrganizationTimestamp } from '../utils/organization-presentation'
@@ -13,6 +16,8 @@ definePageMeta({ platformAudience: 'public', title: 'Overview' })
 
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
+const queryCache = useQueryCache()
+const organizationReadiness = readOrganizationReadiness(queryCache)
 const { authLoading, authSession } = useAuthSession(apiClient)
 const { enabledModuleIds } = usePlatformModuleRuntime()
 const adminSessionQueryResult = useQuery(() => ({
@@ -27,6 +32,15 @@ const complianceQueryResult = useQuery(() => ({
   ...organizationComplianceQuery(apiClient),
   enabled:
     import.meta.client &&
+    organizationReadiness.value === 'ready' &&
+    authSession.value.authenticated &&
+    adminSetupQueryResult.data.value?.required === false,
+}))
+const contextQueryResult = useQuery(() => ({
+  ...organizationContextQuery(apiClient),
+  enabled:
+    import.meta.client &&
+    organizationReadiness.value === 'ready' &&
     authSession.value.authenticated &&
     adminSetupQueryResult.data.value?.required === false,
 }))
@@ -34,7 +48,9 @@ const activityQueryResult = useQuery(() => ({
   ...organizationActivitiesQuery(apiClient),
   enabled:
     import.meta.client &&
+    organizationReadiness.value === 'ready' &&
     authSession.value.authenticated &&
+    contextQueryResult.data.value?.memberAccess === true &&
     (complianceQueryResult.data.value?.state === 'compliant' ||
       complianceQueryResult.data.value?.state === 'review_required'),
 }))
@@ -46,13 +62,18 @@ const sections = computed(() =>
       : undefined,
   ),
 )
-const compliance = computed(() => complianceQueryResult.data.value)
-const activities = computed(() => activityQueryResult.data.value?.activities ?? [])
+const compliance = computed(() =>
+  organizationReadiness.value === 'ready' ? complianceQueryResult.data.value : undefined,
+)
+const activities = computed(() =>
+  organizationReadiness.value === 'ready' ? (activityQueryResult.data.value?.activities ?? []) : [],
+)
 const impairedActivitySources = computed(
   () =>
-    activityQueryResult.data.value?.sources.filter(
-      ({ freshness }) => freshness.state !== 'current',
-    ) ?? [],
+    (organizationReadiness.value === 'ready'
+      ? activityQueryResult.data.value?.sources
+      : []
+    )?.filter(({ freshness }) => freshness.state !== 'current') ?? [],
 )
 const activityNumberFormatter = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 2 })
 
@@ -173,6 +194,28 @@ useHead({
       </UiStatePanel>
 
       <UiStatePanel
+        v-else-if="organizationReadiness === 'clearing' || organizationReadiness === 'loading'"
+        code="ORGANIZATION RELOADING"
+        title="Checking current organization access"
+        compact
+      />
+
+      <UiStatePanel
+        v-else-if="organizationReadiness === 'unavailable'"
+        code="ORGANIZATION UNAVAILABLE"
+        title="Current organization access could not be verified"
+        compact
+      >
+        <button
+          class="ui-action-secondary"
+          type="button"
+          @click="retryOrganizationReadiness(queryCache)"
+        >
+          RETRY
+        </button>
+      </UiStatePanel>
+
+      <UiStatePanel
         v-else-if="complianceQueryResult.asyncStatus.value === 'loading' && !compliance"
         compact
         role="status"
@@ -230,9 +273,24 @@ useHead({
             role="alert"
           />
           <UiStatePanel
+            v-else-if="contextQueryResult.status.value === 'error'"
+            code="ORGANIZATION CONTEXT UNAVAILABLE"
+            title="Current organization access could not be checked"
+            compact
+            role="alert"
+          />
+          <UiStatePanel
             v-else-if="compliance.state === 'pending' || compliance.state === 'suspended'"
             code="ACCESS LIMITED"
             title="Registration action required"
+            compact
+          >
+            <p>Protected organization activity is withheld until member access is restored.</p>
+          </UiStatePanel>
+          <UiStatePanel
+            v-else-if="contextQueryResult.data.value?.memberAccess === false"
+            code="ACCESS LIMITED"
+            title="Organization access required"
             compact
           >
             <p>Protected organization activity is withheld until member access is restored.</p>

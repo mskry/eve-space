@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { adminSessionQuery } from '../../queries/admin'
-import { refreshPrivateAuthorization } from '../../queries/query-cache'
 import { ADMIN_QUERY_KEYS } from '../../queries/query-keys'
+import { transitionOrganizationQueries } from '../../query-persistence/runtime'
 import { toApiQueryError } from '../../utils/query-error'
 
 definePageMeta({ title: 'Administration' })
@@ -40,7 +40,7 @@ const organizationMutation = useMutation({
         account: { ...current.account, organization },
       })
     }
-    await refreshPrivateAuthorization(queryCache, { kind: 'organization' })
+    await transitionOrganizationQueries(queryCache)
     feedback.value = 'Deployment organization updated.'
   },
 })

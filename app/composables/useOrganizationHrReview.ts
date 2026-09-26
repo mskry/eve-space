@@ -9,6 +9,7 @@ import {
 } from '../queries/organization'
 import { refreshPrivateAuthorization } from '../queries/query-cache'
 import {
+  readOrganizationReadiness,
   reportPrivateQueryAuthorizationDenial,
   subscribePrivateQueryInvalidation,
 } from '../query-persistence/runtime'
@@ -24,13 +25,16 @@ interface ApproveExceptionInput {
 
 export function useOrganizationHrReview(apiClient: ApiClient) {
   const queryCache = useQueryCache()
+  const organizationReady = readOrganizationReadiness(queryCache)
   const { authLoading, authSession, authUnavailable, initializeAuth } = useAuthSession(apiClient)
   const setupQuery = useQuery({ ...adminSetupQuery(apiClient), enabled: import.meta.client })
   const contextQuery = useQuery({
     ...organizationContextQuery(apiClient),
     enabled: () =>
       import.meta.client &&
+      organizationReady.value === 'ready' &&
       authSession.value.authenticated &&
+      organizationReady.value === 'ready' &&
       setupQuery.data.value?.required === false,
   })
   const canReview = computed(
