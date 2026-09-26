@@ -15,6 +15,17 @@ const longValue = 'LONG-CLONE-IDENTITY-'.repeat(18)
 let apiMode: ApiMode = 'data'
 let apiOrigin = ''
 
+const sessionResponse = (includeAdmission: boolean) => ({
+  account: {
+    mainCharacter: { characterId, name: 'Clone Pilot' },
+    userId: 'clones-e2e-user',
+  },
+  authenticated: true,
+  ...(includeAdmission && {
+    cacheAdmission: cacheAdmissionForCharacter('clones-e2e-user', characterId),
+  }),
+})
+
 const apiServer = await startCorsJsonApi((request) => {
   const url = new URL(request.url ?? '/', 'http://mock-api.invalid')
   recordedPaths.push(url.pathname)
@@ -29,15 +40,7 @@ const apiServer = await startCorsJsonApi((request) => {
     }
   }
   if (url.pathname === '/auth/session') {
-    return {
-      body: {
-        account: {
-          mainCharacter: { characterId, name: 'Clone Pilot' },
-          userId: 'clones-e2e-user',
-        },
-        authenticated: true,
-      },
-    }
+    return { body: sessionResponse(url.searchParams.get('includeAdmission') === 'true') }
   }
   if (url.pathname === '/api/me/cache-admission') {
     return { body: cacheAdmissionForCharacter('clones-e2e-user', characterId) }
@@ -217,6 +220,8 @@ describe('character Clones production route', async () => {
       name: 'Jump clones by location',
     })
     await storedClones.waitFor()
+    expect(recordedPaths).toContain(clonePaths()[0])
+    expect(recordedPaths).not.toContain('/api/me/cache-admission')
     await storedClones.getByRole('button').click()
     await page.getByRole('heading', { name: 'Active implant authorization required' }).waitFor()
     expect(await page.getByText('Industry clone', { exact: true }).isVisible()).toBe(true)

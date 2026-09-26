@@ -255,6 +255,34 @@ describe('cached representation domain invariants', () => {
     )
   })
 
+  test('rejects cached names outside the requested IDs before promoting them to L1', async () => {
+    const { cacheGet, cacheSet, fetch } = cachedRuntime({
+      data: [
+        { category: 'character', id: 7, name: 'Pilot' },
+        { category: 'character', id: 9, name: 'Other' },
+      ],
+      representationVersion: 'universe-names-core@v1',
+      response: [
+        { category: 'character', id: 7, name: 'Pilot' },
+        { category: 'character', id: 8, name: 'Copilot' },
+      ],
+    })
+
+    const expected = new Map([
+      [7, { category: 'character', id: 7, name: 'Pilot' }],
+      [8, { category: 'character', id: 8, name: 'Copilot' }],
+    ])
+    await expect(resolveUniverseNames([7, 8])).resolves.toStrictEqual(expected)
+    await expect(resolveUniverseNames([7, 8])).resolves.toStrictEqual(expected)
+
+    expect(cacheGet).toHaveBeenCalledOnce()
+    expect(cacheSet).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(mocks.writeUniverseNames).not.toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: 9 })]),
+    )
+  })
+
   test('rejects a cached non-integer ID before retaining a fresh ID resolution', async () => {
     const { cacheSet, fetch } = cachedRuntime({
       data: [{ category: 'character', id: 7.5, name: 'Pilot' }],
@@ -271,6 +299,29 @@ describe('cached representation domain invariants', () => {
     expect(cacheSet).toHaveBeenCalledOnce()
     expect(mocks.writeUniverseIds).toHaveBeenCalledWith(
       new Map([['Pilot', [{ category: 'character', id: 7, name: 'Pilot' }]]]),
+    )
+  })
+
+  test('rejects cached IDs with names outside the normalized request', async () => {
+    const { cacheGet, cacheSet, fetch } = cachedRuntime({
+      data: [
+        { category: 'character', id: 7, name: 'Pilot' },
+        { category: 'character', id: 9, name: 'Other' },
+      ],
+      representationVersion: 'universe-ids-core@v1',
+      response: { characters: [{ id: 7, name: 'Pilot' }] },
+    })
+
+    await expect(resolveUniverseIds([' PILOT '])).resolves.toStrictEqual([
+      { category: 'character', id: 7, name: 'Pilot' },
+    ])
+    await resolveUniverseIds([' PILOT '])
+
+    expect(cacheGet).toHaveBeenCalledOnce()
+    expect(cacheSet).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(mocks.writeUniverseIds).toHaveBeenCalledWith(
+      new Map([[' PILOT ', [{ category: 'character', id: 7, name: 'Pilot' }]]]),
     )
   })
 

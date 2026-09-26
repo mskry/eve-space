@@ -50,6 +50,8 @@ const universeResolutionCacheSchema = z.array(
   }),
 )
 
+const normalizeName = (name: string) => name.trim().toLowerCase()
+
 interface ResolutionSplitState {
   count: number
 }
@@ -65,6 +67,12 @@ class UniverseNameResolutionLimitError extends Error {
 
 const universeNamesRead = createPublicEsiRead({
   cacheSchema: universeResolutionCacheSchema,
+  cacheSchemaForInput: (input: { body: number[]; signal?: AbortSignal }) => {
+    const requestedIds = new Set(input.body)
+    return universeResolutionCacheSchema.refine((entries) =>
+      entries.every((entry) => requestedIds.has(entry.id)),
+    )
+  },
   descriptor: operationRegistry.PostUniverseNames.transport,
   encodeRequest: (input: { body: number[]; signal?: AbortSignal }) => ({ body: input.body }),
   map: ({ data }): UniverseName[] => data.map(({ id, name, category }) => ({ id, name, category })),
@@ -74,6 +82,12 @@ const universeNamesRead = createPublicEsiRead({
 
 const universeIdsRead = createPublicEsiRead({
   cacheSchema: universeResolutionCacheSchema,
+  cacheSchemaForInput: (input: { body: string[] }) => {
+    const requestedNames = new Set(input.body.map(normalizeName))
+    return universeResolutionCacheSchema.refine((entries) =>
+      entries.every((entry) => requestedNames.has(normalizeName(entry.name))),
+    )
+  },
   descriptor: operationRegistry.PostUniverseIds.transport,
   encodeRequest: (input: { body: string[] }) => input,
   map: ({ data }) => mapUniverseIds(data),
@@ -261,10 +275,6 @@ function groupUniverseIdsByInputName(chunk: string[], chunkEntries: UniverseId[]
     byName.set(input, entries)
   }
   return byName
-}
-
-function normalizeName(name: string) {
-  return name.trim().toLowerCase()
 }
 
 async function mapBoundedSettled<Item>(
