@@ -133,6 +133,9 @@ function operation(operationId: string, path: string, summary: string): Normaliz
     path,
     rateLimit: { kind: 'legacy-only' },
     requestArrayLimits: [],
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: null,
     requestBody: null,
     security: [],
     successResponses: [

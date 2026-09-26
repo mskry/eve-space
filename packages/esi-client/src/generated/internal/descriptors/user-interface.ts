@@ -55,6 +55,9 @@ export const PostUiOpenwindowContractDescriptor: OperationExecutionDescriptor<Op
   requestBody: null,
   requestSchema: PostUiOpenwindowContractRequestSchema,
   authentication: { scopes: ["esi-ui.open_window.v1"] },
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"ui","kind":"declared","maximumTokens":900,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
@@ -80,6 +83,9 @@ export const PostUiOpenwindowInformationDescriptor: OperationExecutionDescriptor
   requestBody: null,
   requestSchema: PostUiOpenwindowInformationRequestSchema,
   authentication: { scopes: ["esi-ui.open_window.v1"] },
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"ui","kind":"declared","maximumTokens":900,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
@@ -105,6 +111,9 @@ export const PostUiOpenwindowMarketdetailsDescriptor: OperationExecutionDescript
   requestBody: null,
   requestSchema: PostUiOpenwindowMarketdetailsRequestSchema,
   authentication: { scopes: ["esi-ui.open_window.v1"] },
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"ui","kind":"declared","maximumTokens":900,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
@@ -129,6 +138,9 @@ export const PostUiOpenwindowNewmailDescriptor: OperationExecutionDescriptor<Ope
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostUiOpenwindowNewmailRequestSchema,
   authentication: { scopes: ["esi-ui.open_window.v1"] },
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":50,"rateLimit":{"group":"ui","kind":"declared","maximumTokens":900,"window":"15m"},"requestArrayLimits":[{"location":"body","maximumItems":50,"path":["recipients"]}]},
   successResponses: [
     { status: 204, body: 'none' },
@@ -156,6 +168,9 @@ export const PostUiAutopilotWaypointDescriptor: OperationExecutionDescriptor<Ope
   requestBody: null,
   requestSchema: PostUiAutopilotWaypointRequestSchema,
   authentication: { scopes: ["esi-ui.write_waypoint.v1"] },
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"ui","kind":"declared","maximumTokens":900,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },

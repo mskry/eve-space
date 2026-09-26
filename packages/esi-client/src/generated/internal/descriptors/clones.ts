@@ -40,6 +40,9 @@ export const GetCharactersCharacterIdClonesDescriptor: OperationExecutionDescrip
   requestBody: null,
   requestSchema: GetCharactersCharacterIdClonesRequestSchema,
   authentication: { scopes: ["esi-clones.read_clones.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":120,"x-client-cache-ttl":120,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":120},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-location","kind":"declared","maximumTokens":1200,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdClonesResponse },
@@ -65,6 +68,9 @@ export const GetCharactersCharacterIdImplantsDescriptor: OperationExecutionDescr
   requestBody: null,
   requestSchema: GetCharactersCharacterIdImplantsRequestSchema,
   authentication: { scopes: ["esi-clones.read_implants.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":120,"x-client-cache-ttl":120,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":120},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-detail","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdImplantsResponse },

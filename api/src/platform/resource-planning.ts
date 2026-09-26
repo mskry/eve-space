@@ -24,7 +24,7 @@ export function createResourcePlanningCooldownRequest(
     candidate.authorizationCharacterId ??
     (descriptor.subjectKind === 'character' ? Number(candidate.identity.subjectId) : null)
   if (
-    authorization.kind === 'character' &&
+    authorization.kind === 'oauth' &&
     (!authorizationCharacterId || !Number.isSafeInteger(authorizationCharacterId))
   ) {
     throw new Error(
@@ -33,7 +33,7 @@ export function createResourcePlanningCooldownRequest(
   }
   return {
     operation: operationId,
-    ...(authorization.kind === 'character' && { characterId: authorizationCharacterId! }),
+    ...(authorization.kind === 'oauth' && { characterId: authorizationCharacterId! }),
   }
 }
 

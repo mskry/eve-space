@@ -15,6 +15,7 @@ export type ParameterPlacement = 'path' | 'query' | 'header' | 'cookie';
 export type PaginationKind = 'none' | 'offset' | 'cursor' | 'offset-and-cursor';
 export type ConditionalRequestValidator = 'if-modified-since' | 'if-none-match';
 export type CacheMode = 'event-based' | 'not-cached' | 'ttl-based';
+export type RequestSubjectBinding = 'character_id' | 'corporation_id';
 
 export interface NormalizedCacheExtensions {
   readonly 'x-cache-age'?: number;
@@ -103,6 +104,9 @@ export interface NormalizedOperation {
   readonly requestBody: NormalizedRequestBody | null;
   readonly successResponses: readonly NormalizedSuccessResponse[];
   readonly security: readonly NormalizedSecurityRequirement[];
+  readonly requestSubjectBindings: readonly RequestSubjectBinding[];
+  readonly requiredRoles: readonly string[];
+  readonly minimumCompatibilityDate: string | null;
   readonly pagination: {
     readonly kind: PaginationKind;
     readonly requestParameters: readonly string[];
@@ -255,6 +259,8 @@ const conditionalRequestValidatorNames: readonly ConditionalRequestValidator[] =
 ];
 const rateLimitWindowPattern = /^[1-9]\d*[smhd]$/u;
 const rateLimitGroupPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u;
+const requiredRolePattern = /^[A-Z][A-Za-z]*(?:_[A-Z][A-Za-z]*)*$/u;
+const requestSubjectNames: readonly RequestSubjectBinding[] = ['character_id', 'corporation_id'];
 
 export async function normalizeOpenApiDocument(
   document: Readonly<Record<string, unknown>>,
@@ -434,6 +440,14 @@ function requiredOperationId(
   return operationId;
 }
 
+const normalizeRequestSubjectBindings = (parameters: readonly NormalizedParameter[]) =>
+  requestSubjectNames.filter((name) =>
+    parameters.some((parameter) => parameter.placement === 'path' && parameter.name === name),
+  );
+
+const maximumBatchSizeFromLimits = (limits: readonly NormalizedRequestArrayLimit[]) =>
+  limits.length === 1 ? (limits[0]?.maximumItems ?? null) : null;
+
 function normalizeOperation(
   document: Record<string, unknown>,
   source: SourceOperation,
@@ -464,6 +478,8 @@ function normalizeOperation(
   const responses = normalizeResponses(document, operation.responses, operationId);
   const extensions = extractExtensions(operation);
   validatePolicyExtensionNames(extensions, operationId);
+  const requestSubjectBindings = normalizeRequestSubjectBindings(parameters);
+  const requiredRoles = normalizeRequiredRoles(extensions['x-required-roles'], operationId);
   const requestBody = normalizeRequestBody(document, operation.requestBody, operationId);
   const requestArrayLimits = normalizeRequestArrayLimits(
     document,
@@ -527,6 +543,12 @@ function normalizeOperation(
       operation.security ?? document.security ?? [],
       operationId,
     ),
+    requestSubjectBindings,
+    requiredRoles,
+    minimumCompatibilityDate: normalizeCompatibilityDate(
+      extensions['x-compatibility-date'],
+      operationId,
+    ),
     pagination: {
       kind: paginationKind(hasOffsetPagination, hasCursorPagination),
       requestParameters: [...offsetParameters, ...cursorParameters].toSorted(compareText),
@@ -539,8 +561,7 @@ function normalizeOperation(
     conditionalRequestValidators,
     rateLimit: normalizeRouteRateLimit(extensions, operationId),
     requestArrayLimits,
-    maximumBatchSize:
-      requestArrayLimits.length === 1 ? (requestArrayLimits[0]?.maximumItems ?? null) : null,
+    maximumBatchSize: maximumBatchSizeFromLimits(requestArrayLimits),
     extensions,
   };
 }
@@ -557,7 +578,42 @@ function validatePolicyExtensionNames(extensions: JsonObject, operationId: strin
     if (lowerName.includes('rate-limit') && name !== 'x-rate-limit') {
       throw new Error(`Unsupported rate-limit extension for ${operationId}: ${name}`);
     }
+    if (lowerName.includes('required-roles') && name !== 'x-required-roles') {
+      throw new Error(`Unsupported required-roles extension for ${operationId}: ${name}`);
+    }
   }
+}
+
+function normalizeRequiredRoles(value: JsonValue | undefined, operationId: string): string[] {
+  if (value === undefined) {
+    return [];
+  }
+  if (
+    !Array.isArray(value) ||
+    !value.every((role) => typeof role === 'string' && requiredRolePattern.test(role))
+  ) {
+    throw new Error(`Invalid x-required-roles extension for ${operationId}`);
+  }
+  if (new Set(value).size !== value.length) {
+    throw new Error(`Duplicate x-required-roles for ${operationId}`);
+  }
+  return [...value].toSorted(compareText);
+}
+
+function normalizeCompatibilityDate(
+  value: JsonValue | undefined,
+  operationId: string,
+): string | null {
+  if (value === undefined) return null;
+  if (
+    typeof value !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}$/u.test(value) ||
+    Number.isNaN(Date.parse(value)) ||
+    !new Date(value).toISOString().startsWith(value)
+  ) {
+    throw new Error(`Invalid x-compatibility-date extension for ${operationId}`);
+  }
+  return value;
 }
 
 function normalizeCacheExtensions(

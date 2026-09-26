@@ -53,6 +53,9 @@ export const GetCharactersCharacterIdCalendarEventIdDescriptor: OperationExecuti
   requestBody: null,
   requestSchema: GetCharactersCharacterIdCalendarEventIdRequestSchema,
   authentication: { scopes: ["esi-calendar.read_calendar_events.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":5,"x-client-cache-ttl":5,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":5},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-social","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdCalendarEventIdResponse },
@@ -79,6 +82,9 @@ export const GetCharactersCharacterIdCalendarEventIdAttendeesDescriptor: Operati
   requestBody: null,
   requestSchema: GetCharactersCharacterIdCalendarEventIdAttendeesRequestSchema,
   authentication: { scopes: ["esi-calendar.read_calendar_events.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":600,"x-client-cache-ttl":600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-social","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdCalendarEventIdAttendeesResponse },
@@ -106,6 +112,9 @@ export const GetCharactersCharacterIdCalendarDescriptor: OperationExecutionDescr
   requestBody: null,
   requestSchema: GetCharactersCharacterIdCalendarRequestSchema,
   authentication: { scopes: ["esi-calendar.read_calendar_events.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":5,"x-client-cache-ttl":5,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":5},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-social","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdCalendarResponse },
@@ -133,6 +142,9 @@ export const PutCharactersCharacterIdCalendarEventIdDescriptor: OperationExecuti
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PutCharactersCharacterIdCalendarEventIdRequestSchema,
   authentication: { scopes: ["esi-calendar.respond_calendar_events.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":5,"x-client-cache-ttl":5,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":5},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-social","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },

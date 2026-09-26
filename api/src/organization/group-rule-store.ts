@@ -12,10 +12,6 @@ import {
   organizationPermissionBundles,
   organizationRuleAuditPermissions,
 } from '../db/schema.js'
-import {
-  isReviewedCorporationRolePredicate,
-  reviewedCorporationRolePredicates,
-} from '../characters/corporation-role-canonical.js'
 import { loadEffectiveOrganizationAuthority } from './effective-authority.js'
 import { OrganizationGroupMutationError } from './group-mutation-error.js'
 import {
@@ -26,7 +22,12 @@ import {
 import { getOrganizationGroupPermissionsFromDatabase } from './group-permission-reader.js'
 import { lockCurrentOrganization } from './organization-lock.js'
 import { evaluateOrganizationRuleAccount } from './rule-evidence.js'
-import { isRuleCondition, type RuleCondition, type RuleEligibility } from './rule-policy.js'
+import {
+  isRuleCondition,
+  organizationRuleRolePredicates,
+  type RuleCondition,
+  type RuleEligibility,
+} from './rule-policy.js'
 
 type Transaction = DatabaseTransaction
 type Organization = { readonly organizationVersion: number; readonly policyVersion: number }
@@ -48,7 +49,7 @@ const requireRuleOwner = async (
 }
 
 const validatedCondition = (condition: RuleCondition): RuleCondition => {
-  if (!isRuleCondition(condition, isReviewedCorporationRolePredicate)) {
+  if (!isRuleCondition(condition)) {
     throw new OrganizationGroupMutationError('invalid-rule-condition')
   }
   return condition
@@ -433,7 +434,7 @@ export const previewOrganizationGroupRule = async (input: {
 
 export const organizationRuleConditionCatalog = () => ({
   conditions: ['registration-compliant', 'director-audience', 'corporation-role'] as const,
-  corporationRoles: reviewedCorporationRolePredicates.map((predicate) => ({
+  corporationRoles: organizationRuleRolePredicates.map((predicate) => ({
     predicate,
     location: 'roles' as const,
   })),

@@ -16,6 +16,7 @@ import { grantOrganizationRole } from '../organization/role-store.js'
 import { coreResources } from '../platform/core-resources.js'
 import { findInstalledResource } from '../platform/resource-identity.js'
 import {
+  createCorporationContinuationAuthorityBinding,
   resolveInstalledResourceEligibility,
   selectDueInstalledResources,
 } from '../platform/resource-eligibility.js'
@@ -127,7 +128,12 @@ export async function seedLocalOrganizationFixture({
         authorizationGeneration: authorization.tokenVersion,
         cachedUntil: new Date(now.getTime() + 60 * 60 * 1000),
         retryAt: null,
-        roles: { roles: ['Director'], rolesAtBase: [], rolesAtHeadquarters: [], rolesAtOther: [] },
+        roles: {
+          roles: ['Director', 'Project_Manager'],
+          rolesAtBase: [],
+          rolesAtHeadquarters: [],
+          rolesAtOther: [],
+        },
         stale: false,
         validatedAt: now,
       },
@@ -264,18 +270,24 @@ async function seedFixtureResources(validatedAt: Date) {
       }
 
       try {
+        const corporationAuthorityFence = eligibility.corporationAuthorityFence
+        const continuationAuthorityBinding = corporationAuthorityFence
+          ? createCorporationContinuationAuthorityBinding(corporationAuthorityFence)
+          : undefined
+        const data =
+          resource.moduleId === 'core'
+            ? [
+                localOrganizationFixture.directorCharacterId,
+                localOrganizationFixture.unregisteredCharacterId,
+              ]
+            : activityObservation(resource.resourceId, validatedAt, continuationAuthorityBinding)
         await applyInstalledResourceObservation({
           authorizationCharacterId: eligibility.authorizationCharacterId,
           authorizationCharacterLifecycleId: eligibility.authorizationCharacterLifecycleId,
           authorizationGeneration: eligibility.authorizationGeneration,
           complete: true,
-          data:
-            resource.moduleId === 'core'
-              ? [
-                  localOrganizationFixture.directorCharacterId,
-                  localOrganizationFixture.unregisteredCharacterId,
-                ]
-              : activityObservation(resource.resourceId, validatedAt),
+          ...(corporationAuthorityFence && { corporationAuthorityFence }),
+          data,
           identity: planned.identity,
           managedAuthority: eligibility.managedAuthority,
           organizationVersion,
@@ -292,10 +304,11 @@ async function seedFixtureResources(validatedAt: Date) {
   return fixtureResources.length
 }
 
-function activityObservation(resourceId: string, validatedAt: Date) {
+function activityObservation(resourceId: string, validatedAt: Date, authorityBinding?: string) {
   const snapshots = snapshotsForResource(resourceId, validatedAt)
   return {
     checkpoint: {
+      ...(authorityBinding && { authorityBinding }),
       cursors: {},
       initialized: true,
       requests: [],

@@ -116,6 +116,7 @@ export interface PlatformResourceMaterializationContext<
   readonly authorizationGeneration: number | null
   readonly organizationVersion: number | null
   readonly managedAuthority: PlatformManagedResourceAuthority | null
+  readonly continuationAuthorityBinding?: string
   readonly capabilities: PlatformModuleResourceMaterializationCapabilities<Persistence>
 }
 
@@ -239,9 +240,16 @@ export interface PlatformResourceCollectionContext<
   readonly corporationId: number | null
   readonly authorizationGeneration: number | null
   readonly managedAuthority: PlatformManagedResourceAuthority | null
+  readonly continuationAuthorityBinding?: string
   readonly capabilities: PlatformModuleResourceCapabilities<Persistence, ProductIds>
   readonly requestBudget: number
   readonly operations: PlatformResourceOperationMethods<Protocol>
+}
+
+export interface PlatformContinuationCheckpointRead<Progress> {
+  readonly checkpoint: Progress | null
+  readonly expectedRevision: number
+  readonly needsReset: boolean
 }
 
 export interface PlatformResourceCollectionResult<Data> {

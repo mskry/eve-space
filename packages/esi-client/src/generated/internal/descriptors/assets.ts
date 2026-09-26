@@ -68,6 +68,9 @@ export const GetCharactersCharacterIdAssetsDescriptor: OperationExecutionDescrip
   requestBody: null,
   requestSchema: GetCharactersCharacterIdAssetsRequestSchema,
   authentication: { scopes: ["esi-assets.read_assets.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-asset","kind":"declared","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdAssetsResponse },
@@ -95,6 +98,9 @@ export const GetCorporationsCorporationIdAssetsDescriptor: OperationExecutionDes
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdAssetsRequestSchema,
   authentication: { scopes: ["esi-assets.read_corporation_assets.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-asset","kind":"declared","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdAssetsResponse },
@@ -121,6 +127,9 @@ export const PostCharactersCharacterIdAssetsLocationsDescriptor: OperationExecut
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostCharactersCharacterIdAssetsLocationsRequestSchema,
   authentication: { scopes: ["esi-assets.read_assets.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":1000,"rateLimit":{"group":"char-asset","kind":"declared","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[{"location":"body","maximumItems":1000,"path":[]}]},
   successResponses: [
     { status: 200, body: 'json', schema: zPostCharactersCharacterIdAssetsLocationsResponse },
@@ -147,6 +156,9 @@ export const PostCharactersCharacterIdAssetsNamesDescriptor: OperationExecutionD
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostCharactersCharacterIdAssetsNamesRequestSchema,
   authentication: { scopes: ["esi-assets.read_assets.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":1000,"rateLimit":{"group":"char-asset","kind":"declared","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[{"location":"body","maximumItems":1000,"path":[]}]},
   successResponses: [
     { status: 200, body: 'json', schema: zPostCharactersCharacterIdAssetsNamesResponse },
@@ -173,6 +185,9 @@ export const PostCorporationsCorporationIdAssetsLocationsDescriptor: OperationEx
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostCorporationsCorporationIdAssetsLocationsRequestSchema,
   authentication: { scopes: ["esi-assets.read_corporation_assets.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":1000,"rateLimit":{"group":"corp-asset","kind":"declared","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[{"location":"body","maximumItems":1000,"path":[]}]},
   successResponses: [
     { status: 200, body: 'json', schema: zPostCorporationsCorporationIdAssetsLocationsResponse },
@@ -199,6 +214,9 @@ export const PostCorporationsCorporationIdAssetsNamesDescriptor: OperationExecut
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostCorporationsCorporationIdAssetsNamesRequestSchema,
   authentication: { scopes: ["esi-assets.read_corporation_assets.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":1000,"rateLimit":{"group":"corp-asset","kind":"declared","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[{"location":"body","maximumItems":1000,"path":[]}]},
   successResponses: [
     { status: 200, body: 'json', schema: zPostCorporationsCorporationIdAssetsNamesResponse },

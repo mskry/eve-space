@@ -40,6 +40,9 @@ export const GetCharactersCharacterIdLoyaltyPointsDescriptor: OperationExecution
   requestBody: null,
   requestSchema: GetCharactersCharacterIdLoyaltyPointsRequestSchema,
   authentication: { scopes: ["esi-characters.read_loyalty.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-wallet","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdLoyaltyPointsResponse },
@@ -65,6 +68,9 @@ export const GetLoyaltyStoresCorporationIdOffersDescriptor: OperationExecutionDe
   requestBody: null,
   requestSchema: GetLoyaltyStoresCorporationIdOffersRequestSchema,
   authentication: null,
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetLoyaltyStoresCorporationIdOffersResponse },

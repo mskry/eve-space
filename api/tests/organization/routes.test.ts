@@ -1155,6 +1155,38 @@ describe('organization rule-managed group routes', () => {
     expect(mocks.createOrganizationGroupRule).toHaveBeenCalledOnce()
   })
 
+  test.each(['station-manager', 'project-manager'] as const)(
+    'rejects operation-only %s roles before organization-rule persistence',
+    async (predicate) => {
+      const unsupported = { kind: 'corporation-role', predicate }
+      expect((await request('/group-rules', { ...ruleInput, condition: unsupported })).status).toBe(
+        400,
+      )
+      expect(
+        (
+          await request('/group-rules/preview', {
+            bundleIds: [bundleId],
+            condition: unsupported,
+            targetUserId,
+          })
+        ).status,
+      ).toBe(400)
+      expect(
+        (
+          await mutate('PUT', `/group-rules/${groupId}`, {
+            bundleIds: [bundleId],
+            condition: unsupported,
+            enabled: true,
+            expectedRevision: 1,
+            reason: 'Review update.',
+          })
+        ).status,
+      ).toBe(400)
+      expect(mocks.createOrganizationGroupRule).not.toHaveBeenCalled()
+      expect(mocks.reviseOrganizationGroupRule).not.toHaveBeenCalled()
+    },
+  )
+
   test('previews without granting and versions rule updates and disablement', async () => {
     const preview = await request('/group-rules/preview', {
       bundleIds: [bundleId],

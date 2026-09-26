@@ -45,9 +45,10 @@ This subsystem uses support, representation, contract, infrastructure, execution
 
 ## Authorization
 
-- Operation authorization has two kinds: public and character. There is no operation-level lifecycle kind.
+- Generated operation authority has two kinds: public and OAuth. It carries canonical request-subject bindings, the exact scope, and an optional reviewed corporation-role predicate; an empty role inventory means no operation-specific role check. It does not choose a credential strategy.
+- Resource compilation selects a public, current-owned-character, current-managed-member-character, or current-managed-corporation-source binding for each operation usage. Owned-character corporation inputs must match current affiliation; managed-corporation inputs must match the exact registered source. A managed-member usage retains organization version, account and character lifecycles, section/disclosure/activation admission, generation, and scope. These are not application permissions.
 - Organization and deployment lifecycle generation checks are caller-side concerns layered above a public-authorized operation. They stay with the caller and do not migrate into a representation.
-- A character ID selects credentials and required scopes. It is never evidence that the requesting user owns that character; ownership stays with `middleware/owned-character.ts`.
+- A character ID selects credentials and required scopes. The gateway resolves tokens internally and rechecks the operation scope; it does not grant ownership from a character ID. Ownership stays with `middleware/owned-character.ts`, while platform resource guards own the reviewed resource credential binding and source/role fence before each call.
 - Tokens, credentials, and principal strings never cross the feature-facing seam.
 
 ## Requests And Mutations

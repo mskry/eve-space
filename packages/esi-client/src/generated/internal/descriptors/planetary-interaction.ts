@@ -52,6 +52,9 @@ export const GetCharactersCharacterIdPlanetsPlanetIdDescriptor: OperationExecuti
   requestBody: null,
   requestSchema: GetCharactersCharacterIdPlanetsPlanetIdRequestSchema,
   authentication: { scopes: ["esi-planets.manage_planets.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":600,"x-client-cache-ttl":600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-industry","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdPlanetsPlanetIdResponse },
@@ -77,6 +80,9 @@ export const GetUniverseSchematicsSchematicIdDescriptor: OperationExecutionDescr
   requestBody: null,
   requestSchema: GetUniverseSchematicsSchematicIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseSchematicsSchematicIdResponse },
@@ -102,6 +108,9 @@ export const GetCharactersCharacterIdPlanetsDescriptor: OperationExecutionDescri
   requestBody: null,
   requestSchema: GetCharactersCharacterIdPlanetsRequestSchema,
   authentication: { scopes: ["esi-planets.manage_planets.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":600,"x-client-cache-ttl":600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-industry","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdPlanetsResponse },
@@ -129,6 +138,9 @@ export const GetCorporationsCorporationIdCustomsOfficesDescriptor: OperationExec
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdCustomsOfficesRequestSchema,
   authentication: { scopes: ["esi-planets.read_customs_offices.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-industry","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdCustomsOfficesResponse },

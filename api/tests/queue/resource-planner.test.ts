@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { derivedResourcePriorityBand, resourceRefreshPriority } from '../../src/queue/policy.js'
 import { createInMemoryQueueProducer } from '../../src/queue/producer.js'
 import { runResourcePlanner } from '../../src/queue/resource-planner.js'
+import { guardInstalledResourceExecution } from '../../src/platform/resource-execution-guard.js'
+import { platformResources } from '../../src/platform/resources.js'
 
 const plannerMocks = vi.hoisted(() => ({
   getCooldowns: vi.fn(),
@@ -139,6 +141,67 @@ describe('generic resource planner', () => {
         source: 'planner',
       },
     ])
+  })
+
+  test('queues stable corporation reconciliation and acquires changed authority only at execution', async () => {
+    const corporation = platformResources.find((entry) => entry.resourceId === 'corporation-jobs')!
+    const candidate = {
+      ...dueResource('98000001', corporation),
+      authorizationCharacterId: 1_404_328_063,
+      authorizationGeneration: 7,
+      sourceId: 'prior-source',
+      roleRevision: 'prior-private-revision',
+    }
+    plannerMocks.selectDue.mockResolvedValue([candidate])
+    const subject = context()
+    await runResourcePlanner(subject, { resources: [corporation] })
+    const [command] = subject.producer.commands
+    expect(command).toMatchObject({ name: 'resource-refresh', payload: candidate.identity })
+    expect(command?.payload).toStrictEqual(candidate.identity)
+    if (command?.name !== 'resource-refresh') throw new Error('Expected scalar reconciliation')
+    const sourceLifecycle = '70eb0397-adff-4a82-94d6-065bd2149ea8'
+    const loadCharacterAuthorization = vi.fn().mockResolvedValue({ tokenVersion: 8 })
+    await expect(
+      guardInstalledResourceExecution(command.payload, {
+        resources: [corporation],
+        resolveEligibility: vi.fn().mockResolvedValue({
+          status: 'eligible',
+          due: true,
+          dueReason: 'never-collected',
+          schedulingKey: new Date(),
+          nextEligibleAt: null,
+          validatedAt: null,
+          lastFailureClass: null,
+          authorizationGeneration: 8,
+          authorizationCharacterId: 1_404_328_064,
+          authorizationCharacterLifecycleId: sourceLifecycle,
+          managedAuthority: null,
+        }),
+        isCorporationSourceCurrent: vi.fn().mockResolvedValue(true),
+        loadCharacterAuthorization,
+      }),
+    ).resolves.toMatchObject({
+      outcome: 'ready',
+      authorizationCharacterId: 1_404_328_064,
+      authorization: { tokenVersion: 8 },
+    })
+    expect(loadCharacterAuthorization).toHaveBeenCalledWith(
+      1_404_328_064,
+      sourceLifecycle,
+      'esi-corporations.read_freelance_jobs.v1',
+    )
+    loadCharacterAuthorization.mockClear()
+    await expect(
+      guardInstalledResourceExecution(command.payload, {
+        resources: [corporation],
+        resolveEligibility: vi.fn().mockResolvedValue({
+          status: 'authorization-required',
+          authorizationReason: 'role-unsatisfied',
+        }),
+        loadCharacterAuthorization,
+      }),
+    ).resolves.toStrictEqual({ outcome: 'noop', reason: 'authorization-required' })
+    expect(loadCharacterAuthorization).not.toHaveBeenCalled()
   })
 
   test('stops at the first cooldown and leaves the suffix due', async () => {

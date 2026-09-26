@@ -112,6 +112,9 @@ const operationContracts = [
       'zDeleteCharactersCharacterIdContactsQuery',
     ],
     requestTypeExport: 'DeleteCharactersCharacterIdContactsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'DeleteCharactersCharacterIdContactsResponse',
     responses: [
       {
@@ -212,6 +215,9 @@ const operationContracts = [
       'zDeleteCharactersCharacterIdFittingsFittingIdPath',
     ],
     requestTypeExport: 'DeleteCharactersCharacterIdFittingsFittingIdData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'DeleteCharactersCharacterIdFittingsFittingIdResponse',
     responses: [
       {
@@ -312,6 +318,9 @@ const operationContracts = [
       'zDeleteCharactersCharacterIdMailLabelsLabelIdPath',
     ],
     requestTypeExport: 'DeleteCharactersCharacterIdMailLabelsLabelIdData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'DeleteCharactersCharacterIdMailLabelsLabelIdResponse',
     responses: [
       {
@@ -412,6 +421,9 @@ const operationContracts = [
       'zDeleteCharactersCharacterIdMailMailIdPath',
     ],
     requestTypeExport: 'DeleteCharactersCharacterIdMailMailIdData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'DeleteCharactersCharacterIdMailMailIdResponse',
     responses: [
       {
@@ -512,6 +524,9 @@ const operationContracts = [
       'zDeleteFleetsFleetIdMembersMemberIdPath',
     ],
     requestTypeExport: 'DeleteFleetsFleetIdMembersMemberIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'DeleteFleetsFleetIdMembersMemberIdResponse',
     responses: [
       {
@@ -612,6 +627,9 @@ const operationContracts = [
       'zDeleteFleetsFleetIdSquadsSquadIdPath',
     ],
     requestTypeExport: 'DeleteFleetsFleetIdSquadsSquadIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'DeleteFleetsFleetIdSquadsSquadIdResponse',
     responses: [
       {
@@ -712,6 +730,9 @@ const operationContracts = [
       'zDeleteFleetsFleetIdWingsWingIdPath',
     ],
     requestTypeExport: 'DeleteFleetsFleetIdWingsWingIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'DeleteFleetsFleetIdWingsWingIdResponse',
     responses: [
       {
@@ -791,6 +812,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetAlliancesHeaders'],
     requestTypeExport: 'GetAlliancesData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetAlliancesResponse',
     responses: [
       {
@@ -882,6 +906,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetAlliancesAllianceIdHeaders', 'zGetAlliancesAllianceIdPath'],
     requestTypeExport: 'GetAlliancesAllianceIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetAlliancesAllianceIdResponse',
     responses: [
       {
@@ -990,6 +1017,9 @@ const operationContracts = [
       'zGetAlliancesAllianceIdContactsQuery',
     ],
     requestTypeExport: 'GetAlliancesAllianceIdContactsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetAlliancesAllianceIdContactsResponse',
     responses: [
       {
@@ -1086,6 +1116,9 @@ const operationContracts = [
       'zGetAlliancesAllianceIdContactsLabelsPath',
     ],
     requestTypeExport: 'GetAlliancesAllianceIdContactsLabelsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetAlliancesAllianceIdContactsLabelsResponse',
     responses: [
       {
@@ -1179,6 +1212,9 @@ const operationContracts = [
       'zGetAlliancesAllianceIdCorporationsPath',
     ],
     requestTypeExport: 'GetAlliancesAllianceIdCorporationsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetAlliancesAllianceIdCorporationsResponse',
     responses: [
       {
@@ -1267,6 +1303,9 @@ const operationContracts = [
       'zGetAlliancesAllianceIdIconsPath',
     ],
     requestTypeExport: 'GetAlliancesAllianceIdIconsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetAlliancesAllianceIdIconsResponse',
     responses: [
       {
@@ -1372,6 +1411,9 @@ const operationContracts = [
       'zGetCharactersAccessListsDetailPath',
     ],
     requestTypeExport: 'GetCharactersAccessListsDetailData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-05-19',
     responseTypeExport: 'GetCharactersAccessListsDetailResponse',
     responses: [
       {
@@ -1468,6 +1510,9 @@ const operationContracts = [
       'zGetCharactersAccessListsListingPath',
     ],
     requestTypeExport: 'GetCharactersAccessListsListingData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-05-19',
     responseTypeExport: 'GetCharactersAccessListsListingResponse',
     responses: [
       {
@@ -1564,6 +1609,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdAgentsResearchPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdAgentsResearchData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdAgentsResearchResponse',
     responses: [
       {
@@ -1672,6 +1720,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdAssetsQuery',
     ],
     requestTypeExport: 'GetCharactersCharacterIdAssetsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdAssetsResponse',
     responses: [
       {
@@ -1768,6 +1819,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdAttributesPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdAttributesData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdAttributesResponse',
     responses: [
       {
@@ -1876,6 +1930,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdBlueprintsQuery',
     ],
     requestTypeExport: 'GetCharactersCharacterIdBlueprintsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdBlueprintsResponse',
     responses: [
       {
@@ -1984,6 +2041,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdCalendarQuery',
     ],
     requestTypeExport: 'GetCharactersCharacterIdCalendarData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdCalendarResponse',
     responses: [
       {
@@ -2089,6 +2149,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdCalendarEventIdPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdCalendarEventIdData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdCalendarEventIdResponse',
     responses: [
       {
@@ -2194,6 +2257,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdCalendarEventIdAttendeesPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdCalendarEventIdAttendeesData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdCalendarEventIdAttendeesResponse',
     responses: [
       {
@@ -2290,6 +2356,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdClonesPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdClonesData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdClonesResponse',
     responses: [
       {
@@ -2398,6 +2467,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdContactsQuery',
     ],
     requestTypeExport: 'GetCharactersCharacterIdContactsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdContactsResponse',
     responses: [
       {
@@ -2494,6 +2566,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdContactsLabelsPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdContactsLabelsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdContactsLabelsResponse',
     responses: [
       {
@@ -2602,6 +2677,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdContractsQuery',
     ],
     requestTypeExport: 'GetCharactersCharacterIdContractsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdContractsResponse',
     responses: [
       {
@@ -2707,6 +2785,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdContractsContractIdBidsPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdContractsContractIdBidsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdContractsContractIdBidsResponse',
     responses: [
       {
@@ -2812,6 +2893,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdContractsContractIdItemsPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdContractsContractIdItemsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdContractsContractIdItemsResponse',
     responses: [
       {
@@ -2905,6 +2989,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdCorporationhistoryPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdCorporationhistoryData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdCorporationhistoryResponse',
     responses: [
       {
@@ -3001,6 +3088,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdFatiguePath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdFatigueData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdFatigueResponse',
     responses: [
       {
@@ -3097,6 +3187,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdFittingsPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdFittingsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdFittingsResponse',
     responses: [
       {
@@ -3193,6 +3286,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdFleetPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdFleetData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdFleetResponse',
     responses: [
       {
@@ -3284,6 +3380,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdFwStatsPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdFwStatsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdFwStatsResponse',
     responses: [
       {
@@ -3380,6 +3479,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdImplantsPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdImplantsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdImplantsResponse',
     responses: [
       {
@@ -3488,6 +3590,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdIndustryJobsQuery',
     ],
     requestTypeExport: 'GetCharactersCharacterIdIndustryJobsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdIndustryJobsResponse',
     responses: [
       {
@@ -3596,6 +3701,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdKillmailsRecentQuery',
     ],
     requestTypeExport: 'GetCharactersCharacterIdKillmailsRecentData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdKillmailsRecentResponse',
     responses: [
       {
@@ -3692,6 +3800,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdLocationPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdLocationData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdLocationResponse',
     responses: [
       {
@@ -3788,6 +3899,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdLoyaltyPointsPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdLoyaltyPointsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdLoyaltyPointsResponse',
     responses: [
       {
@@ -3914,6 +4028,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdMailQuery',
     ],
     requestTypeExport: 'GetCharactersCharacterIdMailData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdMailResponse',
     responses: [
       {
@@ -4010,6 +4127,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdMailLabelsPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdMailLabelsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdMailLabelsResponse',
     responses: [
       {
@@ -4106,6 +4226,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdMailListsPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdMailListsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdMailListsResponse',
     responses: [
       {
@@ -4211,6 +4334,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdMailMailIdPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdMailMailIdData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdMailMailIdResponse',
     responses: [
       {
@@ -4307,6 +4433,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdMedalsPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdMedalsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdMedalsResponse',
     responses: [
       {
@@ -4415,6 +4544,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdMiningQuery',
     ],
     requestTypeExport: 'GetCharactersCharacterIdMiningData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdMiningResponse',
     responses: [
       {
@@ -4511,6 +4643,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdNotificationsPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdNotificationsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdNotificationsResponse',
     responses: [
       {
@@ -4607,6 +4742,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdNotificationsContactsPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdNotificationsContactsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdNotificationsContactsResponse',
     responses: [
       {
@@ -4703,6 +4841,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdOnlinePath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdOnlineData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdOnlineResponse',
     responses: [
       {
@@ -4796,6 +4937,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdOrdersPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdOrdersData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdOrdersResponse',
     responses: [
       {
@@ -4901,6 +5045,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdOrdersHistoryQuery',
     ],
     requestTypeExport: 'GetCharactersCharacterIdOrdersHistoryData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdOrdersHistoryResponse',
     responses: [
       {
@@ -4997,6 +5144,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdPlanetsPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdPlanetsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdPlanetsResponse',
     responses: [
       {
@@ -5102,6 +5252,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdPlanetsPlanetIdPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdPlanetsPlanetIdData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdPlanetsPlanetIdResponse',
     responses: [
       {
@@ -5193,6 +5346,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdPortraitPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdPortraitData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdPortraitResponse',
     responses: [
       {
@@ -5289,6 +5445,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdRolesPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdRolesData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdRolesResponse',
     responses: [
       {
@@ -5421,6 +5580,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdSearchQuery',
     ],
     requestTypeExport: 'GetCharactersCharacterIdSearchData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdSearchResponse',
     responses: [
       {
@@ -5517,6 +5679,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdShipPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdShipData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdShipResponse',
     responses: [
       {
@@ -5613,6 +5778,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdSkillqueuePath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdSkillqueueData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdSkillqueueResponse',
     responses: [
       {
@@ -5709,6 +5877,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdSkillsPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdSkillsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdSkillsResponse',
     responses: [
       {
@@ -5805,6 +5976,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdStandingsPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdStandingsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdStandingsResponse',
     responses: [
       {
@@ -5901,6 +6075,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdTitlesPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdTitlesData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdTitlesResponse',
     responses: [
       {
@@ -5997,6 +6174,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdWalletPath',
     ],
     requestTypeExport: 'GetCharactersCharacterIdWalletData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdWalletResponse',
     responses: [
       {
@@ -6105,6 +6285,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdWalletJournalQuery',
     ],
     requestTypeExport: 'GetCharactersCharacterIdWalletJournalData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdWalletJournalResponse',
     responses: [
       {
@@ -6213,6 +6396,9 @@ const operationContracts = [
       'zGetCharactersCharacterIdWalletTransactionsQuery',
     ],
     requestTypeExport: 'GetCharactersCharacterIdWalletTransactionsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCharactersCharacterIdWalletTransactionsResponse',
     responses: [
       {
@@ -6309,6 +6495,9 @@ const operationContracts = [
       'zGetCharactersCosmeticsSkinrPath',
     ],
     requestTypeExport: 'GetCharactersCosmeticsSkinrData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-08-18',
     responseTypeExport: 'GetCharactersCosmeticsSkinrResponse',
     responses: [
       {
@@ -6405,6 +6594,9 @@ const operationContracts = [
       'zGetCharactersCosmeticsSkinrComponentsPath',
     ],
     requestTypeExport: 'GetCharactersCosmeticsSkinrComponentsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-08-18',
     responseTypeExport: 'GetCharactersCosmeticsSkinrComponentsResponse',
     responses: [
       {
@@ -6496,6 +6688,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetCharactersDetailHeaders', 'zGetCharactersDetailPath'],
     requestTypeExport: 'GetCharactersDetailData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-06-09',
     responseTypeExport: 'GetCharactersDetailResponse',
     responses: [
       {
@@ -6592,6 +6787,9 @@ const operationContracts = [
       'zGetCharactersFreelanceJobsListingPath',
     ],
     requestTypeExport: 'GetCharactersFreelanceJobsListingData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2025-12-16',
     responseTypeExport: 'GetCharactersFreelanceJobsListingResponse',
     responses: [
       {
@@ -6697,6 +6895,9 @@ const operationContracts = [
       'zGetCharactersFreelanceJobsParticipationPath',
     ],
     requestTypeExport: 'GetCharactersFreelanceJobsParticipationData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2025-12-16',
     responseTypeExport: 'GetCharactersFreelanceJobsParticipationResponse',
     responses: [
       {
@@ -6802,6 +7003,9 @@ const operationContracts = [
       'zGetCharactersMercenaryTacticalOperationsDetailPath',
     ],
     requestTypeExport: 'GetCharactersMercenaryTacticalOperationsDetailData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-05-19',
     responseTypeExport: 'GetCharactersMercenaryTacticalOperationsDetailResponse',
     responses: [
       {
@@ -6898,6 +7102,9 @@ const operationContracts = [
       'zGetCharactersMercenaryTacticalOperationsListingPath',
     ],
     requestTypeExport: 'GetCharactersMercenaryTacticalOperationsListingData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-05-19',
     responseTypeExport: 'GetCharactersMercenaryTacticalOperationsListingResponse',
     responses: [
       {
@@ -7027,6 +7234,9 @@ const operationContracts = [
       'zGetCharactersMilitaryCampaignsObjectivesListingQuery',
     ],
     requestTypeExport: 'GetCharactersMilitaryCampaignsObjectivesListingData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-08-04',
     responseTypeExport: 'GetCharactersMilitaryCampaignsObjectivesListingResponse',
     responses: [
       {
@@ -7132,6 +7342,9 @@ const operationContracts = [
       'zGetCharactersMilitaryCampaignsObjectivesParticipationPath',
     ],
     requestTypeExport: 'GetCharactersMilitaryCampaignsObjectivesParticipationData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-08-04',
     responseTypeExport: 'GetCharactersMilitaryCampaignsObjectivesParticipationResponse',
     responses: [
       {
@@ -7260,6 +7473,9 @@ const operationContracts = [
       'zGetCharactersParagonHubSkinrQuery',
     ],
     requestTypeExport: 'GetCharactersParagonHubSkinrData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-08-18',
     responseTypeExport: 'GetCharactersParagonHubSkinrResponse',
     responses: [
       {
@@ -7365,6 +7581,9 @@ const operationContracts = [
       'zGetCharactersStructuresMercenaryDensDetailPath',
     ],
     requestTypeExport: 'GetCharactersStructuresMercenaryDensDetailData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-05-19',
     responseTypeExport: 'GetCharactersStructuresMercenaryDensDetailResponse',
     responses: [
       {
@@ -7461,6 +7680,9 @@ const operationContracts = [
       'zGetCharactersStructuresMercenaryDensListingPath',
     ],
     requestTypeExport: 'GetCharactersStructuresMercenaryDensListingData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-05-19',
     responseTypeExport: 'GetCharactersStructuresMercenaryDensListingResponse',
     responses: [
       {
@@ -7566,6 +7788,9 @@ const operationContracts = [
       'zGetContractsPublicBidsContractIdQuery',
     ],
     requestTypeExport: 'GetContractsPublicBidsContractIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetContractsPublicBidsContractIdResponse',
     responses: [
       {
@@ -7676,6 +7901,9 @@ const operationContracts = [
       'zGetContractsPublicItemsContractIdQuery',
     ],
     requestTypeExport: 'GetContractsPublicItemsContractIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetContractsPublicItemsContractIdResponse',
     responses: [
       {
@@ -7786,6 +8014,9 @@ const operationContracts = [
       'zGetContractsPublicRegionIdQuery',
     ],
     requestTypeExport: 'GetContractsPublicRegionIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetContractsPublicRegionIdResponse',
     responses: [
       {
@@ -7894,6 +8125,9 @@ const operationContracts = [
       'zGetCorporationCorporationIdMiningExtractionsQuery',
     ],
     requestTypeExport: 'GetCorporationCorporationIdMiningExtractionsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Station_Manager'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationCorporationIdMiningExtractionsResponse',
     responses: [
       {
@@ -8002,6 +8236,9 @@ const operationContracts = [
       'zGetCorporationCorporationIdMiningObserversQuery',
     ],
     requestTypeExport: 'GetCorporationCorporationIdMiningObserversData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Accountant'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationCorporationIdMiningObserversResponse',
     responses: [
       {
@@ -8119,6 +8356,9 @@ const operationContracts = [
       'zGetCorporationCorporationIdMiningObserversObserverIdQuery',
     ],
     requestTypeExport: 'GetCorporationCorporationIdMiningObserversObserverIdData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Accountant'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationCorporationIdMiningObserversObserverIdResponse',
     responses: [
       {
@@ -8213,6 +8453,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdPath',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-07-21',
     responseTypeExport: 'GetCorporationsCorporationIdResponse',
     responses: [
       {
@@ -8306,6 +8549,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdAlliancehistoryPath',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdAlliancehistoryData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdAlliancehistoryResponse',
     responses: [
       {
@@ -8414,6 +8660,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdAssetsQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdAssetsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdAssetsResponse',
     responses: [
       {
@@ -8522,6 +8771,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdBlueprintsQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdBlueprintsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdBlueprintsResponse',
     responses: [
       {
@@ -8630,6 +8882,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdContactsQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdContactsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdContactsResponse',
     responses: [
       {
@@ -8726,6 +8981,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdContactsLabelsPath',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdContactsLabelsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdContactsLabelsResponse',
     responses: [
       {
@@ -8834,6 +9092,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdContainersLogsQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdContainersLogsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdContainersLogsResponse',
     responses: [
       {
@@ -8942,6 +9203,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdContractsQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdContractsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdContractsResponse',
     responses: [
       {
@@ -9059,6 +9323,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdContractsContractIdBidsQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdContractsContractIdBidsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdContractsContractIdBidsResponse',
     responses: [
       {
@@ -9164,6 +9431,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdContractsContractIdItemsPath',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdContractsContractIdItemsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdContractsContractIdItemsResponse',
     responses: [
       {
@@ -9272,6 +9542,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdCustomsOfficesQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdCustomsOfficesData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdCustomsOfficesResponse',
     responses: [
       {
@@ -9368,6 +9641,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdDivisionsPath',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdDivisionsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdDivisionsResponse',
     responses: [
       {
@@ -9464,6 +9740,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdFacilitiesPath',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdFacilitiesData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Factory_Manager'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdFacilitiesResponse',
     responses: [
       {
@@ -9555,6 +9834,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdFwStatsPath',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdFwStatsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdFwStatsResponse',
     responses: [
       {
@@ -9648,6 +9930,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdIconsPath',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdIconsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdIconsResponse',
     responses: [
       {
@@ -9765,6 +10050,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdIndustryJobsQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdIndustryJobsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Factory_Manager'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdIndustryJobsResponse',
     responses: [
       {
@@ -9873,6 +10161,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdKillmailsRecentQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdKillmailsRecentData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdKillmailsRecentResponse',
     responses: [
       {
@@ -9981,6 +10272,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdMedalsQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdMedalsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdMedalsResponse',
     responses: [
       {
@@ -10089,6 +10383,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdMedalsIssuedQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdMedalsIssuedData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdMedalsIssuedResponse',
     responses: [
       {
@@ -10185,6 +10482,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdMembersPath',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdMembersData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdMembersResponse',
     responses: [
       {
@@ -10281,6 +10581,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdMembersLimitPath',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdMembersLimitData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdMembersLimitResponse',
     responses: [
       {
@@ -10377,6 +10680,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdMembersTitlesPath',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdMembersTitlesData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdMembersTitlesResponse',
     responses: [
       {
@@ -10473,6 +10779,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdMembertrackingPath',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdMembertrackingData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdMembertrackingResponse',
     responses: [
       {
@@ -10578,6 +10887,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdOrdersQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdOrdersData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Accountant', 'Trader'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdOrdersResponse',
     responses: [
       {
@@ -10683,6 +10995,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdOrdersHistoryQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdOrdersHistoryData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Accountant', 'Trader'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdOrdersHistoryResponse',
     responses: [
       {
@@ -10779,6 +11094,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdRolesPath',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdRolesData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdRolesResponse',
     responses: [
       {
@@ -10887,6 +11205,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdRolesHistoryQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdRolesHistoryData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdRolesHistoryResponse',
     responses: [
       {
@@ -10995,6 +11316,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdShareholdersQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdShareholdersData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdShareholdersResponse',
     responses: [
       {
@@ -11103,6 +11427,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdStandingsQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdStandingsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdStandingsResponse',
     responses: [
       {
@@ -11211,6 +11538,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdStarbasesQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdStarbasesData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdStarbasesResponse',
     responses: [
       {
@@ -11328,6 +11658,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdStarbasesStarbaseIdQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdStarbasesStarbaseIdData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdStarbasesStarbaseIdResponse',
     responses: [
       {
@@ -11436,6 +11769,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdStructuresQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdStructuresData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Station_Manager'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdStructuresResponse',
     responses: [
       {
@@ -11532,6 +11868,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdTitlesPath',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdTitlesData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdTitlesResponse',
     responses: [
       {
@@ -11628,6 +11967,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdWalletsPath',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdWalletsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Accountant', 'Junior_Accountant'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdWalletsResponse',
     responses: [
       {
@@ -11745,6 +12087,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdWalletsDivisionJournalQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdWalletsDivisionJournalData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Accountant', 'Junior_Accountant'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdWalletsDivisionJournalResponse',
     responses: [
       {
@@ -11862,6 +12207,9 @@ const operationContracts = [
       'zGetCorporationsCorporationIdWalletsDivisionTransactionsQuery',
     ],
     requestTypeExport: 'GetCorporationsCorporationIdWalletsDivisionTransactionsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Accountant', 'Junior_Accountant'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsCorporationIdWalletsDivisionTransactionsResponse',
     responses: [
       {
@@ -11989,6 +12337,9 @@ const operationContracts = [
       'zGetCorporationsFreelanceJobsListingQuery',
     ],
     requestTypeExport: 'GetCorporationsFreelanceJobsListingData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Project_Manager'],
+    minimumCompatibilityDate: '2025-12-16',
     responseTypeExport: 'GetCorporationsFreelanceJobsListingResponse',
     responses: [
       {
@@ -12125,6 +12476,9 @@ const operationContracts = [
       'zGetCorporationsFreelanceJobsParticipantsQuery',
     ],
     requestTypeExport: 'GetCorporationsFreelanceJobsParticipantsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Project_Manager'],
+    minimumCompatibilityDate: '2025-12-16',
     responseTypeExport: 'GetCorporationsFreelanceJobsParticipantsResponse',
     responses: [
       {
@@ -12199,6 +12553,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetCorporationsNpccorpsHeaders'],
     requestTypeExport: 'GetCorporationsNpccorpsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetCorporationsNpccorpsResponse',
     responses: [
       {
@@ -12314,6 +12671,9 @@ const operationContracts = [
       'zGetCorporationsProjectsContributionPath',
     ],
     requestTypeExport: 'GetCorporationsProjectsContributionData',
+    requestSubjectBindings: ['character_id', 'corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2025-08-26',
     responseTypeExport: 'GetCorporationsProjectsContributionResponse',
     responses: [
       {
@@ -12450,6 +12810,9 @@ const operationContracts = [
       'zGetCorporationsProjectsContributorsQuery',
     ],
     requestTypeExport: 'GetCorporationsProjectsContributorsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Project_Manager'],
+    minimumCompatibilityDate: '2025-08-26',
     responseTypeExport: 'GetCorporationsProjectsContributorsResponse',
     responses: [
       {
@@ -12555,6 +12918,9 @@ const operationContracts = [
       'zGetCorporationsProjectsDetailPath',
     ],
     requestTypeExport: 'GetCorporationsProjectsDetailData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2025-08-26',
     responseTypeExport: 'GetCorporationsProjectsDetailResponse',
     responses: [
       {
@@ -12692,6 +13058,9 @@ const operationContracts = [
       'zGetCorporationsProjectsListingQuery',
     ],
     requestTypeExport: 'GetCorporationsProjectsListingData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2025-08-26',
     responseTypeExport: 'GetCorporationsProjectsListingResponse',
     responses: [
       {
@@ -12797,6 +13166,9 @@ const operationContracts = [
       'zGetCorporationsStructuresSkyhooksDetailPath',
     ],
     requestTypeExport: 'GetCorporationsStructuresSkyhooksDetailData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Station_Manager'],
+    minimumCompatibilityDate: '2026-05-19',
     responseTypeExport: 'GetCorporationsStructuresSkyhooksDetailResponse',
     responses: [
       {
@@ -12893,6 +13265,9 @@ const operationContracts = [
       'zGetCorporationsStructuresSkyhooksListingPath',
     ],
     requestTypeExport: 'GetCorporationsStructuresSkyhooksListingData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Station_Manager'],
+    minimumCompatibilityDate: '2026-05-19',
     responseTypeExport: 'GetCorporationsStructuresSkyhooksListingResponse',
     responses: [
       {
@@ -12998,6 +13373,9 @@ const operationContracts = [
       'zGetCorporationsStructuresSovereigntyHubsDetailPath',
     ],
     requestTypeExport: 'GetCorporationsStructuresSovereigntyHubsDetailData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Station_Manager'],
+    minimumCompatibilityDate: '2026-05-19',
     responseTypeExport: 'GetCorporationsStructuresSovereigntyHubsDetailResponse',
     responses: [
       {
@@ -13094,6 +13472,9 @@ const operationContracts = [
       'zGetCorporationsStructuresSovereigntyHubsListingPath',
     ],
     requestTypeExport: 'GetCorporationsStructuresSovereigntyHubsListingData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-05-19',
     responseTypeExport: 'GetCorporationsStructuresSovereigntyHubsListingResponse',
     responses: [
       {
@@ -13188,6 +13569,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetCosmeticsSkinrHeaders', 'zGetCosmeticsSkinrPath'],
     requestTypeExport: 'GetCosmeticsSkinrData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-08-18',
     responseTypeExport: 'GetCosmeticsSkinrResponse',
     responses: [
       {
@@ -13262,6 +13646,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetDogmaAttributesHeaders'],
     requestTypeExport: 'GetDogmaAttributesData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetDogmaAttributesResponse',
     responses: [
       {
@@ -13350,6 +13737,9 @@ const operationContracts = [
       'zGetDogmaAttributesAttributeIdPath',
     ],
     requestTypeExport: 'GetDogmaAttributesAttributeIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetDogmaAttributesAttributeIdResponse',
     responses: [
       {
@@ -13447,6 +13837,9 @@ const operationContracts = [
       'zGetDogmaDynamicItemsTypeIdItemIdPath',
     ],
     requestTypeExport: 'GetDogmaDynamicItemsTypeIdItemIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetDogmaDynamicItemsTypeIdItemIdResponse',
     responses: [
       {
@@ -13521,6 +13914,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetDogmaEffectsHeaders'],
     requestTypeExport: 'GetDogmaEffectsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetDogmaEffectsResponse',
     responses: [
       {
@@ -13606,6 +14002,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetDogmaEffectsEffectIdHeaders', 'zGetDogmaEffectsEffectIdPath'],
     requestTypeExport: 'GetDogmaEffectsEffectIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetDogmaEffectsEffectIdResponse',
     responses: [
       {
@@ -13699,6 +14098,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetFleetsFleetIdHeaders', 'zGetFleetsFleetIdPath'],
     requestTypeExport: 'GetFleetsFleetIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetFleetsFleetIdResponse',
     responses: [
       {
@@ -13792,6 +14194,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetFleetsFleetIdMembersHeaders', 'zGetFleetsFleetIdMembersPath'],
     requestTypeExport: 'GetFleetsFleetIdMembersData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetFleetsFleetIdMembersResponse',
     responses: [
       {
@@ -13885,6 +14290,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetFleetsFleetIdWingsHeaders', 'zGetFleetsFleetIdWingsPath'],
     requestTypeExport: 'GetFleetsFleetIdWingsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetFleetsFleetIdWingsResponse',
     responses: [
       {
@@ -13978,6 +14386,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetFreelanceJobsDetailHeaders', 'zGetFreelanceJobsDetailPath'],
     requestTypeExport: 'GetFreelanceJobsDetailData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2025-12-16',
     responseTypeExport: 'GetFreelanceJobsDetailResponse',
     responses: [
       {
@@ -14100,6 +14511,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetFreelanceJobsListingHeaders', 'zGetFreelanceJobsListingQuery'],
     requestTypeExport: 'GetFreelanceJobsListingData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2025-12-16',
     responseTypeExport: 'GetFreelanceJobsListingResponse',
     responses: [
       {
@@ -14177,6 +14591,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetFwLeaderboardsHeaders'],
     requestTypeExport: 'GetFwLeaderboardsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetFwLeaderboardsResponse',
     responses: [
       {
@@ -14254,6 +14671,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetFwLeaderboardsCharactersHeaders'],
     requestTypeExport: 'GetFwLeaderboardsCharactersData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetFwLeaderboardsCharactersResponse',
     responses: [
       {
@@ -14331,6 +14751,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetFwLeaderboardsCorporationsHeaders'],
     requestTypeExport: 'GetFwLeaderboardsCorporationsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetFwLeaderboardsCorporationsResponse',
     responses: [
       {
@@ -14408,6 +14831,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetFwStatsHeaders'],
     requestTypeExport: 'GetFwStatsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetFwStatsResponse',
     responses: [
       {
@@ -14490,6 +14916,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetFwSystemsHeaders'],
     requestTypeExport: 'GetFwSystemsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetFwSystemsResponse',
     responses: [
       {
@@ -14567,6 +14996,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetFwWarsHeaders'],
     requestTypeExport: 'GetFwWarsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetFwWarsResponse',
     responses: [
       {
@@ -14649,6 +15081,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetIncursionsHeaders'],
     requestTypeExport: 'GetIncursionsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetIncursionsResponse',
     responses: [
       {
@@ -14731,6 +15166,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetIndustryFacilitiesHeaders'],
     requestTypeExport: 'GetIndustryFacilitiesData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetIndustryFacilitiesResponse',
     responses: [
       {
@@ -14813,6 +15251,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetIndustrySystemsHeaders'],
     requestTypeExport: 'GetIndustrySystemsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetIndustrySystemsResponse',
     responses: [
       {
@@ -14895,6 +15336,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetInsurancePricesHeaders'],
     requestTypeExport: 'GetInsurancePricesData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetInsurancePricesResponse',
     responses: [
       {
@@ -15000,6 +15444,9 @@ const operationContracts = [
       'zGetKillmailsKillmailIdKillmailHashPath',
     ],
     requestTypeExport: 'GetKillmailsKillmailIdKillmailHashData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetKillmailsKillmailIdKillmailHashResponse',
     responses: [
       {
@@ -15088,6 +15535,9 @@ const operationContracts = [
       'zGetLoyaltyStoresCorporationIdOffersPath',
     ],
     requestTypeExport: 'GetLoyaltyStoresCorporationIdOffersData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetLoyaltyStoresCorporationIdOffersResponse',
     responses: [
       {
@@ -15162,6 +15612,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetMarketsGroupsHeaders'],
     requestTypeExport: 'GetMarketsGroupsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetMarketsGroupsResponse',
     responses: [
       {
@@ -15250,6 +15703,9 @@ const operationContracts = [
       'zGetMarketsGroupsMarketGroupIdPath',
     ],
     requestTypeExport: 'GetMarketsGroupsMarketGroupIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetMarketsGroupsMarketGroupIdResponse',
     responses: [
       {
@@ -15329,6 +15785,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetMarketsPricesHeaders'],
     requestTypeExport: 'GetMarketsPricesData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetMarketsPricesResponse',
     responses: [
       {
@@ -15429,6 +15888,9 @@ const operationContracts = [
       'zGetMarketsRegionIdHistoryQuery',
     ],
     requestTypeExport: 'GetMarketsRegionIdHistoryData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetMarketsRegionIdHistoryResponse',
     responses: [
       {
@@ -15555,6 +16017,9 @@ const operationContracts = [
       'zGetMarketsRegionIdOrdersQuery',
     ],
     requestTypeExport: 'GetMarketsRegionIdOrdersData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetMarketsRegionIdOrdersResponse',
     responses: [
       {
@@ -15660,6 +16125,9 @@ const operationContracts = [
       'zGetMarketsRegionIdTypesQuery',
     ],
     requestTypeExport: 'GetMarketsRegionIdTypesData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetMarketsRegionIdTypesResponse',
     responses: [
       {
@@ -15765,6 +16233,9 @@ const operationContracts = [
       'zGetMarketsStructuresStructureIdQuery',
     ],
     requestTypeExport: 'GetMarketsStructuresStructureIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetMarketsStructuresStructureIdResponse',
     responses: [
       {
@@ -15847,6 +16318,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetMetaChangelogHeaders'],
     requestTypeExport: 'GetMetaChangelogData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2025-09-26',
     responseTypeExport: 'GetMetaChangelogResponse',
     responses: [
       {
@@ -15929,6 +16403,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetMetaCompatibilityDatesHeaders'],
     requestTypeExport: 'GetMetaCompatibilityDatesData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetMetaCompatibilityDatesResponse',
     responses: [
       {
@@ -16011,6 +16488,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetMetaNameHeaders'],
     requestTypeExport: 'GetMetaNameData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-07-17',
     responseTypeExport: 'GetMetaNameResponse',
     responses: [
       {
@@ -16091,6 +16571,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetMetaStatusHeaders'],
     requestTypeExport: 'GetMetaStatusData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2025-11-06',
     responseTypeExport: 'GetMetaStatusResponse',
     responses: [
       {
@@ -16184,6 +16667,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetMilitaryCampaignsDetailHeaders', 'zGetMilitaryCampaignsDetailPath'],
     requestTypeExport: 'GetMilitaryCampaignsDetailData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-08-04',
     responseTypeExport: 'GetMilitaryCampaignsDetailResponse',
     responses: [
       {
@@ -16266,6 +16752,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetMilitaryCampaignsListingHeaders'],
     requestTypeExport: 'GetMilitaryCampaignsListingData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-08-04',
     responseTypeExport: 'GetMilitaryCampaignsListingResponse',
     responses: [
       {
@@ -16371,6 +16860,9 @@ const operationContracts = [
       'zGetMilitaryCampaignsObjectivesDetailPath',
     ],
     requestTypeExport: 'GetMilitaryCampaignsObjectivesDetailData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-08-04',
     responseTypeExport: 'GetMilitaryCampaignsObjectivesDetailResponse',
     responses: [
       {
@@ -16500,6 +16992,9 @@ const operationContracts = [
       'zGetMilitaryCampaignsObjectivesListingQuery',
     ],
     requestTypeExport: 'GetMilitaryCampaignsObjectivesListingData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-08-04',
     responseTypeExport: 'GetMilitaryCampaignsObjectivesListingResponse',
     responses: [
       {
@@ -16613,6 +17108,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetParagonHubSkinrHeaders', 'zGetParagonHubSkinrQuery'],
     requestTypeExport: 'GetParagonHubSkinrData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-08-18',
     responseTypeExport: 'GetParagonHubSkinrResponse',
     responses: [
       {
@@ -16741,6 +17239,9 @@ const operationContracts = [
       'zGetParagonHubSkinrAlliancesQuery',
     ],
     requestTypeExport: 'GetParagonHubSkinrAlliancesData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-08-18',
     responseTypeExport: 'GetParagonHubSkinrAlliancesResponse',
     responses: [
       {
@@ -16869,6 +17370,9 @@ const operationContracts = [
       'zGetParagonHubSkinrCharactersQuery',
     ],
     requestTypeExport: 'GetParagonHubSkinrCharactersData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-08-18',
     responseTypeExport: 'GetParagonHubSkinrCharactersResponse',
     responses: [
       {
@@ -16997,6 +17501,9 @@ const operationContracts = [
       'zGetParagonHubSkinrCorporationsQuery',
     ],
     requestTypeExport: 'GetParagonHubSkinrCorporationsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-08-18',
     responseTypeExport: 'GetParagonHubSkinrCorporationsResponse',
     responses: [
       {
@@ -17080,6 +17587,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetSkyhooksRaidableHeaders'],
     requestTypeExport: 'GetSkyhooksRaidableData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-05-19',
     responseTypeExport: 'GetSkyhooksRaidableResponse',
     responses: [
       {
@@ -17162,6 +17672,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetSovereigntyCampaignsHeaders'],
     requestTypeExport: 'GetSovereigntyCampaignsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetSovereigntyCampaignsResponse',
     responses: [
       {
@@ -17245,6 +17758,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetSovereigntySystemsHeaders'],
     requestTypeExport: 'GetSovereigntySystemsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-05-19',
     responseTypeExport: 'GetSovereigntySystemsResponse',
     responses: [
       {
@@ -17328,6 +17844,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetStatusHeaders'],
     requestTypeExport: 'GetStatusData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetStatusResponse',
     responses: [
       {
@@ -17402,6 +17921,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseAncestriesHeaders'],
     requestTypeExport: 'GetUniverseAncestriesData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseAncestriesResponse',
     responses: [
       {
@@ -17490,6 +18012,9 @@ const operationContracts = [
       'zGetUniverseAsteroidBeltsAsteroidBeltIdPath',
     ],
     requestTypeExport: 'GetUniverseAsteroidBeltsAsteroidBeltIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseAsteroidBeltsAsteroidBeltIdResponse',
     responses: [
       {
@@ -17564,6 +18089,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseBloodlinesHeaders'],
     requestTypeExport: 'GetUniverseBloodlinesData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseBloodlinesResponse',
     responses: [
       {
@@ -17638,6 +18166,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseCategoriesHeaders'],
     requestTypeExport: 'GetUniverseCategoriesData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseCategoriesResponse',
     responses: [
       {
@@ -17726,6 +18257,9 @@ const operationContracts = [
       'zGetUniverseCategoriesCategoryIdPath',
     ],
     requestTypeExport: 'GetUniverseCategoriesCategoryIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseCategoriesCategoryIdResponse',
     responses: [
       {
@@ -17800,6 +18334,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseConstellationsHeaders'],
     requestTypeExport: 'GetUniverseConstellationsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseConstellationsResponse',
     responses: [
       {
@@ -17888,6 +18425,9 @@ const operationContracts = [
       'zGetUniverseConstellationsConstellationIdPath',
     ],
     requestTypeExport: 'GetUniverseConstellationsConstellationIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseConstellationsConstellationIdResponse',
     responses: [
       {
@@ -17962,6 +18502,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseFactionsHeaders'],
     requestTypeExport: 'GetUniverseFactionsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseFactionsResponse',
     responses: [
       {
@@ -18036,6 +18579,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseGraphicsHeaders'],
     requestTypeExport: 'GetUniverseGraphicsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseGraphicsResponse',
     responses: [
       {
@@ -18124,6 +18670,9 @@ const operationContracts = [
       'zGetUniverseGraphicsGraphicIdPath',
     ],
     requestTypeExport: 'GetUniverseGraphicsGraphicIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseGraphicsGraphicIdResponse',
     responses: [
       {
@@ -18209,6 +18758,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseGroupsHeaders', 'zGetUniverseGroupsQuery'],
     requestTypeExport: 'GetUniverseGroupsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseGroupsResponse',
     responses: [
       {
@@ -18294,6 +18846,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseGroupsGroupIdHeaders', 'zGetUniverseGroupsGroupIdPath'],
     requestTypeExport: 'GetUniverseGroupsGroupIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseGroupsGroupIdResponse',
     responses: [
       {
@@ -18379,6 +18934,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseMoonsMoonIdHeaders', 'zGetUniverseMoonsMoonIdPath'],
     requestTypeExport: 'GetUniverseMoonsMoonIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseMoonsMoonIdResponse',
     responses: [
       {
@@ -18464,6 +19022,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniversePlanetsPlanetIdHeaders', 'zGetUniversePlanetsPlanetIdPath'],
     requestTypeExport: 'GetUniversePlanetsPlanetIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniversePlanetsPlanetIdResponse',
     responses: [
       {
@@ -18538,6 +19099,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseRacesHeaders'],
     requestTypeExport: 'GetUniverseRacesData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseRacesResponse',
     responses: [
       {
@@ -18612,6 +19176,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseRegionsHeaders'],
     requestTypeExport: 'GetUniverseRegionsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseRegionsResponse',
     responses: [
       {
@@ -18697,6 +19264,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseRegionsRegionIdHeaders', 'zGetUniverseRegionsRegionIdPath'],
     requestTypeExport: 'GetUniverseRegionsRegionIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseRegionsRegionIdResponse',
     responses: [
       {
@@ -18790,6 +19360,9 @@ const operationContracts = [
       'zGetUniverseSchematicsSchematicIdPath',
     ],
     requestTypeExport: 'GetUniverseSchematicsSchematicIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseSchematicsSchematicIdResponse',
     responses: [
       {
@@ -18878,6 +19451,9 @@ const operationContracts = [
       'zGetUniverseStargatesStargateIdPath',
     ],
     requestTypeExport: 'GetUniverseStargatesStargateIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseStargatesStargateIdResponse',
     responses: [
       {
@@ -18963,6 +19539,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseStarsStarIdHeaders', 'zGetUniverseStarsStarIdPath'],
     requestTypeExport: 'GetUniverseStarsStarIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseStarsStarIdResponse',
     responses: [
       {
@@ -19051,6 +19630,9 @@ const operationContracts = [
       'zGetUniverseStationsStationIdPath',
     ],
     requestTypeExport: 'GetUniverseStationsStationIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseStationsStationIdResponse',
     responses: [
       {
@@ -19141,6 +19723,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseStructuresHeaders', 'zGetUniverseStructuresQuery'],
     requestTypeExport: 'GetUniverseStructuresData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseStructuresResponse',
     responses: [
       {
@@ -19234,6 +19819,9 @@ const operationContracts = [
       'zGetUniverseStructuresStructureIdPath',
     ],
     requestTypeExport: 'GetUniverseStructuresStructureIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseStructuresStructureIdResponse',
     responses: [
       {
@@ -19313,6 +19901,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseSystemJumpsHeaders'],
     requestTypeExport: 'GetUniverseSystemJumpsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseSystemJumpsResponse',
     responses: [
       {
@@ -19392,6 +19983,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseSystemKillsHeaders'],
     requestTypeExport: 'GetUniverseSystemKillsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseSystemKillsResponse',
     responses: [
       {
@@ -19466,6 +20060,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseSystemsHeaders'],
     requestTypeExport: 'GetUniverseSystemsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseSystemsResponse',
     responses: [
       {
@@ -19551,6 +20148,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseSystemsSystemIdHeaders', 'zGetUniverseSystemsSystemIdPath'],
     requestTypeExport: 'GetUniverseSystemsSystemIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseSystemsSystemIdResponse',
     responses: [
       {
@@ -19636,6 +20236,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseTypesHeaders', 'zGetUniverseTypesQuery'],
     requestTypeExport: 'GetUniverseTypesData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseTypesResponse',
     responses: [
       {
@@ -19721,6 +20324,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetUniverseTypesTypeIdHeaders', 'zGetUniverseTypesTypeIdPath'],
     requestTypeExport: 'GetUniverseTypesTypeIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetUniverseTypesTypeIdResponse',
     responses: [
       {
@@ -19814,6 +20420,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetWarsHeaders', 'zGetWarsQuery'],
     requestTypeExport: 'GetWarsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetWarsResponse',
     responses: [
       {
@@ -19907,6 +20516,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zGetWarsWarIdHeaders', 'zGetWarsWarIdPath'],
     requestTypeExport: 'GetWarsWarIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetWarsWarIdResponse',
     responses: [
       {
@@ -20015,6 +20627,9 @@ const operationContracts = [
       'zGetWarsWarIdKillmailsQuery',
     ],
     requestTypeExport: 'GetWarsWarIdKillmailsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'GetWarsWarIdKillmailsResponse',
     responses: [
       {
@@ -20106,6 +20721,9 @@ const operationContracts = [
     },
     requestSchemaExports: ['zPostCharactersAffiliationBody', 'zPostCharactersAffiliationHeaders'],
     requestTypeExport: 'PostCharactersAffiliationData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostCharactersAffiliationResponse',
     responses: [
       {
@@ -20210,6 +20828,9 @@ const operationContracts = [
       'zPostCharactersCharacterIdAssetsLocationsPath',
     ],
     requestTypeExport: 'PostCharactersCharacterIdAssetsLocationsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostCharactersCharacterIdAssetsLocationsResponse',
     responses: [
       {
@@ -20314,6 +20935,9 @@ const operationContracts = [
       'zPostCharactersCharacterIdAssetsNamesPath',
     ],
     requestTypeExport: 'PostCharactersCharacterIdAssetsNamesData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostCharactersCharacterIdAssetsNamesResponse',
     responses: [
       {
@@ -20456,6 +21080,9 @@ const operationContracts = [
       'zPostCharactersCharacterIdContactsQuery',
     ],
     requestTypeExport: 'PostCharactersCharacterIdContactsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostCharactersCharacterIdContactsResponse',
     responses: [
       {
@@ -20560,6 +21187,9 @@ const operationContracts = [
       'zPostCharactersCharacterIdCspaPath',
     ],
     requestTypeExport: 'PostCharactersCharacterIdCspaData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostCharactersCharacterIdCspaResponse',
     responses: [
       {
@@ -20675,6 +21305,9 @@ const operationContracts = [
       'zPostCharactersCharacterIdFittingsPath',
     ],
     requestTypeExport: 'PostCharactersCharacterIdFittingsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostCharactersCharacterIdFittingsResponse',
     responses: [
       {
@@ -20788,6 +21421,9 @@ const operationContracts = [
       'zPostCharactersCharacterIdMailPath',
     ],
     requestTypeExport: 'PostCharactersCharacterIdMailData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostCharactersCharacterIdMailResponse',
     responses: [
       {
@@ -20888,6 +21524,9 @@ const operationContracts = [
       'zPostCharactersCharacterIdMailLabelsPath',
     ],
     requestTypeExport: 'PostCharactersCharacterIdMailLabelsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostCharactersCharacterIdMailLabelsResponse',
     responses: [
       {
@@ -20992,6 +21631,9 @@ const operationContracts = [
       'zPostCorporationsCorporationIdAssetsLocationsPath',
     ],
     requestTypeExport: 'PostCorporationsCorporationIdAssetsLocationsData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostCorporationsCorporationIdAssetsLocationsResponse',
     responses: [
       {
@@ -21096,6 +21738,9 @@ const operationContracts = [
       'zPostCorporationsCorporationIdAssetsNamesPath',
     ],
     requestTypeExport: 'PostCorporationsCorporationIdAssetsNamesData',
+    requestSubjectBindings: ['corporation_id'],
+    requiredRoles: ['Director'],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostCorporationsCorporationIdAssetsNamesResponse',
     responses: [
       {
@@ -21197,6 +21842,9 @@ const operationContracts = [
       'zPostFleetsFleetIdMembersPath',
     ],
     requestTypeExport: 'PostFleetsFleetIdMembersData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostFleetsFleetIdMembersResponse',
     responses: [
       {
@@ -21285,6 +21933,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zPostFleetsFleetIdWingsHeaders', 'zPostFleetsFleetIdWingsPath'],
     requestTypeExport: 'PostFleetsFleetIdWingsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostFleetsFleetIdWingsResponse',
     responses: [
       {
@@ -21385,6 +22036,9 @@ const operationContracts = [
       'zPostFleetsFleetIdWingsWingIdSquadsPath',
     ],
     requestTypeExport: 'PostFleetsFleetIdWingsWingIdSquadsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostFleetsFleetIdWingsWingIdSquadsResponse',
     responses: [
       {
@@ -21502,6 +22156,9 @@ const operationContracts = [
     },
     requestSchemaExports: ['zPostRouteBody', 'zPostRouteHeaders', 'zPostRoutePath'],
     requestTypeExport: 'PostRouteData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2025-09-30',
     responseTypeExport: 'PostRouteResponse',
     responses: [
       {
@@ -21608,6 +22265,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zPostUiAutopilotWaypointHeaders', 'zPostUiAutopilotWaypointQuery'],
     requestTypeExport: 'PostUiAutopilotWaypointData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostUiAutopilotWaypointResponse',
     responses: [
       {
@@ -21696,6 +22356,9 @@ const operationContracts = [
     requestBody: null,
     requestSchemaExports: ['zPostUiOpenwindowContractHeaders', 'zPostUiOpenwindowContractQuery'],
     requestTypeExport: 'PostUiOpenwindowContractData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostUiOpenwindowContractResponse',
     responses: [
       {
@@ -21787,6 +22450,9 @@ const operationContracts = [
       'zPostUiOpenwindowInformationQuery',
     ],
     requestTypeExport: 'PostUiOpenwindowInformationData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostUiOpenwindowInformationResponse',
     responses: [
       {
@@ -21878,6 +22544,9 @@ const operationContracts = [
       'zPostUiOpenwindowMarketdetailsQuery',
     ],
     requestTypeExport: 'PostUiOpenwindowMarketdetailsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostUiOpenwindowMarketdetailsResponse',
     responses: [
       {
@@ -21971,6 +22640,9 @@ const operationContracts = [
     },
     requestSchemaExports: ['zPostUiOpenwindowNewmailBody', 'zPostUiOpenwindowNewmailHeaders'],
     requestTypeExport: 'PostUiOpenwindowNewmailData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostUiOpenwindowNewmailResponse',
     responses: [
       {
@@ -22057,6 +22729,9 @@ const operationContracts = [
     },
     requestSchemaExports: ['zPostUniverseIdsBody', 'zPostUniverseIdsHeaders'],
     requestTypeExport: 'PostUniverseIdsData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostUniverseIdsResponse',
     responses: [
       {
@@ -22143,6 +22818,9 @@ const operationContracts = [
     },
     requestSchemaExports: ['zPostUniverseNamesBody', 'zPostUniverseNamesHeaders'],
     requestTypeExport: 'PostUniverseNamesData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PostUniverseNamesResponse',
     responses: [
       {
@@ -22257,6 +22935,9 @@ const operationContracts = [
       'zPutCharactersCharacterIdCalendarEventIdPath',
     ],
     requestTypeExport: 'PutCharactersCharacterIdCalendarEventIdData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PutCharactersCharacterIdCalendarEventIdResponse',
     responses: [
       {
@@ -22399,6 +23080,9 @@ const operationContracts = [
       'zPutCharactersCharacterIdContactsQuery',
     ],
     requestTypeExport: 'PutCharactersCharacterIdContactsData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PutCharactersCharacterIdContactsResponse',
     responses: [
       {
@@ -22512,6 +23196,9 @@ const operationContracts = [
       'zPutCharactersCharacterIdMailMailIdPath',
     ],
     requestTypeExport: 'PutCharactersCharacterIdMailMailIdData',
+    requestSubjectBindings: ['character_id'],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PutCharactersCharacterIdMailMailIdResponse',
     responses: [
       {
@@ -22610,6 +23297,9 @@ const operationContracts = [
       'zPutFleetsFleetIdPath',
     ],
     requestTypeExport: 'PutFleetsFleetIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PutFleetsFleetIdResponse',
     responses: [
       {
@@ -22719,6 +23409,9 @@ const operationContracts = [
       'zPutFleetsFleetIdMembersMemberIdPath',
     ],
     requestTypeExport: 'PutFleetsFleetIdMembersMemberIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PutFleetsFleetIdMembersMemberIdResponse',
     responses: [
       {
@@ -22828,6 +23521,9 @@ const operationContracts = [
       'zPutFleetsFleetIdSquadsSquadIdPath',
     ],
     requestTypeExport: 'PutFleetsFleetIdSquadsSquadIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PutFleetsFleetIdSquadsSquadIdResponse',
     responses: [
       {
@@ -22937,6 +23633,9 @@ const operationContracts = [
       'zPutFleetsFleetIdWingsWingIdPath',
     ],
     requestTypeExport: 'PutFleetsFleetIdWingsWingIdData',
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2020-01-01',
     responseTypeExport: 'PutFleetsFleetIdWingsWingIdResponse',
     responses: [
       {
@@ -24386,6 +25085,9 @@ describe('generated operation contracts', () => {
     expect(runtime.transport.requestBody).toEqual(contract.requestBody);
     expect(runtime.transport.authentication?.scopes ?? []).toEqual(contract.authentication.scopes);
     expect(runtime.transport.authentication !== null).toBe(contract.authentication.required);
+    expect(runtime.transport.requestSubjectBindings).toEqual(contract.requestSubjectBindings);
+    expect(runtime.transport.requiredRoles).toEqual(contract.requiredRoles);
+    expect(runtime.transport.minimumCompatibilityDate).toEqual(contract.minimumCompatibilityDate);
     expect(runtime.transport.protocol).toEqual(contract.protocol);
 
     expect(manifest.http).toEqual({ method: contract.method, path: contract.pathTemplate });
@@ -24399,6 +25101,9 @@ describe('generated operation contracts', () => {
       })),
     );
     expect(manifest.authentication).toEqual(contract.authentication);
+    expect(manifest.requestSubjectBindings).toEqual(contract.requestSubjectBindings);
+    expect(manifest.requiredRoles).toEqual(contract.requiredRoles);
+    expect(manifest.minimumCompatibilityDate).toEqual(contract.minimumCompatibilityDate);
     expect(manifest.requestBody === null).toBe(contract.requestBody === null);
     expect(manifest.requestBody?.required).toBe(contract.requestBody?.required);
     expect(manifest.requestType.export).toBe(contract.requestTypeExport);

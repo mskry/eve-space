@@ -180,6 +180,58 @@ describe('platform resource failure transitions', () => {
     expect(upsertState).not.toHaveBeenCalled()
   })
 
+  test('does not attach a failed corporation attempt to a new role revision', async () => {
+    const upsertState = vi.fn()
+    const fence = {
+      sourceId: 'd56315c7-6bfb-462d-a8fa-0e1588a6312a',
+      organizationVersion: 7,
+      corporationLifecycleId: '1cfba895-359c-4a48-b21a-177d351c87a6',
+      corporationId: 98_000_001,
+      characterId: 1_404_328_063,
+      characterLifecycleId: identity.subjectLifecycleId,
+      affiliationPeriodRevision: '43e4b829-a09a-4e34-a91e-e414c5f58fe1',
+      authorizationGeneration: 7,
+      requirementsFingerprint: 'jobs-v1',
+      roleRevision: 'first',
+    }
+    await recordInstalledResourceCollectionFailure(
+      {
+        ...identity,
+        subjectKind: 'corporation',
+        subjectId: '98000001',
+        subjectLifecycleId: fence.corporationLifecycleId,
+      },
+      new Error('failed under first role revision'),
+      {
+        expectedAuthorizationGeneration: 7,
+        expectedCorporationAuthorityFence: fence,
+        now,
+        resolveEligibility: vi.fn().mockResolvedValue({
+          status: 'eligible',
+          due: true,
+          dueReason: 'elapsed',
+          schedulingKey: now,
+          authorizationGeneration: 7,
+          nextEligibleAt: null,
+          validatedAt: null,
+          lastFailureClass: null,
+          managedAuthority: null,
+          corporationAuthorityFence: { ...fence, roleRevision: 'second' },
+        }),
+        resources: [
+          // SAFETY: this erased resource is used only to look up the mocked eligibility response.
+          {
+            ...resource,
+            subjectKind: 'corporation',
+            eligibility: { kind: 'current-managed-corporation-source' },
+          } as never,
+        ],
+        upsertState,
+      },
+    )
+    expect(upsertState).not.toHaveBeenCalled()
+  })
+
   test('does not overwrite a success that made the resource current before failure persistence', async () => {
     const upsertState = vi.fn()
 

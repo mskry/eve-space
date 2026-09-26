@@ -8,12 +8,14 @@ import type {
   PlatformResourceOperationResult,
   PlatformResourceSubject,
 } from '@eve-space/platform-module-contract/resources'
+import type { PlatformEsiRequestSubject } from '@eve-space/platform-module-contract/esi'
 import {
   assertPlatformEsiOperation,
   getEsiOperationAuthorization,
   getPlatformEsiOperationDefinition,
   narrowPlatformEsiOperationOutput,
   parsePlatformEsiOperationInputs,
+  type EsiOperationAuthorization,
   type PlatformEsiOperation,
   type PlatformEsiOperationOutput,
 } from '../esi-gateway/catalog-interface.js'
@@ -30,10 +32,17 @@ import {
   createPlatformResourceReadCapabilities,
 } from './module-route-capabilities.js'
 import { loadResourceCollectionContext } from './resource-collection-context.js'
+import {
+  getInstalledResourceCredentialBindings,
+  type PlatformResourceCredentialBinding,
+} from './resource-declarations.js'
 import { platformResources } from './resources.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import {
   managedCollectionAuthorityEquals,
+  corporationAuthorityFenceEquals,
+  createCorporationContinuationAuthorityBinding,
+  type PlatformCorporationAuthorityFence,
   type PlatformManagedCollectionAuthority,
 } from './resource-eligibility.js'
 import {
@@ -44,6 +53,7 @@ import {
   assertPlatformResourceRefreshSucceeded,
   PlatformResourceAuthorizationError,
   PlatformResourceMappingError,
+  PlatformResourceObsoleteError,
 } from './resource-failures.js'
 import { toPlatformResourceSubject } from './resource-subject.js'
 
@@ -59,6 +69,7 @@ type PlatformResourceOperationExecution =
       readonly authorizationCharacterId?: number | null
       readonly authorizationCharacterLifecycleId?: string | null
       readonly managedAuthority: PlatformManagedCollectionAuthority | null
+      readonly corporationAuthorityFence?: PlatformCorporationAuthorityFence
       readonly organizationVersion?: number
       readonly complete?: boolean
       readonly result: PlatformEsiExecution<unknown>
@@ -81,6 +92,11 @@ type BoundedCollectionImplementation = Extract<
 type ResourceCollectionOperationMethod =
   PlatformResourceOperationMethod<PlatformResourceOperationContract>
 
+interface BoundRequestPath {
+  readonly character_id?: unknown
+  readonly corporation_id?: unknown
+}
+
 interface ResourceOperationExecutorOptions {
   readonly signal?: AbortSignal
   readonly request?: ResourceOperationRequest
@@ -93,12 +109,15 @@ interface ResourceOperationExecutorOptions {
   readonly onAuthorityResolved?: (authority: {
     readonly authorizationGeneration: number | null
     readonly managedAuthority: PlatformManagedCollectionAuthority | null
+    readonly corporationAuthorityFence?: PlatformCorporationAuthorityFence
   }) => void
 }
 
 interface ResourceOperationRequest {
   readonly operationId: string
   readonly inputs: unknown
+  readonly corporationId?: number | null
+  readonly expectedCorporationAuthorityFence?: PlatformCorporationAuthorityFence
 }
 
 interface ResourceCollectionExecutionState {
@@ -129,10 +148,15 @@ export async function executeInstalledResourceOperation(
   if (guarded.outcome === 'noop') {
     return guarded
   }
-  options.onAuthorityResolved?.({
-    authorizationGeneration: guarded.authorization?.tokenVersion ?? null,
-    managedAuthority: guarded.managedAuthority,
-  })
+  if (!options.request) {
+    options.onAuthorityResolved?.({
+      authorizationGeneration: guarded.authorization?.tokenVersion ?? null,
+      managedAuthority: guarded.managedAuthority,
+      ...(guarded.corporationAuthorityFence && {
+        corporationAuthorityFence: guarded.corporationAuthorityFence,
+      }),
+    })
+  }
 
   const subject =
     guarded.subject ??
@@ -176,13 +200,47 @@ async function executeCollectedResourceOperation(
     authorizationGeneration: guarded.authorization?.tokenVersion ?? null,
     capabilities: createResourceCollectionCapabilities(options, guarded.resource),
     managedAuthority: guarded.managedAuthority,
+    ...(guarded.corporationAuthorityFence && {
+      continuationAuthorityBinding: createCorporationContinuationAuthorityBinding(
+        guarded.corporationAuthorityFence,
+      ),
+    }),
     operations: createResourceCollectionOperations(requestContext),
     requestBudget: RESOURCE_COLLECTION_REQUEST_BUDGET,
     subject,
   })
   options.signal?.throwIfAborted()
   if (!state.latest) {
-    throw new Error('Resource collection must validate an observation')
+    if (
+      collected.complete !== false ||
+      state.requests !== 0 ||
+      !guarded.corporationAuthorityFence ||
+      subject.kind !== 'corporation'
+    ) {
+      throw new Error('Resource collection must validate an observation')
+    }
+    const validatedAt = new Date().toISOString()
+    return {
+      authorizationCharacterId: guarded.authorizationCharacterId,
+      authorizationCharacterLifecycleId: guarded.authorizationCharacterLifecycleId,
+      authorizationGeneration: guarded.authorization?.tokenVersion ?? null,
+      complete: false,
+      corporationAuthorityFence: guarded.corporationAuthorityFence,
+      managedAuthority: guarded.managedAuthority,
+      organizationVersion: collectionContext.organizationVersion,
+      outcome: 'loaded',
+      resource: guarded.resource,
+      result: {
+        authorizationGeneration: guarded.authorization?.tokenVersion ?? null,
+        cachedUntil: validatedAt,
+        data: collected.data,
+        quota: {},
+        source: 'cache',
+        stale: false,
+        validatedAt,
+      },
+      subject,
+    }
   }
   return {
     authorizationCharacterId: guarded.authorizationCharacterId,
@@ -191,6 +249,9 @@ async function executeCollectedResourceOperation(
     complete: collected.complete,
     managedAuthority: guarded.managedAuthority,
     organizationVersion: collectionContext.organizationVersion,
+    ...(guarded.corporationAuthorityFence && {
+      corporationAuthorityFence: guarded.corporationAuthorityFence,
+    }),
     outcome: 'loaded',
     resource: guarded.resource,
     result: { ...state.latest, data: collected.data },
@@ -212,7 +273,7 @@ function createResourceCollectionOperations(
 async function executeCollectionRequest(
   context: ResourceCollectionRequestContext,
   operationId: string,
-  inputs: unknown,
+  inputs: PlatformResourceOperationContract['input'],
 ): Promise<PlatformResourceOperationResult<unknown>> {
   context.options.signal?.throwIfAborted()
   context.state.requests += 1
@@ -221,6 +282,9 @@ async function executeCollectionRequest(
   }
   assertDeclaredCollectionOperation(operationId, context.guarded.resource)
   assertCollectionSubject(inputs, context.subject, context.collectionContext.corporationId)
+  assertPlatformEsiOperation(operationId)
+  const parsed = parseResourceRequestInputs(operationId, inputs)
+  assertCollectionSubject(parsed, context.subject, context.collectionContext.corporationId)
   if (operationId === 'universe-resolve-names' && !context.options.executeEsiOperation) {
     const result = await resolveCollectionUniverseNames(inputs, context.options.signal)
     retainCollectionExecution(context.state, result)
@@ -228,7 +292,12 @@ async function executeCollectionRequest(
   }
   const result = await executeInstalledResourceOperation(context.identity, {
     ...context.options,
-    request: { inputs, operationId },
+    request: {
+      inputs: parsed,
+      operationId,
+      corporationId: context.collectionContext.corporationId,
+      expectedCorporationAuthorityFence: context.guarded.corporationAuthorityFence,
+    },
   })
   context.options.signal?.throwIfAborted()
   assertCollectionAuthority(result, context.guarded)
@@ -295,6 +364,134 @@ async function executeSingleResourceOperation(
   }
 }
 
+const resolveBoundCharacterIdentity = (
+  guarded: ReadyPlatformResourceExecution,
+  subject: PlatformResourceSubject,
+) => ({
+  characterId:
+    guarded.authorizationCharacterId ??
+    guarded.characterId ??
+    (subject.kind === 'character' ? subject.characterId : null),
+  lifecycleId:
+    guarded.authorizationCharacterLifecycleId ??
+    (subject.kind === 'character' ? subject.lifecycleId : null),
+})
+
+const assertManagedMemberAdmission = (
+  binding: PlatformResourceCredentialBinding,
+  guarded: ReadyPlatformResourceExecution,
+) => {
+  if (binding.kind !== 'current-managed-member-character') return
+  const authority = guarded.managedAuthority
+  if (
+    !authority ||
+    ![
+      authority.sectionId === binding.sectionId,
+      authority.organizationVersion !== undefined,
+      authority.managedMemberLifecycleId !== undefined,
+      authority.disclosureVersion !== undefined,
+      authority.sectionActivationVersion !== undefined,
+    ].every(Boolean)
+  ) {
+    throw new Error('Resource operation requires current managed-member admission')
+  }
+}
+
+const resolveBoundCorporationId = async (
+  binding: PlatformResourceCredentialBinding,
+  subject: PlatformResourceSubject,
+  options: ResourceOperationExecutorOptions,
+  knownCorporationId?: number | null,
+): Promise<number | null> => {
+  if (binding.kind === 'public' || !binding.requestSubjects.includes('corporation_id')) return null
+  if (binding.kind === 'current-managed-corporation-source') {
+    return subject.kind === 'corporation' ? subject.corporationId : null
+  }
+  if (knownCorporationId !== undefined && knownCorporationId !== null) return knownCorporationId
+  return (
+    await (options.loadCollectionContext ?? loadResourceCollectionContext)(subject, options.signal)
+  ).corporationId
+}
+
+const assertBoundRequestSubjects = (
+  requestSubjects: readonly PlatformEsiRequestSubject[],
+  path: BoundRequestPath,
+  subject: PlatformResourceSubject,
+  corporationId: number | null,
+) => {
+  for (const requestSubject of requestSubjects) {
+    let expected = corporationId
+    if (requestSubject === 'character_id') {
+      expected = subject.kind === 'character' ? subject.characterId : null
+    }
+    if (path[requestSubject] !== expected || expected === null) {
+      throw new Error('Resource operation request is outside its bound subject')
+    }
+  }
+}
+
+const assertResourceOperationSubject = async (
+  binding: PlatformResourceCredentialBinding,
+  inputs: unknown,
+  subject: PlatformResourceSubject,
+  guarded: ReadyPlatformResourceExecution,
+  options: ResourceOperationExecutorOptions,
+  knownCorporationId?: number | null,
+) => {
+  if (binding.kind === 'public') return
+  if (!isRecord(inputs) || !isRecord(inputs.path)) {
+    throw new Error('Resource operation is missing its bound request subject')
+  }
+  const path = inputs.path
+  const { characterId, lifecycleId } = resolveBoundCharacterIdentity(guarded, subject)
+  if (!guarded.authorization || !characterId || !lifecycleId) {
+    throw new Error('Resource operation is missing its bound credentials')
+  }
+  assertManagedMemberAdmission(binding, guarded)
+  if (
+    binding.kind !== 'current-managed-corporation-source' &&
+    (subject.kind !== 'character' ||
+      characterId !== subject.characterId ||
+      lifecycleId !== subject.lifecycleId)
+  ) {
+    throw new Error('Resource operation character is outside its owned subject')
+  }
+  const corporationId = await resolveBoundCorporationId(
+    binding,
+    subject,
+    options,
+    knownCorporationId,
+  )
+  assertBoundRequestSubjects(binding.requestSubjects, path, subject, corporationId)
+}
+
+const resolveResourceOperationCredential = (
+  guarded: ReadyPlatformResourceExecution,
+  subject: PlatformResourceSubject,
+  identity: PlatformCollectionStateIdentity,
+  kind: EsiOperationAuthorization['kind'],
+) => {
+  const { characterId, lifecycleId } = resolveBoundCharacterIdentity(guarded, subject)
+  if (kind === 'public') {
+    return { authorization: { kind: 'public' as const }, characterId, lifecycleId }
+  }
+  if (!guarded.authorization || !characterId || !lifecycleId) {
+    throw new Error(
+      `Character-authorized resource ${identity.moduleId}/${identity.resourceId} lacks an authorization source`,
+    )
+  }
+  return {
+    authorization: {
+      kind: 'character-lifecycle' as const,
+      characterId,
+      lifecycleId,
+      generation: guarded.authorization.tokenVersion,
+    },
+    characterId,
+    lifecycleId,
+  }
+}
+
 async function executeResourceRequest(
   identity: PlatformCollectionStateIdentity,
   options: ResourceOperationExecutorOptions,
@@ -304,31 +501,35 @@ async function executeResourceRequest(
 ): Promise<LoadedPlatformResourceExecution> {
   const operation = request.operationId
   assertPlatformEsiOperation(operation)
-  const inputs = parseResourceRequestInputs(operation, request.inputs)
-  const authorization = guarded.authorization
-  const operationAuthorization = getEsiOperationAuthorization(operation)
-  const authorizationCharacterId =
-    guarded.authorizationCharacterId ??
-    guarded.characterId ??
-    (subject.kind === 'character' ? subject.characterId : null)
-  const authorizationCharacterLifecycleId =
-    guarded.authorizationCharacterLifecycleId ??
-    (subject.kind === 'character' ? subject.lifecycleId : null)
-  if (authorization && (!authorizationCharacterId || !authorizationCharacterLifecycleId)) {
-    throw new Error(
-      `Character-authorized resource ${identity.moduleId}/${identity.resourceId} lacks an authorization source`,
+  if (
+    request.expectedCorporationAuthorityFence &&
+    !corporationAuthorityFenceEquals(
+      request.expectedCorporationAuthorityFence,
+      guarded.corporationAuthorityFence,
     )
+  ) {
+    throw new PlatformResourceObsoleteError()
   }
+  const inputs = parseResourceRequestInputs(operation, request.inputs)
+  const binding = getInstalledResourceCredentialBindings(guarded.resource)[operation]
+  if (!binding) throw new Error(`Resource operation ${operation} is undeclared`)
+  await assertResourceOperationSubject(
+    binding,
+    inputs,
+    subject,
+    guarded,
+    options,
+    request.corporationId,
+  )
+  const operationAuthorization = getEsiOperationAuthorization(operation)
+  const credential = resolveResourceOperationCredential(
+    guarded,
+    subject,
+    identity,
+    operationAuthorization.kind,
+  )
   const execution = await executeResourceEsiOperation(options, {
-    authorization:
-      authorization && operationAuthorization.kind === 'character'
-        ? {
-            kind: 'character-lifecycle',
-            characterId: authorizationCharacterId!,
-            lifecycleId: authorizationCharacterLifecycleId!,
-            generation: authorization.tokenVersion,
-          }
-        : { kind: 'public' },
+    authorization: credential.authorization,
     inputs,
     operation,
     ...(options.signal && { signal: options.signal }),
@@ -336,13 +537,16 @@ async function executeResourceRequest(
   options.signal?.throwIfAborted()
   assertPlatformResourceRefreshSucceeded(execution)
   return {
-    authorizationCharacterId,
-    authorizationCharacterLifecycleId,
+    authorizationCharacterId: credential.characterId,
+    authorizationCharacterLifecycleId: credential.lifecycleId,
     authorizationGeneration:
-      operationAuthorization.kind === 'character'
+      operationAuthorization.kind === 'oauth'
         ? execution.authorizationGeneration
         : (guarded.authorization?.tokenVersion ?? execution.authorizationGeneration),
     managedAuthority: guarded.managedAuthority,
+    ...(guarded.corporationAuthorityFence && {
+      corporationAuthorityFence: guarded.corporationAuthorityFence,
+    }),
     outcome: 'loaded',
     resource: guarded.resource,
     result: execution,
@@ -459,9 +663,13 @@ function assertCollectionAuthority(
     result.authorizationGeneration !== (guarded.authorization?.tokenVersion ?? null) ||
     result.authorizationCharacterId !== guarded.authorizationCharacterId ||
     result.authorizationCharacterLifecycleId !== guarded.authorizationCharacterLifecycleId ||
-    !managedCollectionAuthorityEquals(result.managedAuthority, guarded.managedAuthority)
+    !managedCollectionAuthorityEquals(result.managedAuthority, guarded.managedAuthority) ||
+    !corporationAuthorityFenceEquals(
+      result.corporationAuthorityFence,
+      guarded.corporationAuthorityFence,
+    )
   ) {
-    throw new Error('Resource collection authority changed')
+    throw new PlatformResourceObsoleteError()
   }
 }
 

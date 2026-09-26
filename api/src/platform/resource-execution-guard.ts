@@ -15,7 +15,9 @@ import {
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import {
   managedCollectionAuthorityEquals,
+  corporationAuthorityFenceEquals,
   resolveInstalledResourceEligibility,
+  type PlatformCorporationAuthorityFence,
   type PlatformManagedCollectionAuthority,
   type PlatformResourceEligibility,
   type PlatformResourceIneligibleStatus,
@@ -46,6 +48,7 @@ export type PlatformResourceExecutionGuard =
       readonly authorizationCharacterId?: number | null
       readonly authorizationCharacterLifecycleId?: string | null
       readonly managedAuthority: PlatformManagedCollectionAuthority | null
+      readonly corporationAuthorityFence?: PlatformCorporationAuthorityFence
     }
 
 interface ResourceExecutionGuardOptions {
@@ -99,6 +102,7 @@ export async function guardInstalledResourceExecution(
       null,
       null,
       eligibility.managedAuthority,
+      eligibility.corporationAuthorityFence,
     )
   }
 
@@ -150,9 +154,18 @@ export async function guardInstalledResourceExecution(
     authorizationCharacterId,
     authorizationCharacterLifecycleId,
     eligibility.managedAuthority,
+    eligibility.corporationAuthorityFence,
   )
   if (authorization.tokenVersion === eligibility.authorizationGeneration) {
-    return ready
+    return recheckReadyCorporationAuthority(
+      identity,
+      options,
+      resources,
+      subject,
+      eligibility,
+      ready,
+      resolveEligibility,
+    )
   }
 
   const refreshedEligibility = classifyExecutionEligibility(
@@ -180,6 +193,29 @@ export async function guardInstalledResourceExecution(
   return ready
 }
 
+const recheckReadyCorporationAuthority = async (
+  identity: PlatformCollectionStateIdentity,
+  options: ResourceExecutionGuardOptions,
+  resources: readonly PlatformInstalledResourceDescriptor[],
+  subject: PlatformResourceSubject,
+  original: EligibleResource,
+  ready: Extract<PlatformResourceExecutionGuard, { outcome: 'ready' }>,
+  resolveEligibility: typeof resolveInstalledResourceEligibility,
+): Promise<PlatformResourceExecutionGuard> => {
+  if (subject.kind !== 'corporation' || !original.corporationAuthorityFence) return ready
+  const rechecked = classifyExecutionEligibility(
+    await resolveEligibility(identity, { resources, signal: options.signal }),
+  )
+  options.signal?.throwIfAborted()
+  if (rechecked.outcome === 'noop') return rechecked
+  return corporationAuthorityFenceEquals(
+    original.corporationAuthorityFence,
+    rechecked.eligibility.corporationAuthorityFence,
+  )
+    ? ready
+    : { outcome: 'noop', reason: 'obsolete' }
+}
+
 function matchesRefreshedEligibility(
   authorization: CharacterAuthorization,
   characterId: number,
@@ -192,7 +228,11 @@ function matchesRefreshedEligibility(
     authorization.tokenVersion === refreshed.authorizationGeneration &&
     characterId === refreshedAuthorization.authorizationCharacterId &&
     lifecycleId === refreshedAuthorization.authorizationCharacterLifecycleId &&
-    managedCollectionAuthorityEquals(original.managedAuthority, refreshed.managedAuthority)
+    managedCollectionAuthorityEquals(original.managedAuthority, refreshed.managedAuthority) &&
+    corporationAuthorityFenceEquals(
+      original.corporationAuthorityFence,
+      refreshed.corporationAuthorityFence,
+    )
   )
 }
 
@@ -296,7 +336,8 @@ function createReadyResourceExecution(
   authorizationCharacterId: number | null = null,
   authorizationCharacterLifecycleId: string | null = null,
   managedAuthority: PlatformManagedCollectionAuthority | null = null,
-): PlatformResourceExecutionGuard {
+  corporationAuthorityFence?: PlatformCorporationAuthorityFence,
+): Extract<PlatformResourceExecutionGuard, { outcome: 'ready' }> {
   return {
     outcome: 'ready',
     resource,
@@ -306,6 +347,7 @@ function createReadyResourceExecution(
     authorizationCharacterId,
     authorizationCharacterLifecycleId,
     managedAuthority,
+    ...(corporationAuthorityFence && { corporationAuthorityFence }),
   }
 }
 

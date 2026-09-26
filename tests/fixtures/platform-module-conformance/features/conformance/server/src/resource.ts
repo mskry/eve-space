@@ -2,6 +2,8 @@ import {
   definePlatformBoundedCollectionResource,
   definePlatformSingleRequestResource,
   type PlatformCharacterResourceSubject,
+  type PlatformContinuationCheckpointRead,
+  type PlatformResourceCollectionContext,
   type PlatformResourceMaterializationContext,
 } from '@eve-space/platform-module-contract/resources'
 import type {
@@ -33,6 +35,34 @@ type ConformanceMaterializationContext = PlatformResourceMaterializationContext<
   PlatformCharacterResourceSubject,
   ConformanceSnapshotWritePersistence
 >
+
+interface ConformanceContinuationProgress {
+  readonly authorityBinding: string
+  readonly cursor: string
+}
+
+export const readConformanceContinuation = (
+  context: Pick<
+    PlatformResourceCollectionContext<
+      PlatformCharacterResourceSubject,
+      ConformanceCollectionProtocol
+    >,
+    'continuationAuthorityBinding'
+  >,
+  stored: {
+    readonly checkpoint: ConformanceContinuationProgress
+    readonly revision: number
+  } | null,
+): PlatformContinuationCheckpointRead<ConformanceContinuationProgress> => {
+  const binding = context.continuationAuthorityBinding
+  if (!binding) throw new Error('Continuation authority binding is required')
+  const matches = stored?.checkpoint.authorityBinding === binding
+  return {
+    checkpoint: matches ? (stored?.checkpoint ?? null) : null,
+    expectedRevision: stored?.revision ?? 0,
+    needsReset: Boolean(stored && !matches),
+  }
+}
 
 export const conformanceStatusResource = definePlatformSingleRequestResource<
   'conformance-status-operation',

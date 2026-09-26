@@ -90,6 +90,9 @@ export interface SerializableOperationManifestEntry {
     readonly schema: SerializableOperationReference;
   }[];
   readonly authentication: { readonly required: boolean; readonly scopes: readonly string[] };
+  readonly requestSubjectBindings: NormalizedOperation['requestSubjectBindings'];
+  readonly requiredRoles: NormalizedOperation['requiredRoles'];
+  readonly minimumCompatibilityDate: NormalizedOperation['minimumCompatibilityDate'];
   readonly pagination: {
     readonly kind: 'none' | 'offset' | 'cursor' | 'offset-and-cursor';
     readonly requestParameters: readonly string[];
@@ -441,6 +444,9 @@ export interface SerializableOperationManifestEntry {
   readonly responseType: OperationSchemaReference;
   readonly responses: readonly SerializableOperationResponse[];
   readonly authentication: { readonly required: boolean; readonly scopes: readonly string[] };
+  readonly requestSubjectBindings: readonly ('character_id' | 'corporation_id')[];
+  readonly requiredRoles: readonly string[];
+  readonly minimumCompatibilityDate: string | null;
   readonly pagination: {
     readonly kind: 'none' | 'offset' | 'cursor' | 'offset-and-cursor';
     readonly requestParameters: readonly string[];
@@ -504,6 +510,9 @@ function createManifestEntry({
       required: authentication !== null,
       scopes: authentication?.scopes ?? [],
     },
+    requestSubjectBindings: operation.requestSubjectBindings,
+    requiredRoles: operation.requiredRoles,
+    minimumCompatibilityDate: operation.minimumCompatibilityDate,
     cache: operation.cache,
     classification,
     conditionalRequestValidators: operation.conditionalRequestValidators,

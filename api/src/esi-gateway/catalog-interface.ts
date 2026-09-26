@@ -26,7 +26,7 @@ export { coreEsiOperationIds } from './catalog-authority.js'
 
 export type EsiOperationAuthorization =
   | { readonly kind: 'public' }
-  | { readonly kind: 'character'; readonly requiredScope: string }
+  | { readonly kind: 'oauth'; readonly requiredScope: string }
 
 export interface EsiSetOperationConfiguration {
   readonly field: string
@@ -91,12 +91,16 @@ export function getEsiOperationAuthorization(operation: EsiOperation): EsiOperat
   const authorization = esiOperationCatalog[operation].authorization
   return authorization.kind === 'public'
     ? { kind: 'public' }
-    : { kind: 'character', requiredScope: authorization.scope }
+    : { kind: 'oauth', requiredScope: authorization.scope }
+}
+
+export function getEsiOperationAuthority(operation: EsiOperation) {
+  return esiOperationCatalog[operation].authorization
 }
 
 export function getCharacterEsiScope(operation: EsiOperation) {
   const authorization = getEsiOperationAuthorization(operation)
-  if (authorization.kind !== 'character') {
+  if (authorization.kind !== 'oauth') {
     throw new Error(`ESI operation ${operation} does not declare character authorization`)
   }
   return authorization.requiredScope
@@ -104,7 +108,7 @@ export function getCharacterEsiScope(operation: EsiOperation) {
 
 export function getOptionalCharacterEsiScope(operation: EsiOperation) {
   const authorization = getEsiOperationAuthorization(operation)
-  return authorization.kind === 'character' ? authorization.requiredScope : null
+  return authorization.kind === 'oauth' ? authorization.requiredScope : null
 }
 
 export function getEsiSetOperationConfiguration(

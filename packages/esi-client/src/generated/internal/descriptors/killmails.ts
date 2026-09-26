@@ -48,6 +48,9 @@ export const GetKillmailsKillmailIdKillmailHashDescriptor: OperationExecutionDes
   requestBody: null,
   requestSchema: GetKillmailsKillmailIdKillmailHashRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":2592000,"x-client-cache-ttl":2592000,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":2592000},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"killmail","kind":"declared","maximumTokens":3600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetKillmailsKillmailIdKillmailHashResponse },
@@ -75,6 +78,9 @@ export const GetCharactersCharacterIdKillmailsRecentDescriptor: OperationExecuti
   requestBody: null,
   requestSchema: GetCharactersCharacterIdKillmailsRecentRequestSchema,
   authentication: { scopes: ["esi-killmails.read_killmails.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-killmail","kind":"declared","maximumTokens":30,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdKillmailsRecentResponse },
@@ -102,6 +108,9 @@ export const GetCorporationsCorporationIdKillmailsRecentDescriptor: OperationExe
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdKillmailsRecentRequestSchema,
   authentication: { scopes: ["esi-killmails.read_corporation_killmails.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Director"],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-killmail","kind":"declared","maximumTokens":30,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdKillmailsRecentResponse },

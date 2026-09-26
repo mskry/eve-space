@@ -2,7 +2,11 @@ import {
   isPlatformContributionId,
   isPlatformExportName,
 } from '@eve-space/platform-module-contract/identifiers'
-import type { PlatformEsiOperationContract } from '@eve-space/platform-module-contract/esi'
+import {
+  platformEsiRequestSubjects,
+  platformEsiRolePredicates,
+  type PlatformEsiOperationContract,
+} from '@eve-space/platform-module-contract/esi'
 import type { StableOperationId } from '@evespace/esi-client/operations'
 import { z } from 'zod'
 
@@ -114,9 +118,32 @@ const identitySchema = z.discriminatedUnion('kind', [
   mixedIdentitySchema,
 ])
 
+const subjectBindingsSchema = z
+  .array(z.enum(platformEsiRequestSubjects))
+  .superRefine((values, context) => {
+    if (
+      new Set(values).size !== values.length ||
+      values.join(',') !== [...values].toSorted((a, b) => a.localeCompare(b)).join(',')
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'request subject bindings must be unique and canonical',
+      })
+    }
+  })
+
 const authorizationSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('public') }),
-  z.object({ kind: z.literal('character'), scope: scopeSchema }),
+  z.object({
+    kind: z.literal('public'),
+    subjectBindings: subjectBindingsSchema,
+    requiredRolePredicate: z.null(),
+  }),
+  z.object({
+    kind: z.literal('oauth'),
+    scope: scopeSchema,
+    subjectBindings: subjectBindingsSchema,
+    requiredRolePredicate: z.enum(platformEsiRolePredicates).nullable(),
+  }),
 ])
 
 const staleSchema = z.discriminatedUnion('kind', [
@@ -187,7 +214,7 @@ type ValidatedEsiOperationContract = z.infer<typeof esiOperationContractSchema>
 
 interface RateGroupDefinition {
   operation: string
-  scope: 'public' | 'character'
+  scope: 'public' | 'oauth'
   maximumTokens: number
   window: string
 }
@@ -283,7 +310,7 @@ function validateContractInvariants(
 
   if (
     contract.mutation &&
-    (contract.authorization.kind !== 'character' || contract.cache.kind !== 'none')
+    (contract.authorization.kind !== 'oauth' || contract.cache.kind !== 'none')
   ) {
     issues.push(
       `operation ${operation} declares a mutation without character authorization and an uncached contract`,
@@ -480,9 +507,10 @@ function validateRegistrationContract(
   contract: PlatformEsiOperationContract,
   issues: string[],
 ) {
-  if (contract.authorization.kind !== registration.authorization) {
+  const credentialKind = contract.authorization.kind === 'oauth' ? 'character' : 'public'
+  if (credentialKind !== registration.authorization) {
     issues.push(
-      `representation ${registration.name} declares ${registration.authorization} authorization but operation ${registration.operation} requires ${contract.authorization.kind}`,
+      `representation ${registration.name} declares ${registration.authorization} authorization but operation ${registration.operation} requires ${credentialKind}`,
     )
   }
   if (contract.audit.esiOperationId !== registration.descriptorOperationId) {

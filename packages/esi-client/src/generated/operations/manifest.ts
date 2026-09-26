@@ -64,6 +64,9 @@ export interface SerializableOperationManifestEntry {
   readonly responseType: OperationSchemaReference;
   readonly responses: readonly SerializableOperationResponse[];
   readonly authentication: { readonly required: boolean; readonly scopes: readonly string[] };
+  readonly requestSubjectBindings: readonly ('character_id' | 'corporation_id')[];
+  readonly requiredRoles: readonly string[];
+  readonly minimumCompatibilityDate: string | null;
   readonly pagination: {
     readonly kind: 'none' | 'offset' | 'cursor' | 'offset-and-cursor';
     readonly requestParameters: readonly string[];
@@ -125,6 +128,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.write_contacts.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -312,6 +320,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fittings.write_fittings.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -479,6 +492,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-mail.organize_mail.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -646,6 +664,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-mail.organize_mail.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -813,6 +836,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fleets.write_fleet.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -982,6 +1008,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fleets.write_fleet.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -1151,6 +1180,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fleets.write_fleet.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -1318,6 +1350,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -1457,6 +1492,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -1620,6 +1658,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-alliances.read_contacts.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -1811,6 +1852,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-alliances.read_contacts.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -1973,6 +2017,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -2132,6 +2179,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -2288,6 +2338,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-access.read_lists.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-05-19",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -2467,6 +2522,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-access.read_lists.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-05-19",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -2632,6 +2692,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_agents_research.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -2796,6 +2861,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-assets.read_assets.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -2987,6 +3057,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-skills.read_skills.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 120,
@@ -3151,6 +3226,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_blueprints.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -3342,6 +3422,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-calendar.read_calendar_events.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 5,
@@ -3528,6 +3613,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-calendar.read_calendar_events.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 5,
@@ -3707,6 +3797,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-calendar.read_calendar_events.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 600,
@@ -3886,6 +3981,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-clones.read_clones.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 120,
@@ -4050,6 +4150,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_contacts.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -4241,6 +4346,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_contacts.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -4405,6 +4515,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-contracts.read_character_contracts.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -4596,6 +4711,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-contracts.read_character_contracts.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -4775,6 +4895,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-contracts.read_character_contracts.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -4952,6 +5077,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 86400,
@@ -5113,6 +5243,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_fatigue.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -5277,6 +5412,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fittings.read_fittings.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -5441,6 +5581,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fleets.read_fleet.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 60,
@@ -5605,6 +5750,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_fw_stats.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -5764,6 +5914,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-clones.read_implants.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 120,
@@ -5928,6 +6083,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-industry.read_character_jobs.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -6113,6 +6273,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-killmails.read_killmails.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -6304,6 +6469,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-location.read_location.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 5,
@@ -6468,6 +6638,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_loyalty.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -6632,6 +6807,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-mail.read_mail.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 30,
@@ -6847,6 +7027,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-mail.read_mail.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 30,
@@ -7011,6 +7196,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-mail.read_mail.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 120,
@@ -7175,6 +7365,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-mail.read_mail.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 30,
@@ -7354,6 +7549,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_medals.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -7518,6 +7718,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-industry.read_character_mining.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 600,
@@ -7709,6 +7914,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_notifications.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 600,
@@ -7873,6 +8083,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_notifications.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 600,
@@ -8037,6 +8252,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-location.read_online.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 60,
@@ -8201,6 +8421,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-markets.read_character_orders.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 1200,
@@ -8362,6 +8587,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-markets.read_character_orders.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -8550,6 +8780,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-planets.manage_planets.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 600,
@@ -8714,6 +8949,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-planets.manage_planets.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 600,
@@ -8891,6 +9131,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -9050,6 +9295,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_corporation_roles.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -9214,6 +9464,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-search.search_structures.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -9453,6 +9708,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-location.read_ship_type.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 5,
@@ -9617,6 +9877,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-skills.read_skillqueue.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 60,
@@ -9785,6 +10050,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-skills.read_skills.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 60,
@@ -9950,6 +10220,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_standings.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -10114,6 +10389,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_titles.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -10278,6 +10558,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-wallet.read_character_wallet.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 120,
@@ -10442,6 +10727,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-wallet.read_character_wallet.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -10633,6 +10923,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-wallet.read_character_wallet.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -10819,6 +11114,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi.cosmetic.char:read"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-08-18",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -10984,6 +11284,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi.cosmetic.char:read"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-08-18",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -11147,6 +11452,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-06-09",
       "cache": {
         "extensions": {
           "x-cache-age": 86400,
@@ -11310,6 +11620,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_freelance_jobs.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2025-12-16",
       "cache": {
         "extensions": {
           "x-cache-age": 60,
@@ -11475,6 +11790,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_freelance_jobs.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2025-12-16",
       "cache": {
         "extensions": {
           "x-cache-age": 60,
@@ -11654,6 +11974,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-activities.read_character.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-05-19",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -11833,6 +12158,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-activities.read_character.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-05-19",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -11998,6 +12328,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi.activity.char:read"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-08-04",
       "cache": {
         "extensions": {
           "x-cache-age": 60,
@@ -12216,6 +12551,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi.activity.char:read"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-08-04",
       "cache": {
         "extensions": {
           "x-cache-age": 60,
@@ -12395,6 +12735,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi.cosmetic.char:read"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-08-18",
       "cache": {
         "extensions": {
           "x-cache-mode": "event-based",
@@ -12612,6 +12957,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-structures.read_character.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-05-19",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -12791,6 +13141,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-structures.read_character.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-05-19",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -12954,6 +13309,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -13152,6 +13510,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -13350,6 +13711,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 1800,
@@ -13540,6 +13904,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-industry.read_corporation_mining.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Station_Manager"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 1800,
@@ -13731,6 +14102,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-industry.read_corporation_mining.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Accountant"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -13922,6 +14300,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-industry.read_corporation_mining.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Accountant"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -14126,6 +14511,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-07-21",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -14287,6 +14677,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -14448,6 +14843,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-assets.read_corporation_assets.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -14639,6 +15041,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_blueprints.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -14830,6 +15239,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_contacts.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -15021,6 +15435,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_contacts.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -15185,6 +15604,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_container_logs.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 600,
@@ -15376,6 +15802,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-contracts.read_corporation_contracts.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -15567,6 +15998,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-contracts.read_corporation_contracts.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -15773,6 +16209,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-contracts.read_corporation_contracts.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -15952,6 +16393,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-planets.read_customs_offices.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -16143,6 +16591,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_divisions.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -16307,6 +16762,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_facilities.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Factory_Manager"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -16471,6 +16933,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_fw_stats.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -16628,6 +17095,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -16789,6 +17261,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-industry.read_corporation_jobs.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Factory_Manager"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -16995,6 +17474,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-killmails.read_corporation_killmails.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -17186,6 +17672,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_medals.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -17377,6 +17868,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_medals.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -17568,6 +18066,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_corporation_membership.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -17732,6 +18235,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.track_members.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -17896,6 +18406,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_titles.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -18060,6 +18577,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.track_members.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -18224,6 +18748,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-markets.read_corporation_orders.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Accountant",
+        "Trader"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 1200,
@@ -18412,6 +18944,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-markets.read_corporation_orders.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Accountant",
+        "Trader"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -18600,6 +19140,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_corporation_membership.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -18764,6 +19309,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_corporation_membership.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -18955,6 +19507,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-wallet.read_corporation_wallets.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -19146,6 +19705,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_standings.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -19337,6 +19901,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_starbases.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -19528,6 +20099,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_starbases.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -19729,6 +20307,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_structures.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Station_Manager"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -19920,6 +20505,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_titles.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -20084,6 +20676,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-wallet.read_corporation_wallets.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Accountant",
+        "Junior_Accountant"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -20248,6 +20848,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-wallet.read_corporation_wallets.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Accountant",
+        "Junior_Accountant"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -20454,6 +21062,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-wallet.read_corporation_wallets.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Accountant",
+        "Junior_Accountant"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -20655,6 +21271,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_freelance_jobs.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Project_Manager"
+      ],
+      "minimumCompatibilityDate": "2025-12-16",
       "cache": {
         "extensions": {
           "x-cache-mode": "event-based",
@@ -20871,6 +21494,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_freelance_jobs.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Project_Manager"
+      ],
+      "minimumCompatibilityDate": "2025-12-16",
       "cache": {
         "extensions": {
           "x-cache-mode": "event-based",
@@ -21099,6 +21729,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -21235,6 +21868,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_projects.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id",
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2025-08-26",
       "cache": {
         "extensions": {
           "x-cache-age": 60,
@@ -21428,6 +22067,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_projects.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Project_Manager"
+      ],
+      "minimumCompatibilityDate": "2025-08-26",
       "cache": {
         "extensions": {
           "x-cache-mode": "event-based",
@@ -21658,6 +22304,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_projects.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2025-08-26",
       "cache": {
         "extensions": {
           "x-cache-age": 60,
@@ -21837,6 +22488,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-corporations.read_projects.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2025-08-26",
       "cache": {
         "extensions": {
           "x-cache-mode": "event-based",
@@ -22076,6 +22732,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-structures.read_corporation.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Station_Manager"
+      ],
+      "minimumCompatibilityDate": "2026-05-19",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -22255,6 +22918,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-structures.read_corporation.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Station_Manager"
+      ],
+      "minimumCompatibilityDate": "2026-05-19",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -22420,6 +23090,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-structures.read_corporation.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Station_Manager"
+      ],
+      "minimumCompatibilityDate": "2026-05-19",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -22599,6 +23276,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-structures.read_corporation.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-05-19",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -22762,6 +23444,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-08-18",
       "cache": {
         "extensions": {
           "x-cache-age": 31536000,
@@ -22926,6 +23611,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -23060,6 +23748,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -23216,6 +23907,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -23385,6 +24079,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -23519,6 +24216,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -23677,6 +24377,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fleets.read_fleet.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 5,
@@ -23843,6 +24546,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fleets.read_fleet.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 5,
@@ -24009,6 +24715,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fleets.read_fleet.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 5,
@@ -24173,6 +24882,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2025-12-16",
       "cache": {
         "extensions": {
           "x-cache-age": 60,
@@ -24336,6 +25048,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2025-12-16",
       "cache": {
         "extensions": {
           "x-cache-mode": "event-based",
@@ -24543,6 +25258,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -24680,6 +25398,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -24817,6 +25538,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -24954,6 +25678,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -25091,6 +25818,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 1800,
@@ -25233,6 +25963,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -25370,6 +26103,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -25512,6 +26248,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -25654,6 +26393,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -25796,6 +26538,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -25938,6 +26683,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 2592000,
@@ -26116,6 +26864,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -26270,6 +27023,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -26404,6 +27160,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -26560,6 +27319,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -26699,6 +27461,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -26877,6 +27642,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -27103,6 +27871,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 600,
@@ -27293,6 +28064,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-markets.structure_markets.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -27481,6 +28255,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2025-09-26",
       "cache": {
         "extensions": {
           "x-cache-age": 600,
@@ -27623,6 +28400,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 600,
@@ -27765,6 +28545,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-07-17",
       "cache": {
         "extensions": {
           "x-cache-age": 600,
@@ -27907,6 +28690,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2025-11-06",
       "cache": {
         "extensions": {
           "x-cache-mode": "event-based",
@@ -28047,6 +28833,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-08-04",
       "cache": {
         "extensions": {
           "x-cache-age": 60,
@@ -28210,6 +28999,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-08-04",
       "cache": {
         "extensions": {
           "x-cache-age": 60,
@@ -28352,6 +29144,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-08-04",
       "cache": {
         "extensions": {
           "x-cache-age": 60,
@@ -28529,6 +29324,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-08-04",
       "cache": {
         "extensions": {
           "x-cache-age": 60,
@@ -28745,6 +29543,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-08-18",
       "cache": {
         "extensions": {
           "x-cache-mode": "event-based",
@@ -28941,6 +29742,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi.cosmetic.char:read"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-08-18",
       "cache": {
         "extensions": {
           "x-cache-mode": "event-based",
@@ -29158,6 +29962,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi.cosmetic.char:read"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-08-18",
       "cache": {
         "extensions": {
           "x-cache-mode": "event-based",
@@ -29375,6 +30184,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi.cosmetic.char:read"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-08-18",
       "cache": {
         "extensions": {
           "x-cache-mode": "event-based",
@@ -29590,6 +30404,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-05-19",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -29733,6 +30550,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 5,
@@ -29875,6 +30695,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2026-05-19",
       "cache": {
         "extensions": {
           "x-cache-age": 300,
@@ -30018,6 +30841,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 30,
@@ -30161,6 +30987,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -30295,6 +31124,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -30450,6 +31282,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -30584,6 +31419,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -30718,6 +31556,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -30874,6 +31715,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -31008,6 +31852,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -31163,6 +32010,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -31297,6 +32147,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -31431,6 +32284,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -31586,6 +32442,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -31747,6 +32606,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -31903,6 +32765,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -32058,6 +32923,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -32213,6 +33081,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -32347,6 +33218,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -32481,6 +33355,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -32636,6 +33513,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -32797,6 +33677,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -32952,6 +33835,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -33107,6 +33993,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -33262,6 +34151,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -33428,6 +34320,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-universe.read_structures.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -33589,6 +34484,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -33728,6 +34626,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -33867,6 +34768,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -34001,6 +34905,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -34156,6 +35063,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -34317,6 +35227,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -34473,6 +35386,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -34637,6 +35553,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -34801,6 +35720,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -34992,6 +35914,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 3600,
@@ -35168,6 +36093,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-assets.read_assets.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -35362,6 +36292,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-assets.read_assets.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -35556,6 +36491,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.write_contacts.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -35809,6 +36749,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.read_contacts.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -36003,6 +36948,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fittings.write_fittings.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -36282,6 +37232,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-mail.send_mail.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -36515,6 +37470,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-mail.organize_mail.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -36727,6 +37687,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-assets.read_corporation_assets.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -36921,6 +37888,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-assets.read_corporation_assets.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "corporation_id"
+      ],
+      "requiredRoles": [
+        "Director"
+      ],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -37115,6 +38089,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fleets.write_fleet.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -37316,6 +38293,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fleets.write_fleet.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -37477,6 +38457,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fleets.write_fleet.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -37651,6 +38634,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2025-09-30",
       "cache": {
         "extensions": {
           "x-cache-mode": "not-cached",
@@ -37864,6 +38850,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-ui.write_waypoint.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -38048,6 +39037,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-ui.open_window.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -38202,6 +39194,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-ui.open_window.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -38356,6 +39351,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-ui.open_window.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -38510,6 +39508,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-ui.open_window.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -38700,6 +39701,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -38870,6 +39874,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "required": false,
         "scopes": []
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -39041,6 +40048,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-calendar.respond_calendar_events.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {
           "x-cache-age": 5,
@@ -39244,6 +40256,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-characters.write_contacts.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -39490,6 +40507,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-mail.organize_mail.v1"
         ]
       },
+      "requestSubjectBindings": [
+        "character_id"
+      ],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -39700,6 +40722,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fleets.write_fleet.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -39882,6 +40907,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fleets.write_fleet.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -40092,6 +41120,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fleets.write_fleet.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [
@@ -40288,6 +41319,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "esi-fleets.write_fleet.v1"
         ]
       },
+      "requestSubjectBindings": [],
+      "requiredRoles": [],
+      "minimumCompatibilityDate": "2020-01-01",
       "cache": {
         "extensions": {},
         "responseHeaders": [

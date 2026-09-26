@@ -1,4 +1,7 @@
-import type { PlatformEsiOperationContract } from '@eve-space/platform-module-contract/esi'
+import {
+  resolveOperationRolePredicate,
+  type PlatformEsiOperationContract,
+} from '@eve-space/platform-module-contract/esi'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import { operationRegistry } from '@evespace/esi-client/operations'
 import {
@@ -62,7 +65,7 @@ export function assertEsiOperationCatalogConfiguration<Catalog extends object>(
   const missingScopes = new Set<string>()
   for (const contract of Object.values(registeredCatalog)) {
     if (
-      contract.authorization.kind === 'character' &&
+      contract.authorization.kind === 'oauth' &&
       !requestableScopes.has(contract.authorization.scope)
     ) {
       missingScopes.add(contract.authorization.scope)
@@ -107,6 +110,55 @@ export function assertEsiOperationSdkClassifications(
   }
 }
 
+const validateGeneratedOperationAuthority = (
+  operation: string,
+  contract: PlatformEsiOperationContract,
+  definition: PlatformExecutableEsiOperationDefinition,
+): string[] => {
+  const issues: string[] = []
+  const transport = definition.descriptor.transport
+  const authorization = contract.authorization
+  if (authorization.kind === 'public') {
+    if (transport.authentication !== null || transport.requiredRoles.length > 0) {
+      issues.push(`operation ${operation} has inconsistent public SDK authority`)
+    }
+  } else if (
+    transport.authentication?.scopes.length !== 1 ||
+    transport.authentication.scopes[0] !== authorization.scope ||
+    resolveOperationRolePredicate(transport.requiredRoles) !== authorization.requiredRolePredicate
+  ) {
+    issues.push(`operation ${operation} does not match generated OAuth authority`)
+  }
+  if (
+    JSON.stringify(authorization.subjectBindings) !==
+    JSON.stringify(transport.requestSubjectBindings)
+  ) {
+    issues.push(`operation ${operation} does not match generated request subjects`)
+  }
+  return issues
+}
+
+const validateExecutableDefinition = (
+  operation: string,
+  contract: PlatformEsiOperationContract,
+  definition: PlatformExecutableEsiOperationDefinition,
+): string[] => {
+  const issues: string[] = []
+  if (definition.contract !== contract) {
+    issues.push(`operation ${operation} definition does not own its catalog contract`)
+  }
+  if (definition.sdkOperationId !== contract.audit.esiOperationId) {
+    issues.push(
+      `operation ${operation} definition binds ${definition.sdkOperationId} instead of ${contract.audit.esiOperationId}`,
+    )
+  }
+  if (operationRegistry[definition.sdkOperationId] !== definition.descriptor) {
+    issues.push(`operation ${operation} does not bind the registered SDK descriptor`)
+  }
+  issues.push(...validateGeneratedOperationAuthority(operation, contract, definition))
+  return issues
+}
+
 export function assertExecutableEsiOperationDefinitions(
   catalog: Readonly<Record<string, PlatformEsiOperationContract>>,
   definitions: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>,
@@ -124,17 +176,7 @@ export function assertExecutableEsiOperationDefinitions(
       issues.push(`catalog operation ${operation} has no executable definition`)
       continue
     }
-    if (definition.contract !== contract) {
-      issues.push(`operation ${operation} definition does not own its catalog contract`)
-    }
-    if (definition.sdkOperationId !== contract.audit.esiOperationId) {
-      issues.push(
-        `operation ${operation} definition binds ${definition.sdkOperationId} instead of ${contract.audit.esiOperationId}`,
-      )
-    }
-    if (operationRegistry[definition.sdkOperationId] !== definition.descriptor) {
-      issues.push(`operation ${operation} does not bind the registered SDK descriptor`)
-    }
+    issues.push(...validateExecutableDefinition(operation, contract, definition))
   }
   if (issues.length > 0) {
     throw new Error(

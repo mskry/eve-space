@@ -67,6 +67,9 @@ interface OperationContract {
   readonly pathTemplate: string;
   readonly parameters: readonly ParameterDescriptor[];
   readonly authentication: { readonly required: boolean; readonly scopes: readonly string[] };
+  readonly requestSubjectBindings: NormalizedOperation['requestSubjectBindings'];
+  readonly requiredRoles: NormalizedOperation['requiredRoles'];
+  readonly minimumCompatibilityDate: NormalizedOperation['minimumCompatibilityDate'];
   readonly requestBody: OperationRequestBodyContract | null;
   readonly requestSchemaExports: readonly string[];
   readonly requestTypeExport: string;
@@ -138,6 +141,9 @@ describe('generated operation contracts', () => {
     expect(runtime.transport.requestBody).toEqual(contract.requestBody);
     expect(runtime.transport.authentication?.scopes ?? []).toEqual(contract.authentication.scopes);
     expect(runtime.transport.authentication !== null).toBe(contract.authentication.required);
+    expect(runtime.transport.requestSubjectBindings).toEqual(contract.requestSubjectBindings);
+    expect(runtime.transport.requiredRoles).toEqual(contract.requiredRoles);
+    expect(runtime.transport.minimumCompatibilityDate).toEqual(contract.minimumCompatibilityDate);
     expect(runtime.transport.protocol).toEqual(contract.protocol);
 
     expect(manifest.http).toEqual({ method: contract.method, path: contract.pathTemplate });
@@ -149,6 +155,9 @@ describe('generated operation contracts', () => {
       required,
     })));
     expect(manifest.authentication).toEqual(contract.authentication);
+    expect(manifest.requestSubjectBindings).toEqual(contract.requestSubjectBindings);
+    expect(manifest.requiredRoles).toEqual(contract.requiredRoles);
+    expect(manifest.minimumCompatibilityDate).toEqual(contract.minimumCompatibilityDate);
     expect(manifest.requestBody === null).toBe(contract.requestBody === null);
     expect(manifest.requestBody?.required).toBe(contract.requestBody?.required);
     expect(manifest.requestType.export).toBe(contract.requestTypeExport);
@@ -296,6 +305,9 @@ function createOperationContract(
     requestBody,
     requestSchemaExports: createRequestSchemaExports(operation, parameters),
     requestTypeExport: `${operation.operationId}Data`,
+    requestSubjectBindings: operation.requestSubjectBindings,
+    requiredRoles: operation.requiredRoles,
+    minimumCompatibilityDate: operation.minimumCompatibilityDate,
     responseTypeExport: `${operation.operationId}Response`,
     responses: operation.successResponses.map((response) => ({
       status: response.status,

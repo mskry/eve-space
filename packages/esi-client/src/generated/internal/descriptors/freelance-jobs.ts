@@ -62,6 +62,9 @@ export const GetFreelanceJobsDetailDescriptor: OperationExecutionDescriptor<Oper
   requestBody: null,
   requestSchema: GetFreelanceJobsDetailRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2025-12-16",
   protocol: {"cache":{"extensions":{"x-cache-age":60,"x-cache-mode":"event-based","x-client-cache-ttl":60,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"freelance-job","kind":"declared","maximumTokens":900,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetFreelanceJobsDetailResponse },
@@ -88,6 +91,9 @@ export const GetCharactersFreelanceJobsParticipationDescriptor: OperationExecuti
   requestBody: null,
   requestSchema: GetCharactersFreelanceJobsParticipationRequestSchema,
   authentication: { scopes: ["esi-characters.read_freelance_jobs.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2025-12-16",
   protocol: {"cache":{"extensions":{"x-cache-age":60,"x-cache-mode":"event-based","x-client-cache-ttl":60,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-freelance-job","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersFreelanceJobsParticipationResponse },
@@ -113,6 +119,9 @@ export const GetCharactersFreelanceJobsListingDescriptor: OperationExecutionDesc
   requestBody: null,
   requestSchema: GetCharactersFreelanceJobsListingRequestSchema,
   authentication: { scopes: ["esi-characters.read_freelance_jobs.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2025-12-16",
   protocol: {"cache":{"extensions":{"x-cache-age":60,"x-cache-mode":"event-based","x-client-cache-ttl":60,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-freelance-job","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersFreelanceJobsListingResponse },
@@ -142,6 +151,9 @@ export const GetCorporationsFreelanceJobsListingDescriptor: OperationExecutionDe
   requestBody: null,
   requestSchema: GetCorporationsFreelanceJobsListingRequestSchema,
   authentication: { scopes: ["esi-corporations.read_freelance_jobs.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Project_Manager"],
+  minimumCompatibilityDate: "2025-12-16",
   protocol: {"cache":{"extensions":{"x-cache-mode":"event-based","x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-freelance-job","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsFreelanceJobsListingResponse },
@@ -172,6 +184,9 @@ export const GetCorporationsFreelanceJobsParticipantsDescriptor: OperationExecut
   requestBody: null,
   requestSchema: GetCorporationsFreelanceJobsParticipantsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_freelance_jobs.v1"] },
+  requestSubjectBindings: ["corporation_id"],
+  requiredRoles: ["Project_Manager"],
+  minimumCompatibilityDate: "2025-12-16",
   protocol: {"cache":{"extensions":{"x-cache-mode":"event-based","x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-freelance-job","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsFreelanceJobsParticipantsResponse },
@@ -200,6 +215,9 @@ export const GetFreelanceJobsListingDescriptor: OperationExecutionDescriptor<Ope
   requestBody: null,
   requestSchema: GetFreelanceJobsListingRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2025-12-16",
   protocol: {"cache":{"extensions":{"x-cache-mode":"event-based","x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"freelance-job","kind":"declared","maximumTokens":900,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetFreelanceJobsListingResponse },

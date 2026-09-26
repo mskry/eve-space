@@ -252,6 +252,8 @@ export function getGeneratedEsiOperationFacts(operation: CoreEsiOperation) {
 
   return {
     authenticationScopes: transport.authentication?.scopes ?? [],
+    requestSubjectBindings: transport.requestSubjectBindings,
+    requiredRoles: transport.requiredRoles,
     classification: sdkOperation.classification,
     maximumBatchSize: transport.protocol.maximumBatchSize,
     method: transport.method,

@@ -8,6 +8,7 @@ import { summarySnapshot } from '../src/snapshot.js'
 
 const id = '11111111-1111-4111-8111-111111111111'
 const now = '2026-09-07T10:00:00.000Z'
+const authorityBinding = `v1:${'a'.repeat(64)}`
 const summary = {
   id,
   name: 'Deliver supplies',
@@ -92,9 +93,15 @@ describe('activity collection', () => {
     const profile = { id: 'corporation-jobs', paginated: true, rootOperation: 'corporation-jobs' }
     const corporationContext = (execute: ReturnType<typeof vi.fn>, stored?: unknown) => ({
       ...context(execute, stored),
+      continuationAuthorityBinding: authorityBinding,
       subject: { corporationId: 9801, kind: 'corporation' as const, lifecycleId: id },
     })
-    const checkpoint = { cursors: { root: { after: 'old' } }, initialized: true, requests: [] }
+    const checkpoint = {
+      authorityBinding,
+      cursors: { root: { after: 'old' } },
+      initialized: true,
+      requests: [],
+    }
     const execute = vi
       .fn()
       .mockResolvedValueOnce({
@@ -116,6 +123,60 @@ describe('activity collection', () => {
         ),
       ),
     ).rejects.toThrow('cursor did not advance')
+  })
+
+  test('resets a mismatched positive-revision corporation checkpoint without ESI and consumes retention once', async () => {
+    const profile = { id: 'corporation-jobs', paginated: false, rootOperation: 'corporation-jobs' }
+    const execute = vi
+      .fn()
+      .mockResolvedValue({ data: { freelance_jobs: [summary] }, validatedAt: now })
+    const stored = {
+      authorityBinding: `v1:${'b'.repeat(64)}`,
+      cursors: { root: { after: 'old' } },
+      initialized: true,
+      requests: [],
+      retainedIds: [id],
+    }
+    const corporationContext = {
+      ...context(execute, stored),
+      continuationAuthorityBinding: authorityBinding,
+      subject: { corporationId: 9801, kind: 'corporation' as const, lifecycleId: id },
+    }
+    const reset = await collectActivityResource(profile, corporationContext)
+    expect(reset).toMatchObject({
+      complete: false,
+      data: {
+        expectedRevision: 3,
+        checkpoint: {
+          authorityBinding,
+          cursors: {},
+          initialized: false,
+          requests: [],
+          retainedIds: [],
+          retainedCampaignIds: [],
+        },
+        snapshots: [],
+      },
+    })
+    expect(execute).not.toHaveBeenCalled()
+
+    const fresh = await collectActivityResource(profile, {
+      ...corporationContext,
+      capabilities: {
+        persistence: {
+          readActivityCheckpoint: vi.fn().mockResolvedValue({
+            checkpoint: reset.data.checkpoint,
+            revision: 4,
+          }),
+        },
+      },
+    })
+    expect(fresh.complete).toBe(true)
+    expect(fresh.data.expectedRevision).toBe(4)
+    expect(fresh.data.checkpoint.authorityBinding).toBe(authorityBinding)
+    expect(fresh.data.checkpoint).not.toHaveProperty('retainedIds')
+    expect(fresh.data.checkpoint).not.toHaveProperty('retainedCampaignIds')
+    expect(execute).toHaveBeenCalledOnce()
   })
 
   test('does not commit a partial result when a dependent request fails', async () => {

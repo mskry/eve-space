@@ -76,6 +76,8 @@ const allowedPackagesByTier: Record<CharacterTier, ReadonlySet<string>> = {
     '@eve-space/core-eve-projections/trained-skills',
     '@eve-space/core-eve-projections/wallet',
     'drizzle-orm',
+    'drizzle-orm/pg-core',
+    'postgres',
     'zod',
   ]),
   'route-adapter': new Set(['hono', 'zod']),

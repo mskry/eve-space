@@ -1,7 +1,19 @@
+// Organization-rule SQL constraints intentionally permit fewer roles than operation authorization.
+export const organizationRuleRolePredicates = ['director', 'accountant', 'factory-manager'] as const
+export type OrganizationRuleRolePredicate = (typeof organizationRuleRolePredicates)[number]
+
+const organizationRuleRolePredicateSet: ReadonlySet<string> = new Set(
+  organizationRuleRolePredicates,
+)
+
+export const isOrganizationRuleRolePredicate = (
+  value: string,
+): value is OrganizationRuleRolePredicate => organizationRuleRolePredicateSet.has(value)
+
 export type RuleCondition =
   | { readonly kind: 'registration-compliant' }
   | { readonly kind: 'director-audience' }
-  | { readonly kind: 'corporation-role'; readonly predicate: string }
+  | { readonly kind: 'corporation-role'; readonly predicate: OrganizationRuleRolePredicate }
 
 export type RuleConditionKind = RuleCondition['kind']
 
@@ -40,10 +52,7 @@ export type RuleEligibility =
   | { readonly outcome: 'eligible'; readonly contributors: readonly RuleEvidenceSource[] }
   | { readonly outcome: 'ineligible' | 'unavailable'; readonly contributors: readonly [] }
 
-export const isRuleCondition = (
-  value: unknown,
-  isReviewedRolePredicate: (value: string) => boolean,
-): value is RuleCondition => {
+export const isRuleCondition = (value: unknown): value is RuleCondition => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return false
   }
@@ -55,7 +64,7 @@ export const isRuleCondition = (
       Object.keys(value).length === 2 &&
       'predicate' in value &&
       typeof value.predicate === 'string' &&
-      isReviewedRolePredicate(value.predicate)
+      isOrganizationRuleRolePredicate(value.predicate)
     )
   }
   return (

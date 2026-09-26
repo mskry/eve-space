@@ -24,6 +24,7 @@ import {
 import { guardInstalledResourceExecution } from '../../../src/platform/resource-execution-guard.js'
 import { coreResources } from '../../../src/platform/core-resources.js'
 import { materializeCoreResourceObservation } from '../../../src/platform/core-resource-materialization.js'
+import { applyInstalledResourceObservation } from '../../../src/platform/resource-refresh.js'
 import {
   reconcileInstalledModuleSections,
   setInstalledModuleEnabled,
@@ -61,6 +62,49 @@ beforeEach(async () => {
     await connection.end()
   }
 })
+
+const assertNoModuleCommit = async (
+  connection: postgres.Sql,
+  observation: Parameters<typeof applyInstalledResourceObservation>[0],
+) => {
+  await applyInstalledResourceObservation(observation, { connection })
+  const [state] = await connection<{ count: number }[]>`
+    select count(*)::integer as count from platform_collection_state
+    where module_id = ${observation.identity.moduleId}
+      and resource_id = ${observation.identity.resourceId}
+  `
+  expect(state?.count).toBe(0)
+}
+
+const verifyPlannerSkipsDeniedPrefix = async (
+  connection: postgres.Sql,
+  jobsResource: PlatformInstalledResourceDescriptor,
+) => {
+  const roleDenied = Array.from({ length: 64 }, (_, index) => ({
+    ...jobsResource,
+    resourceId: `a-role-${String(index).padStart(3, '0')}`,
+  }))
+  const scopeDenied = Array.from({ length: 64 }, (_, index) => ({
+    ...jobsResource,
+    resourceId: `b-scope-${String(index).padStart(3, '0')}`,
+    operationId: 'corporation-members',
+    dependentOperationIds: ['organization-activity-project-list'],
+  }))
+  const authorizedAfterDenied = {
+    ...jobsResource,
+    resourceId: 'z-authorized-after-denied',
+    operationId: 'corporation-members',
+    dependentOperationIds: [],
+  }
+  const resources = [...roleDenied, ...scopeDenied, authorizedAfterDenied]
+  const first = await selectDueInstalledResources({ connection, limit: 1, resources })
+  const next = await selectDueInstalledResources({ connection, limit: 2, resources })
+  for (const selected of [first, next]) {
+    expect(selected.map(({ identity }) => identity.resourceId)).toEqual([
+      authorizedAfterDenied.resourceId,
+    ])
+  }
+}
 
 describe('platform collection state PostgreSQL persistence', () => {
   test('backfills fresh existing managed accounts during the lifecycle migration', async () => {
@@ -968,7 +1012,9 @@ describe('platform collection state PostgreSQL persistence', () => {
       await connection.end()
     }
   })
+})
 
+describe('platform resource authority PostgreSQL persistence', () => {
   test('selects public character resources without a token', async () => {
     const connection = postgres(databaseUrl)
     const resource = {
@@ -1719,6 +1765,205 @@ describe('platform collection state PostgreSQL persistence', () => {
         status: 'eligible',
       })
 
+      const jobsScope = 'esi-corporations.read_freelance_jobs.v1'
+      const jobsResource = {
+        ...coreResources[1],
+        resourceId: 'corporation-role-jobs',
+        operationId: 'organization-activity-corporation-jobs',
+        dependentOperationIds: [],
+      } as const satisfies PlatformInstalledResourceDescriptor
+      const jobsIdentity = { ...identity, resourceId: jobsResource.resourceId }
+      await connection`
+        update eve_tokens set scopes = ${JSON.stringify([
+          'esi-characters.read_corporation_roles.v1',
+          'esi-corporations.read_corporation_membership.v1',
+          jobsScope,
+        ])}::jsonb
+        where character_id = ${characterId}
+      `
+      await connection`
+        update character_corporation_role_contents set roles = '{Director,Project_Manager}'
+        where observation_id in (
+          select observation_id from character_corporation_role_observations
+          where character_id = ${characterId}
+        )
+      `
+      await expect(
+        resolveInstalledResourceEligibility(jobsIdentity, {
+          connection,
+          resources: [jobsResource],
+        }),
+      ).resolves.toMatchObject({ status: 'eligible' })
+      await expect(
+        selectDueInstalledResources({
+          connection,
+          limit: 10,
+          resources: [jobsResource],
+        }),
+      ).resolves.toEqual([expect.objectContaining({ identity: jobsIdentity })])
+      const secondJobs = { ...jobsResource, resourceId: 'corporation-role-jobs-2' }
+      const ordered = await selectDueInstalledResources({
+        connection,
+        limit: 2,
+        resources: [secondJobs, jobsResource],
+      })
+      expect(ordered.map(({ identity: dueIdentity }) => dueIdentity.resourceId)).toEqual([
+        jobsResource.resourceId,
+        secondJobs.resourceId,
+      ])
+      expect(
+        (
+          await selectDueInstalledResources({
+            connection,
+            limit: 1,
+            resources: [secondJobs, jobsResource],
+          })
+        ).map(({ identity: dueIdentity }) => dueIdentity.resourceId),
+      ).toEqual([jobsResource.resourceId])
+      await connection.begin(async (transaction) => {
+        await expect(
+          resolveInstalledResourceEligibility(jobsIdentity, {
+            connection: transaction,
+            lockAuthority: true,
+            resources: [jobsResource],
+          }),
+        ).resolves.toMatchObject({ status: 'eligible' })
+      })
+      await connection`
+        insert into deployment_modules (module_id, enabled)
+        values ('organization-activity', true)
+        on conflict (module_id) do update set enabled = excluded.enabled
+      `
+      const moduleResource = { ...jobsResource, moduleId: 'organization-activity' }
+      const moduleIdentity = { ...jobsIdentity, moduleId: moduleResource.moduleId }
+      const admitted = await resolveInstalledResourceEligibility(moduleIdentity, {
+        connection,
+        resources: [moduleResource],
+      })
+      expect(admitted.status).toBe('eligible')
+      if (admitted.status !== 'eligible' || !admitted.corporationAuthorityFence) {
+        throw new Error('Current corporation authority fence is missing')
+      }
+      const observation = {
+        authorizationCharacterId: characterId,
+        authorizationCharacterLifecycleId: characterLifecycleId,
+        authorizationGeneration: 7,
+        corporationAuthorityFence: admitted.corporationAuthorityFence,
+        data: { snapshots: [] },
+        identity: moduleIdentity,
+        managedAuthority: null,
+        organizationVersion: 1,
+        outcome: 'complete' as const,
+        resource: moduleResource,
+        subject: {
+          kind: 'corporation' as const,
+          corporationId: 98_000_001,
+          lifecycleId: sourceLifecycleId,
+        },
+        validatedAt: new Date().toISOString(),
+      }
+      await connection.begin(async (transaction) => {
+        const [updated] = await transaction<{ role_revision: string }[]>`
+          update character_corporation_role_observations
+          set role_revision = gen_random_uuid()
+          where character_id = ${characterId}
+          returning role_revision
+        `
+        await transaction`
+          update organization_corporation_sources
+          set role_evidence_revision = ${updated!.role_revision}
+          where source_id = ${sourceId}
+        `
+      })
+      await applyInstalledResourceObservation(observation, { connection })
+      const [uncommitted] = await connection<{ count: number }[]>`
+        select count(*)::integer as count from platform_collection_state
+        where module_id = 'organization-activity' and resource_id = ${moduleResource.resourceId}
+      `
+      expect(uncommitted?.count).toBe(0)
+      const revalidated = await resolveInstalledResourceEligibility(moduleIdentity, {
+        connection,
+        resources: [moduleResource],
+      })
+      if (revalidated.status !== 'eligible' || !revalidated.corporationAuthorityFence) {
+        throw new Error('Revalidated corporation authority fence is missing')
+      }
+      const currentObservation = {
+        ...observation,
+        corporationAuthorityFence: revalidated.corporationAuthorityFence,
+      }
+      await connection`
+        update character_corporation_role_contents set roles = '{Director}'
+        where observation_id in (
+          select observation_id from character_corporation_role_observations
+          where character_id = ${characterId}
+        )
+      `
+      await expect(
+        resolveInstalledResourceEligibility(jobsIdentity, {
+          connection,
+          resources: [jobsResource],
+        }),
+      ).resolves.toMatchObject({
+        status: 'authorization-required',
+        authorizationReason: 'role-unsatisfied',
+      })
+      await connection.begin(async (transaction) => {
+        await expect(
+          resolveInstalledResourceEligibility(jobsIdentity, {
+            connection: transaction,
+            lockAuthority: true,
+            resources: [jobsResource],
+          }),
+        ).resolves.toMatchObject({
+          status: 'authorization-required',
+          authorizationReason: 'role-unsatisfied',
+        })
+      })
+      await expect(
+        guardInstalledResourceExecution(jobsIdentity, {
+          resources: [jobsResource],
+          resolveEligibility: (currentIdentity, options) =>
+            resolveInstalledResourceEligibility(currentIdentity, {
+              connection,
+              resources: options?.resources,
+              signal: options?.signal,
+            }),
+        }),
+      ).resolves.toMatchObject({ outcome: 'noop', reason: 'authorization-required' })
+      await expect(
+        selectDueInstalledResources({
+          connection,
+          limit: 10,
+          resources: [jobsResource],
+        }),
+      ).resolves.toEqual([])
+      await verifyPlannerSkipsDeniedPrefix(connection, jobsResource)
+      await assertNoModuleCommit(connection, currentObservation)
+      await connection`
+        update character_corporation_role_contents set roles = '{Director,Project_Manager}'
+        where observation_id in (
+          select observation_id from character_corporation_role_observations
+          where character_id = ${characterId}
+        )
+      `
+      await connection`
+        update eve_tokens set scopes = ${JSON.stringify([
+          'esi-characters.read_corporation_roles.v1',
+          'esi-corporations.read_corporation_membership.v1',
+        ])}::jsonb where character_id = ${characterId}
+      `
+      await assertNoModuleCommit(connection, currentObservation)
+      await connection`
+        update eve_tokens set scopes = ${JSON.stringify([
+          'esi-characters.read_corporation_roles.v1',
+          'esi-corporations.read_corporation_membership.v1',
+          jobsScope,
+        ])}::jsonb, token_version = 8 where character_id = ${characterId}
+      `
+      await assertNoModuleCommit(connection, currentObservation)
+      await connection`update eve_tokens set token_version = 7 where character_id = ${characterId}`
+
       await database.transaction((transaction) =>
         materializeCoreResourceObservation(transaction, {
           authorizationGeneration: 7,
@@ -1822,6 +2067,7 @@ describe('platform collection state PostgreSQL persistence', () => {
           subject_lifecycle_id, subject_kind, subject_id, corporation_source_id
         ) values (${replacementLifecycleId}, 'corporation', '98000001', ${replacementSourceId})
       `
+      await assertNoModuleCommit(connection, currentObservation)
       await expect(
         resolveInstalledResourceEligibility(identity, {
           connection,

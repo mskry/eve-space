@@ -40,6 +40,9 @@ export const GetCharactersCharacterIdSearchDescriptor: OperationExecutionDescrip
   requestBody: null,
   requestSchema: GetCharactersCharacterIdSearchRequestSchema,
   authentication: { scopes: ["esi-search.search_structures.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":11,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[{"location":"query","maximumItems":11,"path":["categories"]}]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdSearchResponse },

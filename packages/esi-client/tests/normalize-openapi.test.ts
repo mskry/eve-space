@@ -53,6 +53,9 @@ describe('normalized OpenAPI model', () => {
       ],
       path: '/items/{item_id}',
       rateLimit: { kind: 'legacy-only' },
+      requestSubjectBindings: [],
+      requiredRoles: [],
+      minimumCompatibilityDate: null,
       requestArrayLimits: [],
       requestBody: {
         content: [
@@ -264,12 +267,56 @@ describe('normalized OpenAPI model', () => {
     });
   });
 
+  it('derives request subjects separately from canonical role inventories', async () => {
+    const document = minimalDocument({
+      '/corporations/{corporation_id}/characters/{character_id}': {
+        get: {
+          ...jsonOperation('get_roles'),
+          parameters: [
+            parameter('corporation_id', 'path', true, { type: 'integer' }),
+            parameter('character_id', 'path', true, { type: 'integer' }),
+          ],
+          'x-required-roles': ['Station_Manager', 'Accountant'],
+        },
+      },
+    });
+    const [normalized] = (await normalizeOpenApiDocument(document)).operations;
+    expect(normalized?.requestSubjectBindings).toStrictEqual(['character_id', 'corporation_id']);
+    expect(normalized?.requiredRoles).toStrictEqual(['Accountant', 'Station_Manager']);
+    expect(normalized?.extensions['x-required-roles']).toStrictEqual([
+      'Station_Manager',
+      'Accountant',
+    ]);
+  });
+
+  it.each([
+    ['malformed type', 'Accountant'],
+    ['malformed entry', [42]],
+    ['malformed name', ['accountant']],
+    ['duplicate', ['Accountant', 'Accountant']],
+  ])('rejects %s required role metadata', async (_case, roles) => {
+    const document = minimalDocument({
+      '/items': { get: { ...jsonOperation('get_items'), 'x-required-roles': roles } },
+    });
+    await expect(normalizeOpenApiDocument(document)).rejects.toThrow(/x-required-roles/u);
+  });
+
   it.each([
     ['unsupported cache extension', { 'x-cache-policy': 'ttl' }, 'Unsupported cache extension'],
     ['malformed cache age', { 'x-cache-age': '60' }, 'Invalid x-cache-age extension'],
     ['unsupported cache mode', { 'x-cache-mode': 'fixed' }, 'Invalid x-cache-mode extension'],
     ['malformed tombstone TTL', { 'x-tombstone-ttl': -1 }, 'Invalid x-tombstone-ttl extension'],
     ['malformed rate extension', { 'x-rate-limit': 'legacy' }, 'must be an object'],
+    [
+      'malformed compatibility date',
+      { 'x-compatibility-date': 'tomorrow' },
+      'Invalid x-compatibility-date',
+    ],
+    [
+      'impossible compatibility date',
+      { 'x-compatibility-date': '2020-02-30' },
+      'Invalid x-compatibility-date',
+    ],
     [
       'unknown rate field',
       {

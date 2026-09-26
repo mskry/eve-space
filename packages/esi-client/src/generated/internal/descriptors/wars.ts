@@ -46,6 +46,9 @@ export const GetWarsWarIdDescriptor: OperationExecutionDescriptor<OperationArgum
   requestBody: null,
   requestSchema: GetWarsWarIdRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"killmail","kind":"declared","maximumTokens":3600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetWarsWarIdResponse },
@@ -71,6 +74,9 @@ export const GetWarsDescriptor: OperationExecutionDescriptor<OperationArguments<
   requestBody: null,
   requestSchema: GetWarsRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"killmail","kind":"declared","maximumTokens":3600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetWarsResponse },
@@ -98,6 +104,9 @@ export const GetWarsWarIdKillmailsDescriptor: OperationExecutionDescriptor<Opera
   requestBody: null,
   requestSchema: GetWarsWarIdKillmailsRequestSchema,
   authentication: null,
+  requestSubjectBindings: [],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"killmail","kind":"declared","maximumTokens":3600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetWarsWarIdKillmailsResponse },

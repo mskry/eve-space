@@ -486,6 +486,9 @@ function makeOperation(
     path,
     rateLimit: { kind: 'legacy-only' },
     requestArrayLimits: [],
+    requestSubjectBindings: [],
+    requiredRoles: [],
+    minimumCompatibilityDate: '2026-08-18',
     requestBody: null,
     security: [],
     successResponses: [

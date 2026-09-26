@@ -45,6 +45,9 @@ export const GetCharactersCharacterIdAttributesDescriptor: OperationExecutionDes
   requestBody: null,
   requestSchema: GetCharactersCharacterIdAttributesRequestSchema,
   authentication: { scopes: ["esi-skills.read_skills.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":120,"x-client-cache-ttl":120,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":120},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-detail","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdAttributesResponse },
@@ -70,6 +73,9 @@ export const GetCharactersCharacterIdSkillqueueDescriptor: OperationExecutionDes
   requestBody: null,
   requestSchema: GetCharactersCharacterIdSkillqueueRequestSchema,
   authentication: { scopes: ["esi-skills.read_skillqueue.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":60,"x-cache-mode":"event-based","x-client-cache-ttl":60,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-detail","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdSkillqueueResponse },
@@ -95,6 +101,9 @@ export const GetCharactersCharacterIdSkillsDescriptor: OperationExecutionDescrip
   requestBody: null,
   requestSchema: GetCharactersCharacterIdSkillsRequestSchema,
   authentication: { scopes: ["esi-skills.read_skills.v1"] },
+  requestSubjectBindings: ["character_id"],
+  requiredRoles: [],
+  minimumCompatibilityDate: "2020-01-01",
   protocol: {"cache":{"extensions":{"x-cache-age":60,"x-cache-mode":"event-based","x-client-cache-ttl":60,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-detail","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdSkillsResponse },
