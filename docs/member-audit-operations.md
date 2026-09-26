@@ -47,9 +47,12 @@ as evidence that another is present.
 | Manage ordinary groups   | `member-audit.groups.manage` |
 | Block or unblock members | `member-audit.members.block` |
 
-Do not put Member Audit permissions in automatically managed compliance groups. Member Audit may
-assign or revoke ordinary groups, but only the organization owner may change membership in a
-restricted group. Deployment-administrator sessions cannot perform either operation.
+Do not put Member Audit permissions in automatically managed compliance groups. Rule-managed
+groups can include deliberately selected restricted reviewer bundles only when the owner has
+configured a bounded current eligibility rule; Member Audit cannot assign or revoke them. Member
+Audit may assign or revoke ordinary manual groups, but only the organization owner may change
+membership in a restricted manual group. Deployment-administrator sessions cannot perform either
+operation.
 
 ## Target And Evidence Scope
 
@@ -77,8 +80,8 @@ the organization audit ledger.
 
 Group and block actions are core-owned workflows. Reviewers with the exact action permission may
 assign or revoke only non-restricted ordinary groups and must provide a non-secret reason. Member
-Audit presents compliance-group membership as read-only because its declared source converges that
-membership automatically. To remove protected access immediately, use the separately authorized
+Audit presents compliance- and rule-managed membership as read-only because core converges each
+from its declared source. To remove protected access immediately, use the separately authorized
 block action; unblock reevaluates current assignments and does not recreate an expired grant.
 
 ## Reviewer Directory

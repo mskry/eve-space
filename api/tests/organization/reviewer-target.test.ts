@@ -116,6 +116,34 @@ describe('organization reviewer target', () => {
     })
   })
 
+  test('shows rule-managed membership as read-only without exposing its private evidence', async () => {
+    const results: unknown[][] = completeResults()
+    results[3] = [
+      {
+        assignedAt: new Date('2026-09-01T12:00:00.000Z'),
+        assignedByUserId: null,
+        assignmentId: '00000000-0000-4000-8000-000000000011',
+        expiresAt: new Date('2026-09-17T12:00:00.000Z'),
+        groupId: '00000000-0000-4000-8000-000000000010',
+        hasReviewerPermission: false,
+        managementMode: 'rule',
+        name: 'Registration complete',
+        permissionKey: 'private.permission',
+        reason: 'private assignment reason',
+        restricted: true,
+      },
+    ]
+    mocks.results = results
+
+    const context = await resolveOrganizationReviewerTarget({
+      now,
+      organizationVersion: 7,
+      targetUserId,
+    })
+    expect(context?.groups).toMatchObject([{ managementMode: 'rule', readOnly: true }])
+    expect(JSON.stringify(context)).not.toContain('private assignment reason')
+  })
+
   test('refuses an account without a fresh managed character before summary reads', async () => {
     mocks.results = [
       [reviewerOrganization()],

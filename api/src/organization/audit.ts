@@ -9,8 +9,12 @@ import {
   organizationAuditSubjectTypes,
   organizationSensitiveAccessReasons,
   organizationSensitiveAccessSections,
+  organizationRuleAuditSources,
+  organizationRuleAuditPermissions,
+  organizationGroupRuleSources,
   type OrganizationAuditEventRow,
 } from '../db/schema.js'
+import type { EffectivePermissionIdentity } from './permission-catalog-policy.js'
 
 export const organizationAuditReasonSchema = safeAuditText(2000)
 
@@ -19,7 +23,7 @@ export const organizationAuditInputSchema = z
     actorId: z.uuid().nullable(),
     actorType: z.enum(organizationAuditActorTypes),
     assignmentId: z.uuid().nullable().optional(),
-    assignmentSource: z.enum(['manual', 'compliance']).nullable().optional(),
+    assignmentSource: z.enum(['manual', 'compliance', 'rule']).nullable().optional(),
     causationAuditId: z.uuid().nullable().optional(),
     complianceSource: safeAuditText(200).nullable().optional(),
     deploymentId: z.literal(1).default(1),
@@ -32,6 +36,8 @@ export const organizationAuditInputSchema = z
     outcome: z.enum(organizationAuditOutcomes),
     policyVersion: z.number().int().positive(),
     reason: organizationAuditReasonSchema,
+    resultingPermissions: z.array(safeAuditText(200)).max(100).nullable().optional(),
+    ruleRevision: z.number().int().positive().nullable().optional(),
     sectionId: z.enum(organizationSensitiveAccessSections).nullable().optional(),
     subjectId: safeAuditText(255),
     subjectType: z.enum(organizationAuditSubjectTypes),
@@ -42,62 +48,17 @@ export const organizationAuditInputSchema = z
   .superRefine((event, context) => {
     validateAuditActor(event, context)
     const groupAssignmentEvent =
-      event.eventType === 'group.assigned' || event.eventType === 'group.revoked'
-    if (
-      groupAssignmentEvent &&
-      (!event.groupId || !event.assignmentId || !event.targetUserId || !event.assignmentSource)
-    ) {
-      context.addIssue({
-        code: 'custom',
-        message: 'Group assignment audit context is required',
-        path: ['assignmentId'],
-      })
-    }
-    if (
-      groupAssignmentEvent &&
-      event.assignmentSource === 'compliance' &&
-      !event.complianceSource
-    ) {
-      context.addIssue({
-        code: 'custom',
-        message: 'Compliance source is required',
-        path: ['complianceSource'],
-      })
-    }
-    if (groupAssignmentEvent && event.assignmentSource === 'manual' && event.complianceSource) {
-      context.addIssue({
-        code: 'custom',
-        message: 'Manual assignment has no compliance source',
-        path: ['complianceSource'],
-      })
-    }
-    const sensitiveAccessEvent = event.eventType === 'sensitive-access.decided'
-    if (
-      groupAssignmentEvent &&
-      hasValue(event.sectionId, event.targetCharacterId, event.disclosureVersion)
-    ) {
-      context.addIssue({
-        code: 'custom',
-        message: 'Sensitive access context is not allowed for group events',
-        path: ['sectionId'],
-      })
-    }
-    if (sensitiveAccessEvent) {
+      event.eventType === 'group.assigned' ||
+      event.eventType === 'group.revoked' ||
+      event.eventType === 'group.refreshed'
+    const ruleMutationEvent = event.eventType.startsWith('group-rule.')
+    if (groupAssignmentEvent) {
+      validateGroupAuditContext(event, context)
+    } else if (ruleMutationEvent) {
+      validateRuleMutationAuditContext(event, context)
+    } else if (event.eventType === 'sensitive-access.decided') {
       validateSensitiveAccessEvent(event, context)
-    } else if (
-      !groupAssignmentEvent &&
-      hasValue(
-        event.groupId,
-        event.assignmentId,
-        event.targetUserId,
-        event.assignmentSource,
-        event.complianceSource,
-        event.entitlementExpiresAt,
-        event.sectionId,
-        event.targetCharacterId,
-        event.disclosureVersion,
-      )
-    ) {
+    } else if (hasAuditContext(event)) {
       context.addIssue({
         code: 'custom',
         message: 'Event-specific audit context is not allowed for this event',
@@ -105,6 +66,99 @@ export const organizationAuditInputSchema = z
       })
     }
   })
+
+const hasAuditContext = (event: z.infer<typeof organizationAuditInputSchema>) =>
+  hasValue(
+    event.groupId,
+    event.assignmentId,
+    event.targetUserId,
+    event.assignmentSource,
+    event.complianceSource,
+    event.entitlementExpiresAt,
+    event.sectionId,
+    event.targetCharacterId,
+    event.disclosureVersion,
+    event.ruleRevision,
+    event.resultingPermissions,
+  )
+
+const validateGroupAuditContext = (
+  event: z.infer<typeof organizationAuditInputSchema>,
+  context: z.RefinementCtx,
+) => {
+  if (!event.groupId || !event.assignmentId || !event.targetUserId || !event.assignmentSource) {
+    context.addIssue({
+      code: 'custom',
+      message: 'Group assignment audit context is required',
+      path: ['assignmentId'],
+    })
+  }
+  if (event.assignmentSource === 'compliance' && !event.complianceSource) {
+    context.addIssue({
+      code: 'custom',
+      message: 'Compliance source is required',
+      path: ['complianceSource'],
+    })
+  }
+  if (event.assignmentSource === 'manual' && event.complianceSource) {
+    context.addIssue({
+      code: 'custom',
+      message: 'Manual assignment has no compliance source',
+      path: ['complianceSource'],
+    })
+  }
+  if (hasValue(event.sectionId, event.targetCharacterId, event.disclosureVersion)) {
+    context.addIssue({
+      code: 'custom',
+      message: 'Sensitive access context is not allowed for group events',
+      path: ['sectionId'],
+    })
+  }
+  const ruleContextInvalid =
+    event.assignmentSource === 'rule'
+      ? Boolean(event.complianceSource) || !event.ruleRevision || !event.resultingPermissions
+      : hasValue(event.ruleRevision, event.resultingPermissions)
+  if (
+    ruleContextInvalid ||
+    (event.eventType === 'group.refreshed' && event.assignmentSource !== 'rule')
+  ) {
+    context.addIssue({
+      code: 'custom',
+      message: 'Invalid rule assignment audit context',
+      path: ['ruleRevision'],
+    })
+  }
+}
+
+const validateRuleMutationAuditContext = (
+  event: z.infer<typeof organizationAuditInputSchema>,
+  context: z.RefinementCtx,
+) => {
+  if (
+    event.actorType !== 'user' ||
+    !event.groupId ||
+    event.subjectType !== 'group' ||
+    event.subjectId !== event.groupId ||
+    !event.ruleRevision ||
+    !event.resultingPermissions ||
+    hasValue(
+      event.assignmentId,
+      event.targetUserId,
+      event.assignmentSource,
+      event.complianceSource,
+      event.entitlementExpiresAt,
+      event.sectionId,
+      event.targetCharacterId,
+      event.disclosureVersion,
+    )
+  ) {
+    context.addIssue({
+      code: 'custom',
+      message: 'Invalid rule mutation audit context',
+      path: ['ruleRevision'],
+    })
+  }
+}
 
 function validateAuditActor(
   event: z.infer<typeof organizationAuditInputSchema>,
@@ -123,7 +177,7 @@ const organizationAuditEventSchema = z
     actorId: z.uuid().nullable(),
     actorType: z.enum(organizationAuditActorTypes),
     assignmentId: z.uuid().nullable(),
-    assignmentSource: z.enum(['manual', 'compliance']).nullable(),
+    assignmentSource: z.enum(['manual', 'compliance', 'rule']).nullable(),
     auditId: z.uuid(),
     auditSequence: z.bigint().positive(),
     causationAuditId: z.uuid().nullable(),
@@ -138,6 +192,8 @@ const organizationAuditEventSchema = z
     outcome: z.enum(organizationAuditOutcomes),
     policyVersion: z.number().int().positive(),
     reason: organizationAuditReasonSchema,
+    resultingPermissions: z.array(safeAuditText(200)).nullable(),
+    ruleRevision: z.number().int().positive().nullable(),
     sectionId: z.enum(organizationSensitiveAccessSections).nullable(),
     subjectId: safeAuditText(255),
     subjectType: z.enum(organizationAuditSubjectTypes),
@@ -188,6 +244,8 @@ function hasInvalidSensitiveAccessContext(event: z.infer<typeof organizationAudi
       event.complianceSource,
       event.entitlementExpiresAt,
       event.causationAuditId,
+      event.ruleRevision,
+      event.resultingPermissions,
     ) ||
     (event.targetCharacterId !== null &&
       event.targetCharacterId !== undefined &&
@@ -208,6 +266,66 @@ export async function appendOrganizationAuditEvent(
     throw new Error('Failed to append organization audit event')
   }
   return stored
+}
+
+const ruleAuditSourceSchema = z
+  .object({
+    roleRevision: z.uuid().nullable(),
+    sourceId: z.uuid(),
+    sourceKind: z.enum(organizationGroupRuleSources),
+    validUntil: z.date().nullable(),
+  })
+  .strict()
+  .refine((source) =>
+    source.sourceKind === 'registration' || source.sourceKind === 'explicit-director'
+      ? source.roleRevision === null
+      : source.roleRevision !== null,
+  )
+
+const ruleAuditPermissionSchema = z
+  .object({
+    type: z.enum(['service', 'module']),
+    key: safeAuditText(200),
+    moduleId: safeAuditText(200).nullable(),
+    publisherPackage: safeAuditText(214).nullable(),
+  })
+  .strict()
+  .refine((permission) =>
+    permission.type === 'service'
+      ? permission.moduleId === null && permission.publisherPackage === null
+      : permission.moduleId !== null && permission.publisherPackage !== null,
+  )
+
+export const appendOrganizationRuleAuditEvent = async (
+  transaction: DatabaseTransaction,
+  input: OrganizationAuditInput,
+  sources: readonly z.input<typeof ruleAuditSourceSchema>[],
+  permissions: readonly EffectivePermissionIdentity[],
+) => {
+  const event = await appendOrganizationAuditEvent(transaction, input)
+  if (sources.length > 0) {
+    await transaction.insert(organizationRuleAuditSources).values(
+      sources.map((source) => ({
+        auditId: event.auditId,
+        ...ruleAuditSourceSchema.parse(source),
+      })),
+    )
+  }
+  if (permissions.length > 0) {
+    await transaction.insert(organizationRuleAuditPermissions).values(
+      permissions.map((permission) => {
+        const parsed = ruleAuditPermissionSchema.parse(permission)
+        return {
+          auditId: event.auditId,
+          permissionKey: parsed.key,
+          permissionType: parsed.type,
+          moduleId: parsed.moduleId,
+          publisherPackage: parsed.publisherPackage,
+        }
+      }),
+    )
+  }
+  return event
 }
 
 export async function appendOrganizationAuditEvents(

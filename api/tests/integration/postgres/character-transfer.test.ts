@@ -28,6 +28,7 @@ let characterLifecycle: typeof import('../../../src/auth/character-lifecycle.js'
 let transferApprovals: typeof import('../../../src/auth/character-transfer-approvals.js')
 let characterTransfer: typeof import('../../../src/auth/character-transfer.js')
 let characterTokenStore: typeof import('../../../src/auth/character-token-store.js')
+let sessionStore: typeof import('../../../src/auth/session-store.js')
 let tokenService: typeof import('../../../src/auth/tokens.js')
 let ownerClaim: typeof import('../../../src/organization/owner-claim.js')
 let corporationSources: typeof import('../../../src/organization/corporation-sources.js')
@@ -75,6 +76,7 @@ beforeAll(async () => {
   transferApprovals = await import('../../../src/auth/character-transfer-approvals.js')
   characterTransfer = await import('../../../src/auth/character-transfer.js')
   characterTokenStore = await import('../../../src/auth/character-token-store.js')
+  sessionStore = await import('../../../src/auth/session-store.js')
   tokenService = await import('../../../src/auth/tokens.js')
   ownerClaim = await import('../../../src/organization/owner-claim.js')
   corporationSources = await import('../../../src/organization/corporation-sources.js')
@@ -2479,6 +2481,168 @@ describe('approved character transfer', () => {
 
     expect(await loadTransferRollbackState(transfer.approvalId)).toStrictEqual(transfer.baseline)
     await expect(oauthStateStore.consumeOAuthState(transfer.oauthState)).resolves.toBeNull()
+  })
+})
+
+describe('rule-managed character transfer', () => {
+  test('reconciles memberships for both accounts in the transfer transaction', async () => {
+    const administratorId = await insertDeployment()
+    const sourceSession = 'rule-transfer-source-session'
+    const destinationSession = 'rule-transfer-destination-session'
+    await saveLogin(sourceCharacterId, sourceSession, 'Source Pilot')
+    await saveLogin(destinationCharacterId, destinationSession, 'Destination Pilot')
+    const sourceUserId = await characterUserId(sourceCharacterId)
+    const destinationUserId = await characterUserId(destinationCharacterId)
+    const source = await characterLifecycle.findOwnedCharacter(sourceUserId, sourceCharacterId)
+    const { approval } = await createApproval(
+      administratorId,
+      sourceCharacterId,
+      destinationCharacterId,
+    )
+    await configureTransferCompliance(sourceUserId, destinationUserId)
+    const bundleId = randomUUID()
+    const ruleGroupId = randomUUID()
+    await connection.begin(async (transaction) => {
+      await transaction`
+        insert into organization_permission_bundles (
+          bundle_id, deployment_id, organization_version, name, created_by_user_id
+        ) values (${bundleId}, 1, 1, 'Transfer rule bundle', ${destinationUserId})
+      `
+      await transaction`
+        insert into organization_permission_bundle_entries (
+          bundle_id, deployment_id, organization_version, permission_type, permission_key
+        ) values (${bundleId}, 1, 1, 'service', 'discord.rule-transfer')
+      `
+      await transaction`
+        insert into organization_groups (
+          group_id, deployment_id, organization_version, name, management_mode,
+          restricted, created_by_user_id
+        ) values (${ruleGroupId}, 1, 1, 'Transfer-managed membership', 'rule', true,
+          ${destinationUserId})
+      `
+      await transaction`
+        insert into organization_group_rules (
+          group_id, deployment_id, organization_version, revision, condition_kind,
+          enabled, updated_by_user_id
+        ) values (${ruleGroupId}, 1, 1, 1, 'registration-compliant', true,
+          ${destinationUserId})
+      `
+      await transaction`
+        insert into organization_group_rule_revisions (
+          group_id, deployment_id, organization_version, revision, condition_kind,
+          enabled, bundle_ids, changed_by_user_id
+        ) values (${ruleGroupId}, 1, 1, 1, 'registration-compliant', true,
+          ${[bundleId]}, ${destinationUserId})
+      `
+      await transaction`
+        insert into organization_group_permission_bundles (
+          group_id, bundle_id, deployment_id, organization_version
+        ) values (${ruleGroupId}, ${bundleId}, 1, 1)
+      `
+    })
+    await organizationCompliance.recomputeOrganizationAccountCompliance({
+      deploymentId: 1,
+      organizationVersion: 1,
+      userId: sourceUserId,
+    })
+    await organizationCompliance.recomputeOrganizationAccountCompliance({
+      deploymentId: 1,
+      organizationVersion: 1,
+      userId: destinationUserId,
+    })
+    expect(
+      (await groupPermissions.getOrganizationGroupPermissions(sourceUserId)).services,
+    ).toContain('discord.rule-transfer')
+    const auditSequence = await latestOrganizationAuditSequence()
+    await characterTransfer.transferCharacter({
+      approvalId: approval.approvalId,
+      authorization: authorization(sourceCharacterId, 'Transferred Pilot', []),
+      characterId: sourceCharacterId,
+      destinationSessionToken: destinationSession,
+      destinationUserId,
+      sourceSubjectLifecycleId: source!.subjectLifecycleId,
+      sourceUserId,
+    })
+    expect(
+      (await groupPermissions.getOrganizationGroupPermissions(sourceUserId)).services,
+    ).not.toContain('discord.rule-transfer')
+    expect(
+      (await groupPermissions.getOrganizationGroupPermissions(destinationUserId)).services,
+    ).toContain('discord.rule-transfer')
+    const [revocation] = await connection<{ count: number }[]>`
+      select count(*)::integer as count from organization_audit_events
+      where audit_sequence > ${auditSequence} and target_user_id = ${sourceUserId}
+        and group_id = ${ruleGroupId} and event_type = 'group.revoked'
+    `
+    expect(revocation?.count).toBe(1)
+  })
+})
+
+describe('session and authorization lifecycle', () => {
+  test('refuses expired session attachment and clears only that account’s sessions', async () => {
+    const sessionToken = 'expired-attachment-session'
+    await saveLogin(sourceCharacterId, sessionToken, 'Source Pilot')
+    const userId = await characterUserId(sourceCharacterId)
+
+    expect(await characterLifecycle.listUserCharacters(userId)).toMatchObject([
+      { characterId: sourceCharacterId, isMain: true },
+    ])
+    await expect(
+      characterLifecycle.setMainCharacter(randomUUID(), sourceCharacterId),
+    ).resolves.toBeNull()
+    await expect(sessionStore.findSession(sessionToken)).resolves.toMatchObject({ userId })
+    await expect(
+      dbClient.db.transaction((transaction) =>
+        sessionStore.hasActiveSession(transaction, sessionToken, userId),
+      ),
+    ).resolves.toBe(true)
+
+    await connection`
+      update sessions set expires_at = now() - interval '1 minute' where user_id = ${userId}
+    `
+    await expect(sessionStore.findSession(sessionToken)).resolves.toBeNull()
+    await expect(
+      characterLifecycle.attachCharacter({
+        ...authorization(sourceAlternateCharacterId, 'Expired Attachment', []),
+        sessionToken,
+        userId,
+      }),
+    ).rejects.toThrow('Character is not owned by this user')
+    await expect(
+      characterLifecycle.findOwnedCharacter(userId, sourceAlternateCharacterId),
+    ).resolves.toBeNull()
+    await dbClient.db.transaction(async (transaction) => {
+      expect(await sessionStore.hasActiveSession(transaction, sessionToken, userId)).toBe(false)
+      await sessionStore.deleteUserSessions(transaction, userId)
+    })
+    const [remaining] = await connection<{ count: number }[]>`
+      select count(*)::integer as count from sessions where user_id = ${userId}
+    `
+    expect(remaining?.count).toBe(0)
+  })
+
+  test('deletes token authorization only for the current generation', async () => {
+    await saveLogin(sourceCharacterId, 'token-generation-session', 'Source Pilot')
+    const current = await characterTokenStore.findCharacterToken(sourceCharacterId)
+    if (!current) throw new Error('Expected the login to persist a character token')
+    expect(
+      await characterTokenStore.deleteCharacterTokenAuthorization(
+        sourceCharacterId,
+        current.tokenVersion + 1,
+        dbClient.db,
+      ),
+    ).toBe(false)
+    expect((await characterTokenStore.findCharacterToken(sourceCharacterId))?.tokenVersion).toBe(
+      current.tokenVersion,
+    )
+    expect(
+      await characterTokenStore.deleteCharacterTokenAuthorization(
+        sourceCharacterId,
+        current.tokenVersion,
+        dbClient.db,
+      ),
+    ).toBe(true)
+    await expect(characterTokenStore.findCharacterToken(sourceCharacterId)).resolves.toBeNull()
   })
 })
 

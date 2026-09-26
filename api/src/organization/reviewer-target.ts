@@ -130,7 +130,7 @@ async function resolveOrganizationReviewerTargetInTransaction(
       restricted: group.restricted,
       managementMode: group.managementMode,
       readOnly:
-        group.restricted || group.managementMode === 'compliance' || group.hasReviewerPermission,
+        group.restricted || group.managementMode !== 'manual' || group.hasReviewerPermission,
       assignedAt: group.assignedAt.toISOString(),
       expiresAt: group.expiresAt?.toISOString() ?? null,
     })),

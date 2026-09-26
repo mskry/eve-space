@@ -1,19 +1,29 @@
 import type { DatabaseTransaction } from '../db/client.js'
-import { organizationGroupAssignments } from '../db/schema.js'
+import { organizationGroupAssignments, type OrganizationGroupRuleSource } from '../db/schema.js'
 import {
   appendOrganizationAuditEvent,
-  appendOrganizationAuditEvents,
+  appendOrganizationRuleAuditEvent,
   type OrganizationAuditInput,
 } from './audit.js'
+import type { EffectivePermissionIdentity } from './permission-catalog-policy.js'
+
+export interface GroupAuditSource {
+  readonly sourceKind: OrganizationGroupRuleSource
+  readonly sourceId: string
+  readonly roleRevision: string | null
+  readonly validUntil: Date | null
+}
 
 export interface GroupAuditInput {
-  eventType: 'group.assigned' | 'group.revoked'
+  eventType: 'group.assigned' | 'group.revoked' | 'group.refreshed'
   actorType: 'user' | 'system'
   actorId: string | null
   assignment: typeof organizationGroupAssignments.$inferSelect
   reason: string
-  outcome: 'granted' | 'revoked'
+  outcome: 'granted' | 'revoked' | 'transitioned'
   now: Date
+  effectivePermissions?: readonly EffectivePermissionIdentity[]
+  sources?: readonly GroupAuditSource[]
 }
 
 export function appendGroupAudit(
@@ -21,18 +31,16 @@ export function appendGroupAudit(
   organization: { organizationVersion: number; policyVersion: number },
   input: GroupAuditInput,
 ) {
-  return appendOrganizationAuditEvent(transaction, groupAuditInput(organization, input))
-}
-
-export function appendGroupAudits(
-  transaction: DatabaseTransaction,
-  organization: { organizationVersion: number; policyVersion: number },
-  inputs: GroupAuditInput[],
-) {
-  return appendOrganizationAuditEvents(
-    transaction,
-    inputs.map((input) => groupAuditInput(organization, input)),
-  )
+  const audit = groupAuditInput(organization, input)
+  if (input.assignment.assignmentSource === 'rule') {
+    return appendOrganizationRuleAuditEvent(
+      transaction,
+      audit,
+      input.sources ?? [],
+      input.effectivePermissions ?? [],
+    )
+  }
+  return appendOrganizationAuditEvent(transaction, audit)
 }
 
 function groupAuditInput(
@@ -54,6 +62,8 @@ function groupAuditInput(
     outcome: input.outcome,
     policyVersion: organization.policyVersion,
     reason: input.reason,
+    resultingPermissions: input.assignment.assignmentSource === 'rule' ? [] : null,
+    ruleRevision: input.assignment.ruleRevision,
     subjectId: input.assignment.groupId,
     subjectType: 'group',
     targetUserId: input.assignment.userId,

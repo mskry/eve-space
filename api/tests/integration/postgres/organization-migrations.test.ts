@@ -3,6 +3,7 @@ import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { runMigrations } from '../../../src/db/migration-runner.js'
+import { waitForDatabase } from './wait-for-database.js'
 
 let container: StartedTestContainer
 let connection: postgres.Sql
@@ -29,7 +30,7 @@ beforeAll(async () => {
     `postgres://eve_space:${databasePassword}@${container.getHost()}:${container.getMappedPort(5432)}/eve_space`,
     { onnotice: () => {} },
   )
-  await waitForDatabase()
+  await waitForDatabase(connection)
 
   await runMigrations(connection)
   await seedCurrentDeployment()
@@ -650,6 +651,150 @@ describe('organization foundation migration', () => {
       `,
     ).resolves.toBeDefined()
   })
+
+  test('keeps rule-managed assignments source-bound without changing manual groups', async () => {
+    const [before] = await connection<{ count: number }[]>`
+      select count(*)::integer as count from organization_group_assignments
+      where assignment_source = 'rule'
+    `
+    expect(before?.count).toBe(0)
+
+    await expect(
+      connection`
+        insert into organization_groups (
+          deployment_id, organization_version, name, management_mode, restricted, created_by_user_id
+        ) values (1, 1, 'Rule without definition', 'rule', true, ${userId})
+      `,
+    ).rejects.toMatchObject({ code: 'P0001' })
+
+    const [group] = await connection.begin(async (transaction) => {
+      const [created] = await transaction<{ group_id: string }[]>`
+        insert into organization_groups (
+          deployment_id, organization_version, name, management_mode, restricted, created_by_user_id
+        ) values (1, 1, 'Reviewed director group', 'rule', true, ${userId})
+        returning group_id
+      `
+      await transaction`
+        insert into organization_group_rules (
+          group_id, deployment_id, organization_version, revision,
+          condition_kind, enabled, updated_by_user_id
+        ) values (${created!.group_id}, 1, 1, 1, 'director-audience', true, ${userId})
+      `
+      await transaction`
+        insert into organization_group_rule_revisions (
+          group_id, deployment_id, organization_version, revision,
+          condition_kind, enabled, bundle_ids, changed_by_user_id
+        ) values (${created!.group_id}, 1, 1, 1, 'director-audience', true,
+          ${[randomUUID()]}, ${userId})
+      `
+      return [created]
+    })
+
+    await expect(
+      connection`
+        insert into organization_group_assignments (
+          deployment_id, organization_version, group_id, user_id,
+          assignment_source, assigned_actor_type, assigned_by_user_id, reason
+        ) values (1, 1, ${group!.group_id}, ${userId}, 'manual', 'user', ${userId}, 'Bypass rule')
+      `,
+    ).rejects.toMatchObject({ code: 'P0001' })
+
+    const [assignment] = await connection<{ assignment_id: string }[]>`
+      insert into organization_group_assignments (
+        deployment_id, organization_version, group_id, user_id, assignment_source,
+        assigned_actor_type, rule_revision, expires_at, reason
+      ) values (
+        1, 1, ${group!.group_id}, ${userId}, 'rule', 'system', 1,
+        now() + interval '1 hour', 'Current rule evidence'
+      ) returning assignment_id
+    `
+    await connection`
+      insert into organization_group_rule_attestations (
+        assignment_id, source_kind, source_id, valid_until
+      ) values (${assignment!.assignment_id}, 'explicit-director', ${randomUUID()},
+        now() + interval '1 hour')
+    `
+    const anotherUserId = randomUUID()
+    await connection`insert into users (id) values (${anotherUserId})`
+    await expect(
+      connection`
+        insert into organization_group_assignments (
+          deployment_id, organization_version, group_id, user_id, assignment_source,
+          assigned_actor_type, rule_revision, expires_at, reason
+        ) values (
+          1, 1, ${group!.group_id}, ${anotherUserId}, 'rule', 'system', 2,
+          now() + interval '1 hour', 'Unknown revision'
+        )
+      `,
+    ).rejects.toMatchObject({ code: '23503' })
+
+    await expect(
+      connection`
+        update organization_group_rules set revision = 2 where group_id = ${group!.group_id}
+      `,
+    ).rejects.toMatchObject({ code: 'P0001' })
+    await expect(
+      connection`
+        update organization_group_rule_revisions set enabled = false
+        where group_id = ${group!.group_id}
+      `,
+    ).rejects.toMatchObject({ code: 'P0001' })
+    await expect(
+      connection`
+        update organization_groups set management_mode = 'manual'
+        where group_id = ${group!.group_id}
+      `,
+    ).rejects.toMatchObject({ code: 'P0001' })
+    await expect(
+      connection`
+        insert into organization_group_rule_attestations (
+          assignment_id, source_kind, source_id, valid_until
+        ) values (${assignment!.assignment_id}, 'corporation-role', ${randomUUID()},
+          now() + interval '1 hour')
+      `,
+    ).rejects.toMatchObject({
+      code: '23514',
+      constraint_name: 'organization_group_rule_attestations_binding_check',
+    })
+
+    const [stored] = await connection<{ count: number }[]>`
+      select count(*)::integer as count from organization_group_assignments
+      where group_id = ${group!.group_id} and assignment_source = 'rule'
+    `
+    expect(stored?.count).toBe(1)
+  })
+
+  test('rolls back a rule decision if its safe evidence cannot be audited', async () => {
+    const auditId = randomUUID()
+    const groupId = randomUUID()
+    await expect(
+      connection.begin(async (transaction) => {
+        await transaction`
+          insert into organization_audit_events (
+            audit_id, actor_id, actor_type, event_type, organization_version,
+            outcome, policy_version, reason, subject_id, subject_type,
+            group_id, rule_revision, resulting_permissions
+          ) values (
+            ${auditId}, ${userId}, 'user', 'group-rule.created', 1,
+            'transitioned', 1, 'Reviewed owner rule', ${groupId}, 'group',
+            ${groupId}, 1, ARRAY['member.read']::text[]
+          )
+        `
+        await transaction`
+          insert into organization_rule_audit_sources (
+            audit_id, source_kind, source_id, role_revision
+          ) values (${auditId}, 'corporation-role', ${randomUUID()}, NULL)
+        `
+      }),
+    ).rejects.toMatchObject({
+      code: '23514',
+      constraint_name: 'organization_rule_audit_sources_revision_check',
+    })
+    const [result] = await connection<{ count: number }[]>`
+      select count(*)::integer as count from organization_audit_events where audit_id = ${auditId}
+    `
+    expect(result?.count).toBe(0)
+  })
 })
 
 async function seedCurrentDeployment() {
@@ -742,16 +887,4 @@ async function seedCurrentDeployment() {
       now() + interval '1 hour', 'fresh', ${userId}
     )
   `
-}
-
-async function waitForDatabase() {
-  for (let attempt = 0; attempt < 30; attempt += 1) {
-    try {
-      await connection`select 1`
-      return
-    } catch {
-      await new Promise((resolve) => setTimeout(resolve, 100))
-    }
-  }
-  throw new Error('PostgreSQL test container did not become ready')
 }

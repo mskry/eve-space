@@ -14,6 +14,7 @@ import { loadCurrentEntitlementScope } from './compliance-access.js'
 import { appendExternalServiceEntitlementTransitions } from './entitlement-transitions.js'
 import { loadManagementAuthority } from './management-authority.js'
 import { lockCurrentOrganization } from './organization-lock.js'
+import { convergeRuleManagedGroupsForAccountInTransaction } from './group-rule-convergence.js'
 
 type Transaction = DatabaseTransaction
 
@@ -154,6 +155,12 @@ export async function blockOrganizationMemberInTransaction(
       userId: input.targetUserId,
     })
   }
+  await convergeRuleManagedGroupsForAccountInTransaction(
+    transaction,
+    organization,
+    input.targetUserId,
+    now,
+  )
   const targetCharacters = await transaction
     .select({ characterId: characters.characterId })
     .from(characters)
@@ -258,6 +265,12 @@ export async function unblockOrganizationMemberInTransaction(
       userId: input.targetUserId,
     })
   }
+  await convergeRuleManagedGroupsForAccountInTransaction(
+    transaction,
+    organization,
+    input.targetUserId,
+    now,
+  )
   await appendDomainEvent(transaction, {
     aggregateId: input.targetUserId,
     occurredAt: now,

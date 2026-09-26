@@ -9,6 +9,7 @@ import { organizationGovernanceRoutes } from './routes-governance.js'
 import { organizationManagementRoutes } from './routes-management.js'
 import { organizationMemberRoutes } from './routes-member.js'
 import { organizationReviewRoutes } from './routes-review.js'
+import { organizationRuleRoutes } from './routes-rules.js'
 
 export const organizationRoutes = new Hono<OrganizationSessionEnv>()
   .use('*', privateNoStore, loadSession, requireSession, loadOrganizationSession)
@@ -16,3 +17,4 @@ export const organizationRoutes = new Hono<OrganizationSessionEnv>()
   .route('/', organizationGovernanceRoutes)
   .route('/', organizationReviewRoutes)
   .route('/', organizationManagementRoutes)
+  .route('/', organizationRuleRoutes)

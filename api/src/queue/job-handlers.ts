@@ -4,6 +4,12 @@ import { DomainEventNotFoundError, dispatchDomainEvent } from '../domain-events/
 import { deletePublishedDomainEvents } from '../domain-events/store.js'
 import { env } from '../env.js'
 import { refreshCorporationRoleEvidence } from '../organization/corporation-role-refresh.js'
+import {
+  allianceExecutorRefreshDemanded,
+  observeAllianceExecutor,
+} from '../organization/alliance-executor-evidence.js'
+import { runRuleGroupReconciliation } from '../organization/group-rule-repair.js'
+import { convergeAllianceExecutorChangeInTransaction } from '../organization/alliance-executor-convergence.js'
 import { convergeObservedAffiliationInTransaction } from '../organization/authority-convergence.js'
 import { processInstalledResourceRefresh } from '../platform/resource-refresh.js'
 import { processAffiliationBatch } from '../characters/affiliation-sync.js'
@@ -55,6 +61,23 @@ const jobHandlers = {
     classifyError: delayedOr(retryable),
     async process(payload, context) {
       await refreshCorporationRoleEvidence(payload, { signal: context.signal })
+    },
+  }),
+  'alliance-executor-observation': handler({
+    name: 'alliance-executor-observation',
+    classifyError: delayedOr(retryable),
+    async process(payload, context) {
+      context.signal.throwIfAborted()
+      if (
+        await allianceExecutorRefreshDemanded(payload.organizationVersion, payload.expectedRevision)
+      ) {
+        context.signal.throwIfAborted()
+        await observeAllianceExecutor(
+          payload.organizationVersion,
+          convergeAllianceExecutorChangeInTransaction,
+          context.signal,
+        )
+      }
     },
   }),
   diagnostic: handler({
@@ -112,6 +135,13 @@ const jobHandlers = {
     classifyError: delayedOr(() => ({ type: 'permanent' })),
     async process(payload, context) {
       await processInstalledResourceRefresh(payload, { signal: context.signal })
+    },
+  }),
+  'rule-group-reconciliation': handler({
+    name: 'rule-group-reconciliation',
+    classifyError: retryable,
+    async process(payload, context) {
+      await runRuleGroupReconciliation({ ...payload, signal: context.signal })
     },
   }),
 } satisfies JobHandlerRegistry

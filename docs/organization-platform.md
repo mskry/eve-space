@@ -99,6 +99,50 @@ content table.
   current evidence.
 - `/api/status` reports only aggregate pending, fresh, degraded, invalid, legacy, and overdue counts.
 
+### Rule-Managed Organization Groups
+
+Core supports three separate group-management modes. Ordinary `manual` groups retain owner/reviewer
+assignment rules; `compliance` groups follow only `core.registration`; `rule` groups are always
+restricted and cannot be assigned or revoked by hand, even by an owner. Modules publish exact
+permission identities and non-authoritative suggested profiles; they do not choose eligibility or
+write group assignments.
+
+A current, fresh organization owner may configure one condition per automatic group under
+**Organization access > Rule-managed groups** or through `/api/organization/group-rules`. Supported
+conditions are current registration compliance, the current Director audience, and one reviewed
+global EVE role predicate: `Director`, `Accountant`, or `Factory_Manager` from `roles`. Base, HQ, and
+other location roles are not selectable. The owner deliberately chooses existing permission bundles;
+no EVE role automatically maps to a permission or elevated application role. The Director audience
+accepts either an independently complete EVE-derived Director source or a current explicit Director
+grant. An explicit grant remains independent if EVE evidence is lost; group permission alone never
+bypasses a route's separate Director or reviewer requirement.
+
+Preview a proposed rule against an in-scope account before enabling it. Preview reports a safe
+eligibility outcome and paged permission identities without granting access. For an alliance, an
+organization-wide EVE role must belong to the currently observed executor corporation. Core keeps
+that public executor identity with an opaque revision and absolute freshness deadline; missing,
+changed, stale, or unavailable executor evidence cannot grant the rule. Character scope, ownership
+lifecycle, affiliation period, role revision, organization version, and deadlines are checked again
+when permission is used. Stale or degraded role evidence grants no rule-backed continuity. Current
+blocks override all retained assignments.
+
+Rule creation, update, bundle change, and disablement advance the rule revision. Old assignments
+stop authorizing immediately; affected accounts are reconverged transactionally for material source
+changes, while broad changes backfill in bounded PostgreSQL-backed pages. The worker reconstructs
+role, executor, and group work after queue loss. Audit records rule versions, content-free source
+revisions and deadlines, and every resulting permission identity in normalized append-only rows.
+Use the paged rule-audit permissions endpoint to inspect a large decision rather than treating the
+legacy audit summary array as the complete result. Neither audit nor jobs contain raw EVE roles.
+
+Deploy ordered migrations `010_rule_managed_organization_groups.sql` through
+`014_sensitive_access_audit_context.sql` with the matching API and worker; installation creates no
+automatic rules. Enable one reviewed group first, verify preview, freshness, block override,
+backfill, and audits, then expand. To roll back the feature, disable rules through current owner
+authority and allow bounded reconciliation to revoke their assignments. Preserve the rule and audit
+tables and their historical organization versions. A previous binary that does not understand the
+`rule` assignment and audit source cannot safely consume the newer schema; do not revert that binary
+over pending rule work or reverse applied migrations.
+
 ## Local Organization Fixture
 
 The organization fixture is a one-shot development aid for exercising member, HR, director, owner,

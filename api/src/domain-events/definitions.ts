@@ -104,6 +104,20 @@ const complianceTransitionPayloadSchema = z
   })
   .strict()
 
+const groupRuleChangedPayloadSchema = z
+  .object({
+    groupId: z.uuid(),
+    organizationVersion: positiveIdentifier,
+    revision: positiveIdentifier,
+  })
+  .strict()
+const allianceExecutorChangedPayloadSchema = z
+  .object({
+    organizationVersion: positiveIdentifier,
+    executorRevision: z.uuid(),
+  })
+  .strict()
+
 export type DomainEventAggregateType = 'character' | 'user' | 'deployment'
 
 const domainEventRegistry = {
@@ -158,6 +172,14 @@ const domainEventRegistry = {
   'organization.compliance-transitioned': {
     aggregateType: 'user',
     versions: { 1: complianceTransitionPayloadSchema },
+  },
+  'organization.group-rule-changed': {
+    aggregateType: 'deployment',
+    versions: { 1: groupRuleChangedPayloadSchema },
+  },
+  'organization.alliance-executor-changed': {
+    aggregateType: 'deployment',
+    versions: { 1: allianceExecutorChangedPayloadSchema },
   },
 } as const
 

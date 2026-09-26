@@ -1,6 +1,9 @@
 import { describe, expect, test, vi } from 'vitest'
+import { validateStoredDomainEvent } from '../../src/domain-events/definitions.js'
 import {
   createCharacterComplianceEventHandlers,
+  createGroupRuleChangedHandler,
+  createAllianceExecutorChangedHandler,
   createCorporationRoleAuthorityEventHandlers,
   createManagedCorporationComplianceEventHandlers,
   createPlatformCollectionStateEventHandlers,
@@ -205,6 +208,44 @@ describe('domain event handlers', () => {
 
     expect(recompute).toHaveBeenCalledTimes(2)
     expect(handlers.every(({ idempotency }) => idempotency === 'convergent-state')).toBe(true)
+  })
+
+  test('replays rule and executor events from current state with stable identities', async () => {
+    const repairRule = vi.fn().mockResolvedValue(undefined)
+    const ruleHandler = createGroupRuleChangedHandler(repairRule)
+    const ruleEvent = validateStoredDomainEvent({
+      ...storedEvent(),
+      aggregateId: '1',
+      aggregateType: 'deployment',
+      eventType: 'organization.group-rule-changed',
+      payload: { groupId: eventId, organizationVersion: 4, revision: 2 },
+    })
+    const loader = vi.fn().mockResolvedValue(ruleEvent)
+    await dispatchDomainEvent(eventId, [ruleHandler], loader)
+    await dispatchDomainEvent(eventId, [ruleHandler], loader)
+    expect(repairRule).toHaveBeenCalledTimes(2)
+    expect(repairRule).toHaveBeenLastCalledWith({
+      groupId: eventId,
+      organizationVersion: 4,
+      revision: 2,
+      signal: undefined,
+    })
+
+    const repairExecutor = vi.fn().mockResolvedValue(undefined)
+    const executorHandler = createAllianceExecutorChangedHandler(repairExecutor)
+    const executorEvent = validateStoredDomainEvent({
+      ...storedEvent(),
+      aggregateId: '1',
+      aggregateType: 'deployment',
+      eventType: 'organization.alliance-executor-changed',
+      payload: { organizationVersion: 4, executorRevision: eventId },
+    })
+    await dispatchDomainEvent(eventId, [executorHandler], vi.fn().mockResolvedValue(executorEvent))
+    expect(repairExecutor).toHaveBeenCalledWith({
+      organizationVersion: 4,
+      executorRevision: eventId,
+      signal: undefined,
+    })
   })
 })
 

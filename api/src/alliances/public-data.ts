@@ -18,7 +18,7 @@ const publicAllianceCacheSchema = z.object({
 const publicAllianceRead = createPublicEsiRead({
   cacheSchema: publicAllianceCacheSchema,
   descriptor: operationRegistry.GetAlliancesAllianceId.transport,
-  encodeRequest: (input: { allianceId: number }) => ({
+  encodeRequest: (input: { allianceId: number; signal?: AbortSignal }) => ({
     path: { alliance_id: input.allianceId },
   }),
   map: (response): PublicAllianceResult => mapPublicAlliance(response.data),
@@ -26,8 +26,8 @@ const publicAllianceRead = createPublicEsiRead({
   operation: 'public-alliance',
 })
 
-export function getAlliancePublicResult(allianceId: number) {
-  return publicAllianceRead.execute({ allianceId })
+export function getAlliancePublicResult(allianceId: number, signal?: AbortSignal) {
+  return publicAllianceRead.execute(signal ? { allianceId, signal } : { allianceId })
 }
 
 function mapPublicAlliance(alliance: GetAlliancesAllianceIdResponse): PublicAllianceResult {

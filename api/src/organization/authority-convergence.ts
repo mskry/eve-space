@@ -7,6 +7,7 @@ import {
 import type { DatabaseTransaction } from '../db/client.js'
 import {
   characters,
+  characterCorporationRoleObservations,
   deploymentSettings,
   organizationAuthorityEvidence,
   organizationCorporationSources,
@@ -17,6 +18,8 @@ import {
 } from '../db/schema.js'
 import { appendOrganizationAuditEvents } from './audit.js'
 import { convergeCurrentManagedMemberLifecyclesInTransaction } from './managed-member-lifecycle.js'
+import { convergeRuleManagedGroupsForAccountInTransaction } from './group-rule-convergence.js'
+import { advanceRuleAttestationAuthorizationGeneration } from './group-rule-attestation-store.js'
 
 const roleObservationBindingOutcomes = new Set<OrganizationAuthorityInvalidationOutcome>([
   'authorization-generation-changed',
@@ -35,6 +38,25 @@ const isRoleObservationBindingOutcome = (
 ): outcome is CorporationRoleObservationInvalidationOutcome =>
   roleObservationBindingOutcomes.has(outcome)
 
+const convergeInvalidatedRuleAccounts = async (
+  transaction: DatabaseTransaction,
+  organization: { readonly organizationVersion: number; readonly policyVersion: number },
+  now: Date,
+  sources: readonly { readonly organizationVersion: number; readonly userId: string }[],
+) => {
+  const currentOwners = new Set<string>()
+  for (const source of sources) {
+    if (source.organizationVersion === organization.organizationVersion) {
+      currentOwners.add(source.userId)
+    }
+  }
+  /* oxlint-disable no-await-in-loop -- Affected accounts converge in stable user order. */
+  for (const userId of [...currentOwners].toSorted((left, right) => left.localeCompare(right))) {
+    await convergeRuleManagedGroupsForAccountInTransaction(transaction, organization, userId, now)
+  }
+  /* oxlint-enable no-await-in-loop */
+}
+
 export async function invalidateCharacterAuthoritySourcesInTransaction(
   transaction: DatabaseTransaction,
   input: {
@@ -49,6 +71,13 @@ export async function invalidateCharacterAuthoritySourcesInTransaction(
   },
 ) {
   const now = input.now ?? new Date()
+  const observationOwners = await transaction
+    .select({
+      organizationVersion: characterCorporationRoleObservations.organizationVersion,
+      userId: characterCorporationRoleObservations.userId,
+    })
+    .from(characterCorporationRoleObservations)
+    .where(eq(characterCorporationRoleObservations.characterId, input.characterId))
   if (isRoleObservationBindingOutcome(input.outcome)) {
     await invalidateCharacterCorporationRoleObservationsInTransaction(transaction, {
       characterId: input.characterId,
@@ -57,7 +86,10 @@ export async function invalidateCharacterAuthoritySourcesInTransaction(
     })
   }
   const [settings] = await transaction
-    .select({ policyVersion: deploymentSettings.registrationPolicyVersion })
+    .select({
+      organizationVersion: deploymentSettings.organizationVersion,
+      policyVersion: deploymentSettings.registrationPolicyVersion,
+    })
     .from(deploymentSettings)
     .where(eq(deploymentSettings.id, 1))
   if (!settings) {
@@ -223,6 +255,12 @@ export async function invalidateCharacterAuthoritySourcesInTransaction(
       subjectType: 'corporation_source' as const,
     })),
   ])
+  await convergeInvalidatedRuleAccounts(transaction, settings, now, [
+    ...observationOwners,
+    ...ownerSources,
+    ...derivedSources,
+    ...corporationSources,
+  ])
 }
 
 export async function advanceCharacterAuthorityAuthorizationGenerationInTransaction(
@@ -263,6 +301,12 @@ export async function advanceCharacterAuthorityAuthorizationGenerationInTransact
         ne(organizationCorporationSources.status, 'invalid'),
       ),
     )
+  await advanceRuleAttestationAuthorizationGeneration(
+    transaction,
+    input.characterId,
+    input.authorizationGeneration,
+    updatedAt,
+  )
 }
 
 async function convergeAffiliationAuthoritySourcesInTransaction(
@@ -351,6 +395,27 @@ export async function convergeObservedAffiliationInTransaction(
     now: observedAt,
     userIds,
   })
+  const [organization] = await transaction
+    .select({
+      organizationVersion: deploymentSettings.organizationVersion,
+      policyVersion: deploymentSettings.registrationPolicyVersion,
+    })
+    .from(deploymentSettings)
+    .where(eq(deploymentSettings.id, 1))
+    .for('key share')
+  if (!organization) {
+    return
+  }
+  /* oxlint-disable no-await-in-loop -- Affected accounts converge in stable user order. */
+  for (const userId of [...new Set(userIds)].toSorted((left, right) => left.localeCompare(right))) {
+    await convergeRuleManagedGroupsForAccountInTransaction(
+      transaction,
+      organization,
+      userId,
+      observedAt,
+    )
+  }
+  /* oxlint-enable no-await-in-loop */
 }
 
 export async function invalidateOrganizationAuthoritySourcesInTransaction(

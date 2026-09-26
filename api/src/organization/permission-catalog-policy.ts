@@ -34,6 +34,13 @@ interface ServicePermissionSelection {
 
 export type PermissionSelection = ModulePermissionSelection | ServicePermissionSelection
 
+export interface EffectivePermissionIdentity {
+  readonly type: 'service' | 'module'
+  readonly key: string
+  readonly publisherPackage: string | null
+  readonly moduleId: string | null
+}
+
 export interface PermissionCatalogIndex {
   readonly permissions: readonly CatalogPermission[]
   readonly profiles: readonly CatalogProfile[]

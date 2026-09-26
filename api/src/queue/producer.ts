@@ -25,6 +25,17 @@ export type QueueCommand =
       readonly notBefore: Date
     }
   | {
+      readonly name: 'alliance-executor-observation'
+      readonly payload: JobPayloadByName['alliance-executor-observation']
+      readonly source: 'planner'
+      readonly notBefore: Date
+    }
+  | {
+      readonly name: 'rule-group-reconciliation'
+      readonly payload: JobPayloadByName['rule-group-reconciliation']
+      readonly source: 'planner'
+    }
+  | {
       readonly name: 'resource-refresh'
       readonly payload: JobPayloadByName['resource-refresh']
       readonly source: 'planner' | 'on-demand'

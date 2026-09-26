@@ -25,6 +25,7 @@ import {
 } from './group-assignment-expiry.js'
 import { convergeRegistrationComplianceGroupsInTransaction } from './group-compliance.js'
 import { OrganizationGroupMutationError } from './group-mutation-error.js'
+import { reviseRulesForPermissionBundleInTransaction } from './group-rule-revisions.js'
 import {
   loadManagementAuthority,
   type OrganizationManagementAuthority,
@@ -184,6 +185,13 @@ export async function updateOrganizationPermissionBundle(input: {
       now: new Date(),
       reason: input.reason,
     })
+    await reviseRulesForPermissionBundleInTransaction(
+      transaction,
+      organization,
+      input.bundleId,
+      input.actorUserId,
+      input.reason,
+    )
     return {
       bundleId: input.bundleId,
       name: input.name,
@@ -418,9 +426,7 @@ export async function assignManualOrganizationGroupInTransaction(
     expiresAt: Date | null
   },
 ) {
-  if (group.managementMode === 'compliance') {
-    throw new OrganizationGroupMutationError('compliance-group-manual-change')
-  }
+  assertManualGroup(group)
 
   const [target] = await transaction
     .select({ userId: users.id })
@@ -556,9 +562,7 @@ export async function revokeOrganizationGroupAssignment(input: {
       input.actorUserId,
     )
     requireGroupManagementAuthority(group, authority)
-    if (group.managementMode === 'compliance') {
-      throw new OrganizationGroupMutationError('compliance-group-manual-change')
-    }
+    assertManualGroup(group)
 
     const assignment = await loadUnrevokedGroupAssignmentByIdForUpdate(
       transaction,
@@ -586,9 +590,7 @@ export async function revokeManualOrganizationGroupAssignmentInTransaction(
   assignment: typeof organizationGroupAssignments.$inferSelect,
   input: { actorUserId: string; reason: string },
 ) {
-  if (group.managementMode === 'compliance') {
-    throw new OrganizationGroupMutationError('compliance-group-manual-change')
-  }
+  assertManualGroup(group)
   const now = new Date()
   const revoked = await revokeGroupAssignmentRecord(transaction, assignment.assignmentId, {
     actorType: 'user',
@@ -639,6 +641,15 @@ function requireGroupManagementAuthority(
 ) {
   if (group.restricted && authority !== 'organization_owner') {
     throw new OrganizationGroupMutationError('owner-authority-required')
+  }
+}
+
+function assertManualGroup(group: typeof organizationGroups.$inferSelect) {
+  if (group.managementMode === 'compliance') {
+    throw new OrganizationGroupMutationError('compliance-group-manual-change')
+  }
+  if (group.managementMode === 'rule') {
+    throw new OrganizationGroupMutationError('rule-group-manual-change')
   }
 }
 

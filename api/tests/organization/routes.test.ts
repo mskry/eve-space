@@ -70,6 +70,9 @@ const mocks = vi.hoisted(() => {
     assignOrganizationGroup: vi.fn(),
     blockOrganizationMember: vi.fn(),
     createOrganizationGroup: vi.fn(),
+    createOrganizationGroupRule: vi.fn(),
+    getOrganizationRuleMemberSummary: vi.fn(),
+    listOrganizationRuleAuditPermissions: vi.fn(),
     createOrganizationPermissionBundle: vi.fn(),
     expireOrganizationCharacterException: vi.fn(),
     findSession: vi.fn(),
@@ -83,6 +86,7 @@ const mocks = vi.hoisted(() => {
     listCurrentOrganizationCharacterExceptionCandidates: vi.fn(),
     listCurrentOrganizationCharacterExceptions: vi.fn(),
     listCurrentOrganizationGroups: vi.fn(),
+    listOrganizationGroupRules: vi.fn(),
     listCurrentOrganizationMemberBlocks: vi.fn(),
     listCurrentOrganizationPermissionBundles: vi.fn(),
     listCurrentOrganizationRoles: vi.fn(),
@@ -100,6 +104,10 @@ const mocks = vi.hoisted(() => {
     ),
     organizationSession,
     previewEnabledPermissionProfile: vi.fn(),
+    previewOrganizationGroupRule: vi.fn(),
+    reviseOrganizationGroupRule: vi.fn(),
+    disableOrganizationGroupRule: vi.fn(),
+    organizationRuleConditionCatalog: vi.fn(),
     registerOrganizationCorporationSource: vi.fn(),
     replaceOrganizationOwnerSource: vi.fn(),
     revokeOrganizationCharacterException: vi.fn(),
@@ -138,6 +146,16 @@ vi.mock('../../src/organization/group-store.js', () => ({
   listCurrentOrganizationPermissionBundles: mocks.listCurrentOrganizationPermissionBundles,
   revokeOrganizationGroupAssignment: mocks.revokeOrganizationGroupAssignment,
   updateOrganizationPermissionBundle: mocks.updateOrganizationPermissionBundle,
+}))
+vi.mock('../../src/organization/group-rule-store.js', () => ({
+  createOrganizationGroupRule: mocks.createOrganizationGroupRule,
+  disableOrganizationGroupRule: mocks.disableOrganizationGroupRule,
+  getOrganizationRuleMemberSummary: mocks.getOrganizationRuleMemberSummary,
+  listOrganizationRuleAuditPermissions: mocks.listOrganizationRuleAuditPermissions,
+  listOrganizationGroupRules: mocks.listOrganizationGroupRules,
+  organizationRuleConditionCatalog: mocks.organizationRuleConditionCatalog,
+  previewOrganizationGroupRule: mocks.previewOrganizationGroupRule,
+  reviseOrganizationGroupRule: mocks.reviseOrganizationGroupRule,
 }))
 vi.mock('../../src/organization/group-mutation-error.js', () => ({
   OrganizationGroupMutationError: mocks.GroupMutationError,
@@ -257,6 +275,43 @@ beforeEach(() => {
     },
   })
   mocks.listCurrentOrganizationGroups.mockResolvedValue({ groups: [] })
+  mocks.listOrganizationGroupRules.mockResolvedValue({ organizationVersion: 1, rules: [] })
+  mocks.organizationRuleConditionCatalog.mockReturnValue({
+    conditions: ['registration-compliant', 'director-audience', 'corporation-role'],
+    corporationRoles: [{ predicate: 'accountant', location: 'roles' }],
+  })
+  mocks.createOrganizationGroupRule.mockResolvedValue({
+    groupId,
+    organizationVersion: 1,
+    revision: 1,
+  })
+  mocks.reviseOrganizationGroupRule.mockResolvedValue({
+    groupId,
+    organizationVersion: 1,
+    revision: 2,
+  })
+  mocks.disableOrganizationGroupRule.mockResolvedValue({
+    groupId,
+    organizationVersion: 1,
+    revision: 3,
+  })
+  mocks.previewOrganizationGroupRule.mockResolvedValue({
+    outcome: 'eligible',
+    sourceCount: 1,
+    sources: [],
+    sourcesTruncated: false,
+    permissions: [],
+  })
+  mocks.getOrganizationRuleMemberSummary.mockResolvedValue({
+    assignment: null,
+    sourceMetadata: [],
+    sourcesTruncated: false,
+    effectivePermissions: [],
+  })
+  mocks.listOrganizationRuleAuditPermissions.mockResolvedValue({
+    permissions: [],
+    nextAfterPermissionId: null,
+  })
   mocks.listCurrentOrganizationPermissionBundles.mockResolvedValue({ bundles: [] })
   mocks.listEnabledPermissionCatalog.mockResolvedValue({ permissions: [], profiles: [] })
   mocks.listCurrentOrganizationMemberBlocks.mockResolvedValue({ blocks: [] })
@@ -1051,6 +1106,123 @@ describe('unexpected organization mutation failures', () => {
       expect(response.status).toBe(500)
     },
   )
+})
+
+describe('organization rule-managed group routes', () => {
+  const condition = { kind: 'corporation-role', predicate: 'accountant' } as const
+  const ruleInput = {
+    name: 'Accountants',
+    bundleIds: [bundleId],
+    condition,
+    enabled: true,
+    reason: 'Reviewed access policy.',
+  }
+
+  test('keeps the catalog and rule list behind a current owner session', async () => {
+    expect((await organizationRoutes.request('/group-rules')).status).toBe(401)
+    expect((await get('/group-rules/conditions')).status).toBe(200)
+    expect((await get('/group-rules')).status).toBe(200)
+    mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValueOnce(
+      effectiveOwnerAuthority('invalid'),
+    )
+    expect((await get('/group-rules')).status).toBe(409)
+    expect(mocks.listOrganizationGroupRules).toHaveBeenCalledOnce()
+  })
+
+  test('validates reviewed conditions and trusted owner mutations', async () => {
+    const response = await request('/group-rules', ruleInput)
+    expect(response.status).toBe(201)
+    expect(await response.json()).toStrictEqual({
+      rule: { groupId, organizationVersion: 1, revision: 1 },
+    })
+    expect(mocks.createOrganizationGroupRule).toHaveBeenCalledWith({
+      actorUserId,
+      ...ruleInput,
+    })
+    expect(
+      (
+        await request('/group-rules', {
+          ...ruleInput,
+          condition: { kind: 'corporation-role', predicate: 'unreviewed' },
+        })
+      ).status,
+    ).toBe(400)
+    expect((await request('/group-rules', ruleInput, 'https://wrong.example')).status).toBe(403)
+    mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValueOnce(
+      effectiveOwnerAuthority('invalid'),
+    )
+    expect((await request('/group-rules', ruleInput)).status).toBe(409)
+    expect(mocks.createOrganizationGroupRule).toHaveBeenCalledOnce()
+  })
+
+  test('previews without granting and versions rule updates and disablement', async () => {
+    const preview = await request('/group-rules/preview', {
+      bundleIds: [bundleId],
+      condition,
+      targetUserId,
+    })
+    expect(preview.status).toBe(200)
+    expect(mocks.previewOrganizationGroupRule).toHaveBeenCalledOnce()
+    expect(mocks.createOrganizationGroupRule).not.toHaveBeenCalled()
+
+    const updated = await mutate('PUT', `/group-rules/${groupId}`, {
+      bundleIds: [bundleId],
+      condition,
+      enabled: true,
+      expectedRevision: 1,
+      reason: 'Review update.',
+    })
+    expect(updated.status).toBe(200)
+    expect(mocks.reviseOrganizationGroupRule).toHaveBeenCalledWith(
+      expect.objectContaining({
+        groupId,
+        expectedRevision: 1,
+      }),
+    )
+    mocks.disableOrganizationGroupRule.mockRejectedValueOnce(
+      new mocks.GroupMutationError('rule-revision-conflict'),
+    )
+    const stale = await request(`/group-rules/${groupId}/disable`, {
+      expectedRevision: 1,
+      reason: 'Close access.',
+    })
+    expect(stale.status).toBe(409)
+    const disabled = await request(`/group-rules/${groupId}/disable`, {
+      expectedRevision: 2,
+      reason: 'Close access.',
+    })
+    expect(disabled.status).toBe(200)
+  })
+
+  test('keeps member provenance and paged audit permissions owner-scoped', async () => {
+    const member = await get(`/group-rules/${groupId}/members/${targetUserId}`)
+    expect(member.status).toBe(200)
+    expect(mocks.getOrganizationRuleMemberSummary).toHaveBeenCalledWith({
+      actorUserId,
+      groupId,
+      userId: targetUserId,
+    })
+    expect((await get(`/group-rules/${groupId}/members/not-a-user`)).status).toBe(400)
+    const audit = await get(`/group-rules/audit/${grantId}/permissions`)
+    expect(audit.status).toBe(200)
+    expect(mocks.listOrganizationRuleAuditPermissions).toHaveBeenCalledWith({
+      actorUserId,
+      auditId: grantId,
+    })
+  })
+
+  test('refuses owner attempts to edit rule-managed membership', async () => {
+    mocks.assignOrganizationGroup.mockRejectedValueOnce(
+      new mocks.GroupMutationError('rule-group-manual-change'),
+    )
+    const response = await request(`/groups/${groupId}/assignments`, {
+      expiresAt: null,
+      reason: 'Attempt manual override.',
+      userId: targetUserId,
+    })
+    expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({ code: 'RULE_GROUP_MANAGED' })
+  })
 })
 
 describe('organization group routes', () => {

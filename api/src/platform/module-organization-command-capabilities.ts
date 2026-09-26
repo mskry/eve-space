@@ -213,7 +213,11 @@ function reviewerCommandError(code: OrganizationReviewerCommandError['code']) {
       message: 'The current target group assignment was not found.',
     })
   }
-  if (code === 'restricted-group-not-allowed' || code === 'compliance-group-not-allowed') {
+  if (
+    code === 'restricted-group-not-allowed' ||
+    code === 'compliance-group-not-allowed' ||
+    code === 'rule-group-not-allowed'
+  ) {
     return platformModuleError(403, {
       code: 'GROUP_MANAGEMENT_RESTRICTED',
       message: 'This group can only be managed through the core organization surface.',

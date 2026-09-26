@@ -12,6 +12,7 @@ export type CorporationRoleConsumer =
   | 'corporation-source'
   | 'derived-director'
   | 'organization-owner'
+  | 'rule-managed'
 
 export interface CorporationRoleDemand extends CorporationRoleSourceBinding {
   readonly expectedRoleRevision: string | null
@@ -74,6 +75,41 @@ const demandQuery = (filter: ReturnType<typeof sql>) => sql`
       and not exists (
         select 1
         from organization_member_blocks block
+        where block.deployment_id = 1
+          and block.organization_version = settings.organization_version
+          and block.user_id = character.user_id
+          and block.unblocked_at is null
+      )
+    union all
+    select distinct character.character_id, 'rule-managed'::text
+    from characters character
+    cross join settings
+    join organization_group_rules rule
+      on rule.deployment_id = 1
+      and rule.organization_version = settings.organization_version
+      and rule.enabled and rule.condition_kind = 'corporation-role'
+    join organization_account_compliance compliance
+      on compliance.deployment_id = 1
+      and compliance.organization_version = settings.organization_version
+      and compliance.user_id = character.user_id
+      and compliance.authoritative
+      and (compliance.state = 'compliant'
+        or (compliance.state = 'review_required' and compliance.review_deadline > now()))
+      and compliance.evidence_freshness = 'fresh'
+      and compliance.access_valid_until > now()
+    left join organization_alliance_executor_observations executor
+      on executor.deployment_id = 1
+      and executor.organization_version = settings.organization_version
+      and executor.status = 'fresh' and executor.fresh_until > now()
+    where (
+      (settings.organization_type = 'corporation'
+        and character.corporation_id = settings.organization_id)
+      or (settings.organization_type = 'alliance'
+        and character.alliance_id = settings.organization_id
+        and character.corporation_id = executor.executor_corporation_id)
+    )
+      and not exists (
+        select 1 from organization_member_blocks block
         where block.deployment_id = 1
           and block.organization_version = settings.organization_version
           and block.user_id = character.user_id

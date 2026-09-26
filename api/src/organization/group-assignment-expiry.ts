@@ -1,7 +1,9 @@
-import { and, eq, isNull, lte, sql } from 'drizzle-orm'
+import { and, asc, eq, isNull, lte, sql } from 'drizzle-orm'
 import { db, type DatabaseTransaction } from '../db/client.js'
 import { organizationGroupAssignments } from '../db/schema.js'
-import { appendGroupAudits } from './group-audit.js'
+import { appendGroupAudit } from './group-audit.js'
+import { loadRuleAttestations, toRuleAuditSource } from './group-rule-attestation-store.js'
+import { getOrganizationGroupPermissionsFromDatabase } from './group-permission-reader.js'
 import { lockCurrentOrganization } from './organization-lock.js'
 
 export const expiredGroupAssignmentReason = 'Group assignment expired.'
@@ -19,14 +21,8 @@ export async function expireOrganizationGroupAssignments(
   now: Date,
 ) {
   const expiredAssignments = await transaction
-    .update(organizationGroupAssignments)
-    .set({
-      revocationReason: expiredGroupAssignmentReason,
-      revokedActorType: 'system',
-      revokedAt: sql`${organizationGroupAssignments.expiresAt}`,
-      revokedByUserId: null,
-      updatedAt: sql`${organizationGroupAssignments.expiresAt}`,
-    })
+    .select()
+    .from(organizationGroupAssignments)
     .where(
       and(
         eq(organizationGroupAssignments.deploymentId, 1),
@@ -35,18 +31,50 @@ export async function expireOrganizationGroupAssignments(
         lte(organizationGroupAssignments.expiresAt, now),
       ),
     )
-    .returning()
-  await appendGroupAudits(
-    transaction,
-    organization,
-    expiredAssignments.map((assignment) => ({
+    .orderBy(
+      asc(organizationGroupAssignments.expiresAt),
+      asc(organizationGroupAssignments.assignmentId),
+    )
+    .for('update')
+  /* oxlint-disable no-await-in-loop -- Each expiry is committed to audit before the next revocation. */
+  for (const expired of expiredAssignments) {
+    const expiredAt = expired.expiresAt!
+    const [assignment] = await transaction
+      .update(organizationGroupAssignments)
+      .set({
+        revocationReason: expiredGroupAssignmentReason,
+        revokedActorType: 'system',
+        revokedAt: sql`${organizationGroupAssignments.expiresAt}`,
+        revokedByUserId: null,
+        updatedAt: sql`${organizationGroupAssignments.expiresAt}`,
+      })
+      .where(eq(organizationGroupAssignments.assignmentId, expired.assignmentId))
+      .returning()
+    if (!assignment) throw new Error('Expired group assignment was not found')
+    const sources =
+      assignment.assignmentSource === 'rule'
+        ? await loadRuleAttestations(transaction, assignment.assignmentId)
+        : []
+    const effective =
+      assignment.assignmentSource === 'rule'
+        ? await getOrganizationGroupPermissionsFromDatabase(
+            transaction,
+            assignment.userId,
+            expiredAt,
+            organization.organizationVersion,
+          )
+        : null
+    await appendGroupAudit(transaction, organization, {
       actorId: null,
       actorType: 'system',
       assignment,
       eventType: 'group.revoked',
-      now: assignment.expiresAt!,
+      now: expiredAt,
       outcome: 'revoked',
       reason: expiredGroupAssignmentReason,
-    })),
-  )
+      effectivePermissions: effective?.identities,
+      sources: sources.map(toRuleAuditSource),
+    })
+  }
+  /* oxlint-enable no-await-in-loop */
 }

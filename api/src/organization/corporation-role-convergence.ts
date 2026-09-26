@@ -9,6 +9,7 @@ import type {
   CorporationRoleObservationTransition,
 } from '../characters/corporation-role-observation.js'
 import { db, type DatabaseTransaction } from '../db/client.js'
+import { convergeRuleManagedGroupsForAccountInTransaction } from './group-rule-convergence.js'
 import { characterLockKey, characterLockNamespace } from '../db/locks.js'
 import {
   characters,
@@ -576,19 +577,21 @@ export const convergeCorporationRoleTransitionInTransaction = async (
   }
   if (transition.kind === 'observed') {
     await convergeObservedRoles(transaction, transition, settings, context)
-    return
-  }
-  if (transition.kind === 'degraded') {
+  } else if (transition.kind === 'degraded') {
     await degradeRoleDependentSources(transaction, transition, settings)
-    return
-  }
-  if (transition.kind === 'invalidated' && transition.invalidationOutcome) {
+  } else if (transition.kind === 'invalidated' && transition.invalidationOutcome) {
     await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
       characterId: transition.evidence.binding.characterId,
       now: transition.checkedAt,
       outcome: transition.invalidationOutcome,
     })
   }
+  await convergeRuleManagedGroupsForAccountInTransaction(
+    transaction,
+    { organizationVersion: settings.organizationVersion, policyVersion: settings.policyVersion },
+    transition.evidence.binding.userId,
+    transition.checkedAt,
+  )
 }
 
 export const createCorporationRoleConvergenceHook =
