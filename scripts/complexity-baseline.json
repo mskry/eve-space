@@ -83,7 +83,7 @@
     "tests/character/character-clones.nuxt.test.ts:complexity(complexity):051b4ed1cd0e952460003f1439547dc1c25a431e83e7968f5898b208e0ddad73": 1,
     "tests/corporation/corporation-record.e2e.test.ts:complexity(complexity):5744dcdfd8f050348ac46a7bc597de8b6a53ceae157fe4b53d6c0cc25ec9c921": 1,
     "tests/e2e/nuxt-ssr-failure.e2e.test.ts:complexity(complexity):8939a604c78dcbdc65f58160fe72c54ef7143013dfd4f7a2dd1f92821391e34b": 1,
-    "tests/e2e/nuxt-ssr-failure.e2e.test.ts:complexity(complexity):dd3441d189ad2c02bad2eb82632baea11ae1e25bfd3b57aa27cb63af430b4a04": 1,
+    "tests/e2e/nuxt-ssr-failure.e2e.test.ts:complexity(complexity):ecbde5f5bbeb3bc24b866a672ece72134f306efc3e294deca0f05f81d4cd932e": 1,
     "tests/finance/character-finance.e2e.test.ts:complexity(complexity):be33025dc12cc6960251536e1fce573211548e6420ccb23d7722fb985aa348f4": 1,
     "tests/mail/character-mail-reading.e2e.test.ts:complexity(complexity):018b20da517776a62d27d51d2e25760112a5a752ccf67f71bd816ada474538db": 1,
     "tests/mail/character-mail-reading.e2e.test.ts:complexity(complexity):397daf71a61c4a9df4bf78aca1913c0272309e667ec0c6d31360c00da121b299": 1,
