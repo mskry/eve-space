@@ -733,7 +733,11 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       invalidationGeneration: invalidation.generation,
     })
     if (
-      effectiveScopes.some((changed) => changed.kind === 'all' || changed.kind === 'organization')
+      effectiveScopes.some(
+        (changed) =>
+          changed.kind === 'all' ||
+          (changed.kind === 'organization' && changed.admissionScope === undefined),
+      )
     ) {
       durableOrganizationFencePending = false
     }

@@ -52,7 +52,7 @@
     "app/composables/useOrganizationReviewWorkspace.ts:complexity(complexity):4ec08f0e427012f400b1859b7abeffe4d3f646a7473a4c27e495f370c8592e65": 1,
     "app/queries/mail-cache.ts:complexity(complexity):4d25418da80bae5faf558fc8d71523675ace7400c1beee2fc21dec824bb241e5": 1,
     "app/query-persistence/private-lifecycle.ts:complexity(complexity):3162df662c3d63962ec4c19b2f9a322e91735128e79d03564d703ad79c9309f0": 1,
-    "app/query-persistence/private-lifecycle.ts:complexity(complexity):337a460853affee6f935c2ae33387c522b599c009af50fde3ea32c78fb26e548": 1,
+    "app/query-persistence/private-lifecycle.ts:complexity(complexity):7f8c1d8e1b32bbedc0d36373c413dab7c86c383d63d867b14d2a8c71a894f311": 1,
     "app/query-persistence/private-lifecycle.ts:complexity(complexity):8f9385d9bc9535f7be0f8d8fa2ef18bb8c4bf323dd02571a9ff3b69e5ee22e62": 1,
     "app/query-persistence/runtime.ts:complexity(complexity):9c0a5ed52e21d0646f613aafb68728d7657441fbde29981bb76173ffdd0ce919": 1,
     "app/utils/organization-review.ts:complexity(complexity):e67ee4a75bca2fad49e382d6b01ad9aea02b89ea1211f446f1d5a8b985556e99": 1,
@@ -99,7 +99,7 @@
     "tests/platform/platform-module-registry.test.ts:complexity(complexity):cbc72299e2b1215a344e44cba932562825009f324a3e77dde8b73d71fb57092a": 1,
     "tests/queries/private-query-lifecycle.test.ts:complexity(complexity):5171c835cf16cb9c8e6868dabdd3a8d95d85c484cc0e1f3a7cd0aeefd86ac1f0": 1,
     "tests/queries/query-persistence-envelope.test.ts:complexity(complexity):0f6fdcacc9b90015e6895bd2f589c623e8ff929a81da1ae4aa35b114d1e80e3a": 1,
-    "tests/queries/query-persistence-runtime.test.ts:complexity(complexity):826e77467ba7dd8f9d2c1f542d7713cb579d81c6c5c626470da430c277d1865f": 1
+    "tests/queries/query-persistence-runtime.test.ts:complexity(complexity):bdd4ee132c8db2f1267139424cb3b5956cdee4fe6b0853b7d6d1cc6b56cbc36f": 1
   },
   "version": 1
 }

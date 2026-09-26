@@ -374,6 +374,44 @@ describe('query persistence runtime', () => {
     ).toBe(true)
     runtime.dispose()
   })
+
+  it('keeps private persistence closed until every organization partition is durably fenced', async () => {
+    const storage = new RecoveringInvalidationStorage(
+      envelopeWithPrivatePartitions(),
+      true,
+    ).enableScopeWatermarks()
+    const runtime = createRuntime(storage)
+    await readyRuntime(runtime)
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
+      admission(),
+    )
+    expect(
+      readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
+    ).toBe(true)
+
+    await expect(transitionOrganizationQueries(runtime.queryCache)).resolves.toBe(false)
+    await expect(
+      invalidatePrivateQueryScope(runtime.queryCache, {
+        admissionScope: 'organization:v1:other:member:unrelated',
+        kind: 'organization',
+      }),
+    ).resolves.toBe(true)
+    expect(storage.snapshot()?.organizations[ORGANIZATION_SCOPE]).toBeDefined()
+    await reacquireOrganizationAdmission(runtime.queryCache)
+    expect(
+      readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
+    ).toBe(false)
+
+    await expect(
+      invalidatePrivateQueryScope(runtime.queryCache, { kind: 'organization' }),
+    ).resolves.toBe(true)
+    expect(storage.snapshot()?.organizations).toStrictEqual({})
+    await reacquireOrganizationAdmission(runtime.queryCache)
+    expect(
+      readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
+    ).toBe(true)
+    runtime.dispose()
+  })
   it('reactively reads bootstrap membership independently of token admission', async () => {
     const runtime = createRuntime(
       new MemoryQueryPersistenceStorage(envelopeWithPrivatePartitions()),
@@ -2859,12 +2897,22 @@ class FailingInvalidationStorage extends MemoryQueryPersistenceStorage {
 }
 
 class RecoveringInvalidationStorage extends MemoryQueryPersistenceStorage {
-  override async invalidate(_scope: PrivateQueryInvalidationScope, deleteEnvelope = false) {
+  constructor(
+    envelope: EsiQueryCacheEnvelope,
+    private readonly recoverWithRequestedScope = false,
+  ) {
+    super(envelope)
+  }
+
+  override async invalidate(scope: PrivateQueryInvalidationScope, deleteEnvelope = false) {
     this.invalidationCalls += 1
     if (this.invalidationCalls === 1) {
       return null
     }
-    return this.commitInvalidation({ kind: 'all' }, deleteEnvelope)
+    return this.commitInvalidation(
+      this.recoverWithRequestedScope ? scope : { kind: 'all' },
+      deleteEnvelope,
+    )
   }
 }
 
