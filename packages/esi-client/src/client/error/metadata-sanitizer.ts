@@ -65,7 +65,7 @@ export function normalizeMetadata(
 }
 
 function normalizeHeaders(
-  headers: Readonly<Record<string, unknown>> | undefined,
+  headers: EsiResponseMetadataInput['headers'],
   redactor: Redactor,
 ): Readonly<Record<string, string>> {
   const result: Record<string, string> = {};

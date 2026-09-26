@@ -214,10 +214,10 @@ export function defineOperationMetadata<
   return metadata
 }
 
-export function assertEsiOperationContracts(
-  catalog: Readonly<Record<string, unknown>>,
+export function assertEsiOperationContracts<Catalog extends object>(
+  catalog: Catalog,
   expectedSdkOperationIds: Readonly<Record<string, string>> = {},
-): asserts catalog is Readonly<Record<string, ValidatedEsiOperationContract>> {
+): asserts catalog is Catalog & Readonly<Record<string, ValidatedEsiOperationContract>> {
   const state: EsiOperationContractValidationState = {
     expectedSdkOperationIds,
     issues: [],

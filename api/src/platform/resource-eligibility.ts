@@ -25,6 +25,14 @@ const platformResourceDueReasons = [
   'future',
 ] as const
 type PlatformResourceDueReason = (typeof platformResourceDueReasons)[number]
+const dueReasonSet: ReadonlySet<string> = new Set(platformResourceDueReasons)
+const collectionFailureClassSet: ReadonlySet<string> = new Set(platformCollectionFailureClasses)
+
+const isPlatformResourceDueReason = (value: string | null): value is PlatformResourceDueReason =>
+  value !== null && dueReasonSet.has(value)
+
+const isPlatformCollectionFailureClass = (value: string): value is PlatformCollectionFailureClass =>
+  collectionFailureClassSet.has(value)
 
 export type PlatformResourceEligibility =
   | {
@@ -305,7 +313,7 @@ function parseClassification(row: ClassificationRow): PlatformResourceEligibilit
   if (row.eligibilityStatus !== 'eligible') {
     throw new Error(`Resource classifier returned invalid eligibility ${row.eligibilityStatus}`)
   }
-  if (!row.dueReason || !platformResourceDueReasons.includes(row.dueReason as never)) {
+  if (!isPlatformResourceDueReason(row.dueReason)) {
     throw new Error(`Resource classifier returned invalid due reason ${String(row.dueReason)}`)
   }
   const schedulingKey = toDate(row.schedulingKey)
@@ -314,7 +322,7 @@ function parseClassification(row: ClassificationRow): PlatformResourceEligibilit
   }
   return {
     due: row.dueReason !== 'future',
-    dueReason: row.dueReason as PlatformResourceDueReason,
+    dueReason: row.dueReason,
     schedulingKey,
     status: 'eligible',
     ...state,
@@ -386,8 +394,8 @@ function parseFailureClass(value: string | null) {
   if (value === null) {
     return null
   }
-  if (!platformCollectionFailureClasses.includes(value as never)) {
+  if (!isPlatformCollectionFailureClass(value)) {
     throw new Error(`Resource classifier returned invalid failure class ${value}`)
   }
-  return value as PlatformCollectionFailureClass
+  return value
 }

@@ -1,14 +1,24 @@
 import { createHash } from 'node:crypto'
+import type { OperationRequestArguments } from '@evespace/esi-client/operations'
 import { isRecord } from '../../type-guards.js'
 import { getEsiOperationContract } from './catalog-access.js'
 import type { EsiOperation } from './catalog.js'
 import type { EsiOperationContract } from './contract-types.js'
-import { projectRegisteredEsiRequestIdentity } from './identity-projectors.js'
+import {
+  projectRegisteredEsiRequestIdentity,
+  type ProjectedEsiRequestIdentity,
+} from './identity-projectors.js'
 import type { EsiResourceRevision } from './types.js'
 
 const maximumStringLength = 256
 
 type IdentityScalar = string | number | boolean | null
+type EsiSdkIdentityRequest = OperationRequestArguments & {
+  readonly header?: NonNullable<OperationRequestArguments['headers']>
+}
+export type EsiIdentityInputs =
+  | EsiSdkIdentityRequest
+  | Readonly<Record<string, IdentityScalar | readonly IdentityScalar[] | undefined>>
 
 export interface EsiRepresentationIdentity {
   operation: EsiOperation
@@ -40,7 +50,7 @@ export function characterLifecycleEsiPrincipal(
 
 export function createEsiRepresentationIdentity(options: {
   operation: EsiOperation
-  inputs: Readonly<Record<string, unknown>>
+  inputs: EsiIdentityInputs
   compatibilityDate: string
   representationVersion: string
   representationName?: string
@@ -77,8 +87,11 @@ export function createEsiRepresentationIdentity(options: {
 function normalizeInputs(
   operation: EsiOperation,
   identity: EsiOperationContract['identity'],
-  inputs: Readonly<Record<string, unknown>>,
+  inputs: EsiIdentityInputs,
 ) {
+  if (!isRecord(inputs)) {
+    throw new TypeError('ESI identity inputs must be an object')
+  }
   let allowedFields: readonly string[]
   if (identity.kind === 'ordered') {
     allowedFields = identity.fields
@@ -90,6 +103,9 @@ function normalizeInputs(
   const identityInputs = isSdkRequestEnvelope(inputs)
     ? projectSdkRequestIdentity(operation, inputs, allowedFields)
     : inputs
+  if (!isRecord(identityInputs)) {
+    throw new TypeError('ESI identity projection must be an object')
+  }
   const nullableFields =
     identity.kind === 'mixed'
       ? identity.fields
@@ -162,13 +178,13 @@ function normalizeSet(value: unknown, field: string, maximumItems: number) {
     .map(([, item]) => item)
 }
 
-function isSdkRequestEnvelope(inputs: Readonly<Record<string, unknown>>) {
+function isSdkRequestEnvelope(inputs: EsiIdentityInputs): inputs is EsiSdkIdentityRequest {
   return ['path', 'query', 'header', 'headers', 'body'].some((field) => field in inputs)
 }
 
 function projectSdkRequestIdentity(
   operation: EsiOperation,
-  inputs: Readonly<Record<string, unknown>>,
+  inputs: EsiSdkIdentityRequest,
   fields: readonly string[],
 ) {
   const unexpected = Object.keys(inputs).filter(
@@ -199,7 +215,7 @@ function projectSdkRequestIdentity(
   )
 }
 
-function findSdkRequestValues(inputs: Readonly<Record<string, unknown>>, field: string) {
+function findSdkRequestValues(inputs: EsiSdkIdentityRequest, field: string) {
   const expectedFields = new Set([field, toSnakeCase(field)])
   const values: unknown[] = []
   for (const section of ['path', 'query', 'header', 'headers', 'body'] as const) {
@@ -213,7 +229,7 @@ function findSdkRequestValues(inputs: Readonly<Record<string, unknown>>, field: 
 }
 
 function findValues(
-  value: Readonly<Record<string, unknown>>,
+  value: NonNullable<OperationRequestArguments['path']>,
   fields: ReadonlySet<string>,
   values: unknown[],
 ) {
@@ -227,7 +243,7 @@ function findValues(
 }
 
 function assertIdentityInputFields(
-  inputs: Readonly<Record<string, unknown>>,
+  inputs: EsiIdentityInputs | ProjectedEsiRequestIdentity,
   allowedFields: readonly string[],
   optionalFields: readonly string[] = [],
 ) {

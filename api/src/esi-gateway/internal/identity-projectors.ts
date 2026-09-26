@@ -1,3 +1,4 @@
+import type { OperationRequestArguments } from '@evespace/esi-client/operations'
 import { isRecord } from '../../type-guards.js'
 import type { EsiOperation } from './catalog.js'
 import { getGeneratedEsiMaximumBatchSize } from './operation-metadata.js'
@@ -9,9 +10,17 @@ type ArrayBodyEsiOperation =
   | 'universe-resolve-ids'
   | 'universe-resolve-names'
 
+export interface ProjectedEsiRequestIdentity {
+  readonly characterId?: unknown
+  readonly characterIds?: readonly unknown[]
+  readonly itemIds?: readonly unknown[]
+  readonly ids?: readonly unknown[]
+  readonly names?: readonly unknown[]
+}
+
 type EsiRequestIdentityProjector = (
-  inputs: Readonly<Record<string, unknown>>,
-) => Readonly<Record<string, unknown>>
+  inputs: OperationRequestArguments,
+) => ProjectedEsiRequestIdentity
 
 const arrayBodyIdentityProjectors = {
   'bulk-affiliation': (inputs) => ({
@@ -39,7 +48,7 @@ const arrayBodyIdentityProjectors = {
 
 export function projectRegisteredEsiRequestIdentity(
   operation: EsiOperation,
-  inputs: Readonly<Record<string, unknown>>,
+  inputs: OperationRequestArguments,
 ) {
   const projector = (
     arrayBodyIdentityProjectors as Partial<Record<EsiOperation, EsiRequestIdentityProjector>>
@@ -47,14 +56,15 @@ export function projectRegisteredEsiRequestIdentity(
   return projector?.(inputs)
 }
 
-function requireArrayBody(inputs: Readonly<Record<string, unknown>>, operation: string) {
-  if (!Array.isArray(inputs.body)) {
+function requireArrayBody(inputs: OperationRequestArguments, operation: string) {
+  const body = inputs.body
+  if (!Array.isArray(body)) {
     throw new TypeError(`ESI identity request body for ${operation} must be an array`)
   }
-  return inputs.body
+  return body
 }
 
-function readPathField(inputs: Readonly<Record<string, unknown>>, field: string) {
+function readPathField(inputs: OperationRequestArguments, field: string) {
   return isRecord(inputs.path) ? inputs.path[field] : undefined
 }
 

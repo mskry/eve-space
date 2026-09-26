@@ -191,9 +191,9 @@ export async function setInstalledModuleEnabled(
     throw new Error(`Installed module setting ${moduleId} is missing`)
   }
   invalidateModuleRuntimeState()
-  const sectionDefinitions = (
-    installedModuleSectionDefinitions as readonly PlatformInstalledModuleSectionDefinition[]
-  ).filter(({ moduleId: candidate }) => candidate === moduleId)
+  const sectionDefinitions = installedModuleSectionDefinitions.filter(
+    ({ moduleId: candidate }) => candidate === moduleId,
+  )
   const sectionRows = sectionDefinitions.length
     ? await loadDeploymentModuleSectionRows(database)
     : []

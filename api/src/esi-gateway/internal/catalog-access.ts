@@ -19,20 +19,22 @@ export function getDeclaredEsiRateLimit(contract: EsiOperationContract) {
   return contract.rateGroup.kind === 'declared' ? contract.rateGroup : undefined
 }
 
-export function assertEsiOperationCatalogConfiguration(
+export function assertEsiOperationCatalogConfiguration<Catalog extends object>(
   options: {
     compatibilityDate: string
     ssoEnabled: boolean
     requestableScopes: readonly string[]
   },
-  catalog: Readonly<Record<string, unknown>> = esiOperationCatalog,
-  expectedSdkOperationIds: Readonly<Record<string, string>> = catalog === esiOperationCatalog
-    ? installedModuleEsiSdkOperationIds
-    : {},
+  catalog?: Catalog,
+  expectedSdkOperationIds?: Readonly<Record<string, string>>,
 ) {
-  assertEsiOperationContracts(catalog, expectedSdkOperationIds)
-  if (catalog === esiOperationCatalog) {
-    assertEsiOperationSdkClassifications(catalog)
+  const registeredCatalog = catalog ?? esiOperationCatalog
+  const expectedIds =
+    expectedSdkOperationIds ??
+    (registeredCatalog === esiOperationCatalog ? installedModuleEsiSdkOperationIds : {})
+  assertEsiOperationContracts(registeredCatalog, expectedIds)
+  if (registeredCatalog === esiOperationCatalog) {
+    assertEsiOperationSdkClassifications(registeredCatalog)
     assertExecutableEsiOperationDefinitions(
       installedModuleEsiOperationCatalog,
       installedModuleEsiOperationDefinitions,
@@ -42,7 +44,7 @@ export function assertEsiOperationCatalogConfiguration(
     throw new Error('ESI compatibility configuration date must use YYYY-MM-DD')
   }
 
-  const incompatible = Object.entries(catalog).flatMap(([operation, contract]) =>
+  const incompatible = Object.entries(registeredCatalog).flatMap(([operation, contract]) =>
     contract.compatibility.minimumDate > options.compatibilityDate
       ? [`${operation} requires ${contract.compatibility.minimumDate}`]
       : [],
@@ -58,7 +60,7 @@ export function assertEsiOperationCatalogConfiguration(
   }
   const requestableScopes = new Set(options.requestableScopes)
   const missingScopes = new Set<string>()
-  for (const contract of Object.values(catalog)) {
+  for (const contract of Object.values(registeredCatalog)) {
     if (
       contract.authorization.kind === 'character' &&
       !requestableScopes.has(contract.authorization.scope)

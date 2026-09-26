@@ -8,7 +8,7 @@ import {
   closeCacheRedisConnection,
   waitForCacheRedisConnection,
 } from '../../cache-redis.js'
-import { esiOperationCatalog, type EsiOperation } from './catalog.js'
+import { esiOperationCatalog, esiOperations, type EsiOperation } from './catalog.js'
 import { getDeclaredEsiRateLimit } from './catalog-access.js'
 import type { EsiOperationContract } from './contract-types.js'
 import { getSharedEsiCooldownStatus, type EsiCooldownStatus } from './cooldowns.js'
@@ -290,7 +290,7 @@ async function probeCoordination() {
 }
 
 async function readUpstreamOperations(connection: Redis) {
-  const operations = Object.keys(esiOperationCatalog) as EsiOperation[]
+  const operations = esiOperations
   const values = await Promise.all(
     operations.map(
       async (operation) =>
@@ -316,7 +316,7 @@ async function readUpstreamOperations(connection: Redis) {
 }
 
 function emptyUpstreamOperations() {
-  return (Object.keys(esiOperationCatalog) as EsiOperation[]).map((operation) => ({
+  return esiOperations.map((operation) => ({
     cacheSources: getEsiCacheSourceCounts(operation),
     checkedAt: null,
     observedRateGroup: null,

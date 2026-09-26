@@ -1,5 +1,5 @@
 import { isInvalidationGeneration, type PrivateQueryInvalidationScope } from './envelope'
-import { hasExactKeys, isExactRecord } from './shape'
+import { hasExactKeys, isExactRecord, isRecord } from './shape'
 
 const INVALIDATION_CHANNEL_NAME = 'eve-space-esi-query-cache-invalidation'
 const INVALIDATION_STORAGE_KEY = 'eve-space-esi-query-cache-invalidation-event'
@@ -121,6 +121,8 @@ export function createSilentQueryPersistenceNotifications(): QueryPersistenceNot
 function parseInvalidationNotification(value: unknown): QueryPersistenceNotification | null {
   if (
     !isExactRecord(value, ['generation', 'scope']) ||
+    !('generation' in value) ||
+    !('scope' in value) ||
     (value.generation !== null && !isInvalidationGeneration(value.generation))
   ) {
     return null
@@ -129,38 +131,53 @@ function parseInvalidationNotification(value: unknown): QueryPersistenceNotifica
   return scope ? { generation: value.generation, scope } : null
 }
 
-function parseInvalidationScope(value: unknown): PrivateQueryInvalidationScope | null {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+const parseCharacterScope = (value: {
+  readonly kind: unknown
+}): Extract<PrivateQueryInvalidationScope, { kind: 'character' }> | null => {
+  if (hasExactKeys(value, ['kind'])) {
+    return { kind: 'character' }
+  }
+  if (
+    !hasExactKeys(value, ['kind', 'characterId']) ||
+    !('characterId' in value) ||
+    typeof value.characterId !== 'number' ||
+    !Number.isSafeInteger(value.characterId) ||
+    value.characterId <= 0
+  ) {
     return null
   }
-  const record = value as Record<string, unknown>
-  if (record.kind === 'all' && hasExactKeys(record, ['kind'])) {
-    return { kind: 'all' }
+  return { characterId: value.characterId, kind: 'character' }
+}
+
+const parseOrganizationScope = (value: {
+  readonly kind: unknown
+}): Extract<PrivateQueryInvalidationScope, { kind: 'organization' }> | null => {
+  if (hasExactKeys(value, ['kind'])) {
+    return { kind: 'organization' }
   }
-  if (record.kind === 'character') {
-    if (hasExactKeys(record, ['kind'])) {
-      return { kind: 'character' }
-    }
-    if (
-      hasExactKeys(record, ['kind', 'characterId']) &&
-      typeof record.characterId === 'number' &&
-      Number.isSafeInteger(record.characterId) &&
-      record.characterId > 0
-    ) {
-      return { characterId: record.characterId, kind: 'character' }
-    }
+  if (
+    !hasExactKeys(value, ['kind', 'admissionScope']) ||
+    !('admissionScope' in value) ||
+    typeof value.admissionScope !== 'string' ||
+    value.admissionScope.length === 0
+  ) {
+    return null
   }
-  if (record.kind === 'organization') {
-    if (hasExactKeys(record, ['kind'])) {
-      return { kind: 'organization' }
-    }
-    if (
-      hasExactKeys(record, ['kind', 'admissionScope']) &&
-      typeof record.admissionScope === 'string' &&
-      record.admissionScope.length > 0
-    ) {
-      return { admissionScope: record.admissionScope, kind: 'organization' }
-    }
+  return { admissionScope: value.admissionScope, kind: 'organization' }
+}
+
+function parseInvalidationScope(value: unknown): PrivateQueryInvalidationScope | null {
+  if (!isRecord(value) || !('kind' in value)) {
+    return null
+  }
+  if (value.kind === 'all') {
+    return hasExactKeys(value, ['kind']) ? { kind: 'all' } : null
+  }
+  if (value.kind === 'character') {
+    return parseCharacterScope(value)
+  }
+  if (value.kind === 'organization') {
+    return parseOrganizationScope(value)
   }
   return null
 }

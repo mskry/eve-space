@@ -44,6 +44,8 @@ import {
 import { recordModuleSensitiveAccessDecision } from './module-sensitive-access-audit.js'
 import { requireInstalledReviewerContribution } from './reviewer-contributions.js'
 
+const sensitiveAccessSections: ReadonlySet<string> = new Set(organizationSensitiveAccessSections)
+
 function composeAuthenticatedSessionModuleRoute<
   RouteSchema extends Schema,
   RouteBasePath extends string,
@@ -363,7 +365,7 @@ async function recordReviewerEvidenceAccess(
 function isSensitiveAccessSection(
   sectionId: string | undefined,
 ): sectionId is (typeof organizationSensitiveAccessSections)[number] {
-  return organizationSensitiveAccessSections.includes(sectionId as never)
+  return sectionId !== undefined && sensitiveAccessSections.has(sectionId)
 }
 
 function sensitiveAccessDenialReason(

@@ -25,6 +25,8 @@ export const argumentNames: ReadonlySet<string> = new Set(['path', 'query', 'hea
 export const headerNamePattern: RegExp = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/u;
 export const placeholderPattern: RegExp = /\{([^{}]+)\}/gu;
 
+type DataPropertiesTarget = Parameters<typeof Reflect.ownKeys>[0];
+
 export function requestError(
   operationId: string,
   path: readonly (string | number)[],
@@ -60,15 +62,15 @@ export function isParameterPlacement(value: unknown): value is OperationParamete
   return value === 'path' || value === 'query' || value === 'header';
 }
 
-export function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+export function isRecord(value: unknown): value is object {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-export function isPlainRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+export function isPlainRecord(value: unknown): value is object {
   if (!isRecord(value)) {
     return false;
   }
-  const prototype = Object.getPrototypeOf(value) as unknown;
+  const prototype: unknown = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }
 
@@ -111,7 +113,7 @@ export function hasUnpairedSurrogate(value: string): boolean {
 
 export function assertDataProperties(
   operationId: string,
-  value: Readonly<Record<string, unknown>>,
+  value: DataPropertiesTarget,
   path: readonly (string | number)[],
 ): void {
   for (const key of Reflect.ownKeys(value)) {

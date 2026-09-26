@@ -1,9 +1,9 @@
 import { assertDataProperties, isPlainRecord, requestError } from './guards.js';
-import type { ValidatedDescriptor } from './types.js';
+import type { UnvalidatedOperationArguments, ValidatedDescriptor } from './types.js';
 
 export function serializeBody(
   descriptor: ValidatedDescriptor,
-  arguments_: Readonly<Record<string, unknown>>,
+  arguments_: UnvalidatedOperationArguments,
   headers: Record<string, string>,
 ): string | undefined {
   const bodyDescriptor = descriptor.requestBody;
@@ -71,8 +71,8 @@ function validateJsonValue(
       );
     }
     assertDataProperties(operationId, value, path);
-    for (const key of Object.keys(value)) {
-      validateJsonValue(operationId, value[key], [...path, key], ancestors);
+    for (const [key, item] of Object.entries(value)) {
+      validateJsonValue(operationId, item, [...path, key], ancestors);
     }
   }
   ancestors.delete(value);

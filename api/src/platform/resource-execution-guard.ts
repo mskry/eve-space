@@ -9,8 +9,8 @@ import {
   getCharacterCacheAuthorizationForLifecycle,
 } from '../auth/tokens.js'
 import {
+  assertRegisteredEsiOperation,
   getEsiOperationAuthorization,
-  type EsiOperation,
 } from '../esi-gateway/catalog-interface.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import {
@@ -89,7 +89,8 @@ export async function guardInstalledResourceExecution(
     return { outcome: 'noop', reason: 'obsolete' }
   }
 
-  const operation = getEsiOperationAuthorization(resource.operationId as EsiOperation)
+  assertRegisteredEsiOperation(resource.operationId)
+  const operation = getEsiOperationAuthorization(resource.operationId)
   if (operation.kind === 'public') {
     return createReadyResourceExecution(
       resource,

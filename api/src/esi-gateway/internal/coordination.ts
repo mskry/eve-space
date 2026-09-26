@@ -38,7 +38,7 @@ export async function acquireEsiRequestLease(
   const keyIdentity = identityKey(identity)
   const key = `${keyPrefix}:lease:${keyIdentity}`
   const ownerToken = randomUUID()
-  const result = (await connection.eval(
+  const result = await connection.eval(
     "if redis.call('exists', KEYS[1]) == 1 then return nil end local fence = redis.call('incr', KEYS[2]); redis.call('pexpire', KEYS[2], ARGV[3]); redis.call('psetex', KEYS[1], ARGV[1], ARGV[2] .. ':' .. fence); return fence",
     2,
     key,
@@ -46,8 +46,14 @@ export async function acquireEsiRequestLease(
     leaseTtlMs,
     ownerToken,
     fenceStateTtlMs,
-  )) as number | null
-  return result === null ? undefined : { fence: Number(result), key, ownerToken, ttlMs: leaseTtlMs }
+  )
+  if (result === null) {
+    return undefined
+  }
+  if (!isPositiveSafeInteger(result)) {
+    throw new Error('Invalid ESI request lease fence')
+  }
+  return { fence: result, key, ownerToken, ttlMs: leaseTtlMs }
 }
 
 export async function getEsiRequestLeaseTtl(

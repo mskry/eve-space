@@ -35,6 +35,24 @@ type AnyExecutableCoreDataProduct = {
   [ProductId in CoreDataProductId]: ExecutableCoreDataProduct<ProductId>
 }[CoreDataProductId]
 
+interface UnvalidatedCoreDataProduct {
+  readonly id?: unknown
+  readonly method?: unknown
+  readonly adapter?: unknown
+  readonly sourceAuthority?: unknown
+  readonly audience?: unknown
+  readonly sensitivity?: unknown
+  readonly dtoVersion?: unknown
+  readonly requestBound?: unknown
+  readonly revisionStrategy?: unknown
+  readonly availabilityBehavior?: unknown
+  readonly permittedContexts?: unknown
+  readonly networkAllowed?: unknown
+}
+
+const productIds: ReadonlySet<string> = new Set(CORE_DATA_PRODUCT_IDS)
+const contributionContexts: ReadonlySet<string> = new Set(CORE_DATA_CONTRIBUTION_CONTEXTS)
+
 export const coreDataProductCatalog = [
   {
     adapter: loadPublishedTypeGroupsProduct,
@@ -99,7 +117,7 @@ export function assertCoreDataProductCatalogConfiguration(
 ): void {
   const seen = new Set<string>()
   for (const candidate of catalog) {
-    if (!isRecord(candidate)) {
+    if (!isCatalogEntry(candidate)) {
       throw new Error('Core-data catalog entries must be objects')
     }
     const id = candidate.id
@@ -123,14 +141,17 @@ export function assertCoreDataProductCatalogConfiguration(
 export function getCoreDataProductDefinition<ProductId extends CoreDataProductId>(
   productId: ProductId,
 ): Extract<(typeof coreDataProductCatalog)[number], { id: ProductId }> {
-  const definition = coreDataProductCatalog.find(({ id }) => id === productId)
+  const definition = coreDataProductCatalog.find(
+    (candidate): candidate is Extract<(typeof coreDataProductCatalog)[number], { id: ProductId }> =>
+      candidate.id === productId,
+  )
   if (!definition) {
     throw new Error(`Unknown core-data product identity: ${productId}`)
   }
-  return definition as Extract<(typeof coreDataProductCatalog)[number], { id: ProductId }>
+  return definition
 }
 
-function validateDefinition(candidate: Record<string, unknown>, id: CoreDataProductId) {
+function validateDefinition(candidate: UnvalidatedCoreDataProduct, id: CoreDataProductId) {
   const contract = CORE_DATA_PRODUCT_CONTRACTS[id]
   if (typeof candidate.adapter !== 'function') {
     throw new TypeError(`Missing core-data product adapter: ${id}`)
@@ -179,17 +200,14 @@ function sameContexts(
   )
 }
 
-function isCoreDataProductId(value: string): value is CoreDataProductId {
-  return (CORE_DATA_PRODUCT_IDS as readonly string[]).includes(value)
+export function isCoreDataProductId(value: string): value is CoreDataProductId {
+  return productIds.has(value)
 }
 
 function isCoreDataContext(value: unknown): value is CoreDataContributionContext {
-  return (
-    typeof value === 'string' &&
-    (CORE_DATA_CONTRIBUTION_CONTEXTS as readonly string[]).includes(value)
-  )
+  return typeof value === 'string' && contributionContexts.has(value)
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isCatalogEntry(value: unknown): value is UnvalidatedCoreDataProduct {
   return typeof value === 'object' && value !== null
 }

@@ -126,7 +126,7 @@ export function parseEnvelope<Data>(
 ): EsiCacheEnvelopeParseResult<Data> {
   let raw: unknown
   try {
-    raw = JSON.parse(serialized) as unknown
+    raw = JSON.parse(serialized)
   } catch {
     return { reason: 'malformedJson', success: false }
   }
@@ -136,13 +136,15 @@ export function parseEnvelope<Data>(
   if (raw.version !== ESI_CACHE_ENVELOPE_VERSION) {
     return { found: raw.version, reason: 'versionMismatch', success: false }
   }
-  if (!isValidEnvelope(raw)) {
+  const metadata = envelopeMetadataSchema.safeParse(raw)
+  if (!('data' in raw) || !metadata.success) {
     return { reason: 'invalidShape', success: false }
   }
-  if (raw.freshUntil > raw.staleUntil || raw.staleUntil > raw.retainUntil) {
+  const envelope: EsiCacheEnvelope<unknown> = { ...raw, ...metadata.data, data: raw.data }
+  if (envelope.freshUntil > envelope.staleUntil || envelope.staleUntil > envelope.retainUntil) {
     return { reason: 'incoherentFreshnessWindow', success: false }
   }
-  return validateEnvelopeData(raw, dataSchema)
+  return validateEnvelopeData(envelope, dataSchema)
 }
 
 export function validateEnvelopeData<Data>(
@@ -273,10 +275,4 @@ function resolveFreshUntil(
     boundary += 86_400_000
   }
   return boundary
-}
-
-function isValidEnvelope(
-  value: Readonly<Record<string, unknown>>,
-): value is Readonly<Record<string, unknown>> & EsiCacheEnvelope<unknown> {
-  return 'data' in value && envelopeMetadataSchema.safeParse(value).success
 }

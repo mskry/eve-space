@@ -61,9 +61,8 @@ export function createPlatformReviewerEvidenceReads(
 }
 
 function resolveOperation(binding: ReviewerEvidenceBinding) {
-  const catalog = installedModulePersistenceOperationCatalog as Readonly<
-    Record<string, PlatformInstalledPersistenceOperationDescriptor>
-  >
+  const catalog: Readonly<Record<string, PlatformInstalledPersistenceOperationDescriptor>> =
+    installedModulePersistenceOperationCatalog
   const operation = catalog[`${binding.moduleId}/${binding.operationId}`]
   if (operation?.mode !== 'read' || !operation.grants.routes.includes(binding.routeId)) {
     throw new Error('Reviewer evidence operation is unavailable')

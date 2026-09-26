@@ -1,7 +1,7 @@
 import type { EsiResponseMetadata } from '@evespace/esi-client'
 import type { Redis } from 'ioredis'
 import { getDeclaredEsiRateLimit } from './catalog-access.js'
-import { esiOperationCatalog, type EsiOperation } from './catalog.js'
+import { esiOperationCatalog, esiOperations, type EsiOperation } from './catalog.js'
 import { getLocalEsiCooldownUntil, recordLocalEsiCooldowns } from './local-quota.js'
 import { parseFiniteNumber } from './numeric.js'
 import { esiCooldownFallbackSeconds, esiErrorBudgetFloor } from './policy.js'
@@ -147,7 +147,7 @@ export async function getSharedEsiCooldownStatus(connection: Redis): Promise<Esi
   const checkedAt = new Date().toISOString()
   try {
     const now = Date.now()
-    const operations = Object.keys(esiOperationCatalog) as EsiOperation[]
+    const operations = esiOperations
     const globalCooldown = await connection.get(`${esiQuotaCoordinationPrefix}:cooldown:global`)
     const operationCooldowns = await Promise.all(
       operations.map((operation) => connection.get(cooldownKey(operation, 'public'))),

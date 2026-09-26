@@ -52,6 +52,19 @@ const target = {
 describe('platform organization command capabilities', () => {
   beforeEach(() => vi.clearAllMocks())
 
+  test('rejects an unrecognized command without exposing member-unblock authority', () => {
+    const commandIds: unknown = JSON.parse('["unrecognized-command"]')
+    if (!Array.isArray(commandIds)) {
+      throw new Error('Expected a list of commands')
+    }
+    expect(() =>
+      createPlatformOrganizationCommandCapabilities(
+        commandIds,
+        binding('member-audit.groups.manage'),
+      ),
+    ).toThrow('Unsupported organization command unrecognized-command')
+  })
+
   test('exposes only declared named methods and binds protected identities internally', async () => {
     mocks.assignGroup.mockResolvedValue({
       assignmentId: 'assignment-1',

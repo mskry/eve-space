@@ -30,6 +30,7 @@ import {
   invalidationScopeForPersistence,
   invalidationScopeMatchesPersistence,
   isRetainedSuccessTimestamp,
+  parsePersistedEntryKey,
   parsePersistedEnvelope,
   partitionMatchesAdmission,
   PERSISTED_ESI_QUERY_CACHE_KEY,
@@ -579,7 +580,7 @@ function applyStagedPublicFallbacks(
       continue
     }
 
-    const key = JSON.parse(keyHash) as EntryKey
+    const key = parsePersistedEntryKey(keyHash)
     const current = state.queryCache.get(key)
     if (current?.state.value.data !== undefined) {
       if (current.state.value.status === 'success') {
@@ -808,7 +809,7 @@ function collectAdmittedPrivateCache(
     if (!partitionMatchesAdmission(partition, persistence, admission, now)) {
       return
     }
-    const key = JSON.parse(keyHash) as EntryKey
+    const key = parsePersistedEntryKey(keyHash)
     const current = state.queryCache.get(key)
     if (current?.state.value.data !== undefined) {
       return
@@ -824,7 +825,7 @@ function commitAdmittedPrivateCache(
   now: number,
 ) {
   for (const [keyHash, tuple] of Object.entries(admittedCache)) {
-    const key = JSON.parse(keyHash) as EntryKey
+    const key = parsePersistedEntryKey(keyHash)
     if (!isRetainedSuccessTimestamp(tuple[2], now)) {
       delete admittedCache[keyHash]
       removeTupleFromEnvelope(state.envelope, keyHash)
@@ -837,7 +838,7 @@ function commitAdmittedPrivateCache(
   }
   hydrateAbsoluteCache(state.queryCache, admittedCache, now)
   for (const [keyHash, tuple] of Object.entries(admittedCache)) {
-    const key = JSON.parse(keyHash) as EntryKey
+    const key = parsePersistedEntryKey(keyHash)
     const committed = state.queryCache.get(key)
     if (committed?.state.value.status === 'success' && committed.state.value.data !== undefined) {
       state.entryState.restored(keyHash, tuple[0], tuple[2])
@@ -1488,7 +1489,7 @@ function clearCorruptCacheState(
 function hydrateAbsoluteCache(queryCache: QueryCache, cache: PersistedQueryCache, now: number) {
   const hydrationCache: Parameters<typeof hydrateQueryCache>[1] = {}
   for (const [keyHash, [data, error, when, meta]] of Object.entries(cache)) {
-    const key = JSON.parse(keyHash) as EntryKey
+    const key = parsePersistedEntryKey(keyHash)
     const current = queryCache.get(key)
     if (current) {
       queryCache.setEntryState(current, { data, error, status: 'success' })

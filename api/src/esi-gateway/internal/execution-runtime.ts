@@ -30,6 +30,7 @@ import {
   characterEsiPrincipal,
   characterLifecycleEsiPrincipal,
   createEsiRepresentationIdentity,
+  type EsiIdentityInputs,
   type EsiRepresentationIdentity,
 } from './identity.js'
 import { cacheEnvelopeKey } from './keys.js'
@@ -104,7 +105,7 @@ interface EsiCanonicalLoad<Data> {
 interface EsiExecutionResource<Data> {
   operation: EsiOperation
   characterId?: number
-  inputs: Readonly<Record<string, unknown>>
+  inputs: EsiIdentityInputs
   signal?: AbortSignal
   load(
     authority: { accessToken: string; principal: string } | undefined,
@@ -118,7 +119,7 @@ interface EsiCachedExecutionResource<Data> extends EsiExecutionResource<Data> {
 
 interface DirectInternalEsiResource<Data> {
   operation: EsiOperation
-  inputs: Readonly<Record<string, unknown>>
+  inputs: EsiIdentityInputs
   cacheSchema: OperationSchema<Data>
   representationName?: string
   authorization?: EsiCacheAuthorization
@@ -131,7 +132,7 @@ interface DirectInternalEsiResource<Data> {
 /** Defers token decryption and refresh until after the cache lookup, so a hit never decrypts. */
 interface LazyInternalEsiResource<Data> {
   operation: EsiOperation
-  inputs: Readonly<Record<string, unknown>>
+  inputs: EsiIdentityInputs
   cacheSchema: OperationSchema<Data>
   representationName?: string
   authorization: EsiCacheAuthorization
@@ -414,7 +415,7 @@ class EsiExecutionRuntimeImplementation {
       readonly signal?: AbortSignal
     },
     definition: PlatformExecutableEsiOperationDefinition,
-    inputs: Readonly<Record<string, unknown>>,
+    inputs: OperationRequestArguments,
   ): Promise<CharacterEsiExecutionResult<unknown>> {
     this.#assertOpen()
     request.signal?.throwIfAborted()
@@ -601,7 +602,7 @@ class EsiExecutionRuntimeImplementation {
   async #dispatchPlatformOperation(
     operation: EsiOperation,
     definition: PlatformExecutableEsiOperationDefinition,
-    inputs: Readonly<Record<string, unknown>>,
+    inputs: OperationRequestArguments,
     revalidation: EsiRevalidation,
     authorization?: { readonly accessToken: string; readonly principal: string },
     signal?: AbortSignal,
@@ -1357,7 +1358,7 @@ class EsiExecutionRuntimeImplementation {
   }
 
   #readL1<Data>(context: EsiRequestContext<Data>) {
-    const envelope = this.state.l1.get<unknown>(context.key)
+    const envelope = this.state.l1.get(context.key)
     if (!envelope) {
       return
     }

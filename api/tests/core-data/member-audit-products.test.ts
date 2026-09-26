@@ -3,6 +3,7 @@ import { loadPublishedSkillCatalogueProduct } from '../../src/core-data/publishe
 import { loadPublishedTypeDetailsProduct } from '../../src/core-data/published-type-details-adapter.js'
 import { loadPublishedTypeGroupsProduct } from '../../src/core-data/published-type-groups-adapter.js'
 import {
+  boundedPositiveIds,
   nonemptyString,
   nullableNonnegativeFinite,
   positiveSafeInteger,
@@ -17,6 +18,20 @@ describe.each([
   ['published type details', loadPublishedTypeDetailsProduct, 'typeIds'],
   ['static location labels', loadStaticLocationLabelsProduct, 'locationIds'],
 ] as const)('%s product validation', (_label, load, property) => {
+  test('rejects inherited and accessor ID arrays without evaluating the accessor', () => {
+    const getter = vi.fn(() => [1])
+    const inherited = Object.create({ [property]: [1] })
+    const accessor = Object.defineProperty({}, property, { get: getter })
+
+    expect(() => boundedPositiveIds(inherited, property, 'Product', 500)).toThrow(
+      `must contain a ${property} array`,
+    )
+    expect(() => boundedPositiveIds(accessor, property, 'Product', 500)).toThrow(
+      `must contain a ${property} array`,
+    )
+    expect(getter).not.toHaveBeenCalled()
+  })
+
   test.each([
     [undefined, `must contain a ${property} array`],
     [{ [property]: sparseIds }, 'positive safe integers'],
