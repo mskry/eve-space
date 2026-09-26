@@ -343,7 +343,7 @@ export interface PlatformReviewerTargetCompliance {
 export interface PlatformReviewerTargetGroup extends PlatformReviewerGroupIdentity {
   readonly assignmentId: string
   readonly restricted: boolean
-  readonly managementMode: 'manual' | 'compliance'
+  readonly managementMode: 'manual' | 'compliance' | 'rule'
   readonly readOnly: boolean
   readonly assignedAt: string
   readonly expiresAt: string | null

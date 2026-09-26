@@ -14,10 +14,13 @@ import { queryServer } from '../support/query-server'
 
 const mountedWrappers: { unmount: () => void }[] = []
 const bundleRequests: unknown[] = []
+const ruleRequests: unknown[] = []
 let previewPermissionKey = 'alpha.read'
 let bundleResponse = permissionBundles()
+let rulesResponse = organizationRules()
 let saveFails = false
 let permissionReadCount = 0
+let ruleReadCount = 0
 
 beforeAll(() => queryServer.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => queryServer.close())
@@ -25,10 +28,13 @@ afterAll(() => queryServer.close())
 beforeEach(() => {
   clearQueryCache()
   bundleRequests.length = 0
+  ruleRequests.length = 0
   previewPermissionKey = 'alpha.read'
   bundleResponse = permissionBundles()
+  rulesResponse = organizationRules()
   saveFails = false
   permissionReadCount = 0
+  ruleReadCount = 0
   installHandlers()
 })
 
@@ -75,6 +81,67 @@ describe('SettingsOrganizationAccess', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }))
     await flushPromises()
     expect(document.activeElement).toBe(trigger.element)
+  })
+
+  it('previews eligibility, saves an automatic group, and disables its grants', async () => {
+    const wrapper = await mountAccess()
+    await vi.waitFor(() => expect(ruleReadCount).toBe(2))
+    await button(wrapper, 'NEW RULE').trigger('click')
+    const form = wrapper.get('.organization-rules__draft')
+    await form.get('input[maxlength="100"]').setValue('Qualified accountants')
+    await form.get('textarea').setValue('Reviewed access for accountants')
+    await form.get('input[autocomplete="off"]').setValue('98a782d2-e042-47d7-9659-03b218121a1a')
+    await form.get('select').setValue('corporation-role')
+    await form.findAll('select')[1]!.setValue('accountant')
+    await form
+      .get('input[type="checkbox"][value="345697a4-df0b-44e7-bf19-f10912c53a27"]')
+      .setValue(true)
+    await button(wrapper, 'PREVIEW ELIGIBILITY').trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Prospective access: eligible'))
+    expect(wrapper.text()).toContain('accountant.read')
+    await form.trigger('submit')
+    await vi.waitFor(() => expect(ruleRequests).toHaveLength(1))
+    expect(ruleRequests[0]).toMatchObject({
+      condition: { kind: 'corporation-role', predicate: 'accountant' },
+      bundleIds: ['345697a4-df0b-44e7-bf19-f10912c53a27'],
+    })
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Qualified accountants'))
+    await button(wrapper, 'DISABLE').trigger('click')
+    await wrapper
+      .get('.organization-rules__draft:last-of-type textarea')
+      .setValue('Role policy ended')
+    await button(wrapper, 'CONFIRM DISABLE').trigger('click')
+    await vi.waitFor(() => expect(ruleRequests).toHaveLength(2))
+    expect(ruleRequests[1]).toMatchObject({ reason: 'Role policy ended' })
+    expect(wrapper.text()).toContain('Previous assignments no longer grant access.')
+  })
+
+  it('keeps a rule draft and focused control after a refused preview', async () => {
+    queryServer.use(
+      http.post('http://localhost:8788/api/organization/group-rules/preview', () =>
+        HttpResponse.json(
+          { code: 'INVALID_RULE_CONDITION', message: 'Evidence unavailable.' },
+          { status: 409 },
+        ),
+      ),
+    )
+    const wrapper = await mountAccess()
+    await button(wrapper, 'NEW RULE').trigger('click')
+    const form = wrapper.get('.organization-rules__draft')
+    await form.get('input[maxlength="100"]').setValue('Registration rule')
+    await form.get('input[autocomplete="off"]').setValue('98a782d2-e042-47d7-9659-03b218121a1a')
+    await form
+      .get('input[type="checkbox"][value="345697a4-df0b-44e7-bf19-f10912c53a27"]')
+      .setValue(true)
+    const previewButton = button(wrapper, 'PREVIEW ELIGIBILITY')
+    previewButton.element.focus()
+    await previewButton.trigger('click')
+    await vi.waitFor(() =>
+      expect(wrapper.get('[role="alert"]').text()).toContain('Evidence unavailable.'),
+    )
+    expect(document.activeElement).toBe(previewButton.element)
+    expect(form.get('input[maxlength="100"]').element).toHaveProperty('value', 'Registration rule')
+    expect(ruleRequests).toHaveLength(0)
   })
 
   it('copies an exact profile snapshot while preserving unrelated draft entries', async () => {
@@ -287,6 +354,7 @@ describe('SettingsOrganizationAccess', () => {
     await flushPromises()
 
     expect(permissionReadCount).toBe(0)
+    expect(ruleReadCount).toBe(0)
     expect(wrapper.find('.organization-access__catalog').exists()).toBe(false)
   })
 
@@ -303,7 +371,106 @@ describe('SettingsOrganizationAccess', () => {
     expect(accessRules).not.toMatch(/\bwidth:\s*\d+px/)
     expect(responsiveCss).toContain('.organization-access__bundle li')
     expect(responsiveCss).toContain('grid-template-columns: 1fr')
+    const ruleStyles = readWorkspaceFile('app/components/settings/SettingsOrganizationRules.vue')
+    expect(ruleStyles).toContain('min-width: 0')
+    expect(ruleStyles).toContain('overflow-wrap: anywhere')
   })
+})
+
+describe('automatic-rule preview revisions', () => {
+  it.each(['condition', 'role', 'bundle', 'target'] as const)(
+    'discards a pending preview after its %s changes',
+    async (field) => {
+      let releasePreview!: () => void
+      const pending = new Promise<void>((resolve) => {
+        releasePreview = resolve
+      })
+      let requests = 0
+      queryServer.use(
+        http.post('http://localhost:8788/api/organization/group-rules/preview', async () => {
+          requests += 1
+          await pending
+          return HttpResponse.json(rulePreviewPage('obsolete.permission', null))
+        }),
+      )
+      const wrapper = await mountAccess()
+      await button(wrapper, 'NEW RULE').trigger('click')
+      const form = wrapper.get('.organization-rules__draft')
+      await form.get('input[autocomplete="off"]').setValue('98a782d2-e042-47d7-9659-03b218121a1a')
+      await form.get('select').setValue('corporation-role')
+      await form.findAll('select')[1]!.setValue('accountant')
+      const bundle = form.get(
+        'input[type="checkbox"][value="345697a4-df0b-44e7-bf19-f10912c53a27"]',
+      )
+      await bundle.setValue(true)
+      await button(wrapper, 'PREVIEW ELIGIBILITY').trigger('click')
+      await vi.waitFor(() => expect(requests).toBe(1))
+      if (field === 'condition') await form.get('select').setValue('registration-compliant')
+      if (field === 'role') await form.findAll('select')[1]!.setValue('factory-manager')
+      if (field === 'bundle') await bundle.setValue(false)
+      if (field === 'target')
+        await form.get('input[autocomplete="off"]').setValue('e1a5733a-6f31-4b95-9d9c-3740675f40e2')
+      releasePreview()
+      await flushPromises()
+      expect(wrapper.find('[aria-label="Rule preview"]').exists()).toBe(false)
+      expect(wrapper.text()).not.toContain('obsolete.permission')
+    },
+  )
+
+  it('clears accumulated permission pages when the target changes', async () => {
+    const firstTarget = '98a782d2-e042-47d7-9659-03b218121a1a'
+    queryServer.use(
+      http.post(
+        'http://localhost:8788/api/organization/group-rules/preview',
+        async ({ request }) => {
+          const body: unknown = await request.json()
+          if (typeof body !== 'object' || body === null || !('targetUserId' in body)) {
+            throw new Error('Invalid rule preview fixture request')
+          }
+          const permissionOffset = 'permissionOffset' in body ? body.permissionOffset : undefined
+          if (body.targetUserId !== firstTarget) {
+            return HttpResponse.json(rulePreviewPage('new.permission', null))
+          }
+          return HttpResponse.json(
+            rulePreviewPage(
+              permissionOffset === 1 ? 'later.permission' : 'first.permission',
+              permissionOffset === 1 ? null : 1,
+            ),
+          )
+        },
+      ),
+    )
+    const wrapper = await mountAccess()
+    await button(wrapper, 'NEW RULE').trigger('click')
+    const form = wrapper.get('.organization-rules__draft')
+    const target = form.get('input[autocomplete="off"]')
+    await target.setValue(firstTarget)
+    await form
+      .get('input[type="checkbox"][value="345697a4-df0b-44e7-bf19-f10912c53a27"]')
+      .setValue(true)
+    await button(wrapper, 'PREVIEW ELIGIBILITY').trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('first.permission'))
+    await button(wrapper, 'MORE PERMISSIONS').trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('later.permission'))
+    await target.setValue('e1a5733a-6f31-4b95-9d9c-3740675f40e2')
+    expect(wrapper.find('[aria-label="Rule preview"]').exists()).toBe(false)
+    await button(wrapper, 'PREVIEW ELIGIBILITY').trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('new.permission'))
+    expect(wrapper.text()).not.toContain('first.permission')
+    expect(wrapper.text()).not.toContain('later.permission')
+  })
+})
+
+const rulePreviewPage = (key: string, nextPermissionOffset: number | null) => ({
+  outcome: 'eligible',
+  reason: 'current-condition-satisfied',
+  evidenceStatus: 'fresh',
+  sourceCount: 1,
+  sources: [],
+  sourcesTruncated: false,
+  permissionCount: nextPermissionOffset === null ? 1 : 2,
+  permissions: [{ type: 'service', key, moduleId: null, publisherPackage: null }],
+  nextPermissionOffset,
 })
 
 async function mountAccess(
@@ -376,6 +543,93 @@ function installHandlers() {
       permissionReadCount += 1
       return HttpResponse.json(bundleResponse)
     }),
+    http.get('http://localhost:8788/api/organization/group-rules/conditions', () => {
+      ruleReadCount += 1
+      return HttpResponse.json({
+        conditions: ['registration-compliant', 'director-audience', 'corporation-role'],
+        corporationRoles: [
+          { predicate: 'director', location: 'roles' },
+          { predicate: 'accountant', location: 'roles' },
+          { predicate: 'factory-manager', location: 'roles' },
+        ],
+      })
+    }),
+    http.get('http://localhost:8788/api/organization/group-rules', () => {
+      ruleReadCount += 1
+      return HttpResponse.json(rulesResponse)
+    }),
+    http.post('http://localhost:8788/api/organization/group-rules/preview', () =>
+      HttpResponse.json({
+        outcome: 'eligible',
+        reason: 'current-condition-satisfied',
+        evidenceStatus: 'fresh',
+        sourceCount: 1,
+        sources: [
+          {
+            kind: 'corporation-role',
+            sourceId: 'source-1',
+            validUntil: '2027-01-01T00:00:00.000Z',
+          },
+        ],
+        sourcesTruncated: false,
+        permissionCount: 1,
+        permissions: [
+          { type: 'service', key: 'accountant.read', moduleId: null, publisherPackage: null },
+        ],
+        nextPermissionOffset: null,
+      }),
+    ),
+    http.post('http://localhost:8788/api/organization/group-rules', async ({ request }) => {
+      const body = await request.json()
+      if (!body || typeof body !== 'object' || !('name' in body) || typeof body.name !== 'string') {
+        throw new Error('Invalid rule fixture request')
+      }
+      ruleRequests.push(body)
+      const ruleGroupId = '81974469-fdfe-4327-9f87-1df6e23badc4'
+      rulesResponse = organizationRules([
+        {
+          groupId: ruleGroupId,
+          name: body.name,
+          conditionKind: 'corporation-role',
+          predicateKey: 'accountant',
+          bundleIds: ['345697a4-df0b-44e7-bf19-f10912c53a27'],
+          enabled: true,
+          revision: 1,
+          completedAt: null,
+        },
+      ])
+      return HttpResponse.json(
+        {
+          rule: { groupId: ruleGroupId, organizationVersion: 1, revision: 1 },
+        },
+        { status: 201 },
+      )
+    }),
+    http.post(
+      'http://localhost:8788/api/organization/group-rules/:groupId/disable',
+      async ({ request }) => {
+        ruleRequests.push(await request.json())
+        rulesResponse = organizationRules(
+          rulesResponse.rules.map((rule) => ({
+            groupId: rule.groupId,
+            name: rule.name,
+            conditionKind: rule.conditionKind,
+            predicateKey: rule.predicateKey,
+            bundleIds: rule.bundleIds,
+            enabled: false,
+            revision: rule.revision + 1,
+            completedAt: null,
+          })),
+        )
+        return HttpResponse.json({
+          rule: {
+            groupId: '81974469-fdfe-4327-9f87-1df6e23badc4',
+            organizationVersion: 1,
+            revision: 2,
+          },
+        })
+      },
+    ),
     http.post('http://localhost:8788/api/organization/permission-profile-preview', () =>
       HttpResponse.json(profilePreview(previewPermissionKey)),
     ),
@@ -511,6 +765,21 @@ function permissionBundles() {
       },
     ],
   }
+}
+
+function organizationRules(
+  rules: {
+    groupId: string
+    name: string
+    conditionKind: 'corporation-role'
+    predicateKey: string
+    bundleIds: string[]
+    enabled: boolean
+    revision: number
+    completedAt: string | null
+  }[] = [],
+) {
+  return { organizationVersion: 1, rules }
 }
 
 function unavailableBundles() {

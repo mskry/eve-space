@@ -49,6 +49,72 @@ export const apiCoverageThresholdScopes = {
   postgres: {
     root: 'api',
     thresholds: {
+      'src/organization/alliance-executor-convergence.ts': {
+        branches: 80,
+        functions: 100,
+        lines: 85,
+        statements: 85,
+      },
+      'src/organization/alliance-executor-evidence.ts': {
+        branches: 80,
+        functions: 100,
+        lines: 85,
+        statements: 85,
+      },
+      'src/organization/alliance-executor-repair.ts': {
+        branches: 100,
+        functions: 100,
+        lines: 100,
+        statements: 100,
+      },
+      'src/organization/group-assignment-expiry.ts': {
+        branches: 80,
+        functions: 100,
+        lines: 95,
+        statements: 90,
+      },
+      'src/organization/group-permission-reader.ts': {
+        branches: 80,
+        functions: 100,
+        lines: 90,
+        statements: 90,
+      },
+      'src/organization/group-rule-attestation-store.ts': {
+        branches: 90,
+        functions: 65,
+        lines: 80,
+        statements: 75,
+      },
+      'src/organization/group-rule-convergence.ts': {
+        branches: 75,
+        functions: 90,
+        lines: 80,
+        statements: 80,
+      },
+      'src/organization/group-rule-repair.ts': {
+        branches: 75,
+        functions: 100,
+        lines: 90,
+        statements: 90,
+      },
+      'src/organization/group-rule-revisions.ts': {
+        branches: 60,
+        functions: 100,
+        lines: 90,
+        statements: 90,
+      },
+      'src/organization/group-rule-store.ts': {
+        branches: 35,
+        functions: 70,
+        lines: 70,
+        statements: 70,
+      },
+      'src/organization/rule-evidence.ts': {
+        branches: 50,
+        functions: 75,
+        lines: 80,
+        statements: 75,
+      },
       'src/characters/corporation-role-evidence.ts': {
         branches: 75,
         functions: 85,

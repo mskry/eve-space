@@ -66,6 +66,7 @@ export class OrganizationReviewerCommandError extends Error {
       | 'reviewer-target-not-allowed'
       | 'restricted-group-not-allowed'
       | 'compliance-group-not-allowed'
+      | 'rule-group-not-allowed'
       | 'reviewer-permission-group-not-allowed'
       | 'assignment-binding-invalid',
   ) {
@@ -366,11 +367,14 @@ async function loadOrdinaryGroupForUpdate(
   groupId: string,
 ) {
   const group = await loadCurrentGroupForUpdate(transaction, organizationVersion, groupId)
-  if (group.restricted) {
-    throw new OrganizationReviewerCommandError('restricted-group-not-allowed')
-  }
   if (group.managementMode === 'compliance') {
     throw new OrganizationReviewerCommandError('compliance-group-not-allowed')
+  }
+  if (group.managementMode === 'rule') {
+    throw new OrganizationReviewerCommandError('rule-group-not-allowed')
+  }
+  if (group.restricted) {
+    throw new OrganizationReviewerCommandError('restricted-group-not-allowed')
   }
   const [reviewerPermission] = await transaction
     .select({

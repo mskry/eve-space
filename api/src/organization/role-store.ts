@@ -23,6 +23,7 @@ import {
   type EffectiveAuthorityLoadOptions,
 } from './effective-authority.js'
 import { lockCurrentOrganization } from './organization-lock.js'
+import { convergeRuleManagedGroupsForAccountInTransaction } from './group-rule-convergence.js'
 import { isOrganizationOwnerClaimAvailable } from './owner-claim-policy.js'
 
 export type DelegatedOrganizationRole = Exclude<ElevatedOrganizationRole, 'organization_owner'>
@@ -598,6 +599,14 @@ export async function grantOrganizationRole(input: {
       subjectId: grant.grantId,
       subjectType: 'role_grant',
     })
+    if (input.role === 'director') {
+      await convergeRuleManagedGroupsForAccountInTransaction(
+        transaction,
+        organization,
+        input.targetUserId,
+        now,
+      )
+    }
     return toRoleGrant(grant)
   })
 }
@@ -657,6 +666,14 @@ export async function revokeOrganizationRole(input: {
       subjectId: grant.grantId,
       subjectType: 'role_grant',
     })
+    if (grant.role === 'director') {
+      await convergeRuleManagedGroupsForAccountInTransaction(
+        transaction,
+        organization,
+        grant.userId,
+        now,
+      )
+    }
     return toRoleGrant(revoked)
   })
 }

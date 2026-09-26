@@ -9,8 +9,8 @@ const sha256Pattern = /^[0-9a-f]{64}$/
 const initialManifestLength = 1
 const initialTailSequence = 1
 const initialManifestSha256 = '8ea247ed3f0f99633c9778959dd56b38b219adb6bb2f7f2be0876ce01d6d73b1'
-const acceptedManifestLength = 9
-const acceptedManifestSha256 = '298e30c34b87aac4374fd42a371fcc431c8d260367386beeb421307f2ad2169b'
+const acceptedManifestLength = 14
+const acceptedManifestSha256 = '9b2ba5c65d538b3c51ff833679d7d64581038a0a8ea4bd324644cc0670ed4673'
 
 export interface CoreMigrationIdentity {
   readonly name: string
@@ -31,6 +31,11 @@ export const activeCoreMigrationManifest = defineManifest(`
 007_permission_bundle_ownership.sql 4b5bb72428043fafeeb002a94646eb2689d92c8572a975e91356588787b79f3b
 008_multi_character_authority_sources.sql 599f6c9aeb36b38ebcda1a8317a852c1457e777bfab74dbef309c4e25a7b9bc6
 009_corporation_role_observations.sql 4d47190019e8124b704e8387f4ad82b19b004dbde3c98ae3148b536470d9eb7d
+010_rule_managed_organization_groups.sql 392f555216b3603b1150f44f9fdc2b95c3de42e9d13d2d9a989f67d9f1618148
+011_rule_managed_organization_audit.sql 2e9e3a984956a62ce23741f23aea797ed3bede589e7d937f0a85863991c9266f
+012_alliance_executor_observations.sql d8c3472ea1c614de9ca117d156f43942e3c0e46b98f2ee68976683abed4bc6ca
+013_rule_audit_permission_identities.sql c7c687a0a4933a0a03aa8aca0610e5cc19e567b04cc320190683ee565c86aba6
+014_sensitive_access_audit_context.sql f60cde47ed13e3ebd2a7d6fff659cb5215bdffc928503776db35de66ca8c28f8
 `)
 
 export const latestCoreMigrationName = activeCoreMigrationManifest.at(-1)!.name

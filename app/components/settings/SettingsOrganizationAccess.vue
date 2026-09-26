@@ -844,5 +844,11 @@ function resetSensitiveState() {
         </ul>
       </article>
     </section>
+    <SettingsOrganizationRules
+      :access="access"
+      :bundles="bundles?.bundles ?? []"
+      :invalidation-revision="invalidationRevision"
+      :organization-version="organizationVersion"
+    />
   </section>
 </template>

@@ -17,6 +17,7 @@ export default defineConfig({
         'src/esi-gateway/internal/{coordination,types}.ts',
         'src/characters/corporation-role-{evidence,invalidation,observation}.ts',
         'src/organization/{authority-convergence,corporation-role-bootstrap,corporation-role-convergence,corporation-role-demand,corporation-role-diagnostics,corporation-role-refresh,corporation-sources,effective-authority,owner-claim,owner-source-replacement,role-store}.ts',
+        'src/organization/{alliance-executor-convergence,alliance-executor-evidence,alliance-executor-repair,group-assignment-expiry,group-permission-reader,group-rule-attestation-store,group-rule-convergence,group-rule-repair,group-rule-revisions,group-rule-store,rule-evidence}.ts',
         'src/queue/{platform,redis,worker-identity}.ts',
         'src/worker/health.ts',
       ],

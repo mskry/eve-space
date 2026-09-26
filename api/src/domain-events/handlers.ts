@@ -5,6 +5,8 @@ import {
   recomputeCurrentOrganizationAccountCompliance,
 } from '../organization/compliance.js'
 import { repairCorporationRoleDependentAuthority } from '../organization/corporation-role-convergence.js'
+import { runRuleGroupReconciliation } from '../organization/group-rule-repair.js'
+import { repairAllianceExecutorRuleGroups } from '../organization/alliance-executor-repair.js'
 import { repairPlatformCollectionState } from '../platform/collection-state-repair.js'
 
 const domainEventIdempotencyStrategies = ['event-id-persistence', 'convergent-state'] as const
@@ -178,11 +180,41 @@ export function createCorporationRoleAuthorityEventHandlers(
   }))
 }
 
+export const createGroupRuleChangedHandler = (
+  repair: typeof runRuleGroupReconciliation = runRuleGroupReconciliation,
+): DomainEventHandler => ({
+  eventType: 'organization.group-rule-changed',
+  payloadVersion: 1,
+  idempotency: 'convergent-state',
+  async handle(event: DomainEventEnvelope, signal?: AbortSignal) {
+    if (event.eventType !== 'organization.group-rule-changed') {
+      return
+    }
+    await repair({ ...event.payload, signal })
+  },
+})
+
+export const createAllianceExecutorChangedHandler = (
+  repair: typeof repairAllianceExecutorRuleGroups = repairAllianceExecutorRuleGroups,
+): DomainEventHandler => ({
+  eventType: 'organization.alliance-executor-changed',
+  payloadVersion: 1,
+  idempotency: 'convergent-state',
+  async handle(event, signal) {
+    if (event.eventType !== 'organization.alliance-executor-changed') {
+      return
+    }
+    await repair({ ...event.payload, signal })
+  },
+})
+
 const domainEventHandlers = [
   ...createCorporationRoleAuthorityEventHandlers(),
   ...createPlatformCollectionStateEventHandlers(),
   ...createCharacterComplianceEventHandlers(),
   ...createManagedCorporationComplianceEventHandlers(),
+  createGroupRuleChangedHandler(),
+  createAllianceExecutorChangedHandler(),
 ]
 
 export function verifyDomainEventHandlers(

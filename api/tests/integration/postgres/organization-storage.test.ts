@@ -30,6 +30,13 @@ let assignOrganizationGroup: typeof import('../../../src/organization/group-stor
 let hasCurrentOrganizationManagerAuthority: typeof import('../../../src/organization/management-authority.js').hasCurrentOrganizationManagerAuthority
 let convergeRegistrationComplianceGroupAssignment: typeof import('../../../src/organization/group-compliance.js').convergeRegistrationComplianceGroupAssignment
 let createOrganizationGroup: typeof import('../../../src/organization/group-store.js').createOrganizationGroup
+let createOrganizationGroupRule: typeof import('../../../src/organization/group-rule-store.js').createOrganizationGroupRule
+let disableOrganizationGroupRule: typeof import('../../../src/organization/group-rule-store.js').disableOrganizationGroupRule
+let reviseOrganizationGroupRule: typeof import('../../../src/organization/group-rule-store.js').reviseOrganizationGroupRule
+let previewOrganizationGroupRule: typeof import('../../../src/organization/group-rule-store.js').previewOrganizationGroupRule
+let listOrganizationGroupRules: typeof import('../../../src/organization/group-rule-store.js').listOrganizationGroupRules
+let runRuleGroupReconciliation: typeof import('../../../src/organization/group-rule-repair.js').runRuleGroupReconciliation
+let expireOrganizationGroupAssignments: typeof import('../../../src/organization/group-assignment-expiry.js').expireOrganizationGroupAssignments
 let createOrganizationPermissionBundle: typeof import('../../../src/organization/group-store.js').createOrganizationPermissionBundle
 let listCurrentOrganizationPermissionBundles: typeof import('../../../src/organization/group-store.js').listCurrentOrganizationPermissionBundles
 let updateOrganizationPermissionBundle: typeof import('../../../src/organization/group-store.js').updateOrganizationPermissionBundle
@@ -113,6 +120,16 @@ beforeAll(async () => {
     await import('../../../src/organization/group-compliance.js'))
   ;({ getOrganizationGroupPermissions } =
     await import('../../../src/organization/group-permissions.js'))
+  ;({
+    createOrganizationGroupRule,
+    disableOrganizationGroupRule,
+    reviseOrganizationGroupRule,
+    previewOrganizationGroupRule,
+    listOrganizationGroupRules,
+  } = await import('../../../src/organization/group-rule-store.js'))
+  ;({ runRuleGroupReconciliation } = await import('../../../src/organization/group-rule-repair.js'))
+  ;({ expireOrganizationGroupAssignments } =
+    await import('../../../src/organization/group-assignment-expiry.js'))
   ;({ hasCurrentOrganizationManagerAuthority } =
     await import('../../../src/organization/management-authority.js'))
   ;({ blockOrganizationMember, hasCurrentOrganizationMemberBlock, unblockOrganizationMember } =
@@ -4209,6 +4226,271 @@ describe('organization storage invariants', () => {
       code: '23505',
       constraint_name: 'organization_corporation_sources_active_key',
     })
+  })
+})
+
+describe('rule-managed organization groups', () => {
+  const setupCompliantAutomaticRule = async () => {
+    await claimOrganizationOwnership(ownerClaimInput())
+    const targetUserId = randomUUID()
+    await establishCompliantAccount(targetUserId, 90_000_001)
+    const bundle = await createOrganizationPermissionBundle({
+      actorUserId: userId,
+      name: 'Automatic member bundle',
+      permissions: [{ type: 'service', key: 'organization.member-rule' }],
+      reason: 'Reviewed member permission.',
+    })
+    const condition = { kind: 'registration-compliant' } as const
+    const rule = await createOrganizationGroupRule({
+      actorUserId: userId,
+      name: 'Qualified members',
+      bundleIds: [bundle.bundleId],
+      condition,
+      enabled: true,
+      reason: 'Current registration policy.',
+    })
+    await runRuleGroupReconciliation({
+      groupId: rule.groupId,
+      organizationVersion: 1,
+      revision: 1,
+    })
+    return { bundle, condition, rule, targetUserId }
+  }
+
+  test('owner versions an automatic compliance rule and disables its former assignments immediately', async () => {
+    const { bundle, condition, rule, targetUserId } = await setupCompliantAutomaticRule()
+    expect(rule.revision).toBe(1)
+    expect((await listOrganizationGroupRules(userId)).rules).toMatchObject([
+      { groupId: rule.groupId, enabled: true, revision: 1 },
+    ])
+    expect(
+      await previewOrganizationGroupRule({
+        actorUserId: userId,
+        targetUserId,
+        condition,
+        bundleIds: [bundle.bundleId],
+      }),
+    ).toMatchObject({ outcome: 'eligible', sourceCount: 1 })
+    expect((await getOrganizationGroupPermissions(targetUserId)).services).toContain(
+      'organization.member-rule',
+    )
+    await expect(
+      assignOrganizationGroup({
+        actorUserId: userId,
+        targetUserId,
+        groupId: rule.groupId,
+        expiresAt: null,
+        reason: 'Attempt manual override.',
+      }),
+    ).rejects.toMatchObject({ code: 'rule-group-manual-change' })
+    const [active] = await connection<{ assignment_id: string }[]>`
+      select assignment_id from organization_group_assignments
+      where group_id = ${rule.groupId} and user_id = ${targetUserId} and revoked_at is null
+    `
+    await expect(
+      revokeOrganizationGroupAssignment({
+        actorUserId: userId,
+        groupId: rule.groupId,
+        assignmentId: active!.assignment_id,
+        reason: 'Attempt manual removal.',
+      }),
+    ).rejects.toMatchObject({ code: 'rule-group-manual-change' })
+    const disabled = await disableOrganizationGroupRule({
+      actorUserId: userId,
+      groupId: rule.groupId,
+      expectedRevision: 1,
+      reason: 'End the temporary policy.',
+    })
+    expect(disabled.revision).toBe(2)
+    expect((await getOrganizationGroupPermissions(targetUserId)).services).not.toContain(
+      'organization.member-rule',
+    )
+    await runRuleGroupReconciliation({
+      groupId: rule.groupId,
+      organizationVersion: 1,
+      revision: 2,
+    })
+    const [revoked] = await connection<{ count: number }[]>`
+      select count(*)::integer as count from organization_group_assignments
+      where user_id = ${targetUserId} and group_id = ${rule.groupId} and revoked_at is not null
+    `
+    expect(revoked?.count).toBe(1)
+  })
+
+  test('expires an automatic grant by clock without a refresh worker', async () => {
+    const { rule, targetUserId } = await setupCompliantAutomaticRule()
+    const [assignment] = await connection<{ expires_at: Date }[]>`
+      select expires_at from organization_group_assignments
+      where group_id = ${rule.groupId} and user_id = ${targetUserId} and revoked_at is null
+    `
+    const expiredAt = new Date(new Date(assignment!.expires_at).getTime() + 1)
+    expect(
+      (await getOrganizationGroupPermissions(targetUserId, expiredAt, 1)).services,
+    ).not.toContain('organization.member-rule')
+    const [audit] = await connection<{ count: number }[]>`
+      select count(*)::integer as count from organization_audit_events
+      where group_id = ${rule.groupId} and target_user_id = ${targetUserId}
+        and event_type = 'group.revoked'
+    `
+    expect(audit?.count).toBe(1)
+  })
+
+  test('audits staggered rule expiries with permissions still live at each deadline', async () => {
+    const { rule: firstRule, targetUserId } = await setupCompliantAutomaticRule()
+    const secondBundle = await createOrganizationPermissionBundle({
+      actorUserId: userId,
+      name: 'Later automatic bundle',
+      permissions: [{ type: 'service', key: 'organization.later-rule' }],
+      reason: 'Reviewed later permission.',
+    })
+    const secondRule = await createOrganizationGroupRule({
+      actorUserId: userId,
+      name: 'Later qualified members',
+      bundleIds: [secondBundle.bundleId],
+      condition: { kind: 'registration-compliant' },
+      enabled: true,
+      reason: 'Current registration policy.',
+    })
+    await runRuleGroupReconciliation({
+      groupId: secondRule.groupId,
+      organizationVersion: 1,
+      revision: 1,
+    })
+    const firstAt = new Date(Date.now() + 60_000)
+    const secondAt = new Date(firstAt.getTime() + 60_000)
+    await connection`
+      update organization_group_assignments
+      set expires_at = case when group_id = ${firstRule.groupId}
+        then ${firstAt}::timestamptz else ${secondAt}::timestamptz end
+      where group_id in (${firstRule.groupId}, ${secondRule.groupId})
+    `
+    await connection`
+      update organization_group_rule_attestations attestation
+      set valid_until = assignment.expires_at
+      from organization_group_assignments assignment
+      where attestation.assignment_id = assignment.assignment_id
+        and assignment.group_id in (${firstRule.groupId}, ${secondRule.groupId})
+    `
+    await dbClient.db.transaction((transaction) =>
+      expireOrganizationGroupAssignments(
+        transaction,
+        { organizationVersion: 1, policyVersion: 1 },
+        new Date(secondAt.getTime() + 1),
+      ),
+    )
+    const permissions = await connection<{ group_id: string; permission_key: string | null }[]>`
+      select audit.group_id, permission.permission_key
+      from organization_audit_events audit
+      left join organization_rule_audit_permissions permission
+        on permission.audit_id = audit.audit_id
+      where audit.target_user_id = ${targetUserId}
+        and audit.event_type = 'group.revoked'
+        and audit.group_id in (${firstRule.groupId}, ${secondRule.groupId})
+      order by audit.occurred_at, permission.permission_key
+    `
+    expect([...permissions]).toStrictEqual([
+      { group_id: firstRule.groupId, permission_key: 'organization.later-rule' },
+      { group_id: secondRule.groupId, permission_key: null },
+    ])
+  })
+
+  test('keeps rule assignments in their original organization epoch', async () => {
+    const { rule, targetUserId } = await setupCompliantAutomaticRule()
+    expect((await getOrganizationGroupPermissions(targetUserId)).services).toContain(
+      'organization.member-rule',
+    )
+    await updateDeploymentOrganization(
+      { id: 98_000_002, name: 'Second Corporation', ticker: 'TWO', type: 'corporation' },
+      adminId,
+    )
+    expect((await getOrganizationGroupPermissions(targetUserId)).services).not.toContain(
+      'organization.member-rule',
+    )
+    const [historical] = await connection<{ organization_version: string }[]>`
+      select organization_version from organization_group_assignments
+      where group_id = ${rule.groupId} and user_id = ${targetUserId}
+    `
+    expect(historical?.organization_version).toBe('1')
+  })
+
+  test('serializes concurrent owner rule edits by expected revision', async () => {
+    const { rule, bundle, condition } = await setupCompliantAutomaticRule()
+    const update = (reason: string) =>
+      reviseOrganizationGroupRule({
+        actorUserId: userId,
+        groupId: rule.groupId,
+        expectedRevision: 1,
+        condition,
+        enabled: false,
+        bundleIds: [bundle.bundleId],
+        reason,
+      })
+    const results = await Promise.allSettled([
+      update('First concurrent edit.'),
+      update('Second concurrent edit.'),
+    ])
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1)
+    const rejected = results.find((result) => result.status === 'rejected')
+    expect(rejected).toMatchObject({ reason: { code: 'rule-revision-conflict' } })
+    expect((await listOrganizationGroupRules(userId)).rules[0]?.revision).toBe(2)
+  })
+
+  test('keeps explicit Director rule eligibility independent through block and revoke transitions', async () => {
+    await claimOrganizationOwnership(ownerClaimInput())
+    const targetUserId = randomUUID()
+    await establishCompliantAccount(targetUserId, 90_000_001)
+    const bundle = await createOrganizationPermissionBundle({
+      actorUserId: userId,
+      name: 'Explicit Director bundle',
+      permissions: [{ type: 'service', key: 'director.service' }],
+      reason: 'Review independent Director access.',
+    })
+    const rule = await createOrganizationGroupRule({
+      actorUserId: userId,
+      name: 'Current Directors',
+      bundleIds: [bundle.bundleId],
+      condition: { kind: 'director-audience' },
+      enabled: true,
+      reason: 'Assign approved Director permissions.',
+    })
+    const granted = await grantOrganizationRole({
+      actorUserId: userId,
+      targetUserId,
+      role: 'director',
+      reason: 'Explicit Director assignment.',
+    })
+    expect((await getOrganizationGroupPermissions(targetUserId)).services).toContain(
+      'director.service',
+    )
+    await blockOrganizationMember({
+      actorUserId: userId,
+      targetUserId,
+      reason: 'Block during review.',
+    })
+    expect((await getOrganizationGroupPermissions(targetUserId)).services).not.toContain(
+      'director.service',
+    )
+    await unblockOrganizationMember({
+      actorUserId: userId,
+      targetUserId,
+      reason: 'Review completed.',
+    })
+    expect((await getOrganizationGroupPermissions(targetUserId)).services).toContain(
+      'director.service',
+    )
+    await revokeOrganizationRole({
+      actorUserId: userId,
+      grantId: granted.grantId,
+      reason: 'Director assignment ended.',
+    })
+    expect((await getOrganizationGroupPermissions(targetUserId)).services).not.toContain(
+      'director.service',
+    )
+    const [changes] = await connection<{ count: number }[]>`
+      select count(*)::integer as count from organization_audit_events
+      where group_id = ${rule.groupId} and target_user_id = ${targetUserId}
+    `
+    expect(changes?.count).toBeGreaterThanOrEqual(3)
   })
 })
 

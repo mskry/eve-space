@@ -60,7 +60,33 @@ describe('domain event registry', () => {
         payloadVersion: 1,
         type: 'organization.compliance-transitioned',
       },
+      { aggregateType: 'deployment', payloadVersion: 1, type: 'organization.group-rule-changed' },
+      {
+        aggregateType: 'deployment',
+        payloadVersion: 1,
+        type: 'organization.alliance-executor-changed',
+      },
     ])
+  })
+
+  test('rejects raw role content in organization rule and executor events', () => {
+    const groupId = '35acd527-9539-44ad-aacf-9f8e45232267'
+    expect(
+      validateDomainEventInput({
+        aggregateId: '1',
+        type: 'organization.group-rule-changed',
+        payloadVersion: 1,
+        payload: { groupId, organizationVersion: 1, revision: 2 },
+      }),
+    ).toMatchObject({ type: 'organization.group-rule-changed' })
+    expect(() =>
+      validateDomainEventInput({
+        aggregateId: '1',
+        type: 'organization.alliance-executor-changed',
+        payloadVersion: 1,
+        payload: { organizationVersion: 1, executorRevision: groupId, roles: ['Director'] },
+      }),
+    ).toThrow('Domain event validation failed')
   })
 
   test('normalizes scopes deterministically during producer validation', () => {

@@ -17,6 +17,7 @@ import {
   readFixtureOperation,
 } from './fixtures/src/server.js'
 import fixtureNuxtModule, { fixturePanel, fixturePanelModule } from './fixtures/src/nuxt.js'
+import { platformModuleSourceIssues } from '../src/source-policy.js'
 
 const fixtureRoot = fileURLToPath(new URL('./fixtures/release', import.meta.url))
 const temporaryRoots: string[] = []
@@ -29,6 +30,24 @@ afterEach(async () => {
 })
 
 describe('public conformance fixtures', () => {
+  it('rejects a module importing core automatic-group decisions', () => {
+    const issues = platformModuleSourceIssues(
+      {
+        moduleId: 'sample',
+        environment: 'server',
+        scope: 'source',
+        boundaryRoot: 'features/sample/server',
+        path: 'features/sample/server/src/assignment.ts',
+        source:
+          "import { createOrganizationGroupRule } from '../../../../api/src/organization/group-rule-store.js'\nexport const assign = createOrganizationGroupRule\n",
+      },
+      new Set(),
+    )
+    expect(issues).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'IMPORT_NOT_ALLOWED' })]),
+    )
+  })
+
   it('uses public route, resource, provider, and persistence contracts at runtime', async () => {
     const route = fixtureRoutes({ coreData: {}, logger: logger(), persistence: { readFixture } })
     const response = await route.request('/')

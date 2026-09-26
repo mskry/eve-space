@@ -391,6 +391,14 @@ function groupMutationFailure(context: Context, error: unknown) {
         },
         409,
       )
+    case 'rule-group-manual-change':
+      return context.json(
+        {
+          code: 'RULE_GROUP_MANAGED',
+          message: 'Rule-managed memberships cannot be changed manually.',
+        },
+        409,
+      )
     case 'compliance-source-mismatch':
       return context.json(
         { code: 'COMPLIANCE_SOURCE_MISMATCH', message: 'Compliance source does not match.' },

@@ -50,6 +50,8 @@ if (affiliationMaximumBatchSize === null) {
 
 const fixtures = {
   affiliation: { characterIds: [1], operationId: `affiliation-1--${eventId}` },
+  'alliance-executor-observation': { organizationVersion: 3, expectedRevision: null },
+  'rule-group-reconciliation': { organizationVersion: 3, groupId: grantId, revision: 1 },
   'corporation-role-observation': roleObservation,
   diagnostic: { operationId: 'queue-diagnostic' },
   'domain-event': { eventId },
@@ -67,6 +69,8 @@ const expected = [
   ['outbox-relay', 3, 'derived', undefined, 'scheduler', 'none', 'none'],
   ['domain-event-retention', 3, 'derived', undefined, 'scheduler', 'none', 'none'],
   ['affiliation', 5, 'derived', undefined, 'job-id', 'none', 'none'],
+  ['alliance-executor-observation', 3, 'derived', undefined, 'simple', 'due-time', 'none'],
+  ['rule-group-reconciliation', 3, 'derived', undefined, 'simple', 'planner-stagger', 'none'],
   ['corporation-role-observation', 3, 'derived', undefined, 'simple', 'due-time', 'none'],
   ['resource-refresh', 1, 'derived', undefined, 'simple', 'planner-stagger', 'resource'],
   ['resource-batch', 1, 'derived', undefined, 'simple', 'planner-stagger', 'resource'],

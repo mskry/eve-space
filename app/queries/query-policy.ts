@@ -70,6 +70,8 @@ export const QUERY_POLICY = {
   organizationExceptions: { gcTime: QUERY_GC_TIME, staleTime: 30_000 },
   organizationPermissionBundles: { gcTime: QUERY_GC_TIME, staleTime: 30_000 },
   organizationPermissionCatalog: { gcTime: QUERY_GC_TIME, staleTime: 30_000 },
+  organizationRules: { gcTime: QUERY_GC_TIME, staleTime: 15_000 },
+  organizationRuleConditions: { gcTime: QUERY_GC_TIME, staleTime: 60_000 },
   organizationReviewerDirectory: { gcTime: 0, staleTime: 15_000 },
   organizationReviewerEntry: { gcTime: 0, staleTime: 0 },
   organizationReviewerTarget: { gcTime: 0, staleTime: 0 },

@@ -7,7 +7,12 @@ export interface CorporationRoleSets {
 
 export type CorporationRoleTransition = 'initial' | 'unchanged' | 'gained' | 'lost'
 
-export type ReviewedCorporationRolePredicate = 'director'
+export const reviewedCorporationRolePredicates = [
+  'director',
+  'accountant',
+  'factory-manager',
+] as const
+export type ReviewedCorporationRolePredicate = (typeof reviewedCorporationRolePredicates)[number]
 
 const roleLocations = ['roles', 'rolesAtBase', 'rolesAtHeadquarters', 'rolesAtOther'] as const
 
@@ -15,8 +20,16 @@ const predicateRequirements: Record<
   ReviewedCorporationRolePredicate,
   { readonly location: (typeof roleLocations)[number]; readonly role: string }
 > = {
+  accountant: { location: 'roles', role: 'Accountant' },
   director: { location: 'roles', role: 'Director' },
+  'factory-manager': { location: 'roles', role: 'Factory_Manager' },
 }
+
+const reviewedPredicateSet: ReadonlySet<string> = new Set(reviewedCorporationRolePredicates)
+
+export const isReviewedCorporationRolePredicate = (
+  value: string,
+): value is ReviewedCorporationRolePredicate => reviewedPredicateSet.has(value)
 
 const compareRoleNames = (left: string, right: string) => {
   if (left < right) {
@@ -65,6 +78,9 @@ export const evaluateCorporationRolePredicate = (
   sets: CorporationRoleSets,
   predicate: ReviewedCorporationRolePredicate,
 ) => {
+  if (!isReviewedCorporationRolePredicate(predicate)) {
+    throw new RangeError('Unsupported corporation-role predicate')
+  }
   const requirement = predicateRequirements[predicate]
   return sets[requirement.location].includes(requirement.role)
 }
@@ -72,7 +88,9 @@ export const evaluateCorporationRolePredicate = (
 export const evaluateReviewedCorporationRolePredicates = (
   sets: CorporationRoleSets,
 ): Readonly<Record<ReviewedCorporationRolePredicate, boolean>> => ({
+  accountant: evaluateCorporationRolePredicate(sets, 'accountant'),
   director: evaluateCorporationRolePredicate(sets, 'director'),
+  'factory-manager': evaluateCorporationRolePredicate(sets, 'factory-manager'),
 })
 
 export const resolveCorporationRoleRevision = (input: {

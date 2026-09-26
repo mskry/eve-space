@@ -3,6 +3,7 @@ import {
   canonicalizeCorporationRoleSets,
   classifyCorporationRoleTransition,
   evaluateCorporationRolePredicate,
+  isReviewedCorporationRolePredicate,
   evaluateReviewedCorporationRolePredicates,
   resolveCorporationRoleRevision,
   type CorporationRoleSets,
@@ -51,12 +52,25 @@ describe('corporation-role canonicalization', () => {
     expect(classifyCorporationRoleTransition(previous, current)).toBe(transition)
   })
 
-  test('evaluates the reviewed Director predicate only from global roles', () => {
+  test('evaluates reviewed predicates only from global roles', () => {
+    expect(
+      evaluateReviewedCorporationRolePredicates(
+        sets({
+          roles: ['Director', 'Accountant', 'Factory_Manager'],
+        }),
+      ),
+    ).toStrictEqual({ accountant: true, director: true, 'factory-manager': true })
+    expect(
+      evaluateReviewedCorporationRolePredicates(
+        sets({
+          rolesAtBase: ['Director'],
+          rolesAtHeadquarters: ['Accountant'],
+          rolesAtOther: ['Factory_Manager'],
+        }),
+      ),
+    ).toStrictEqual({ accountant: false, director: false, 'factory-manager': false })
     expect(evaluateCorporationRolePredicate(sets({ roles: ['Director'] }), 'director')).toBe(true)
-    expect(evaluateCorporationRolePredicate(sets({ rolesAtBase: ['Director'] }), 'director')).toBe(
-      false,
-    )
-    expect(evaluateReviewedCorporationRolePredicates(sets())).toStrictEqual({ director: false })
+    expect(isReviewedCorporationRolePredicate('rolesAtBase')).toBe(false)
   })
 
   test('rotates the opaque revision only for semantic or binding changes', () => {

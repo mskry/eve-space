@@ -977,6 +977,10 @@ export const organizationAuditEventTypes = [
   'authority-source.invalidated',
   'group.assigned',
   'group.revoked',
+  'group.refreshed',
+  'group-rule.created',
+  'group-rule.updated',
+  'group-rule.disabled',
   'member.blocked',
   'member.unblocked',
   'permission-bundle.created',
@@ -1031,7 +1035,7 @@ export const organizationAuditEvents = pgTable(
     actorId: uuid('actor_id'),
     actorType: text('actor_type').$type<OrganizationAuditActorType>().notNull(),
     assignmentId: uuid('assignment_id'),
-    assignmentSource: text('assignment_source').$type<'manual' | 'compliance'>(),
+    assignmentSource: text('assignment_source').$type<'manual' | 'compliance' | 'rule'>(),
     auditId: uuid('audit_id').defaultRandom().primaryKey().notNull(),
     auditSequence: bigint('audit_sequence', { mode: 'bigint' })
       .generatedAlwaysAsIdentity()
@@ -1053,6 +1057,8 @@ export const organizationAuditEvents = pgTable(
     outcome: text().$type<OrganizationAuditOutcome>().notNull(),
     policyVersion: bigint('policy_version', { mode: 'number' }).notNull(),
     reason: text().notNull(),
+    resultingPermissions: text('resulting_permissions').array(),
+    ruleRevision: bigint('rule_revision', { mode: 'number' }),
     sectionId: text('section_id').$type<OrganizationSensitiveAccessSection>(),
     subjectId: text('subject_id').notNull(),
     subjectType: text('subject_type').$type<OrganizationAuditSubjectType>().notNull(),
@@ -1092,6 +1098,10 @@ export const organizationAuditEvents = pgTable(
         'authority-source.invalidated',
         'group.assigned',
         'group.revoked',
+        'group.refreshed',
+        'group-rule.created',
+        'group-rule.updated',
+        'group-rule.disabled',
         'member.blocked',
         'member.unblocked',
         'permission-bundle.created',
@@ -1134,20 +1144,44 @@ export const organizationAuditEvents = pgTable(
       sql`outcome in ('granted', 'revoked', 'transitioned', 'denied', 'unchanged')`,
     ),
     check(
+      'organization_audit_events_rule_revision_check',
+      sql`rule_revision is null or rule_revision > 0`,
+    ),
+    check(
+      'organization_audit_events_resulting_permissions_check',
+      sql`resulting_permissions is null or (
+        cardinality(resulting_permissions) <= 100
+        and array_position(resulting_permissions, null) is null
+        and length(array_to_string(resulting_permissions, ',')) <= 20000
+      )`,
+    ),
+    check(
       'organization_audit_events_context_check',
       sql`(
-          event_type in ('group.assigned', 'group.revoked')
+          event_type in ('group.assigned', 'group.revoked', 'group.refreshed')
           and group_id is not null
           and assignment_id is not null
           and target_user_id is not null
-          and assignment_source in ('manual', 'compliance')
+          and assignment_source in ('manual', 'compliance', 'rule')
           and (
-            (assignment_source = 'manual' and compliance_source is null)
-            or (assignment_source = 'compliance' and compliance_source is not null)
+            (assignment_source = 'manual' and compliance_source is null
+              and rule_revision is null and resulting_permissions is null)
+            or (assignment_source = 'compliance' and compliance_source is not null
+              and rule_revision is null and resulting_permissions is null)
+            or (assignment_source = 'rule' and compliance_source is null
+              and rule_revision > 0 and resulting_permissions is not null)
           )
+          and (event_type <> 'group.refreshed' or assignment_source = 'rule')
           and section_id is null
           and target_character_id is null
           and disclosure_version is null
+        ) or (
+          event_type in ('group-rule.created', 'group-rule.updated', 'group-rule.disabled')
+          and group_id is not null and subject_type = 'group' and subject_id = group_id::text
+          and actor_type = 'user' and rule_revision > 0 and resulting_permissions is not null
+          and assignment_id is null and target_user_id is null and assignment_source is null
+          and compliance_source is null and entitlement_expires_at is null
+          and section_id is null and target_character_id is null and disclosure_version is null
         ) or (
           event_type = 'sensitive-access.decided'
           and actor_type = 'user'
@@ -1165,6 +1199,7 @@ export const organizationAuditEvents = pgTable(
           and assignment_source is null
           and compliance_source is null
           and entitlement_expires_at is null
+          and rule_revision is null and resulting_permissions is null
           and causation_audit_id is null
           and (
             (
@@ -1205,7 +1240,11 @@ export const organizationAuditEvents = pgTable(
             )
           )
         ) or (
-          event_type not in ('group.assigned', 'group.revoked', 'sensitive-access.decided')
+          event_type not in (
+            'group.assigned', 'group.revoked', 'group.refreshed',
+            'group-rule.created', 'group-rule.updated', 'group-rule.disabled',
+            'sensitive-access.decided'
+          )
           and group_id is null
           and assignment_id is null
           and target_user_id is null
@@ -1215,6 +1254,7 @@ export const organizationAuditEvents = pgTable(
           and section_id is null
           and target_character_id is null
           and disclosure_version is null
+          and rule_revision is null and resulting_permissions is null
         )`,
     ),
     index('organization_audit_events_version_sequence_idx').on(
@@ -1228,6 +1268,77 @@ export const organizationAuditEvents = pgTable(
       table.subjectType,
       table.subjectId,
       table.auditSequence,
+    ),
+  ],
+)
+
+export const organizationRuleAuditSources = pgTable(
+  'organization_rule_audit_sources',
+  {
+    auditId: uuid('audit_id').notNull(),
+    roleRevision: uuid('role_revision'),
+    sourceId: uuid('source_id').notNull(),
+    sourceKind: text('source_kind')
+      .$type<'registration' | 'explicit-director' | 'derived-director' | 'corporation-role'>()
+      .notNull(),
+    validUntil: timestamp('valid_until', { withTimezone: true, mode: 'date' }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.auditId, table.sourceKind, table.sourceId] }),
+    foreignKey({
+      columns: [table.auditId],
+      foreignColumns: [organizationAuditEvents.auditId],
+      name: 'organization_rule_audit_sources_audit_fkey',
+    }).onDelete('restrict'),
+    check(
+      'organization_rule_audit_sources_kind_check',
+      sql`source_kind in ('registration', 'explicit-director', 'derived-director', 'corporation-role')`,
+    ),
+    check(
+      'organization_rule_audit_sources_revision_check',
+      sql`(source_kind in ('registration', 'explicit-director') and role_revision is null)
+        or (source_kind in ('derived-director', 'corporation-role') and role_revision is not null)`,
+    ),
+  ],
+)
+
+export const organizationRuleAuditPermissions = pgTable(
+  'organization_rule_audit_permissions',
+  {
+    auditId: uuid('audit_id').notNull(),
+    moduleId: text('module_id'),
+    permissionId: uuid('permission_id').defaultRandom().primaryKey().notNull(),
+    permissionKey: text('permission_key').notNull(),
+    permissionType: text('permission_type').$type<'service' | 'module'>().notNull(),
+    publisherPackage: text('publisher_package'),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.auditId],
+      foreignColumns: [organizationAuditEvents.auditId],
+      name: 'organization_rule_audit_permissions_audit_fkey',
+    }).onDelete('restrict'),
+    check(
+      'organization_rule_audit_permissions_type_check',
+      sql`(permission_type = 'service' and publisher_package is null and module_id is null)
+        or (permission_type = 'module' and publisher_package is not null and module_id is not null)`,
+    ),
+    check(
+      'organization_rule_audit_permissions_key_check',
+      sql`length(permission_key) between 1 and 200`,
+    ),
+    uniqueIndex('organization_rule_audit_permissions_identity_key').on(
+      table.auditId,
+      table.permissionType,
+      sql`coalesce(${table.publisherPackage}, '')`,
+      sql`coalesce(${table.moduleId}, '')`,
+      table.permissionKey,
+    ),
+    index('organization_rule_audit_permissions_page_idx').on(
+      table.auditId,
+      table.permissionType,
+      table.permissionKey,
+      table.permissionId,
     ),
   ],
 )

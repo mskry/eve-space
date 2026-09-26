@@ -5,6 +5,7 @@ import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 const modulesByTier = {
   adapter: [
     'activity-context',
+    'alliance-executor-evidence',
     'authority',
     'character-detachment-guards',
     'compliance-access',
@@ -13,6 +14,8 @@ const modulesByTier = {
     'corporation-role-demand',
     'corporation-role-diagnostics',
     'group-assignment-store',
+    'group-permission-reader',
+    'group-rule-attestation-store',
     'managed-member-lifecycle',
     'managed-corporations',
     'member-block',
@@ -28,6 +31,7 @@ const modulesByTier = {
   ],
   application: [
     'activity',
+    'alliance-executor-convergence',
     'block-store',
     'authority-convergence',
     'compliance',
@@ -38,13 +42,14 @@ const modulesByTier = {
     'corporation-sources',
     'exception-store',
     'group-store',
+    'group-rule-store',
     'owner-claim',
     'owner-source-replacement',
     'policy-store',
     'reviewer-commands',
     'role-store',
   ],
-  entry: ['compliance-repair'],
+  entry: ['alliance-executor-repair', 'compliance-repair', 'group-rule-repair'],
   observability: [
     'audit',
     'audit-history',
@@ -64,14 +69,18 @@ const modulesByTier = {
     'owner-claim-policy',
     'permission-catalog-policy',
     'registration-policy',
+    'rule-policy',
   ],
   service: [
     'effective-authority',
     'group-assignment-expiry',
     'group-compliance',
     'group-permissions',
+    'group-rule-convergence',
+    'group-rule-revisions',
     'management-authority',
     'module-authorization',
+    'rule-evidence',
   ],
   transport: [
     'route-middleware',
@@ -80,6 +89,7 @@ const modulesByTier = {
     'routes-management',
     'routes-member',
     'routes-review',
+    'routes-rules',
   ],
 } as const
 

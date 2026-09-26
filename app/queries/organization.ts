@@ -34,6 +34,7 @@ export type OrganizationPermissionBundles = InferResponseType<
   OrganizationClient['permission-bundles']['$get'],
   200
 >
+export type OrganizationRules = InferResponseType<OrganizationClient['group-rules']['$get'], 200>
 export type OrganizationRosterCoverage = InferResponseType<
   OrganizationClient['roster-coverage']['$get'],
   200
@@ -214,6 +215,44 @@ export const organizationPermissionBundlesQuery = defineEsiQueryOptions(
     esiPersistence: { kind: 'none' },
     enabled: import.meta.client && canRunOrganizationOwnerQuery(access, organizationVersion),
     meta: { globalErrorMessage: 'Organization permission bundles are unavailable.' },
+  }),
+)
+
+export const organizationRulesQuery = defineEsiQueryOptions(
+  ({ apiClient, organizationVersion, access }: OrganizationOwnerQueryParameters) => ({
+    key: PRIVATE_QUERY_KEYS.organizationRules(organizationVersion),
+    query: async ({ signal }) => {
+      const response = await apiClient.api.organization['group-rules'].$get(undefined, {
+        init: { signal },
+      })
+      if (response.status !== 200) {
+        throw await toApiQueryError(response, 'Automatic groups are unavailable.')
+      }
+      return response.json()
+    },
+    ...QUERY_POLICY.organizationRules,
+    esiPersistence: { kind: 'none' },
+    enabled: import.meta.client && canRunOrganizationOwnerQuery(access, organizationVersion),
+    meta: { globalErrorMessage: 'Automatic groups are unavailable.' },
+  }),
+)
+
+export const organizationRuleConditionsQuery = defineEsiQueryOptions(
+  ({ apiClient, organizationVersion, access }: OrganizationOwnerQueryParameters) => ({
+    key: PRIVATE_QUERY_KEYS.organizationRuleConditions(organizationVersion),
+    query: async ({ signal }) => {
+      const response = await apiClient.api.organization['group-rules'].conditions.$get(undefined, {
+        init: { signal },
+      })
+      if (response.status !== 200) {
+        throw await toApiQueryError(response, 'Automatic-group conditions are unavailable.')
+      }
+      return response.json()
+    },
+    ...QUERY_POLICY.organizationRuleConditions,
+    esiPersistence: { kind: 'none' },
+    enabled: import.meta.client && canRunOrganizationOwnerQuery(access, organizationVersion),
+    meta: { globalErrorMessage: 'Automatic-group conditions are unavailable.' },
   }),
 )
 

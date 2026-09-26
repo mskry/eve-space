@@ -58,6 +58,19 @@ const corporationRoleObservationJobPayload = z
     userId: z.uuid(),
   })
   .strict()
+const allianceExecutorObservationJobPayload = z
+  .object({
+    organizationVersion: z.number().int().positive(),
+    expectedRevision: z.uuid().nullable(),
+  })
+  .strict()
+const ruleGroupReconciliationJobPayload = z
+  .object({
+    groupId: z.uuid(),
+    organizationVersion: z.number().int().positive(),
+    revision: z.number().int().positive(),
+  })
+  .strict()
 const resourceRefreshJobPayload = platformCollectionStateIdentitySchema
 const resourceBatchJobPayload = platformResourceBatchPayloadSchema.safeExtend({
   subjects: platformResourceBatchPayloadSchema.shape.subjects.max(
@@ -73,6 +86,8 @@ export interface JobPayloadByName {
   'domain-event-retention': z.infer<typeof domainEventRetentionJobPayload>
   affiliation: z.infer<typeof affiliationJobPayload>
   'corporation-role-observation': z.infer<typeof corporationRoleObservationJobPayload>
+  'alliance-executor-observation': z.infer<typeof allianceExecutorObservationJobPayload>
+  'rule-group-reconciliation': z.infer<typeof ruleGroupReconciliationJobPayload>
   'resource-refresh': PlatformCollectionStateIdentity
   'resource-batch': PlatformResourceBatchPayload
 }
@@ -131,6 +146,17 @@ const jobContracts = {
     delay: 'due-time',
     priority: 'none',
     operationIdentity: corporationRoleObservationJobId,
+  }),
+  'alliance-executor-observation': contract({
+    name: 'alliance-executor-observation',
+    payload: allianceExecutorObservationJobPayload,
+    attempts: 3,
+    durability: { kind: 'derived' },
+    activeWorkDeduplication: 'simple',
+    delay: 'due-time',
+    priority: 'none',
+    operationIdentity: ({ organizationVersion, expectedRevision }) =>
+      `alliance-executor-observation-${organizationVersion}-${expectedRevision ?? 'initial'}`,
   }),
   diagnostic: contract({
     name: 'diagnostic',
@@ -201,6 +227,17 @@ const jobContracts = {
     delay: 'planner-stagger',
     priority: 'resource',
     operationIdentity: resourceRefreshJobId,
+  }),
+  'rule-group-reconciliation': contract({
+    name: 'rule-group-reconciliation',
+    payload: ruleGroupReconciliationJobPayload,
+    attempts: 3,
+    durability: { kind: 'derived' },
+    activeWorkDeduplication: 'simple',
+    delay: 'planner-stagger',
+    priority: 'none',
+    operationIdentity: ({ groupId, organizationVersion, revision }) =>
+      `rule-group-reconciliation-${organizationVersion}-${groupId}-${revision}`,
   }),
 } satisfies JobContractCatalog
 

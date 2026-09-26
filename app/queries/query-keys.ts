@@ -119,6 +119,10 @@ export const PRIVATE_QUERY_KEYS = {
     [...PRIVATE_QUERY_KEYS.organization(), organizationVersion, 'permission-bundles'] as const,
   organizationPermissionCatalog: (organizationVersion: number) =>
     [...PRIVATE_QUERY_KEYS.organization(), organizationVersion, 'permission-catalog'] as const,
+  organizationRules: (organizationVersion: number) =>
+    [...PRIVATE_QUERY_KEYS.organization(), organizationVersion, 'group-rules'] as const,
+  organizationRuleConditions: (organizationVersion: number) =>
+    [...PRIVATE_QUERY_KEYS.organization(), organizationVersion, 'group-rule-conditions'] as const,
   organizationReviewer: () => [...PRIVATE_QUERY_KEYS.organization(), 'reviewer'] as const,
   organizationReviewerDirectory: (
     organizationVersion: number,

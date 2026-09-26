@@ -13,6 +13,7 @@ import {
   toOrganizationGroupAssignment,
 } from './group-assignment-store.js'
 import { appendGroupAudit } from './group-audit.js'
+import { convergeRuleManagedGroupsForAccountInTransaction } from './group-rule-convergence.js'
 import { OrganizationGroupMutationError } from './group-mutation-error.js'
 import { lockCurrentOrganization } from './organization-lock.js'
 
@@ -115,6 +116,12 @@ export async function convergeRegistrationComplianceGroupsInTransaction(
     )
   }
   /* oxlint-enable no-await-in-loop */
+  await convergeRuleManagedGroupsForAccountInTransaction(
+    transaction,
+    { organizationVersion: input.organizationVersion, policyVersion: input.policyVersion },
+    input.userId,
+    input.now,
+  )
 }
 
 async function convergeComplianceGroupAssignment(

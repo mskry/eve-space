@@ -123,6 +123,53 @@ describe('organization audit schema', () => {
     ).toThrow('Sensitive access context is not allowed')
   })
 
+  test('keeps rule decisions attributable without accepting raw role evidence', () => {
+    const groupId = '108866b8-b2e4-47f8-8310-2c29f574bf3c'
+    const ruleDecision = {
+      ...validAuditEvent,
+      actorId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+      actorType: 'user',
+      eventType: 'group-rule.created',
+      groupId,
+      outcome: 'transitioned',
+      resultingPermissions: ['module.read'],
+      ruleRevision: 1,
+      subjectId: groupId,
+      subjectType: 'group',
+    } as const
+    expect(organizationAuditInputSchema.parse(ruleDecision)).toMatchObject(ruleDecision)
+    expect(() =>
+      organizationAuditInputSchema.parse({ ...ruleDecision, roles: ['Director'] }),
+    ).toThrow('Unrecognized key')
+    expect(() =>
+      organizationAuditInputSchema.parse({
+        ...ruleDecision,
+        resultingPermissions: ['refresh_token=secret'],
+      }),
+    ).toThrow('Sensitive data is not allowed')
+    expect(() =>
+      organizationAuditInputSchema.parse({ ...ruleDecision, ruleRevision: null }),
+    ).toThrow('Invalid rule mutation audit context')
+
+    const assignmentDecision = {
+      ...validAuditEvent,
+      assignmentId: '51fdf619-118a-4b4a-a089-6a8078f74bc1',
+      assignmentSource: 'rule',
+      eventType: 'group.assigned',
+      groupId,
+      outcome: 'granted',
+      resultingPermissions: ['module.read'],
+      ruleRevision: 1,
+      subjectId: groupId,
+      subjectType: 'group',
+      targetUserId: '439b0628-0380-4527-96c2-314c6ee0db64',
+    } as const
+    expect(organizationAuditInputSchema.parse(assignmentDecision)).toMatchObject(assignmentDecision)
+    expect(() =>
+      organizationAuditInputSchema.parse({ ...assignmentDecision, resultingPermissions: null }),
+    ).toThrow('Invalid rule assignment audit context')
+  })
+
   test('accepts member block decisions without grant restoration metadata', () => {
     expect(
       organizationAuditInputSchema.parse({
@@ -223,6 +270,8 @@ describe('organization audit schema', () => {
       entitlementExpiresAt: null,
       groupId: null,
       occurredAt: new Date('2026-09-18T12:00:00.000Z'),
+      resultingPermissions: null,
+      ruleRevision: null,
       sectionId: null,
       targetCharacterId: null,
       targetUserId: null,
