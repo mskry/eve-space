@@ -315,7 +315,7 @@ class EsiExecutionRuntimeImplementation {
     const request = representation.encodeRequest(input)
     assertNoCallerEsiRevalidationHeaders(request)
     const resource: EsiCachedExecutionResource<Result> = {
-      cacheSchema: representation.cacheSchema,
+      cacheSchema: representation.cacheSchemaForInput?.(input) ?? representation.cacheSchema,
       inputs: representation.cacheIdentity?.(input) ?? request,
       load: (authorization, revalidation) =>
         this.#dispatchRepresentation(

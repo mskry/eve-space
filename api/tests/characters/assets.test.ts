@@ -430,6 +430,38 @@ describe('bounded character asset enrichment', () => {
       CharacterAssetsPaginationError,
     )
   })
+
+  test('rejects a cached first page whose number differs from the request before fan-out', async () => {
+    mocks.executeRepresentation.mockResolvedValueOnce({ ...result(page(2, 2)), source: 'cache' })
+
+    await expect(getCharacterAssets(characterId, subjectLifecycleId)).rejects.toBeInstanceOf(
+      CharacterAssetsPaginationError,
+    )
+    expect(mocks.executeRepresentation).toHaveBeenCalledOnce()
+  })
+
+  test('rejects a mismatched subsequent page without assembling a partial collection', async () => {
+    mocks.executeRepresentation.mockImplementation((definition) => {
+      if (definition.operation !== 'character-assets-page') {
+        return Promise.resolve(result([]))
+      }
+      return Promise.resolve(result(page(1, 2)))
+    })
+
+    await expect(getCharacterAssets(characterId, subjectLifecycleId)).rejects.toBeInstanceOf(
+      CharacterAssetsPaginationError,
+    )
+    expect(mocks.executeRepresentation).toHaveBeenCalledTimes(2)
+  })
+
+  test('accepts a cached page with the requested number', async () => {
+    mocks.executeRepresentation.mockResolvedValueOnce({ ...result(page(1, 1)), source: 'cache' })
+
+    await expect(getCharacterAssets(characterId, subjectLifecycleId)).resolves.toMatchObject({
+      assets: [{ itemId: 1 }],
+      characterId,
+    })
+  })
 })
 
 function asset(overrides: Record<string, unknown> = {}) {

@@ -69,7 +69,7 @@ const allowedImportTiersBySourceTier: Record<CharacterTier, readonly CharacterTi
 
 const allowedPackagesByTier: Record<CharacterTier, ReadonlySet<string>> = {
   'observation-use-case': new Set(['drizzle-orm', 'node:crypto', 'zod']),
-  'pure-leaf': new Set(),
+  'pure-leaf': new Set(['zod']),
   'read-projection': new Set([
     '@eve-space/core-eve-projections/assets',
     '@eve-space/core-eve-projections/skill-queue',

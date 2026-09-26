@@ -138,11 +138,14 @@ describe('character module dependency declarations', () => {
     },
   )
 
-  it.each(['assets', 'affiliation-sync'])('allows representation schemas in %s', (module) => {
-    expect(
-      characterBoundaryViolations(characterSources({ [module]: "import { z } from 'zod'" })),
-    ).toStrictEqual([])
-  })
+  it.each(['assets', 'affiliation-sync', 'finance-pagination'])(
+    'allows representation schemas in %s',
+    (module) => {
+      expect(
+        characterBoundaryViolations(characterSources({ [module]: "import { z } from 'zod'" })),
+      ).toStrictEqual([])
+    },
+  )
 
   it.each([
     ['assets', '@eve-space/core-eve-projections/assets'],

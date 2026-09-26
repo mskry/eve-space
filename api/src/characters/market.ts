@@ -10,7 +10,11 @@ import {
   type EsiReadResultMetadata,
 } from '../esi-gateway/feature-execution.js'
 import { financeLocationName, loadFinanceLocationNames } from './finance-location-names.js'
-import { assertFinancePositiveSafeInteger, resolveFinanceTotalPages } from './finance-pagination.js'
+import {
+  assertFinancePositiveSafeInteger,
+  financePageCacheSchema,
+  resolveFinanceTotalPages,
+} from './finance-pagination.js'
 import { financeTypeName, loadFinanceTypeNames } from './finance-type-names.js'
 
 type EsiCharacterMarketOrder =
@@ -122,12 +126,14 @@ const characterMarketOrderHistoryCacheSchema = z.object({
   orders: z.array(
     characterMarketOrderCacheSchema.extend({ state: z.enum(['cancelled', 'expired']) }),
   ),
-  page: z.number(),
-  totalPages: z.number(),
+  page: financePageCacheSchema,
+  totalPages: financePageCacheSchema,
 })
 
 const characterMarketOrderHistoryRead = createCharacterEsiRead({
   cacheSchema: characterMarketOrderHistoryCacheSchema,
+  cacheSchemaForInput: (input: CharacterMarketOrderHistoryRepresentationInput) =>
+    characterMarketOrderHistoryCacheSchema.refine(({ page }) => page === input.page),
   descriptor: operationRegistry.GetCharactersCharacterIdOrdersHistory.transport,
   encodeRequest: (input: CharacterMarketOrderHistoryRepresentationInput) => ({
     path: { character_id: input.characterId },

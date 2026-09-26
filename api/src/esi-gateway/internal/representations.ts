@@ -51,6 +51,7 @@ type EsiReadRepresentationOptions<
   Result,
 > = EsiRepresentationOptions<Operation, Input, Arguments, WireResult, Result> & {
   cacheSchema: OperationSchema<Result>
+  cacheSchemaForInput?: (input: Input) => OperationSchema<Result>
 }
 
 /** Opaque registered binding between an application representation and one SDK operation. */
@@ -84,6 +85,7 @@ export type EsiReadRepresentation<
   Result,
 > = EsiRepresentation<Authorization, Operation, Input, Arguments, WireResult, Result> & {
   readonly cacheSchema: OperationSchema<Result>
+  readonly cacheSchemaForInput?: (input: Input) => OperationSchema<Result>
 }
 
 export type EsiCharacterRepresentation<
@@ -122,6 +124,7 @@ export function defineCharacterEsiRepresentation<
   return {
     ...defineEsiRepresentation('read', 'character', options),
     cacheSchema: options.cacheSchema,
+    ...(options.cacheSchemaForInput && { cacheSchemaForInput: options.cacheSchemaForInput }),
   }
 }
 
@@ -149,6 +152,7 @@ export function definePublicEsiRepresentation<
   return {
     ...defineEsiRepresentation('read', 'public', options),
     cacheSchema: options.cacheSchema,
+    ...(options.cacheSchemaForInput && { cacheSchemaForInput: options.cacheSchemaForInput }),
   }
 }
 
