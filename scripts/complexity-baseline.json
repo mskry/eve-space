@@ -75,8 +75,6 @@
     "scripts/domain-event-review/evidence.ts:complexity(complexity):8c2d943099bffa23eb3882508e1518ddb6602ffddbd2f54c0177535f6b0574c2": 1,
     "scripts/mail-composition/boundaries.ts:complexity(complexity):bbc7101709594d029d9619ba69810f949ad93aefe06fb8c37e38bee135f83dd6": 1,
     "scripts/module-registry/feature-boundaries.ts:complexity(complexity):acdca1adfd190b5018e4c93aeddc9c1246f6f26cdba3de6b10d28140711ff552": 1,
-    "scripts/module-registry/generator.ts:complexity(complexity):e1f7937948a3a2a3a26002f938a7d95045888273847bbc06df6803845bd6b9f9": 1,
-    "scripts/module-registry/generator.ts:complexity(complexity):e32a23f0e5f5fb43fc7727c38398d2995efd38215a37ce6ae6148b4f8b1f837a": 1,
     "scripts/query-persistence/boundaries.ts:complexity(complexity):bb9a3ae1c3037cd3995e787c0c1845decffcd07ab687cead9f6a574de7f48e29": 1,
     "tests/assets/character-assets.e2e.test.ts:complexity(complexity):f4294dc73c8ed01cffd79c66a2ce1e98bad41bbd5f14de507b6591bd00420d07": 1,
     "tests/character/character-clones.nuxt.test.ts:complexity(complexity):051b4ed1cd0e952460003f1439547dc1c25a431e83e7968f5898b208e0ddad73": 1,
@@ -95,7 +93,7 @@
     "tests/platform/external-module-archives.test.ts:complexity(complexity):6913857bfd76e0b9b35917c0f08b7f6107a96b5c145c8ea02233567b8e7975fe": 1,
     "tests/platform/module-package-boundaries.test.ts:complexity(complexity):19bad014b57a73c2339cbf8fc81bdf9777b4e644430f006cf3efbbc427e0da61": 1,
     "tests/platform/module-package-boundaries.test.ts:complexity(complexity):89be93f5cf0301183da1370e8c725d6eadca8c15247d258ec4eeb0724067e0f5": 1,
-    "tests/platform/platform-module-registry.test.ts:complexity(complexity):cbc72299e2b1215a344e44cba932562825009f324a3e77dde8b73d71fb57092a": 1,
+    "tests/platform/platform-module-registry.test.ts:complexity(complexity):c02750d5580bef75cb376900a1bfc734d3bee10948fd4b5c0581cb724d66b8e6": 1,
     "tests/queries/private-query-lifecycle.test.ts:complexity(complexity):8d679a14e014b3639d798a8322ac75a843205f09199dcb425813c2be7a4321f1": 1,
     "tests/queries/query-persistence-envelope.test.ts:complexity(complexity):0f6fdcacc9b90015e6895bd2f589c623e8ff929a81da1ae4aa35b114d1e80e3a": 1,
     "tests/queries/query-persistence-runtime.test.ts:complexity(complexity):37330031cc0c757646a847400c355f8120691706e3c3ff46e604315b5341d0a1": 1

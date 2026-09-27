@@ -242,7 +242,7 @@ export function exposeReviewerTargetModuleContext<
   commandIds: CommandIds,
   evidenceBinding?: {
     readonly routeId: string
-    readonly resourceId: string
+    readonly resources: readonly { readonly resourceId: string; readonly field: string | null }[]
     readonly operationId: string
   },
   contribution?: {

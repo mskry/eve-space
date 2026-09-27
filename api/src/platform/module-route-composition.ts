@@ -102,7 +102,7 @@ type ReviewerRouteCommandIds<Organization> = Organization extends {
 
 interface ReviewerEvidenceBinding {
   readonly routeId: string
-  readonly resourceId: string
+  readonly resources: readonly { readonly resourceId: string; readonly field: string | null }[]
   readonly operationId: string
 }
 
@@ -119,13 +119,14 @@ interface ReviewerContributionRouteBinding
 
 export function composePlatformReviewerContributionRoute<
   const Organization extends ReviewerContributionRouteBinding,
+  Evidence extends object,
   RouteSchema extends Schema,
   RouteBasePath extends string,
 >(
   descriptor: PlatformInstalledReviewerContributionDescriptor,
   organization: Organization,
   route: Hono<
-    PlatformReviewerTargetRouteEnv<ReviewerRouteCommandIds<Organization>>,
+    PlatformReviewerTargetRouteEnv<ReviewerRouteCommandIds<Organization>, Evidence>,
     RouteSchema,
     RouteBasePath
   >,
@@ -142,13 +143,14 @@ function composeReviewerTargetModuleRoute<
       readonly reviewerEvidence?: ReviewerEvidenceBinding
       readonly reviewerResourceIds?: readonly string[]
     },
+  Evidence extends object,
   RouteSchema extends Schema,
   RouteBasePath extends string,
 >(
   moduleId: string,
   organization: Organization,
   route: Hono<
-    PlatformReviewerTargetRouteEnv<ReviewerRouteCommandIds<Organization>>,
+    PlatformReviewerTargetRouteEnv<ReviewerRouteCommandIds<Organization>, Evidence>,
     RouteSchema,
     RouteBasePath
   >,
@@ -185,7 +187,9 @@ function composeReviewerTargetModuleRoute<
               contributionId: contribution.contributionId,
               resourceIds:
                 organization.reviewerResourceIds ??
-                (organization.reviewerEvidence ? [organization.reviewerEvidence.resourceId] : []),
+                (organization.reviewerEvidence
+                  ? organization.reviewerEvidence.resources.map(({ resourceId }) => resourceId)
+                  : []),
             }
           : undefined,
       ),

@@ -467,7 +467,7 @@ const manifest = {
         sectionId: 'skills',
         target: 'managed-organization-character',
         exposure: 'sensitive-evidence',
-        reviewerEvidenceResourceId: 'trained-skills',
+        reviewerEvidenceResources: [{ resourceId: 'trained-skills', field: 'trainedSkills' }],
         persistenceOperations: [{ operationId: 'read-trained-skills-evidence' }],
       },
       {
@@ -480,7 +480,7 @@ const manifest = {
         sectionId: 'assets',
         target: 'managed-organization-character',
         exposure: 'sensitive-evidence',
-        reviewerEvidenceResourceId: 'assets',
+        reviewerEvidenceResources: [{ resourceId: 'assets', field: null }],
         persistenceOperations: [{ operationId: 'read-asset-evidence' }],
       },
       {
@@ -493,7 +493,11 @@ const manifest = {
         sectionId: 'wallet',
         target: 'managed-organization-character',
         exposure: 'sensitive-evidence',
-        reviewerEvidenceResourceId: 'wallet-balance',
+        reviewerEvidenceResources: [
+          { resourceId: 'wallet-balance', field: 'balance' },
+          { resourceId: 'wallet-journal', field: 'journal' },
+          { resourceId: 'wallet-transactions', field: 'transactions' },
+        ],
         persistenceOperations: [{ operationId: 'read-wallet-evidence' }],
       },
       {
@@ -506,7 +510,10 @@ const manifest = {
         sectionId: 'mail',
         target: 'managed-organization-character',
         exposure: 'sensitive-evidence',
-        reviewerEvidenceResourceId: 'mail-headers',
+        reviewerEvidenceResources: [
+          { resourceId: 'mail-headers', field: 'headers' },
+          { resourceId: 'mail-details', field: 'contents' },
+        ],
         persistenceOperations: [{ operationId: 'read-mail-evidence' }],
       },
       {

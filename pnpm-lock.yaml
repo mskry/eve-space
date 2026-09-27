@@ -464,6 +464,9 @@ importers:
       '@nuxt/schema':
         specifier: 'catalog:'
         version: 4.5.2
+      '@pinia/colada':
+        specifier: 'catalog:'
+        version: 1.4.2(pinia@4.0.3(@typescript/typescript6@6.0.2)(@vue/devtools-api@8.2.1)(vue@3.5.41(@typescript/typescript6@6.0.2)))(vue@3.5.41(@typescript/typescript6@6.0.2))
       vue:
         specifier: 'catalog:'
         version: 3.5.41(@typescript/typescript6@6.0.2)

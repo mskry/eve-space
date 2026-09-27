@@ -5,11 +5,11 @@ import type {
 import { zValidator } from '@eve-space/platform-module-server'
 import { Hono } from 'hono'
 import { z } from 'zod'
-import type {
-  MemberAuditAssetEvidence,
-  MemberAuditMailEvidence,
-  MemberAuditTrainedSkillsEvidence,
-  MemberAuditWalletEvidence,
+import {
+  readAssetEvidenceOperation,
+  readMailEvidenceOperation,
+  readTrainedSkillsEvidenceOperation,
+  readWalletEvidenceOperation,
 } from './persistence.js'
 
 const actionReason = z.string().trim().min(1).max(2000)
@@ -22,10 +22,31 @@ const assignGroupBody = z
   })
   .strict()
 const actionReasonBody = z.object({ reason: actionReason }).strict()
+const evidencePreviewLimit = 500
 
 type GroupCommandIds = readonly ['assign-ordinary-group', 'revoke-ordinary-group']
 type BlockCommandIds = readonly ['block-member', 'unblock-member']
 type MemberAuditRouteCapabilities = Pick<PlatformModuleRouteCapabilities, 'coreData' | 'logger'>
+type OperationResult<Operation extends { readonly outputSchema: z.ZodType }> = z.output<
+  Operation['outputSchema']
+>
+type SkillsResources = {
+  'trained-skills': OperationResult<typeof readTrainedSkillsEvidenceOperation>['trainedSkills']
+}
+type AssetsResources = { assets: OperationResult<typeof readAssetEvidenceOperation> }
+type WalletResources = {
+  'wallet-balance': OperationResult<typeof readWalletEvidenceOperation>['balance']
+  'wallet-journal': OperationResult<typeof readWalletEvidenceOperation>['journal']
+  'wallet-transactions': OperationResult<typeof readWalletEvidenceOperation>['transactions']
+}
+type MailResources = {
+  'mail-headers': OperationResult<typeof readMailEvidenceOperation>['headers']
+  'mail-details': OperationResult<typeof readMailEvidenceOperation>['contents']
+}
+type EvidenceRouteBinding<Operation, Resources extends readonly unknown[]> = {
+  readonly operation: Operation
+  readonly resources: Resources
+}
 
 export function memberSummaryRoutes(_capabilities: MemberAuditRouteCapabilities) {
   return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
@@ -46,71 +67,93 @@ export function memberSummaryRoutes(_capabilities: MemberAuditRouteCapabilities)
   })
 }
 
-export function memberSkillsRoutes(_capabilities: MemberAuditRouteCapabilities) {
-  return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
-    const characterId = selectedCharacterId(context.var.platform.reviewerTarget)
-    const trainedSkills = await context.var.platform.collectionStatus.read(
-      'trained-skills',
-      characterId,
-    )
-    return context.json(
-      {
-        evidence: await readReviewerEvidence<MemberAuditTrainedSkillsEvidence>(
-          context.var.platform,
-        ),
-        trainedSkills,
-      },
-      200,
-    )
-  })
+export const memberSkillsRoutes = (
+  _capabilities: MemberAuditRouteCapabilities,
+  _binding: EvidenceRouteBinding<
+    typeof readTrainedSkillsEvidenceOperation,
+    readonly [{ readonly resourceId: 'trained-skills'; readonly field: 'trainedSkills' }]
+  >,
+) => {
+  return new Hono<PlatformReviewerTargetRouteEnv<[], SkillsResources>>().get(
+    '/',
+    async (context) => {
+      const resources = await readReviewerEvidence(context.var.platform)
+      return context.json(
+        {
+          trainedSkills: resources['trained-skills'],
+        },
+        200,
+      )
+    },
+  )
 }
 
-export function memberAssetsRoutes(_capabilities: MemberAuditRouteCapabilities) {
-  return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
-    const characterId = selectedCharacterId(context.var.platform.reviewerTarget)
-    const status = await context.var.platform.collectionStatus.read('assets', characterId)
-    return context.json(
-      {
-        evidence: await readReviewerEvidence<MemberAuditAssetEvidence>(context.var.platform),
-        status,
-      },
-      200,
-    )
-  })
+export const memberAssetsRoutes = (
+  _capabilities: MemberAuditRouteCapabilities,
+  _binding: EvidenceRouteBinding<
+    typeof readAssetEvidenceOperation,
+    readonly [{ readonly resourceId: 'assets'; readonly field: null }]
+  >,
+) => {
+  return new Hono<PlatformReviewerTargetRouteEnv<[], AssetsResources>>().get(
+    '/',
+    async (context) => {
+      const resources = await readReviewerEvidence(context.var.platform)
+      return context.json(
+        {
+          assets: resources.assets,
+        },
+        200,
+      )
+    },
+  )
 }
 
-export function memberWalletRoutes(_capabilities: MemberAuditRouteCapabilities) {
-  return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
-    const characterId = selectedCharacterId(context.var.platform.reviewerTarget)
-    const [balance, journal, transactions] = await Promise.all([
-      context.var.platform.collectionStatus.read('wallet-balance', characterId),
-      context.var.platform.collectionStatus.read('wallet-journal', characterId),
-      context.var.platform.collectionStatus.read('wallet-transactions', characterId),
-    ])
-    return context.json(
-      {
-        balance,
-        evidence: await readReviewerEvidence<MemberAuditWalletEvidence>(context.var.platform, 500),
-        journal,
-        transactions,
-      },
-      200,
-    )
-  })
+export const memberWalletRoutes = (
+  _capabilities: MemberAuditRouteCapabilities,
+  _binding: EvidenceRouteBinding<
+    typeof readWalletEvidenceOperation,
+    readonly [
+      { readonly resourceId: 'wallet-balance'; readonly field: 'balance' },
+      { readonly resourceId: 'wallet-journal'; readonly field: 'journal' },
+      { readonly resourceId: 'wallet-transactions'; readonly field: 'transactions' },
+    ]
+  >,
+) => {
+  return new Hono<PlatformReviewerTargetRouteEnv<[], WalletResources>>().get(
+    '/',
+    async (context) => {
+      const resources = await readReviewerEvidence(context.var.platform, evidencePreviewLimit)
+      return context.json(
+        {
+          balance: resources['wallet-balance'],
+          journal: resources['wallet-journal'],
+          previewLimit: evidencePreviewLimit,
+          transactions: resources['wallet-transactions'],
+        },
+        200,
+      )
+    },
+  )
 }
 
-export function memberMailRoutes(_capabilities: MemberAuditRouteCapabilities) {
-  return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
-    const characterId = selectedCharacterId(context.var.platform.reviewerTarget)
-    const [headers, details] = await Promise.all([
-      context.var.platform.collectionStatus.read('mail-headers', characterId),
-      context.var.platform.collectionStatus.read('mail-details', characterId),
-    ])
+export const memberMailRoutes = (
+  _capabilities: MemberAuditRouteCapabilities,
+  _binding: EvidenceRouteBinding<
+    typeof readMailEvidenceOperation,
+    readonly [
+      { readonly resourceId: 'mail-headers'; readonly field: 'headers' },
+      { readonly resourceId: 'mail-details'; readonly field: 'contents' },
+    ]
+  >,
+) => {
+  return new Hono<PlatformReviewerTargetRouteEnv<[], MailResources>>().get('/', async (context) => {
+    const resources = await readReviewerEvidence(context.var.platform, evidencePreviewLimit)
     return context.json(
       {
-        details,
-        evidence: await readReviewerEvidence<MemberAuditMailEvidence>(context.var.platform, 500),
-        headers,
+        details: resources['mail-details'],
+        headers: resources['mail-headers'],
+        previewLimit: evidencePreviewLimit,
       },
       200,
     )
@@ -170,21 +213,12 @@ export function memberBlockRoutes(_capabilities: MemberAuditRouteCapabilities) {
     )
 }
 
-function selectedCharacterId(
-  target: PlatformReviewerTargetRouteEnv['Variables']['platform']['reviewerTarget'],
-) {
-  if (target.selection.kind !== 'character') {
-    throw new Error('Member Audit character target is unavailable')
-  }
-  return target.selection.characterId
-}
-
-function readReviewerEvidence<Evidence>(
-  platform: PlatformReviewerTargetRouteEnv['Variables']['platform'],
+const readReviewerEvidence = <Resources extends object>(
+  platform: PlatformReviewerTargetRouteEnv<[], Resources>['Variables']['platform'],
   limit?: number,
-): Promise<Evidence> {
+) => {
   if (!platform.evidence) {
     throw new Error('Reviewer evidence capability is unavailable')
   }
-  return platform.evidence.read(limit === undefined ? undefined : { limit }) as Promise<Evidence>
+  return platform.evidence.read(limit === undefined ? undefined : { limit })
 }

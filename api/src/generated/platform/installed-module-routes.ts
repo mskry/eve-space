@@ -13,9 +13,13 @@ import { installedReviewerContributions } from './installed-reviewer-contributio
 import {
   memberSummaryRoutes as module0Route0Factory,
   memberSkillsRoutes as module0Route1Factory,
+  readTrainedSkillsEvidenceOperation as module0Route1EvidenceOperation,
   memberAssetsRoutes as module0Route2Factory,
+  readAssetEvidenceOperation as module0Route2EvidenceOperation,
   memberWalletRoutes as module0Route3Factory,
+  readWalletEvidenceOperation as module0Route3EvidenceOperation,
   memberMailRoutes as module0Route4Factory,
+  readMailEvidenceOperation as module0Route4EvidenceOperation,
   memberGroupRoutes as module0Route5Factory,
   memberBlockRoutes as module0Route6Factory,
 } from '@eve-space/member-audit-server'
@@ -35,24 +39,47 @@ const module0Route1 = module0Route1Factory(
     installedReviewerContributions[1]!,
     [] as const,
   ),
+  {
+    operation: module0Route1EvidenceOperation,
+    resources: [{ resourceId: 'trained-skills', field: 'trainedSkills' }] as const,
+  },
 )
 const module0Route2 = module0Route2Factory(
   createPlatformReviewerContributionRouteCapabilities(
     installedReviewerContributions[2]!,
     [] as const,
   ),
+  {
+    operation: module0Route2EvidenceOperation,
+    resources: [{ resourceId: 'assets', field: null }] as const,
+  },
 )
 const module0Route3 = module0Route3Factory(
   createPlatformReviewerContributionRouteCapabilities(
     installedReviewerContributions[3]!,
     [] as const,
   ),
+  {
+    operation: module0Route3EvidenceOperation,
+    resources: [
+      { resourceId: 'wallet-balance', field: 'balance' },
+      { resourceId: 'wallet-journal', field: 'journal' },
+      { resourceId: 'wallet-transactions', field: 'transactions' },
+    ] as const,
+  },
 )
 const module0Route4 = module0Route4Factory(
   createPlatformReviewerContributionRouteCapabilities(
     installedReviewerContributions[4]!,
     [] as const,
   ),
+  {
+    operation: module0Route4EvidenceOperation,
+    resources: [
+      { resourceId: 'mail-headers', field: 'headers' },
+      { resourceId: 'mail-details', field: 'contents' },
+    ] as const,
+  },
 )
 const module0Route5 = module0Route5Factory(
   createPlatformReviewerContributionRouteCapabilities(
@@ -121,7 +148,7 @@ export const installedModuleRoutes = new Hono()
         exposure: 'sensitive-evidence',
         reviewerEvidence: {
           routeId: 'skills-detail',
-          resourceId: 'trained-skills',
+          resources: [{ resourceId: 'trained-skills', field: 'trainedSkills' }] as const,
           operationId: 'read-trained-skills-evidence',
         },
         reviewerResourceIds: ['trained-skills'] as const,
@@ -145,7 +172,7 @@ export const installedModuleRoutes = new Hono()
         exposure: 'sensitive-evidence',
         reviewerEvidence: {
           routeId: 'assets-detail',
-          resourceId: 'assets',
+          resources: [{ resourceId: 'assets', field: null }] as const,
           operationId: 'read-asset-evidence',
         },
         reviewerResourceIds: ['assets'] as const,
@@ -169,7 +196,11 @@ export const installedModuleRoutes = new Hono()
         exposure: 'sensitive-evidence',
         reviewerEvidence: {
           routeId: 'wallet-detail',
-          resourceId: 'wallet-balance',
+          resources: [
+            { resourceId: 'wallet-balance', field: 'balance' },
+            { resourceId: 'wallet-journal', field: 'journal' },
+            { resourceId: 'wallet-transactions', field: 'transactions' },
+          ] as const,
           operationId: 'read-wallet-evidence',
         },
         reviewerResourceIds: ['wallet-balance', 'wallet-journal', 'wallet-transactions'] as const,
@@ -193,7 +224,10 @@ export const installedModuleRoutes = new Hono()
         exposure: 'sensitive-evidence',
         reviewerEvidence: {
           routeId: 'mail-detail',
-          resourceId: 'mail-headers',
+          resources: [
+            { resourceId: 'mail-headers', field: 'headers' },
+            { resourceId: 'mail-details', field: 'contents' },
+          ] as const,
           operationId: 'read-mail-evidence',
         },
         reviewerResourceIds: ['mail-headers', 'mail-details'] as const,

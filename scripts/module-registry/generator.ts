@@ -147,10 +147,51 @@ export const generateRegistryFiles = function generateRegistryFiles(
   ])
 } satisfies PlatformRegistryRenderer
 
-function renderApiRoutes(compiled: CompiledPlatformModules) {
-  const manifests = readCompiledPlatformModules(compiled)
-  const reviewerContributions = installedReviewerContributionDescriptors(manifests)
-  const routes = manifests.flatMap((manifest, moduleIndex) =>
+type ApiRouteImport = {
+  readonly manifest: PlatformModuleManifest
+  readonly route: PlatformModuleManifest['server']['routes'][number]
+  readonly binding: string
+}
+
+const renderApiRouteImports = (routes: readonly ApiRouteImport[]) =>
+  renderServerImports(
+    routes.flatMap(({ manifest, route, binding }) => {
+      const operation = manifest.server.persistenceOperations.find(
+        ({ id }) => id === route.persistenceOperations[0]?.operationId,
+      )
+      const imports = [
+        {
+          exportName: route.exportName,
+          localName: `${binding}Factory`,
+          packageName: manifest.server.package,
+        },
+      ]
+      if (route.reviewerEvidenceResources && operation) {
+        imports.push({
+          exportName: operation.exportName,
+          localName: `${binding}EvidenceOperation`,
+          packageName: manifest.server.package,
+        })
+      }
+      return imports
+    }),
+  )
+
+const renderEvidenceFactoryArgument = (route: ApiRouteImport['route'], binding: string) =>
+  route.reviewerEvidenceResources
+    ? `, { operation: ${binding}EvidenceOperation, resources: ${JSON.stringify(route.reviewerEvidenceResources)} as const }`
+    : ''
+
+const renderEvidenceRouteBinding = (route: ApiRouteImport['route']) =>
+  route.reviewerEvidenceResources
+    ? `, reviewerEvidence: { routeId: ${quote(route.id)}, resources: ${JSON.stringify(route.reviewerEvidenceResources)} as const, operationId: ${quote(route.persistenceOperations[0]!.operationId)} }`
+    : ''
+
+const collectApiRoutes = (
+  manifests: readonly PlatformModuleManifest[],
+  reviewerContributions: readonly PlatformInstalledReviewerContributionDescriptor[],
+) =>
+  manifests.flatMap((manifest, moduleIndex) =>
     manifest.server.routes.map((route, routeIndex) => ({
       binding: `module${moduleIndex}Route${routeIndex}`,
       manifest,
@@ -161,13 +202,12 @@ function renderApiRoutes(compiled: CompiledPlatformModules) {
       route,
     })),
   )
-  const imports = renderServerImports(
-    routes.map(({ manifest, route, binding }) => ({
-      exportName: route.exportName,
-      localName: `${binding}Factory`,
-      packageName: manifest.server.package,
-    })),
-  )
+
+function renderApiRoutes(compiled: CompiledPlatformModules) {
+  const manifests = readCompiledPlatformModules(compiled)
+  const reviewerContributions = installedReviewerContributionDescriptors(manifests)
+  const routes = collectApiRoutes(manifests, reviewerContributions)
+  const imports = renderApiRouteImports(routes)
   const hasReviewerContributions = routes.some(
     ({ reviewerContributionIndex }) => reviewerContributionIndex >= 0,
   )
@@ -213,7 +253,8 @@ function renderApiRoutes(compiled: CompiledPlatformModules) {
     } else {
       capabilities = `createPlatformModuleRouteCapabilities(${quote(manifest.id)}, ${quote(route.id)}, ${JSON.stringify(route.coreDataProducts ?? [])} as const)`
     }
-    return `const ${binding} = ${binding}Factory(${capabilities})\n`
+    const evidence = renderEvidenceFactoryArgument(route, binding)
+    return `const ${binding} = ${binding}Factory(${capabilities}${evidence})\n`
   })
   const chain = routes.map(({ manifest, route, binding, reviewerContributionIndex }) => {
     const composer =
@@ -224,9 +265,7 @@ function renderApiRoutes(compiled: CompiledPlatformModules) {
       : ''
     const target = route.target ? `, target: ${quote(route.target)}` : ''
     const exposure = route.exposure ? `, exposure: ${quote(route.exposure)}` : ''
-    const reviewerEvidence = route.reviewerEvidenceResourceId
-      ? `, reviewerEvidence: { routeId: ${quote(route.id)}, resourceId: ${quote(route.reviewerEvidenceResourceId)}, operationId: ${quote(route.persistenceOperations[0]!.operationId)} }`
-      : ''
+    const reviewerEvidence = renderEvidenceRouteBinding(route)
     const sectionDescriptor = manifest.sections?.find(({ id }) => id === route.sectionId)
     const sectionResourceIds =
       sectionDescriptor?.kind === 'workspace'

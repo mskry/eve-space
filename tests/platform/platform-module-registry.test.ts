@@ -65,6 +65,34 @@ function generateRegistryFiles(
     : renderRegistryFiles(compiled, input.persistenceRoutines)
 }
 
+it('rejects repeated or empty-field reviewer evidence resources', () => {
+  const invalid = manifest('alpha', { persistenceOperation: {} })
+  invalid.sections = [
+    { defaultEnabled: false, disclosureRevision: 1, id: 'evidence', kind: 'sensitive-evidence' },
+  ]
+  Object.assign(invalid.server.routes[0]!, {
+    audience: 'hr',
+    authorization: 'authenticated-session',
+    exposure: 'sensitive-evidence',
+    namespace: '/alpha/accounts/:userId/characters/:characterId/evidence',
+    requiredPermission: 'alpha.evidence.read',
+    reviewerEvidenceResources: [
+      { resourceId: 'alpha-resource', field: '' },
+      { resourceId: 'alpha-resource', field: 'records' },
+    ],
+    sectionId: 'evidence',
+    target: 'managed-organization-character',
+  })
+
+  const message = validationErrorMessage(invalid)
+  expect(message).toContain(
+    'reviewer evidence route alpha/alpha-route repeats resource alpha-resource',
+  )
+  expect(message).toContain(
+    'reviewer evidence route alpha/alpha-route resource alpha-resource has an empty field',
+  )
+})
+
 describe('platform module declarations', () => {
   it('compiles unknown candidates into stable canonical order without partial output', () => {
     const alpha = manifest('alpha')
@@ -965,7 +993,7 @@ describe('platform module declarations', () => {
       exposure: 'sensitive-evidence',
       namespace: '/alpha/accounts/:userId/characters/:characterId/evidence',
       requiredPermission: 'alpha.evidence.read',
-      reviewerEvidenceResourceId: 'alpha-resource',
+      reviewerEvidenceResources: [{ resourceId: 'alpha-resource', field: null }],
       sectionId: 'evidence',
       target: 'managed-organization-character',
     })

@@ -109,13 +109,15 @@ const apiServer = await startCorsJsonApi((request) => {
   ) {
     return {
       body: {
-        evidence: { snapshot: { records: [] } },
-        status: {
-          authorizationGeneration: 4,
-          disclosureVersion: 1,
-          resourceId: 'assets',
-          status: 'current',
-          validatedAt: '2026-09-19T08:00:00.000Z',
+        assets: {
+          evidence: { snapshot: { records: [] } },
+          status: {
+            authorizationGeneration: 4,
+            disclosureVersion: 1,
+            resourceId: 'assets',
+            status: 'current',
+            validatedAt: '2026-09-19T08:00:00.000Z',
+          },
         },
       },
     }

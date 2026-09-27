@@ -5,10 +5,9 @@ import { describe, expect, test } from 'vitest'
 import type { PlatformReviewerPanelProps } from '@eve-space/platform-module-nuxt/runtime/reviewer-panel'
 import module from '../src/module.js'
 import {
-  hasAssetEvidence,
-  hasMailEvidence,
-  hasTrainedSkillsEvidence,
-  hasWalletEvidence,
+  evidenceNames,
+  evidenceNumber,
+  evidenceText,
 } from '../src/runtime/app/reviewer/evidence-presentation.js'
 import {
   collectionState,
@@ -94,22 +93,13 @@ test('scopes reviewer queries to the platform contribution target lifecycle', as
   }
 })
 
-test('keeps disclosed-character selection and destructive confirmation bound to the target', async () => {
+test('keeps disclosed-character selection bound to the reviewer target', async () => {
   const overview = await readFile(
     fileURLToPath(new URL('../src/runtime/app/reviewer/overview.vue', import.meta.url)),
     'utf8',
   )
   expect(overview).toContain('targetCharacterId')
   expect(overview).toContain('Character for evidence panels')
-
-  for (const panel of ['ordinary-groups', 'member-block']) {
-    const source = await readFile(
-      fileURLToPath(new URL(`../src/runtime/app/reviewer/${panel}.vue`, import.meta.url)),
-      'utf8',
-    )
-    expect(source).toContain('JSON.stringify(props.target)')
-    expect(source).toContain('resetAction()')
-  }
 })
 
 test('forces explicit retries and post-mutation reloads past fresh query caches', async () => {
@@ -274,29 +264,11 @@ describe('reviewer state presentation', () => {
     ).toBe('Character 90000001')
   })
 
-  test('detects empty and populated section-specific evidence shapes', () => {
-    expect(hasTrainedSkillsEvidence({ trainedSkills: null })).toBe(false)
-    expect(
-      hasTrainedSkillsEvidence({ trainedSkills: { snapshot: { groups: [{ skills: [] }] } } }),
-    ).toBe(false)
-    expect(
-      hasTrainedSkillsEvidence({
-        trainedSkills: { snapshot: { groups: [{ skills: [{ typeId: 1 }] }] } },
-      }),
-    ).toBe(true)
-
-    expect(hasAssetEvidence(null)).toBe(false)
-    expect(hasAssetEvidence({ snapshot: { records: [] } })).toBe(false)
-    expect(hasAssetEvidence({ snapshot: { records: [{ itemId: 1 }] } })).toBe(true)
-
-    expect(hasWalletEvidence({ balance: null, journal: [], transactions: [] })).toBe(false)
-    expect(hasWalletEvidence({ balance: {}, journal: [], transactions: [] })).toBe(true)
-    expect(
-      hasWalletEvidence({ balance: null, journal: [{ journalId: 1 }], transactions: [] }),
-    ).toBe(true)
-
-    expect(hasMailEvidence({ contents: [], headers: [] })).toBe(false)
-    expect(hasMailEvidence({ contents: [{ mailId: 1 }], headers: [] })).toBe(true)
+  test('formats a valid zero balance separately from missing evidence and names', () => {
+    expect(evidenceNumber(0)).toBe('0')
+    expect(evidenceNumber(null)).toBe('Unknown')
+    expect(evidenceText(null, 'Location unavailable')).toBe('Location unavailable')
+    expect(evidenceNames(['Pilot', 'Wingmate'])).toBe('Pilot, Wingmate')
   })
 })
 

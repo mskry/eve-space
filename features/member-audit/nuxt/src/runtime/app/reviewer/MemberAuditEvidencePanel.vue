@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import type { VNode } from 'vue'
 import type { PlatformResourceState } from '@eve-space/platform-module-nuxt/runtime'
 import MemberAuditPanelFrame from './MemberAuditPanelFrame.vue'
 import type { MemberAuditCollectionStatus } from './useMemberAuditReviewerQuery'
 
-const props = defineProps<{
+defineProps<{
   description: string
-  evidence: unknown
   hasEvidence: boolean
   permission: string
   state: PlatformResourceState
@@ -15,9 +14,8 @@ const props = defineProps<{
   title: string
 }>()
 
-const formattedEvidence = computed(() => JSON.stringify(props.evidence, null, 2))
-
 const emit = defineEmits<{ retry: [] }>()
+defineSlots<{ default(): VNode[] }>()
 </script>
 
 <template>
@@ -34,7 +32,7 @@ const emit = defineEmits<{ retry: [] }>()
       aria-label="Collection status"
     >
       <li v-for="status in statuses" :key="status.resourceId">
-        <strong>{{ status.resourceId }}</strong>
+        <strong>{{ status.resourceId.replaceAll('-', ' ') }}</strong>
         <span>{{ status.status }}</span>
         <span>
           Validated:
@@ -43,19 +41,20 @@ const emit = defineEmits<{ retry: [] }>()
           </time>
           <template v-else>never</template>
         </span>
-        <span v-if="status.authorizationGeneration !== undefined">
-          Authorization generation: {{ status.authorizationGeneration ?? 'none' }}
-        </span>
-        <span v-if="status.disclosureVersion">
-          Disclosure version: {{ status.disclosureVersion }}
-        </span>
       </li>
     </ul>
-    <PlatformResourceBoundary :state="state" :has-data="hasEvidence" @retry="emit('retry')">
+    <PlatformResourceBoundary
+      :state="state"
+      :has-data="
+        hasEvidence ||
+        statuses.some((status) => status.status === 'current' || status.status === 'stale')
+      "
+      @retry="emit('retry')"
+    >
       <output v-if="!hasEvidence" class="member-audit-evidence__empty">
         The current complete observation contains no records.
       </output>
-      <pre v-else class="member-audit-evidence__payload">{{ formattedEvidence }}</pre>
+      <slot v-else />
     </PlatformResourceBoundary>
   </MemberAuditPanelFrame>
 </template>
@@ -89,13 +88,15 @@ const emit = defineEmits<{ retry: [] }>()
   padding: 1rem;
 }
 
-.member-audit-evidence__payload {
-  max-width: 100%;
+.member-audit-evidence__statuses li {
+  align-content: start;
+}
+
+:slotted(.member-audit-evidence-list) {
+  display: grid;
+  gap: 0.75rem;
   margin: 0;
-  padding: 1rem;
-  border: 1px solid var(--ui-border);
-  background: var(--ui-surface);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  padding: 0;
+  list-style: none;
 }
 </style>

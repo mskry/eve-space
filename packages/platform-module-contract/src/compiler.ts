@@ -604,7 +604,7 @@ function parseRoute(
       'sectionId',
       'target',
       'exposure',
-      'reviewerEvidenceResourceId',
+      'reviewerEvidenceResources',
       'organizationCommands',
     ],
     issues,
@@ -649,10 +649,18 @@ function parseRoute(
     `${path}.exposure`,
     issues,
   )
-  const reviewerEvidenceResourceId = readOptionalString(
-    record.reviewerEvidenceResourceId,
-    `${path}.reviewerEvidenceResourceId`,
+  const reviewerEvidenceResources = readOptionalArray(
+    record.reviewerEvidenceResources,
+    `${path}.reviewerEvidenceResources`,
     issues,
+    (entryValue, entryPath, entryIssues) => {
+      const entry = readRecord(entryValue, entryPath, ['resourceId', 'field'], entryIssues)
+      if (!entry) return undefined
+      const resourceId = readString(entry.resourceId, `${entryPath}.resourceId`, entryIssues)
+      const field =
+        entry.field === null ? null : readString(entry.field, `${entryPath}.field`, entryIssues)
+      return resourceId === undefined || field === undefined ? undefined : { resourceId, field }
+    },
   )
   const organizationCommands = readOptionalMembers(
     record.organizationCommands,
@@ -682,7 +690,7 @@ function parseRoute(
     organizationCommands,
     persistenceOperations: persistence.persistenceOperations,
     requiredPermission,
-    reviewerEvidenceResourceId,
+    reviewerEvidenceResources,
     sectionId,
     target,
   }

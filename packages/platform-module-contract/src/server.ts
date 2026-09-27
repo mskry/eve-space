@@ -91,7 +91,10 @@ export interface PlatformRouteSecurityClassification
   extends PlatformSectionBoundContribution, PlatformOrganizationCommandContribution {
   readonly target?: PlatformRouteTarget
   readonly exposure?: PlatformRouteExposure
-  readonly reviewerEvidenceResourceId?: string
+  readonly reviewerEvidenceResources?: readonly {
+    readonly resourceId: string
+    readonly field: string | null
+  }[]
 }
 
 export const platformOrganizationCommandIds = [
@@ -264,8 +267,15 @@ export interface PlatformReviewerEvidenceSummaryReads {
   read(): Promise<readonly PlatformReviewerCharacterEvidenceSummary[]>
 }
 
-export interface PlatformReviewerEvidenceReads {
-  read(options?: { readonly limit?: number }): Promise<unknown>
+export type PlatformReviewerEvidenceResult<Evidence> = {
+  readonly status: PlatformReviewerCollectionStatus
+  readonly evidence: Evidence | null
+}
+
+export interface PlatformReviewerEvidenceReads<Resources extends object = object> {
+  read(options?: { readonly limit?: number }): Promise<{
+    readonly [ResourceId in keyof Resources]: PlatformReviewerEvidenceResult<Resources[ResourceId]>
+  }>
 }
 
 export interface PlatformSafeErrorBody {
@@ -511,14 +521,14 @@ export interface PlatformOwnedCharacterRouteContext {
   readonly coreReads: OwnedCharacterCoreReads
 }
 
-interface PlatformReviewerTargetRouteContextBase {
+interface PlatformReviewerTargetRouteContextBase<Evidence extends object> {
   readonly authorization: {
     readonly strategy: 'authenticated-session'
     readonly userId: string
   }
   readonly organization: PlatformAuthorizedOrganizationContext
   readonly collectionStatus: PlatformReviewerCollectionStatusReads
-  readonly evidence?: PlatformReviewerEvidenceReads
+  readonly evidence?: PlatformReviewerEvidenceReads<Evidence>
   readonly evidenceSummary: PlatformReviewerEvidenceSummaryReads
   readonly reviewerTarget: PlatformReviewerTargetContext
 }
@@ -533,7 +543,9 @@ type PlatformReviewerTargetRouteCommandContext<
 
 export type PlatformReviewerTargetRouteContext<
   CommandIds extends readonly PlatformOrganizationCommandId[] = readonly [],
-> = PlatformReviewerTargetRouteContextBase & PlatformReviewerTargetRouteCommandContext<CommandIds>
+  Evidence extends object = object,
+> = PlatformReviewerTargetRouteContextBase<Evidence> &
+  PlatformReviewerTargetRouteCommandContext<CommandIds>
 
 export interface PlatformReviewerSearchRouteContext {
   readonly authorization: {
@@ -558,9 +570,10 @@ export interface PlatformOwnedCharacterRouteEnv {
 
 export interface PlatformReviewerTargetRouteEnv<
   CommandIds extends readonly PlatformOrganizationCommandId[] = readonly [],
+  Evidence extends object = object,
 > {
   Variables: {
-    platform: PlatformReviewerTargetRouteContext<CommandIds>
+    platform: PlatformReviewerTargetRouteContext<CommandIds, Evidence>
   }
 }
 
