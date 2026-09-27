@@ -302,7 +302,7 @@ function validatePersistenceGrants(
     validatePersistenceReferences(
       route.persistenceOperations,
       `route ${manifest.id}/${route.id}`,
-      route.reviewerEvidenceResourceId === undefined ? undefined : 'read',
+      route.reviewerEvidenceResources === undefined ? undefined : 'read',
       validationContext,
     )
   }
@@ -488,6 +488,54 @@ function validateManagedReviewerRoute(
   validateManagedReviewerRouteParameters(route, identity, issues)
 }
 
+const validateReviewerEvidenceResource = (
+  route: PlatformRouteContribution,
+  manifest: PlatformModuleManifest,
+  identity: string,
+  resourceId: string,
+  issues: string[],
+) => {
+  const resource = manifest.server.resources.find(({ id }) => id === resourceId)
+  if (!resource) {
+    issues.push(`reviewer evidence route ${identity} references unknown resource ${resourceId}`)
+    return
+  }
+  if (resource.sectionId !== route.sectionId) {
+    issues.push(
+      `reviewer evidence route ${identity} resource ${resourceId} must belong to section ${String(route.sectionId)}`,
+    )
+    return
+  }
+  if (
+    resource.subjectKind !== 'character' ||
+    resource.eligibility.kind !== 'current-managed-member-character'
+  ) {
+    issues.push(
+      `reviewer evidence route ${identity} resource ${resourceId} must be a character resource with current-managed-member-character eligibility`,
+    )
+  }
+}
+
+const validateReviewerEvidenceBindings = (
+  route: PlatformRouteContribution,
+  manifest: PlatformModuleManifest,
+  identity: string,
+  resources: NonNullable<PlatformRouteContribution['reviewerEvidenceResources']>,
+  issues: string[],
+) => {
+  const seen = new Set<string>()
+  for (const { resourceId, field } of resources) {
+    if (seen.has(resourceId)) {
+      issues.push(`reviewer evidence route ${identity} repeats resource ${resourceId}`)
+    }
+    seen.add(resourceId)
+    if (field !== null && !field.trim()) {
+      issues.push(`reviewer evidence route ${identity} resource ${resourceId} has an empty field`)
+    }
+    validateReviewerEvidenceResource(route, manifest, identity, resourceId, issues)
+  }
+}
+
 function validateReviewerEvidenceRoute(
   route: PlatformRouteContribution,
   manifest: PlatformModuleManifest,
@@ -495,18 +543,18 @@ function validateReviewerEvidenceRoute(
   issues: string[],
 ) {
   const hasPersistence = route.persistenceOperations.length > 0
-  const resourceId = route.reviewerEvidenceResourceId
+  const resources = route.reviewerEvidenceResources
   const managedReviewerTarget = route.target !== undefined && route.target !== 'caller'
   if (!managedReviewerTarget) {
-    if (resourceId !== undefined) {
-      issues.push(`non-reviewer route ${identity} cannot declare reviewerEvidenceResourceId`)
+    if (resources !== undefined) {
+      issues.push(`non-reviewer route ${identity} cannot declare reviewerEvidenceResources`)
     }
     return
   }
-  if (!hasPersistence && resourceId === undefined) {
+  if (!hasPersistence && resources === undefined) {
     return
   }
-  if (resourceId === undefined) {
+  if (resources === undefined || resources.length === 0) {
     issues.push(
       `managed reviewer route ${identity} cannot receive generic route persistence; use a target-bound platform capability`,
     )
@@ -523,21 +571,7 @@ function validateReviewerEvidenceRoute(
   if (route.persistenceOperations.length !== 1) {
     issues.push(`reviewer evidence route ${identity} must declare exactly one read operation`)
   }
-  const resource = manifest.server.resources.find(({ id }) => id === resourceId)
-  if (!resource) {
-    issues.push(`reviewer evidence route ${identity} references unknown resource ${resourceId}`)
-  } else if (resource.sectionId !== route.sectionId) {
-    issues.push(
-      `reviewer evidence route ${identity} resource ${resourceId} must belong to section ${String(route.sectionId)}`,
-    )
-  } else if (
-    resource.subjectKind !== 'character' ||
-    resource.eligibility.kind !== 'current-managed-member-character'
-  ) {
-    issues.push(
-      `reviewer evidence route ${identity} resource ${resourceId} must be a character resource with current-managed-member-character eligibility`,
-    )
-  }
+  validateReviewerEvidenceBindings(route, manifest, identity, resources, issues)
 }
 
 function validateManagedReviewerSearchRoute(

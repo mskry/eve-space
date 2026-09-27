@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { readPlatformApiResponse } from '@eve-space/platform-module-nuxt/runtime'
 import type { PlatformReviewerPanelProps } from '@eve-space/platform-module-nuxt/runtime/reviewer-panel'
 import MemberAuditPanelFrame from './MemberAuditPanelFrame.vue'
+import { useMemberAuditManagementAction } from './useMemberAuditManagementAction'
 import {
   memberAuditReviewerQueryOptions,
   targetLabel,
@@ -31,68 +32,51 @@ const block = withMemberAuditReviewerQueryState(
 )
 const reason = ref('')
 const confirmed = ref(false)
-const actionPending = ref(false)
-const actionMessage = ref('')
-let actionRevision = 0
+const action = useMemberAuditManagementAction(
+  props,
+  async () => {
+    await block.refetch()
+  },
+  () => {
+    reason.value = ''
+    confirmed.value = false
+  },
+)
 const canSubmit = computed(
-  () => Boolean(reason.value.trim() && confirmed.value) && !actionPending.value,
+  () =>
+    Boolean(reason.value.trim() && confirmed.value) &&
+    !action.pending.value &&
+    action.authorized.value,
 )
 
-watch(
-  () => `${props.organizationVersion}/${JSON.stringify(props.target)}`,
-  () => resetAction(),
-  { flush: 'sync' },
-)
-
-async function changeBlock() {
+const changeBlock = async () => {
   if (!canSubmit.value || !block.data.value) {
     return
   }
-  actionPending.value = true
-  actionMessage.value = ''
-  const revision = actionRevision
   const currentlyBlocked = block.data.value.block.blocked
-  try {
-    const response = currentlyBlocked
-      ? await api.api.modules['member-audit'].accounts[':userId'].block.$delete({
-          json: { reason: reason.value.trim() },
-          param: { userId: props.target.userId },
-        })
-      : await api.api.modules['member-audit'].accounts[':userId'].block.$post({
-          json: { reason: reason.value.trim() },
-          param: { userId: props.target.userId },
-        })
-    await readPlatformApiResponse(
-      response,
-      currentlyBlocked ? 'The member could not be unblocked.' : 'The member could not be blocked.',
-    )
-    if (revision !== actionRevision) {
-      return
-    }
-    actionMessage.value = currentlyBlocked
+  await action.run(
+    async () => {
+      const response = currentlyBlocked
+        ? await api.api.modules['member-audit'].accounts[':userId'].block.$delete({
+            json: { reason: reason.value.trim() },
+            param: { userId: props.target.userId },
+          })
+        : await api.api.modules['member-audit'].accounts[':userId'].block.$post({
+            json: { reason: reason.value.trim() },
+            param: { userId: props.target.userId },
+          })
+      await readPlatformApiResponse(
+        response,
+        currentlyBlocked
+          ? 'The member could not be unblocked.'
+          : 'The member could not be blocked.',
+      )
+    },
+    currentlyBlocked
       ? 'Member unblocked. Core will reevaluate current compliance and assignments.'
-      : 'Member blocked. Protected organization access is denied immediately.'
-    reason.value = ''
-    confirmed.value = false
-    await block.refetch()
-  } catch (error) {
-    if (revision !== actionRevision) {
-      return
-    }
-    actionMessage.value = error instanceof Error ? error.message : 'The block action failed.'
-  } finally {
-    if (revision === actionRevision) {
-      actionPending.value = false
-    }
-  }
-}
-
-function resetAction() {
-  actionRevision += 1
-  reason.value = ''
-  confirmed.value = false
-  actionPending.value = false
-  actionMessage.value = ''
+      : 'Member blocked. Protected organization access is denied immediately.',
+    'The block action failed.',
+  )
 }
 </script>
 
@@ -134,7 +118,9 @@ function resetAction() {
         {{ block.data.value?.block.blocked ? 'Unblock member' : 'Block member' }}
       </button>
     </form>
-    <output v-if="actionMessage" class="member-audit-block__result">{{ actionMessage }}</output>
+    <output v-if="action.message.value" class="member-audit-block__result">{{
+      action.message.value
+    }}</output>
   </MemberAuditPanelFrame>
 </template>
 

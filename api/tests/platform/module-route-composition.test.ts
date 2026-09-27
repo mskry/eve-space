@@ -114,7 +114,7 @@ const reviewerEvidenceDeclaration = {
   ...reviewerCharacterDeclaration,
   reviewerEvidence: {
     operationId: 'read-trained-skills-evidence',
-    resourceId: 'trained-skills',
+    resources: [{ resourceId: 'trained-skills', field: 'trainedSkills' }],
     routeId: 'skills-detail',
   },
 } as const

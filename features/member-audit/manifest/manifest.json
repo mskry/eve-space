@@ -267,7 +267,7 @@
         "sectionId": "skills",
         "target": "managed-organization-character",
         "exposure": "sensitive-evidence",
-        "reviewerEvidenceResourceId": "trained-skills"
+        "reviewerEvidenceResources": [{ "resourceId": "trained-skills", "field": "trainedSkills" }]
       },
       {
         "id": "assets-detail",
@@ -284,7 +284,7 @@
         "sectionId": "assets",
         "target": "managed-organization-character",
         "exposure": "sensitive-evidence",
-        "reviewerEvidenceResourceId": "assets"
+        "reviewerEvidenceResources": [{ "resourceId": "assets", "field": null }]
       },
       {
         "id": "wallet-detail",
@@ -301,7 +301,11 @@
         "sectionId": "wallet",
         "target": "managed-organization-character",
         "exposure": "sensitive-evidence",
-        "reviewerEvidenceResourceId": "wallet-balance"
+        "reviewerEvidenceResources": [
+          { "resourceId": "wallet-balance", "field": "balance" },
+          { "resourceId": "wallet-journal", "field": "journal" },
+          { "resourceId": "wallet-transactions", "field": "transactions" }
+        ]
       },
       {
         "id": "mail-detail",
@@ -318,7 +322,10 @@
         "sectionId": "mail",
         "target": "managed-organization-character",
         "exposure": "sensitive-evidence",
-        "reviewerEvidenceResourceId": "mail-headers"
+        "reviewerEvidenceResources": [
+          { "resourceId": "mail-headers", "field": "headers" },
+          { "resourceId": "mail-details", "field": "contents" }
+        ]
       },
       {
         "id": "group-actions",

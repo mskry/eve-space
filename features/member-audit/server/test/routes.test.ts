@@ -10,6 +10,12 @@ import {
   memberSummaryRoutes,
   memberWalletRoutes,
 } from '../src/routes.js'
+import {
+  readAssetEvidenceOperation,
+  readMailEvidenceOperation,
+  readTrainedSkillsEvidenceOperation,
+  readWalletEvidenceOperation,
+} from '../src/persistence.js'
 
 const characterTarget = {
   account: {
@@ -34,6 +40,11 @@ const characterTarget = {
     characterLifecycleId: '11111111-1111-4111-8111-111111111111',
     kind: 'character' as const,
   },
+}
+
+const evidenceRouteCapabilities = {
+  coreData: {},
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }
 
 test('returns only the bounded reviewer target summary', async () => {
@@ -95,60 +106,89 @@ test('returns only the bounded reviewer target summary', async () => {
 test('returns collection status and persisted evidence for each character section', async () => {
   const cases = [
     {
-      body: {
-        trainedSkills: { resourceId: 'trained-skills' },
-      },
+      resourceIds: ['trained-skills'],
       evidenceInput: undefined,
-      resources: ['trained-skills'],
-      route: memberSkillsRoutes,
+      previewLimit: undefined,
+      route: memberSkillsRoutes(evidenceRouteCapabilities, {
+        operation: readTrainedSkillsEvidenceOperation,
+        resources: [{ resourceId: 'trained-skills', field: 'trainedSkills' }],
+      }),
     },
     {
-      body: { status: { resourceId: 'assets' } },
+      resourceIds: ['assets'],
       evidenceInput: undefined,
-      resources: ['assets'],
-      route: memberAssetsRoutes,
+      previewLimit: undefined,
+      route: memberAssetsRoutes(evidenceRouteCapabilities, {
+        operation: readAssetEvidenceOperation,
+        resources: [{ resourceId: 'assets', field: null }],
+      }),
     },
     {
-      body: {
-        balance: { resourceId: 'wallet-balance' },
-        journal: { resourceId: 'wallet-journal' },
-        transactions: { resourceId: 'wallet-transactions' },
-      },
+      resourceIds: ['wallet-balance', 'wallet-journal', 'wallet-transactions'],
       evidenceInput: { limit: 500 },
-      resources: ['wallet-balance', 'wallet-journal', 'wallet-transactions'],
-      route: memberWalletRoutes,
+      previewLimit: 500,
+      route: memberWalletRoutes(evidenceRouteCapabilities, {
+        operation: readWalletEvidenceOperation,
+        resources: [
+          { resourceId: 'wallet-balance', field: 'balance' },
+          { resourceId: 'wallet-journal', field: 'journal' },
+          { resourceId: 'wallet-transactions', field: 'transactions' },
+        ],
+      }),
     },
     {
-      body: {
-        details: { resourceId: 'mail-details' },
-        headers: { resourceId: 'mail-headers' },
-      },
+      resourceIds: ['mail-headers', 'mail-details'],
       evidenceInput: { limit: 500 },
-      resources: ['mail-headers', 'mail-details'],
-      route: memberMailRoutes,
+      previewLimit: 500,
+      route: memberMailRoutes(evidenceRouteCapabilities, {
+        operation: readMailEvidenceOperation,
+        resources: [
+          { resourceId: 'mail-headers', field: 'headers' },
+          { resourceId: 'mail-details', field: 'contents' },
+        ],
+      }),
     },
   ] as const
 
   for (const testCase of cases) {
-    const readStatus = vi.fn((resourceId: string) => ({ resourceId }))
-    const readEvidence = vi.fn().mockResolvedValue({ records: [] })
+    const readEvidence = vi.fn().mockResolvedValue(
+      Object.fromEntries(
+        testCase.resourceIds.map((resourceId) => [
+          resourceId,
+          {
+            evidence: { records: [] },
+            status: { resourceId, status: 'current' },
+          },
+        ]),
+      ),
+    )
     const app = new Hono<PlatformReviewerTargetRouteEnv>()
       .use('*', async (context, next) => {
+        // SAFETY: The route reads only the injected evidence and selected target in this fixture.
         context.set('platform', {
-          collectionStatus: { read: readStatus },
           evidence: { read: readEvidence },
           reviewerTarget: characterTarget,
         } as never)
         await next()
       })
-      .route('/', testCase.route({} as never))
+      .route('/', testCase.route)
 
     const response = await app.request('/')
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toStrictEqual({ ...testCase.body, evidence: { records: [] } })
-    expect(readStatus.mock.calls).toStrictEqual(
-      testCase.resources.map((resourceId) => [resourceId, characterTarget.selection.characterId]),
+    const responseBody = await response.json()
+    expect(responseBody.previewLimit).toBe(testCase.previewLimit)
+    expect(
+      Object.values(responseBody)
+        .filter((value) => typeof value === 'object')
+        .toSorted((left, right) => left.status.resourceId.localeCompare(right.status.resourceId)),
+    ).toStrictEqual(
+      testCase.resourceIds
+        .map((resourceId) => ({
+          evidence: { records: [] },
+          status: { resourceId, status: 'current' },
+        }))
+        .toSorted((left, right) => left.status.resourceId.localeCompare(right.status.resourceId)),
     )
     expect(readEvidence).toHaveBeenCalledWith(testCase.evidenceInput)
   }
@@ -158,21 +198,35 @@ test('rejects character evidence routes without a character target or evidence c
   const accountTarget = { ...characterTarget, selection: { kind: 'account' as const } }
   const accountApp = new Hono<PlatformReviewerTargetRouteEnv>()
     .use('*', async (context, next) => {
+      // SAFETY: Missing evidence is intentional; the route must refuse this account target first.
       context.set('platform', { reviewerTarget: accountTarget } as never)
       await next()
     })
-    .route('/', memberAssetsRoutes({} as never))
+    .route(
+      '/',
+      memberAssetsRoutes(evidenceRouteCapabilities, {
+        operation: readAssetEvidenceOperation,
+        resources: [{ resourceId: 'assets', field: null }],
+      }),
+    )
   expect((await accountApp.request('/')).status).toBe(500)
 
   const evidenceApp = new Hono<PlatformReviewerTargetRouteEnv>()
     .use('*', async (context, next) => {
+      // SAFETY: The absent evidence capability is the failure condition under test.
       context.set('platform', {
         collectionStatus: { read: vi.fn().mockResolvedValue({}) },
         reviewerTarget: characterTarget,
       } as never)
       await next()
     })
-    .route('/', memberAssetsRoutes({} as never))
+    .route(
+      '/',
+      memberAssetsRoutes(evidenceRouteCapabilities, {
+        operation: readAssetEvidenceOperation,
+        resources: [{ resourceId: 'assets', field: null }],
+      }),
+    )
   expect((await evidenceApp.request('/')).status).toBe(500)
 })
 

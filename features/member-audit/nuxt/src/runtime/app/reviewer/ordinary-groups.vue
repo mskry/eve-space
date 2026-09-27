@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { readPlatformApiResponse } from '@eve-space/platform-module-nuxt/runtime'
 import type { PlatformReviewerPanelProps } from '@eve-space/platform-module-nuxt/runtime/reviewer-panel'
 import MemberAuditPanelFrame from './MemberAuditPanelFrame.vue'
+import { useMemberAuditManagementAction } from './useMemberAuditManagementAction'
 import {
   memberAuditReviewerQueryOptions,
   targetLabel,
@@ -33,107 +34,71 @@ const groupId = ref('')
 const reason = ref('')
 const expiresAt = ref('')
 const confirmed = ref(false)
-const actionPending = ref(false)
-const actionMessage = ref('')
-let actionRevision = 0
-const canAssign = computed(
-  () =>
-    Boolean(groupId.value.trim() && reason.value.trim() && confirmed.value) && !actionPending.value,
-)
-
-watch(
-  () => `${props.organizationVersion}/${JSON.stringify(props.target)}`,
-  () => resetAction(),
-  { flush: 'sync' },
-)
-
-async function assignGroup() {
-  if (!canAssign.value) {
-    return
-  }
-  actionPending.value = true
-  actionMessage.value = ''
-  const revision = actionRevision
-  try {
-    await readPlatformApiResponse(
-      await api.api.modules['member-audit'].accounts[':userId'].groups[':groupId'].$post({
-        json: {
-          expiresAt: expiresAt.value ? new Date(expiresAt.value).toISOString() : null,
-          reason: reason.value.trim(),
-        },
-        param: { groupId: groupId.value.trim(), userId: props.target.userId },
-      }),
-      'The ordinary group could not be assigned.',
-    )
-    if (revision !== actionRevision) {
-      return
-    }
-    actionMessage.value = 'Ordinary group assigned. Entitlements will be reevaluated by core.'
-    clearAction()
-    await groups.refetch()
-  } catch (error) {
-    if (revision !== actionRevision) {
-      return
-    }
-    actionMessage.value = error instanceof Error ? error.message : 'The group action failed.'
-  } finally {
-    if (revision === actionRevision) {
-      actionPending.value = false
-    }
-  }
-}
-
-async function revokeGroup(group: NonNullable<typeof groups.data.value>['groups'][number]) {
-  if (!confirmed.value || !reason.value.trim() || group.readOnly || actionPending.value) {
-    return
-  }
-  actionPending.value = true
-  actionMessage.value = ''
-  const revision = actionRevision
-  try {
-    await readPlatformApiResponse(
-      await api.api.modules['member-audit'].accounts[':userId'].groups[':groupId'].assignments[
-        ':assignmentId'
-      ].$delete({
-        json: { reason: reason.value.trim() },
-        param: {
-          assignmentId: group.assignmentId,
-          groupId: group.groupId,
-          userId: props.target.userId,
-        },
-      }),
-      'The ordinary group assignment could not be revoked.',
-    )
-    if (revision !== actionRevision) {
-      return
-    }
-    actionMessage.value = `${group.name} revoked. Entitlements will be reevaluated by core.`
-    clearAction()
-    await groups.refetch()
-  } catch (error) {
-    if (revision !== actionRevision) {
-      return
-    }
-    actionMessage.value = error instanceof Error ? error.message : 'The group action failed.'
-  } finally {
-    if (revision === actionRevision) {
-      actionPending.value = false
-    }
-  }
-}
-
-function clearAction() {
+const clearAction = () => {
   groupId.value = ''
   reason.value = ''
   expiresAt.value = ''
   confirmed.value = false
 }
+const action = useMemberAuditManagementAction(
+  props,
+  async () => {
+    await groups.refetch()
+  },
+  clearAction,
+)
+const canAssign = computed(
+  () =>
+    Boolean(groupId.value.trim() && reason.value.trim() && confirmed.value) &&
+    !action.pending.value &&
+    action.authorized.value,
+)
 
-function resetAction() {
-  actionRevision += 1
-  clearAction()
-  actionPending.value = false
-  actionMessage.value = ''
+const assignGroup = async () => {
+  if (!canAssign.value) {
+    return
+  }
+  await action.run(
+    async () => {
+      await readPlatformApiResponse(
+        await api.api.modules['member-audit'].accounts[':userId'].groups[':groupId'].$post({
+          json: {
+            expiresAt: expiresAt.value ? new Date(expiresAt.value).toISOString() : null,
+            reason: reason.value.trim(),
+          },
+          param: { groupId: groupId.value.trim(), userId: props.target.userId },
+        }),
+        'The ordinary group could not be assigned.',
+      )
+    },
+    'Ordinary group assigned. Entitlements will be reevaluated by core.',
+    'The group action failed.',
+  )
+}
+
+const revokeGroup = async (group: NonNullable<typeof groups.data.value>['groups'][number]) => {
+  if (!confirmed.value || !reason.value.trim() || group.readOnly || action.pending.value) {
+    return
+  }
+  await action.run(
+    async () => {
+      await readPlatformApiResponse(
+        await api.api.modules['member-audit'].accounts[':userId'].groups[':groupId'].assignments[
+          ':assignmentId'
+        ].$delete({
+          json: { reason: reason.value.trim() },
+          param: {
+            assignmentId: group.assignmentId,
+            groupId: group.groupId,
+            userId: props.target.userId,
+          },
+        }),
+        'The ordinary group assignment could not be revoked.',
+      )
+    },
+    `${group.name} revoked. Entitlements will be reevaluated by core.`,
+    'The group action failed.',
+  )
 }
 </script>
 
@@ -167,7 +132,13 @@ function resetAction() {
           </span>
           <button
             type="button"
-            :disabled="group.readOnly || !confirmed || !reason.trim() || actionPending"
+            :disabled="
+              group.readOnly ||
+              !confirmed ||
+              !reason.trim() ||
+              action.pending.value ||
+              !action.authorized.value
+            "
             @click="revokeGroup(group)"
           >
             Revoke
@@ -190,7 +161,9 @@ function resetAction() {
       </label>
       <button type="submit" :disabled="!canAssign">Assign ordinary group</button>
     </form>
-    <output v-if="actionMessage" class="member-audit-groups__result">{{ actionMessage }}</output>
+    <output v-if="action.message.value" class="member-audit-groups__result">{{
+      action.message.value
+    }}</output>
   </MemberAuditPanelFrame>
 </template>
 
