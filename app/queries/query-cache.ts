@@ -5,7 +5,11 @@ import {
   type ProtectedCharacterQueryAccess,
 } from './protected-character-query-access'
 import { PRIVATE_QUERY_KEYS } from './query-keys'
-import { canPrefetchPrivateQuery, refreshPrivateQueryAdmission } from '../query-persistence/runtime'
+import {
+  canPrefetchPrivateQuery,
+  invalidatePrivateQueryScope,
+  refreshPrivateQueryAdmission,
+} from '../query-persistence/runtime'
 
 export {
   clearAuthenticatedQueries,
@@ -13,15 +17,10 @@ export {
 } from '@eve-space/platform-module-nuxt/runtime'
 export { prefetchQuery }
 
-export function removeCharacterQueries(queryCache: QueryCache, characterId: number) {
-  removePlatformQueryScope(queryCache, PRIVATE_QUERY_KEYS.character(characterId))
-  void refreshPrivateAuthorization(queryCache, { characterId, kind: 'character' })
-}
-
-export async function refreshPrivateAuthorization(
+export const refreshPrivateAuthorization = async (
   queryCache: QueryCache,
   scope: Parameters<typeof refreshPrivateQueryAdmission>[1],
-) {
+) => {
   await refreshPrivateQueryAdmission(queryCache, scope)
   let keys: EntryKey[]
   if (scope.kind === 'all') {
@@ -31,7 +30,18 @@ export async function refreshPrivateAuthorization(
   } else {
     keys = [PRIVATE_QUERY_KEYS.characters(), PRIVATE_QUERY_KEYS.organization()]
   }
-  await Promise.allSettled(keys.map((key) => queryCache.invalidateQueries({ key })))
+  await Promise.allSettled(keys.map(async (key) => queryCache.invalidateQueries({ key })))
+}
+
+export const invalidateRemovedCharacter = async (queryCache: QueryCache, characterId: number) => {
+  const scope = { characterId, kind: 'character' } as const
+  await invalidatePrivateQueryScope(queryCache, scope)
+  await refreshPrivateAuthorization(queryCache, scope)
+}
+
+export const removeCharacterQueries = (queryCache: QueryCache, characterId: number) => {
+  removePlatformQueryScope(queryCache, PRIVATE_QUERY_KEYS.character(characterId))
+  void invalidateRemovedCharacter(queryCache, characterId)
 }
 
 export function prefetchProtectedQuery<

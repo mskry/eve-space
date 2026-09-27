@@ -85,12 +85,12 @@ Treat output from `railway variable list --json` and `--kv` as secret-bearing. F
 
 The production credentials have different rotation requirements:
 
-| Credential             | Consumers                   | Rotation constraint                                                                                                                                                   |
-| ---------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ADMIN_SETUP_SECRET`   | `api`                       | Remove it after initial setup; existing administrator accounts and sessions do not depend on it.                                                                      |
-| `EVE_CLIENT_SECRET`    | `api`, `worker`             | Replace it in the EVE Developer Portal and both services as one rollout. A mismatch prevents authorization and token refresh.                                         |
-| `TOKEN_ENCRYPTION_KEY` | `api`, `worker`, PostgreSQL | Every `eve_tokens.encrypted_tokens` value uses this key. Replacing it without migrating or deleting those rows makes all stored EVE tokens unreadable.                |
-| PostgreSQL password    | PostgreSQL, `api`, `worker` | Change the database role password and the Railway source variable together. Changing only `POSTGRES_PASSWORD` does not update an already initialized PostgreSQL role. |
+| Credential             | Consumers                   | Rotation constraint                                                                                                                                                                                       |
+| ---------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ADMIN_SETUP_SECRET`   | `api`                       | Remove it after initial setup; existing administrator accounts and sessions do not depend on it.                                                                                                          |
+| `EVE_CLIENT_SECRET`    | `api`, `worker`             | Replace it in the EVE Developer Portal and both services as one rollout. A mismatch prevents authorization and token refresh.                                                                             |
+| `TOKEN_ENCRYPTION_KEY` | `api`, `worker`, PostgreSQL | Verified `eve_tokens` and unverified `pending_character_tokens` ciphertext use this key. Replacing it without migrating or intentionally retiring both kinds of rows makes stored credentials unreadable. |
+| PostgreSQL password    | PostgreSQL, `api`, `worker` | Change the database role password and the Railway source variable together. Changing only `POSTGRES_PASSWORD` does not update an already initialized PostgreSQL role.                                     |
 
 Use this sequence after suspected disclosure:
 
@@ -103,13 +103,24 @@ Use this sequence after suspected disclosure:
 
 For a small deployment where forced reauthorization is acceptable, stop `api` and `worker` for the maintenance window, delete all `eve_tokens` rows, set the same new base64-encoded 32-byte `TOKEN_ENCRYPTION_KEY` on both services, and deploy them together. User and character records and application sessions remain, but every character-owned integration stays unavailable until that character completes EVE reauthorization. Clear unconsumed `oauth_states` as part of the window so no authorization flow spans the key and client-secret change.
 
-If authorization continuity is required, first implement and test a one-shot migration that accepts the old and new keys separately, decrypts and re-encrypts every token while `api` and `worker` are stopped, verifies the migrated row count in one transaction, and then removes the old key before either service starts. The current runtime supports one encryption key only, so an ad hoc in-place key replacement is not a continuity-safe procedure.
+If authorization continuity is required, first implement and test a one-shot migration that accepts the old and new keys separately, decrypts and re-encrypts both verified and pending token rows while `api` and `worker` are stopped, verifies the migrated row counts in one transaction, and then removes the old key before either service starts. The current runtime supports one encryption key only, so an ad hoc in-place key replacement is not a continuity-safe procedure.
 
 Application and administrator session bearer values are independently random and stored only as SHA-256 hashes. Rotating the credentials above does not invalidate those sessions. Delete `sessions` and `admin_sessions` only when raw session bearers or database contents may also have been disclosed and forced sign-out is part of the incident response.
 
 Do not roll production back to a disclosed secret. If PostgreSQL authentication fails, use the still-open administrative connection to set another fresh password and reconcile Railway variables. Keep a pre-rotation database backup only for offline recovery; restoring old token ciphertext and its disclosed encryption key into service would undo containment.
 
 ## Rollout and verification
+
+When introducing pending-token recovery, pause refresh and protected collection across API and
+worker replicas before installing migration `015_pending_character_tokens.sql`. Migrate, replace
+all API replicas and then all worker replicas with the new code, verify the worker's required
+migration readiness, and only then resume refresh. Old binaries ignore pending rows and may retry
+a spent predecessor, so do not mix versions during this rollout or roll back to an old binary while
+pending rows remain. For rollback, pause refresh/collection and recover forward or complete verified
+exact-character reauthorization; never delete pending rows solely to make an old binary usable.
+Temporary pending verification returns per-character unavailability without logging tokens or
+clearing browser snapshots; repeated admission checks and character reads retry recovery after an
+SSO outage or process restart. Check pending age and identity bindings without displaying ciphertext.
 
 1. Provision PostgreSQL and the two Redis services.
 2. Deploy `api`; its container runs migrations before opening the HTTP socket.

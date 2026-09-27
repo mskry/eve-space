@@ -190,7 +190,7 @@ describe('transactional domain event producers', () => {
         mainCharacterId,
         character.subjectLifecycleId,
       ),
-    ).resolves.toStrictEqual({ scopes, tokenVersion: 0 })
+    ).resolves.toStrictEqual({ pendingAttemptId: null, scopes, tokenVersion: 0 })
   })
 
   test('attachment emits once, compares existing scopes, and rejects cross-user conflicts', async () => {
@@ -484,7 +484,7 @@ describe('transactional domain event producers', () => {
     ssoMocks.refreshAccessToken.mockRejectedValue(new Error('temporary ESI SSO failure'))
     await expect(
       tokenService.getCharacterAccessToken(mainCharacterId, subjectLifecycleId, requiredScope),
-    ).rejects.toThrow('temporary ESI SSO failure')
+    ).rejects.toThrow('EVE token refresh is temporarily unavailable')
     await expect(readTokenState(mainCharacterId)).resolves.toStrictEqual(beforeFailure)
     await expect(readEvents()).resolves.toStrictEqual([])
   })

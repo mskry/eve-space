@@ -32,6 +32,7 @@ describe('core migration manifest', () => {
       '012_alliance_executor_observations.sql',
       '013_rule_audit_permission_identities.sql',
       '014_sensitive_access_audit_context.sql',
+      '015_pending_character_tokens.sql',
     ])
   })
 
@@ -55,7 +56,7 @@ describe('core migration manifest', () => {
     expect(() =>
       assertCoreMigrationManifest([
         ...activeCoreMigrationManifest,
-        { name: '015_next.sql', sha256: migrationSha256('select 1;') },
+        { name: '016_next.sql', sha256: migrationSha256('select 1;') },
       ]),
     ).toThrow('match the accepted frozen inventory')
     expect(() =>
@@ -63,7 +64,7 @@ describe('core migration manifest', () => {
         ...activeCoreMigrationManifest,
         { name: '001_reused.sql', sha256: migrationSha256('select 1;') },
       ]),
-    ).toThrow('append a unique sequence after 14')
+    ).toThrow('append a unique sequence after 15')
   })
 })
 

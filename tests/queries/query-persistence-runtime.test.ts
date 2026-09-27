@@ -49,7 +49,7 @@ import {
   type ScopeWatermarks,
 } from '../../app/query-persistence/scope-watermarks'
 import type { CacheAdmissionContext } from '../../app/queries/auth'
-import { prefetchProtectedQuery } from '../../app/queries/query-cache'
+import { invalidateRemovedCharacter, prefetchProtectedQuery } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { ApiQueryError } from '../../app/utils/query-error'
 
@@ -66,6 +66,17 @@ const protectedAccess = {
   authenticationReady: true,
   isClient: true,
   ownsCharacter: true,
+}
+
+const seedSecondLiveCharacter = (queryCache: QueryCache) => {
+  const key = PRIVATE_QUERY_KEYS.characterOverview(8)
+  queryCache.ensure({
+    key,
+    meta: { esiPersistence: { characterId: 8, kind: 'character-esi' } },
+    query: async () => ({ name: 'Other live character' }),
+  })
+  queryCache.setQueryData(key, { name: 'Other live character' })
+  return key
 }
 
 beforeEach(() => {
@@ -1029,6 +1040,63 @@ describe('query persistence runtime', () => {
     runtime.dispose()
   })
 
+  it('quarantines live pending-character data when browser storage is unavailable', async () => {
+    const privateQuery = vi.fn().mockResolvedValue({ name: 'Live private' })
+    const runtime = createRuntime(unavailableStorage, undefined, () => NOW, true, privateQuery)
+    await readyRuntime(runtime)
+    const loadAdmission = vi
+      .fn()
+      .mockResolvedValueOnce(admission({ additionalCharacterId: 8 }))
+      .mockResolvedValueOnce(pendingCharacterAdmission())
+      .mockResolvedValueOnce(admission({ additionalCharacterId: 8 }))
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission)
+    await runtime.activatePrivateQuery()
+    await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledOnce())
+    const secondKey = seedSecondLiveCharacter(runtime.queryCache)
+    expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toEqual({ name: 'Live private' })
+
+    await expect(
+      refreshPrivateQueryAdmission(runtime.queryCache, { characterId: 7, kind: 'character' }),
+    ).resolves.toBe(false)
+
+    expect(loadAdmission).toHaveBeenCalledTimes(2)
+    expect(privateQuery).toHaveBeenCalledOnce()
+    expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toBeUndefined()
+    expect(runtime.queryCache.getQueryData(secondKey)).toEqual({ name: 'Other live character' })
+    expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(
+      authenticatedSession(),
+    )
+
+    await refreshPrivateQueryAdmission(runtime.queryCache, { characterId: 7, kind: 'character' })
+    await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledTimes(2))
+    expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toEqual({ name: 'Live private' })
+    runtime.dispose()
+  })
+
+  it('quarantines live pending-character data after an organization fence fails', async () => {
+    const storage = new FailingInvalidationStorage()
+    const privateQuery = vi.fn().mockResolvedValue({ name: 'Live private' })
+    const runtime = createRuntime(storage, undefined, () => NOW, true, privateQuery)
+    await readyRuntime(runtime)
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
+      admission({ additionalCharacterId: 8 }),
+    )
+    await runtime.activatePrivateQuery()
+    await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledOnce())
+    const secondKey = seedSecondLiveCharacter(runtime.queryCache)
+
+    await expect(transitionOrganizationQueries(runtime.queryCache)).resolves.toBe(false)
+    expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toEqual({ name: 'Live private' })
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
+      pendingCharacterAdmission(),
+    )
+
+    expect(privateQuery).toHaveBeenCalledOnce()
+    expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toBeUndefined()
+    expect(runtime.queryCache.getQueryData(secondKey)).toEqual({ name: 'Other live character' })
+    runtime.dispose()
+  })
+
   it('keeps live private access when the durable generation becomes unverifiable', async () => {
     let currentTime = NOW
     const privateQuery = vi.fn().mockResolvedValue({ name: 'Live private' })
@@ -1173,6 +1241,209 @@ describe('query persistence runtime', () => {
     expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toStrictEqual({
       name: 'Organization',
     })
+    runtime.dispose()
+  })
+
+  it.each([
+    ['same', 'character-revision-1', 0],
+    ['changed', 'character-revision-2', 1],
+  ] as const)(
+    'quarantines a pending bootstrap and resolves a %s verified revision without admitting it early',
+    async (_case, recoveredRevision, expectedInvalidations) => {
+      const envelope = envelopeWithSecondCharacter()
+      const secondKey = PRIVATE_QUERY_KEYS.characterOverview(8)
+      const storage = new MemoryQueryPersistenceStorage(envelope)
+      const runtime = createRuntime(storage)
+      await readyRuntime(runtime)
+      const suspended = pendingCharacterAdmission()
+      await applyVerifiedQueryIdentity(
+        runtime.queryCache,
+        authenticatedSession(),
+        async () => suspended,
+        undefined,
+        { context: suspended, requestedAt: NOW },
+      )
+
+      expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
+      expect(runtime.queryCache.getQueryData(secondKey)).toEqual({ name: 'Other' })
+      expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toEqual({ name: 'Organization' })
+      expect(storage.snapshot()?.characters[7]).toBeDefined()
+      expect(storage.invalidationCalls).toBe(0)
+      expect(
+        readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
+      ).toBe(false)
+      const protectedFetch = vi.fn(async () => ({ name: 'Should stay gated' }))
+      await prefetchProtectedQuery(
+        runtime.queryCache,
+        characterPrefetch(protectedFetch),
+        protectedAccess,
+        7,
+      )
+      expect(protectedFetch).not.toHaveBeenCalled()
+
+      await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () => ({
+        ...admission({ additionalCharacterId: 8, characterRevision: recoveredRevision }),
+      }))
+      expect(storage.invalidationCalls).toBe(expectedInvalidations)
+      const expectedCharacterData = expectedInvalidations === 0 ? { name: 'Character' } : undefined
+      expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual(expectedCharacterData)
+      expect(storage.snapshot()?.characters[7] !== undefined).toBe(expectedInvalidations === 0)
+      expect(runtime.queryCache.getQueryData(secondKey)).toEqual({ name: 'Other' })
+      expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toEqual({ name: 'Organization' })
+      runtime.dispose()
+    },
+  )
+
+  it('preserves a pending partition while invalidating another character and the organization', async () => {
+    const secondKey = PRIVATE_QUERY_KEYS.characterOverview(8)
+    const storage = new MemoryQueryPersistenceStorage(envelopeWithSecondCharacter())
+    const notifications = new TestNotifications()
+    const runtime = createRuntime(storage, notifications)
+    await readyRuntime(runtime)
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
+      admission({ additionalCharacterId: 8 }),
+    )
+    const pending = {
+      ...pendingCharacterAdmission(),
+      characters: [
+        { characterId: 7, status: 'temporarily-unavailable' as const },
+        { characterId: 8, admissionRevision: 'character-revision-2' },
+      ],
+      organization: {
+        ...admission().organization!,
+        admissionRevision: 'organization-revision-2',
+      },
+    }
+
+    await applyVerifiedQueryIdentity(
+      runtime.queryCache,
+      authenticatedSession(),
+      async () => pending,
+    )
+
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
+    expect(runtime.queryCache.getQueryData(secondKey)).toBeUndefined()
+    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toBeUndefined()
+    expect(storage.snapshot()?.characters[7]).toBeDefined()
+    expect(storage.snapshot()?.characters[8]).toBeUndefined()
+    expect(storage.snapshot()?.organizations).toEqual({})
+    expect(notifications.published.map(({ scope }) => scope)).toEqual([
+      { characterId: 8, kind: 'character' },
+      { kind: 'organization' },
+    ])
+    runtime.dispose()
+  })
+
+  it('invalidates confirmed removal even when admission has no verdict', async () => {
+    const storage = new MemoryQueryPersistenceStorage(envelopeWithSecondCharacter())
+    const runtime = createRuntime(storage)
+    await readyRuntime(runtime)
+    const loadAdmission = vi
+      .fn()
+      .mockResolvedValueOnce(admission({ additionalCharacterId: 8 }))
+      .mockRejectedValueOnce(new TypeError('Admission unavailable'))
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission)
+    await invalidateRemovedCharacter(runtime.queryCache, 7)
+
+    expect(loadAdmission).toHaveBeenCalledTimes(2)
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
+    expect(storage.snapshot()?.characters[7]).toBeUndefined()
+    expect(storage.snapshot()?.characters[8]).toBeDefined()
+    expect(storage.invalidationCalls).toBe(1)
+    runtime.dispose()
+  })
+
+  it('waits for a confirmed removal fence before rechecking admission', async () => {
+    const secondKey = PRIVATE_QUERY_KEYS.characterOverview(8)
+    const storage = new DeferredInvalidationStorage(envelopeWithSecondCharacter())
+    const runtime = createRuntime(storage)
+    await readyRuntime(runtime)
+    const loadAdmission = vi
+      .fn()
+      .mockResolvedValueOnce(admission({ additionalCharacterId: 8 }))
+      .mockResolvedValueOnce(admission({ additionalCharacterId: 8, characterRevision: null }))
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission)
+
+    const removing = invalidateRemovedCharacter(runtime.queryCache, 7)
+    expect(storage.invalidationCalls).toBe(1)
+    expect(loadAdmission).toHaveBeenCalledTimes(1)
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
+    storage.releaseFirstInvalidation()
+    await removing
+
+    expect(loadAdmission).toHaveBeenCalledTimes(2)
+    expect(storage.snapshot()?.characters[7]).toBeUndefined()
+    expect(storage.snapshot()?.characters[8]).toBeDefined()
+    expect(runtime.queryCache.getQueryData(secondKey)).toEqual({ name: 'Other' })
+    expect(
+      readQueryPersistenceState(runtime.queryCache, secondKey).value.retainedPrivateAccess,
+    ).toBe(true)
+    runtime.dispose()
+  })
+
+  it('keeps a renewal-pending character gated and retries admission without a protected query', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(NOW)
+    const storage = new MemoryQueryPersistenceStorage(envelopeWithPrivatePartitions())
+    const runtime = createRuntime(storage, undefined, Date.now)
+    await readyRuntime(runtime)
+    const loadAdmission = vi
+      .fn()
+      .mockResolvedValueOnce(admission())
+      .mockResolvedValueOnce({
+        ...admission(),
+        characters: [{ characterId: 7, status: 'temporarily-unavailable' }],
+      })
+      .mockResolvedValueOnce(admission())
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission)
+    await runtime.activatePrivateQuery()
+
+    await vi.advanceTimersByTimeAsync(25_000)
+    expect(loadAdmission).toHaveBeenCalledTimes(2)
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
+    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toBeDefined()
+    expect(storage.snapshot()?.characters[7]).toBeDefined()
+    expect(storage.invalidationCalls).toBe(0)
+
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(loadAdmission).toHaveBeenCalledTimes(3)
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Character' })
+    expect(storage.invalidationCalls).toBe(0)
+    runtime.dispose()
+  })
+
+  it('defers manual invalidation until a definitive admission verdict and retains pending disk entries', async () => {
+    const storage = new MemoryQueryPersistenceStorage(envelopeWithPrivatePartitions())
+    const runtime = createRuntime(storage)
+    await readyRuntime(runtime)
+    const loadAdmission = vi
+      .fn()
+      .mockResolvedValueOnce(admission())
+      .mockResolvedValueOnce({
+        ...admission(),
+        characters: [{ characterId: 7, status: 'temporarily-unavailable' }],
+      })
+      .mockRejectedValueOnce(new TypeError('Network unavailable'))
+      .mockResolvedValueOnce(admission())
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission)
+
+    await expect(
+      refreshPrivateQueryAdmission(runtime.queryCache, { characterId: 7, kind: 'character' }),
+    ).resolves.toBe(true)
+    expect(storage.invalidationCalls).toBe(0)
+    expect(storage.snapshot()?.characters[7]).toBeDefined()
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
+    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toBeDefined()
+
+    await expect(
+      refreshPrivateQueryAdmission(runtime.queryCache, { characterId: 7, kind: 'character' }),
+    ).resolves.toBe(false)
+    expect(storage.invalidationCalls).toBe(0)
+    expect(storage.snapshot()?.characters[7]).toBeDefined()
+
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission)
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Character' })
+    expect(storage.invalidationCalls).toBe(0)
     runtime.dispose()
   })
 
@@ -2229,7 +2500,7 @@ describe('query persistence runtime', () => {
     runtime.dispose()
   })
 
-  it('closes affected data before forcing admission and detects consequential scope changes', async () => {
+  it('waits for the live verdict before forcing admission and detects consequential scope changes', async () => {
     const storage = new MemoryQueryPersistenceStorage(envelopeWithPrivatePartitions())
     const runtime = createRuntime(storage)
     await readyRuntime(runtime)
@@ -2246,7 +2517,7 @@ describe('query persistence runtime', () => {
       kind: 'character',
     })
 
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeDefined()
     expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toBeDefined()
     nextAdmission.resolve(
       admission({
@@ -2257,6 +2528,7 @@ describe('query persistence runtime', () => {
 
     await expect(refreshing).resolves.toBe(true)
     expect(admissionLoads).toBe(2)
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
     expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toBeUndefined()
     expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
       authenticatedSession(),
@@ -3093,6 +3365,22 @@ function envelopeWithPrivatePartitions(): EsiQueryCacheEnvelope {
   }
 }
 
+function envelopeWithSecondCharacter(): EsiQueryCacheEnvelope {
+  const envelope = envelopeWithPrivatePartitions()
+  const secondKey = PRIVATE_QUERY_KEYS.characterOverview(8)
+  envelope.characters[8] = {
+    admissionRevision: 'character-revision-1',
+    cache: {
+      [JSON.stringify(secondKey)]: tuple({ name: 'Other' }, NOW - 60_000, {
+        characterId: 8,
+        kind: 'character-esi',
+      }),
+    },
+    ownerUserId: 'user-1',
+  }
+  return envelope
+}
+
 function setEnvelopeSuccessTime(envelope: EsiQueryCacheEnvelope, when: number) {
   for (const entryTuple of Object.values(envelope.public)) {
     entryTuple[2] = when
@@ -3238,6 +3526,17 @@ function admission(
             admissionScopes: overrides.admissionScopes ?? [ORGANIZATION_SCOPE],
           },
     userId: overrides.userId ?? 'user-1',
+  }
+}
+
+function pendingCharacterAdmission(): CacheAdmissionContext {
+  const context = admission({ additionalCharacterId: 8 })
+  return {
+    ...context,
+    characters: [
+      { characterId: 7, status: 'temporarily-unavailable' },
+      { characterId: 8, admissionRevision: 'character-revision-1' },
+    ],
   }
 }
 

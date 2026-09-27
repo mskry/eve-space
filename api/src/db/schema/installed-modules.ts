@@ -139,6 +139,10 @@ export const platformSubjectLifecycles = pgTable(
   },
   (table) => [
     uniqueIndex('platform_subject_lifecycles_character_id_key').on(table.characterId),
+    uniqueIndex('platform_subject_lifecycles_lifecycle_character_key').on(
+      table.subjectLifecycleId,
+      table.characterId,
+    ),
     uniqueIndex('platform_subject_lifecycles_organization_epoch_key').on(
       table.subjectKind,
       table.organizationDeploymentId,

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { coreOrganizationAdmissionScopes } from '@eve-space/platform-module-contract/server'
 import { type PlatformInstalledOrganizationAdmissionScopeDescriptor } from '@eve-space/platform-module-contract/installed'
 import { installedModuleOrganizationAdmissionScopes } from '../generated/platform/installed-module-runtime.js'
+import { schedulePendingCharacterTokenRecovery } from '../auth/tokens.js'
 import {
   resolveOrganizationEntitlementScope,
   type OrganizationSessionContext,
@@ -22,10 +23,7 @@ const characterRevisionPrefix = 'character-admission:v1:sha256:'
 const organizationRevisionPrefix = 'organization-admission:v1:sha256:'
 export interface CacheAdmissionContext {
   readonly userId: string
-  readonly characters: readonly {
-    readonly characterId: number
-    readonly admissionRevision: string | null
-  }[]
+  readonly characters: readonly CharacterCacheAdmission[]
   readonly organization: {
     readonly organizationVersion: number
     readonly admissionRevision: string
@@ -33,6 +31,14 @@ export interface CacheAdmissionContext {
     readonly admissionScopes: readonly string[]
   } | null
 }
+
+type CharacterCacheAdmission =
+  | { readonly characterId: number; readonly admissionRevision: string | null }
+  | {
+      readonly characterId: number
+      readonly status: 'temporarily-unavailable'
+      readonly admissionRevision?: never
+    }
 
 export interface CacheAdmissionServiceOptions {
   readonly now?: Date
@@ -46,6 +52,7 @@ export interface CacheAdmissionServiceOptions {
   readonly loadPermissions?: typeof getOrganizationGroupPermissions
   readonly authorize?: typeof authorizeOrganizationContribution
   readonly moduleAdmissionScopes?: readonly PlatformInstalledOrganizationAdmissionScopeDescriptor[]
+  readonly scheduleRecovery?: (characterId: number, subjectLifecycleId: string) => void
 }
 
 export async function loadCacheAdmissionContext(
@@ -57,11 +64,15 @@ export async function loadCacheAdmissionContext(
     (options.loadCharacters ?? loadCharacterAdmissionFacts)(userId),
     (options.loadOrganization ?? loadOrganizationAdmissionFoundation)(userId),
   ])
+  const scheduleRecovery = options.scheduleRecovery ?? schedulePendingCharacterTokenRecovery
   const characters = characterFacts
-    .map((fact) => ({
-      admissionRevision: characterAdmissionRevision(fact),
-      characterId: fact.characterId,
-    }))
+    .map((fact): CharacterCacheAdmission => {
+      if (fact.pendingAttemptId && fact.subjectLifecycleId) {
+        scheduleRecovery(fact.characterId, fact.subjectLifecycleId)
+        return { characterId: fact.characterId, status: 'temporarily-unavailable' }
+      }
+      return { admissionRevision: characterAdmissionRevision(fact), characterId: fact.characterId }
+    })
     .toSorted((left, right) => left.characterId - right.characterId)
   const organization = await resolveOrganizationAdmission(
     userId,

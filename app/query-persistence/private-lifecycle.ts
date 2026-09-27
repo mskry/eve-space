@@ -1,5 +1,6 @@
 import type { AuthSession, CacheAdmissionContext, CacheAdmissionBootstrap } from '../queries/auth'
 import {
+  combineInvalidationScopes,
   emptyEnvelope,
   isExpired,
   parseCacheAdmissionContext,
@@ -53,15 +54,16 @@ interface PrivateQueryLifecycleHost {
   readPersistedPrivateOwner(): string | null
   refetchParkedPrivateQueries(): void
   quarantineRetainedData(): void
+  quarantineCharacter(characterId: number): void
   quarantineUnscopedData(): void
   restoreUnscopedData(admission: CacheAdmissionContext): void
   reconcileRetainedData(): void
-  resolveAdmissionInvalidationScope(
+  resolveAdmissionInvalidationScopes(
     admission: CacheAdmissionContext,
     previousAdmission: CacheAdmissionContext | null,
     now: number,
     alreadyInvalidatedScope?: PrivateQueryInvalidationScope,
-  ): PrivateQueryInvalidationScope | null
+  ): readonly PrivateQueryInvalidationScope[]
   serializerMerged(successfulTimes: ReadonlyMap<string, number>): void
   setEnvelope(envelope: EsiQueryCacheEnvelope): void
   touch(): void
@@ -106,6 +108,40 @@ const scopesToReconcile = (
     : []
 }
 
+const scopesForAdmission = (
+  admission: CacheAdmissionContext,
+  candidates: readonly PrivateQueryInvalidationScope[],
+): readonly PrivateQueryInvalidationScope[] => {
+  const unique = [...new Map(candidates.map((scope) => [JSON.stringify(scope), scope])).values()]
+  if (
+    admission.characters.some(
+      (character) => 'status' in character && character.status === 'temporarily-unavailable',
+    )
+  ) {
+    const organizationWide = unique.some(
+      (scope) => scope.kind === 'organization' && scope.admissionScope === undefined,
+    )
+    return organizationWide
+      ? unique.filter(
+          (scope) => scope.kind !== 'organization' || scope.admissionScope === undefined,
+        )
+      : unique
+  }
+  const combined = combineInvalidationScopes(unique)
+  return combined ? [combined] : []
+}
+
+const quarantinePendingCharacters = (
+  admission: CacheAdmissionContext,
+  quarantine: (characterId: number) => void,
+) => {
+  for (const character of admission.characters) {
+    if ('status' in character && character.status === 'temporarily-unavailable') {
+      quarantine(character.characterId)
+    }
+  }
+}
+
 interface AdmissionAttempt {
   readonly alreadyInvalidatedScope?: PrivateQueryInvalidationScope
   epoch: number
@@ -113,6 +149,7 @@ interface AdmissionAttempt {
   readonly ownerUserId: string
   readonly previousAdmission: CacheAdmissionContext | null
   readonly previousDeadline: number
+  readonly requestedRefreshScope?: PrivateQueryInvalidationScope
   readonly signal?: AbortSignal
   readonly startedAt: number
 }
@@ -140,6 +177,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
   let admissionExpiryTimer: ReturnType<typeof setTimeout> | undefined
   let admissionLoader: (() => Promise<CacheAdmissionContext>) | undefined
   let admissionRenewalTimer: ReturnType<typeof setTimeout> | undefined
+  let pendingRetryTimer: ReturnType<typeof setTimeout> | undefined
   let disposed = false
   let durableInvalidationEpoch: number | null = null
   let durableGenerationVerified = false
@@ -158,6 +196,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
   let parkedRefetchPending = false
   let organizationTransitionAttempt = 0
   let pendingAdmissionRequest: PendingAdmissionRequest | undefined
+  let pendingCharacters = new Set<number>()
   let privateLifecycleEpoch = 0
   let privatePersistenceEnabled = true
   let retainedPrivateAccessOpen = false
@@ -232,6 +271,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       privateLifecycleEpoch += 1
       durableInvalidationEpoch = null
       lastAcceptedAdmission = null
+      pendingCharacters.clear()
       parkedRefetchPending = false
       retainedPrivateAccessOpen = false
       clearAdmissionTimers()
@@ -250,6 +290,9 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       const currentTime = now()
       host.reconcileRetainedData()
       return hasRetainedPrivateAccess(persistence, currentTime)
+    },
+    hasPendingVerification(characterId: number | undefined) {
+      return characterId !== undefined && pendingCharacters.has(characterId)
     },
     installListeners() {
       if (listenersInstalled || disposed) {
@@ -312,12 +355,29 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       }
     },
     async refreshAdmission(scope: PrivateQueryInvalidationScope) {
-      const expectedIdentityAttempt = identityAttempt
-      const invalidated = await invalidatePrivateCache(scope, false)
-      if (!invalidated || !identityAttemptIsCurrent(expectedIdentityAttempt) || !admissionLoader) {
+      if (scope.kind === 'organization') {
+        const expectedIdentityAttempt = identityAttempt
+        const invalidated = await invalidatePrivateCache(scope, false)
+        if (
+          !invalidated ||
+          !identityAttemptIsCurrent(expectedIdentityAttempt) ||
+          !admissionLoader
+        ) {
+          return false
+        }
+        return requestAdmission(admissionLoader, scope)
+      }
+      if (!admissionLoader || verifiedUserId === null) {
         return false
       }
-      return requestAdmission(admissionLoader, scope)
+      return requestAdmission(
+        admissionLoader,
+        undefined,
+        lastAcceptedAdmission,
+        undefined,
+        undefined,
+        scope,
+      )
     },
     async reacquireOrganizationAdmission() {
       if (!admissionLoader || verifiedUserId === null) {
@@ -436,6 +496,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     verifiedUserId = nextOwner
     if (!ownerMatches) {
       lastAcceptedAdmission = null
+      pendingCharacters.clear()
     }
     identityCommitDepth += 1
     try {
@@ -459,6 +520,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     previousAdmission = lastAcceptedAdmission,
     signal?: AbortSignal,
     bootstrap?: CacheAdmissionBootstrap,
+    requestedRefreshScope?: PrivateQueryInvalidationScope,
   ): Promise<boolean> {
     const epoch = privateLifecycleEpoch
     if (
@@ -479,6 +541,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       ownerUserId: verifiedUserId,
       previousAdmission,
       previousDeadline: activeAdmissionDeadline,
+      requestedRefreshScope,
       signal,
       startedAt: bootstrap?.requestedAt ?? now(),
     }
@@ -520,21 +583,11 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     value: CacheAdmissionContext,
     attempt: AdmissionAttempt,
   ): Promise<boolean> {
-    if (!admissionAttemptIsCurrent(attempt)) {
+    const validated = await validateAdmission(value, attempt)
+    if (!validated) {
       return false
     }
-    const admission = parseCacheAdmissionContext(value)
-    if (!admissionOwnerMatches(admission, attempt.ownerUserId)) {
-      await rejectAdmission()
-      return false
-    }
-    const deadline = cacheAdmissionDeadline(admission, attempt.startedAt)
-    if (!admissionAttemptIsCurrent(attempt) || now() >= deadline) {
-      if (admissionAttemptIsCurrent(attempt)) {
-        await rejectAdmission()
-      }
-      return false
-    }
+    const { admission, deadline } = validated
 
     retainedPrivateAccessOpen = false
     host.touch()
@@ -565,31 +618,84 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     if (!admissionAttemptIsCurrent(attempt) || currentTime >= deadline) {
       return false
     }
-    const invalidationScope = host.resolveAdmissionInvalidationScope(
+    if (!(await applyAdmissionInvalidation(attempt, admission, currentTime, deadline))) {
+      return false
+    }
+
+    activeAdmission = admission
+    updatePendingCharacters(admission)
+    lastAcceptedAdmission = preservePendingBaselines(attempt.previousAdmission, admission)
+    activeAdmissionDeadline = deadline
+    activeAdmissionMayRenew = admissionMayRenew(attempt.previousDeadline, deadline, admission)
+    const admittedCache = host.collectAdmittedCache(admission, now())
+
+    return finishPrivateAdmission(attempt, admission, deadline, admittedCache)
+  }
+
+  async function validateAdmission(value: CacheAdmissionContext, attempt: AdmissionAttempt) {
+    if (!admissionAttemptIsCurrent(attempt)) {
+      return null
+    }
+    const admission = parseCacheAdmissionContext(value)
+    if (!admission) {
+      suspendPrivateAdmission()
+      return null
+    }
+    if (!admissionOwnerMatches(admission, attempt.ownerUserId)) {
+      await rejectAdmission()
+      return null
+    }
+    const deadline = cacheAdmissionDeadline(admission, attempt.startedAt)
+    if (!admissionAttemptIsCurrent(attempt) || now() >= deadline) {
+      if (admissionAttemptIsCurrent(attempt)) {
+        suspendPrivateAdmission()
+      }
+      return null
+    }
+    return { admission, deadline }
+  }
+
+  async function applyAdmissionInvalidation(
+    attempt: AdmissionAttempt,
+    admission: CacheAdmissionContext,
+    currentTime: number,
+    deadline: number,
+  ) {
+    const changedScopes = host.resolveAdmissionInvalidationScopes(
       admission,
       attempt.previousAdmission,
       currentTime,
       attempt.alreadyInvalidatedScope,
     )
-    if (invalidationScope) {
-      attempt.epoch = closeAndPurgePrivateCache(invalidationScope, false, false, true, true)
-      const invalidated = await advanceInvalidationGeneration(invalidationScope, attempt.epoch)
+    const refreshScope = safeRefreshScope(attempt.requestedRefreshScope, admission)
+    const scopes = scopesForAdmission(
+      admission,
+      refreshScope ? [...changedScopes, refreshScope] : changedScopes,
+    )
+    for (const scope of scopes) {
+      attempt.epoch = closeAndPurgePrivateCache(scope, false, false, true, true)
+      // Each fence must commit before the next scope advances the durable generation.
+      // oxlint-disable-next-line no-await-in-loop
+      const invalidated = await advanceInvalidationGeneration(scope, attempt.epoch)
       if (!admissionAttemptIsCurrent(attempt) || !invalidated || now() >= deadline) {
         return false
       }
     }
+    return true
+  }
 
-    activeAdmission = admission
-    lastAcceptedAdmission = admission
-    activeAdmissionDeadline = deadline
-    activeAdmissionMayRenew = admissionMayRenew(attempt.previousDeadline, deadline, admission)
-    const admittedCache = host.collectAdmittedCache(admission, now())
-
+  async function finishPrivateAdmission(
+    attempt: AdmissionAttempt,
+    admission: CacheAdmissionContext,
+    deadline: number,
+    admittedCache: PersistedQueryCache,
+  ) {
     await host.waitForHydration()
     if (!canCommitPrivateAdmission(attempt, admission, deadline)) {
       return false
     }
     host.commitAdmittedCache(admittedCache, now())
+    quarantinePendingCharacters(admission, host.quarantineCharacter)
     host.restoreUnscopedData(admission)
     retainedPrivateAccessOpen = true
     scheduleAdmissionExpiry()
@@ -620,13 +726,18 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
   }
 
   function applyAdmissionWithoutPersistence(admission: CacheAdmissionContext, deadline: number) {
-    const scope = host.resolveAdmissionInvalidationScope(admission, lastAcceptedAdmission, now())
-    if (scope) {
+    const scopes = scopesForAdmission(
+      admission,
+      host.resolveAdmissionInvalidationScopes(admission, lastAcceptedAdmission, now()),
+    )
+    for (const scope of scopes) {
       closeAndPurgePrivateCache(scope, false, false, true, true)
     }
+    quarantinePendingCharacters(admission, host.quarantineCharacter)
     verifiedUserId = admission.userId
     activeAdmission = admission
-    lastAcceptedAdmission = admission
+    updatePendingCharacters(admission)
+    lastAcceptedAdmission = preservePendingBaselines(lastAcceptedAdmission, admission)
     activeAdmissionDeadline = deadline
     retainedPrivateAccessOpen = false
     host.restoreUnscopedData(admission)
@@ -648,7 +759,19 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
 
   function rejectAdmission() {
     lastAcceptedAdmission = null
+    pendingCharacters.clear()
     return invalidatePrivateCache({ kind: 'all' }, false)
+  }
+
+  function updatePendingCharacters(admission: CacheAdmissionContext) {
+    pendingCharacters = new Set(
+      admission.characters
+        .filter(
+          (character) => 'status' in character && character.status === 'temporarily-unavailable',
+        )
+        .map(({ characterId }) => characterId),
+    )
+    host.touch()
   }
 
   function suspendPrivateAdmission() {
@@ -657,6 +780,9 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     activeAdmissionMayRenew = true
     clearAdmissionTimers()
     suspendRetainedPrivateAccess()
+    if (pendingCharacters.size > 0) {
+      schedulePendingRetry()
+    }
   }
 
   function invalidatePrivateCache(
@@ -1033,6 +1159,9 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       return
     }
     const deadline = activeAdmissionDeadline
+    const hasPendingCharacter = activeAdmission.characters.some(
+      (character) => 'status' in character && character.status === 'temporarily-unavailable',
+    )
     const epoch = privateLifecycleEpoch
     const expiryDelay = Math.min(Math.max(0, deadline - now()), MAX_TIMEOUT_MS)
     admissionExpiryTimer = timers.setTimeout(() => {
@@ -1045,13 +1174,19 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
         return
       }
       host.touch()
-      if (activeAdmissionMayRenew && admissionLoader && host.hasRetainedPrivateData(true)) {
+      if (
+        admissionLoader &&
+        (hasPendingCharacter || (activeAdmissionMayRenew && host.hasRetainedPrivateData(true)))
+      ) {
         void requestAdmission(admissionLoader)
         return
       }
       suspendPrivateAdmission()
     }, expiryDelay)
 
+    if (hasPendingCharacter && admissionLoader) {
+      schedulePendingRetry(epoch)
+    }
     if (!activeAdmissionMayRenew || !admissionLoader || !host.hasRetainedPrivateData(true)) {
       return
     }
@@ -1073,6 +1208,18 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     }, renewalDelay)
   }
 
+  function schedulePendingRetry(epoch = privateLifecycleEpoch) {
+    if (!admissionLoader || disposed) {
+      return
+    }
+    pendingRetryTimer = timers.setTimeout(() => {
+      pendingRetryTimer = undefined
+      if (!disposed && epoch === privateLifecycleEpoch && admissionLoader) {
+        void requestAdmission(admissionLoader)
+      }
+    }, PRIVATE_ADMISSION_RENEWAL_LEAD_MS)
+  }
+
   function clearAdmissionTimers() {
     if (admissionExpiryTimer !== undefined) {
       timers.clearTimeout(admissionExpiryTimer)
@@ -1080,8 +1227,12 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     if (admissionRenewalTimer !== undefined) {
       timers.clearTimeout(admissionRenewalTimer)
     }
+    if (pendingRetryTimer !== undefined) {
+      timers.clearTimeout(pendingRetryTimer)
+    }
     admissionExpiryTimer = undefined
     admissionRenewalTimer = undefined
+    pendingRetryTimer = undefined
   }
 
   function hasRetainedPrivateAccess(persistence: PrivateEsiQuery | undefined, currentTime: number) {
@@ -1100,7 +1251,9 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     if (persistence.kind === 'character-esi') {
       return admission.characters.some(
         (character) =>
-          character.characterId === persistence.characterId && character.admissionRevision !== null,
+          character.characterId === persistence.characterId &&
+          'admissionRevision' in character &&
+          character.admissionRevision !== null,
       )
     }
     return (
@@ -1140,6 +1293,48 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
   }
 
   return lifecycle
+}
+
+const preservePendingBaselines = (
+  previous: CacheAdmissionContext | null,
+  admission: CacheAdmissionContext,
+): CacheAdmissionContext => {
+  if (previous?.userId !== admission.userId) {
+    return admission
+  }
+  return {
+    ...admission,
+    characters: admission.characters.map((character) => {
+      if (!('status' in character) || character.status !== 'temporarily-unavailable') {
+        return character
+      }
+      const baseline = previous.characters.find(
+        (prior) => prior.characterId === character.characterId,
+      )
+      return baseline && 'admissionRevision' in baseline ? baseline : character
+    }),
+  }
+}
+
+const safeRefreshScope = (
+  scope: PrivateQueryInvalidationScope | undefined,
+  admission: CacheAdmissionContext,
+): PrivateQueryInvalidationScope | null => {
+  if (!scope) {
+    return null
+  }
+  if (scope.kind === 'organization') {
+    return scope
+  }
+  const pending = admission.characters.some(
+    (character) =>
+      'status' in character &&
+      character.status === 'temporarily-unavailable' &&
+      (scope.kind === 'all' ||
+        scope.characterId === undefined ||
+        scope.characterId === character.characterId),
+  )
+  return pending ? null : scope
 }
 
 function cacheAdmissionDeadline(admission: CacheAdmissionContext, requestStartedAt: number) {

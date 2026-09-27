@@ -133,6 +133,11 @@ trusted target authorization. Product promotion and rollback requirements are do
 - OAuth state is bound to an HttpOnly SameSite cookie, stored as a SHA-256 hash, consumed once, and bound server-side to login, attachment, exact-character reauthorization, organization-owner claim, or approved-transfer intent.
 - Session bearer values are stored only as SHA-256 hashes.
 - EVE access and refresh tokens are encrypted with AES-256-GCM.
+- A successful refresh is first encrypted in a separate pending row bound to the character owner,
+  lifecycle, and verified generation. The pending attempt blocks use of the predecessor and is
+  promoted only after signed identity, owner, and scopes verify. Replacement authorization clears
+  pending state under the same character lock; definitive rejection revokes without retrying the
+  predecessor, while uncertain SSO failures leave pending credentials for recovery.
 - Character-ID-scoped routes verify `(user_id, character_id)` ownership before reading or refreshing token material; unknown and non-owned IDs share the same response.
 - Ordinary attachment rejects a character already attached to another EVE Space user without revealing the owning account. An explicit cross-user transfer instead requires an unexpired, unrevoked deployment-administrator approval bound to the source lifecycle and destination user, plus a destination-bound session and exact-character EVE SSO proof.
 - JWT signature, expiration, issuer, and both required audiences are verified.

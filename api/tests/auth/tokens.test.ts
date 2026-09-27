@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { errors as joseErrors } from 'jose'
 
 const mocks = vi.hoisted(() => {
   class CharacterTokenNotFoundError extends Error {}
@@ -23,10 +24,13 @@ const mocks = vi.hoisted(() => {
     enqueueInstalledResourceLifecyclePurges: vi.fn(),
     findCharacterCacheAuthorizationForLifecycle: vi.fn(),
     findCharacterTokenForLifecycle: vi.fn(),
+    findPendingCharacterToken: vi.fn(),
     invalidateCharacterAuthoritySourcesInTransaction: vi.fn(),
     lockCurrentOrganizationVersionForCompliance: vi.fn(),
     recomputeOrganizationAccountCompliance: vi.fn(),
     refreshAccessToken: vi.fn(),
+    writePendingCharacterToken: vi.fn(),
+    deletePendingCharacterToken: vi.fn(),
     updateCharacterToken: vi.fn(),
     verifyAccessToken: vi.fn(),
     withCharacterTokenLifecycleLock: vi.fn(),
@@ -41,6 +45,12 @@ vi.mock('../../src/auth/character-token-store.js', () => ({
   findCharacterTokenForLifecycle: mocks.findCharacterTokenForLifecycle,
   updateCharacterToken: mocks.updateCharacterToken,
   withCharacterTokenLifecycleLock: mocks.withCharacterTokenLifecycleLock,
+}))
+
+vi.mock('../../src/auth/pending-character-token-store.js', () => ({
+  findPendingCharacterToken: mocks.findPendingCharacterToken,
+  writePendingCharacterToken: mocks.writePendingCharacterToken,
+  deletePendingCharacterToken: mocks.deletePendingCharacterToken,
 }))
 
 vi.mock('../../src/domain-events/store.js', () => ({
@@ -82,7 +92,12 @@ import {
   getCharacterCacheAuthorizationForLifecycle,
   withCharacterAuthorizationForLifecycle,
 } from '../../src/auth/tokens.js'
-import { SsoTokenRejectedError, SsoTransportError } from '../../src/auth/sso-errors.js'
+import {
+  SsoAccessTokenExpiredError,
+  SsoAccessTokenInvalidError,
+  SsoTokenRejectedError,
+  SsoTransportError,
+} from '../../src/auth/sso-errors.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/token-errors.js'
 
 const characterId = 1_404_328_063
@@ -97,6 +112,18 @@ const expired = {
   tokenVersion: 1,
   userId,
 }
+const pendingTokens = new Map<
+  number,
+  {
+    characterId: number
+    userId: string
+    subjectLifecycleId: string
+    baseTokenVersion: number
+    attemptId: string
+    encryptedTokens: string
+    accessTokenExpiresAt: Date
+  }
+>()
 
 function getCharacterAccessToken(targetCharacterId: number, requiredScope: string) {
   return getCharacterAccessTokenForLifecycle(targetCharacterId, subjectLifecycleId, requiredScope)
@@ -130,16 +157,48 @@ function getCharacterCacheAuthorization(
 
 beforeEach(() => {
   vi.resetAllMocks()
+  pendingTokens.clear()
   mocks.decryptTokens.mockImplementation((encryptedTokens: string) => ({
-    accessToken: `${encryptedTokens}-access`,
-    refreshToken: `${encryptedTokens}-refresh`,
+    accessToken: encryptedTokens.startsWith('enc:')
+      ? encryptedTokens.split(':')[1]
+      : `${encryptedTokens}-access`,
+    refreshToken: encryptedTokens.startsWith('enc:')
+      ? encryptedTokens.split(':')[2]
+      : `${encryptedTokens}-refresh`,
   }))
-  mocks.encryptTokens.mockReturnValue('refreshed')
-  mocks.deleteCharacterTokenAuthorization.mockResolvedValue(true)
+  mocks.encryptTokens.mockImplementation(
+    ({ accessToken, refreshToken }: { accessToken: string; refreshToken: string }) =>
+      `enc:${accessToken}:${refreshToken}`,
+  )
+  mocks.deleteCharacterTokenAuthorization.mockImplementation(async (targetCharacterId: number) => {
+    pendingTokens.delete(targetCharacterId)
+    return true
+  })
   mocks.findCharacterTokenForLifecycle.mockResolvedValue(expired)
   mocks.lockCurrentOrganizationVersionForCompliance.mockResolvedValue(4)
   mocks.recomputeOrganizationAccountCompliance.mockResolvedValue({ outcome: 'unchanged' })
   mocks.findCharacterCacheAuthorizationForLifecycle.mockResolvedValue(expired)
+  mocks.findPendingCharacterToken.mockImplementation(
+    async (targetCharacterId: number, lifecycle: string) => {
+      const pending = pendingTokens.get(targetCharacterId)
+      return pending?.subjectLifecycleId === lifecycle ? pending : null
+    },
+  )
+  mocks.writePendingCharacterToken.mockImplementation(async (_transaction, input) => {
+    const current = pendingTokens.get(input.characterId)
+    if ((current?.attemptId ?? null) !== input.expectedAttemptId) {
+      return false
+    }
+    pendingTokens.set(input.characterId, input)
+    return true
+  })
+  mocks.deletePendingCharacterToken.mockImplementation(async (_transaction, input) => {
+    if (pendingTokens.get(input.characterId)?.attemptId !== input.attemptId) {
+      return false
+    }
+    pendingTokens.delete(input.characterId)
+    return true
+  })
   mocks.updateCharacterToken.mockResolvedValue(true)
   mocks.withCharacterTokenLifecycleLock.mockImplementation(
     async (_characterId, _subjectLifecycleId, operation) => operation(expired, {}),
@@ -196,6 +255,170 @@ describe('token refresh', () => {
       getCharacterCacheAuthorizationForLifecycle(characterId, 'lifecycle', scope),
     ).rejects.toBeInstanceOf(ScopeRequiredError)
     expect(mocks.decryptTokens).not.toHaveBeenCalled()
+  })
+
+  test('recovers a pending cache authorization before returning its verified generation', async () => {
+    const pending = {
+      characterId,
+      userId,
+      subjectLifecycleId,
+      baseTokenVersion: 1,
+      attemptId: '12892e04-c424-446d-abef-19bef4d6ef5b',
+      encryptedTokens: 'enc:pending-access:pending-refresh',
+      accessTokenExpiresAt: new Date(Date.now() + 120_000),
+    }
+    pendingTokens.set(characterId, pending)
+    mocks.findCharacterCacheAuthorizationForLifecycle.mockImplementation(async () => ({
+      scopes: [scope],
+      tokenVersion: pendingTokens.has(characterId) ? 1 : 2,
+      pendingAttemptId: pendingTokens.get(characterId)?.attemptId ?? null,
+    }))
+    mocks.withCharacterTokenLifecycleLock.mockImplementation(
+      async (_characterId, _lifecycle, operation) => operation(expired, {}),
+    )
+
+    await expect(getCharacterCacheAuthorization(characterId, scope)).resolves.toEqual({
+      scopes: [scope],
+      tokenVersion: 2,
+    })
+    expect(mocks.verifyAccessToken).toHaveBeenCalledWith('pending-access')
+    expect(mocks.refreshAccessToken).not.toHaveBeenCalled()
+    expect(mocks.updateCharacterToken).toHaveBeenCalledOnce()
+    await expect(getCharacterCacheAuthorization(characterId + 1, scope)).resolves.toEqual({
+      scopes: [scope],
+      tokenVersion: 2,
+    })
+    expect(mocks.verifyAccessToken).toHaveBeenCalledOnce()
+  })
+
+  test('a pending cached hit fails closed on verification outage without retrying its predecessor', async () => {
+    pendingTokens.set(characterId, {
+      characterId,
+      userId,
+      subjectLifecycleId,
+      baseTokenVersion: 1,
+      attemptId: '12892e04-c424-446d-abef-19bef4d6ef5b',
+      encryptedTokens: 'enc:pending-access:pending-refresh',
+      accessTokenExpiresAt: new Date(Date.now() + 120_000),
+    })
+    mocks.findCharacterCacheAuthorizationForLifecycle.mockResolvedValue({
+      scopes: [scope],
+      tokenVersion: 1,
+      pendingAttemptId: '12892e04-c424-446d-abef-19bef4d6ef5b',
+    })
+    mocks.verifyAccessToken.mockRejectedValue(
+      new SsoTransportError(new Error('private upstream detail')),
+    )
+
+    await expect(getCharacterCacheAuthorization(characterId, scope)).rejects.toBeInstanceOf(
+      TokenRefreshUnavailableError,
+    )
+    expect(mocks.refreshAccessToken).not.toHaveBeenCalled()
+    expect(mocks.updateCharacterToken).not.toHaveBeenCalled()
+    expect(pendingTokens.has(characterId)).toBe(true)
+  })
+
+  test('keeps an unknown signing key pending but retires a proven-invalid signature', async () => {
+    const pending = {
+      characterId,
+      userId,
+      subjectLifecycleId,
+      baseTokenVersion: 1,
+      attemptId: '12892e04-c424-446d-abef-19bef4d6ef5b',
+      encryptedTokens: 'enc:pending-access:pending-refresh',
+      accessTokenExpiresAt: new Date(Date.now() + 120_000),
+    }
+    pendingTokens.set(characterId, pending)
+    mocks.withCharacterTokenLifecycleLock.mockImplementation(
+      async (_characterId, _lifecycle, operation) => operation(expired, {}),
+    )
+    mocks.verifyAccessToken.mockRejectedValueOnce(new joseErrors.JWKSNoMatchingKey())
+
+    await expect(getCharacterAccessToken(characterId, scope)).rejects.toBeInstanceOf(
+      TokenRefreshUnavailableError,
+    )
+    expect(pendingTokens.has(characterId)).toBe(true)
+    expect(mocks.deleteCharacterTokenAuthorization).not.toHaveBeenCalled()
+
+    mocks.verifyAccessToken.mockRejectedValueOnce(new SsoAccessTokenInvalidError())
+    await expect(getCharacterAccessToken(characterId, scope)).rejects.toBeInstanceOf(
+      SsoAccessTokenInvalidError,
+    )
+    expect(mocks.deleteCharacterTokenAuthorization).toHaveBeenCalledOnce()
+    expect(pendingTokens.has(characterId)).toBe(false)
+    expect(mocks.refreshAccessToken).not.toHaveBeenCalled()
+    expect(JSON.stringify(mocks.appendDomainEvent.mock.calls)).not.toContain('pending-refresh')
+  })
+
+  test('refreshes only an expired pending token and preserves a second rotation across outages', async () => {
+    pendingTokens.set(characterId, {
+      characterId,
+      userId,
+      subjectLifecycleId,
+      baseTokenVersion: 1,
+      attemptId: '12892e04-c424-446d-abef-19bef4d6ef5b',
+      encryptedTokens: 'enc:expired-pending:pending-refresh',
+      accessTokenExpiresAt: new Date(0),
+    })
+    mocks.withCharacterTokenLifecycleLock.mockImplementation(
+      async (_characterId, _lifecycle, operation) => operation(expired, {}),
+    )
+    mocks.verifyAccessToken.mockRejectedValueOnce(new SsoTransportError(new Error('JWKS offline')))
+
+    await expect(getCharacterAccessToken(characterId, scope)).rejects.toBeInstanceOf(
+      TokenRefreshUnavailableError,
+    )
+    expect(mocks.refreshAccessToken).toHaveBeenCalledExactlyOnceWith('pending-refresh')
+    expect(pendingTokens.get(characterId)?.encryptedTokens).toBe('enc:new-access:new-refresh')
+    expect(mocks.updateCharacterToken).not.toHaveBeenCalled()
+
+    await expect(getCharacterAccessToken(characterId, scope)).resolves.toBe('new-access')
+    expect(mocks.refreshAccessToken).toHaveBeenCalledOnce()
+    expect(mocks.updateCharacterToken).toHaveBeenCalledOnce()
+  })
+
+  test('refreshes a pending token whose signed expiry precedes its stored response expiry', async () => {
+    pendingTokens.set(characterId, {
+      characterId,
+      userId,
+      subjectLifecycleId,
+      baseTokenVersion: 1,
+      attemptId: '12892e04-c424-446d-abef-19bef4d6ef5b',
+      encryptedTokens: 'enc:expired-jwt:pending-refresh',
+      accessTokenExpiresAt: new Date(Date.now() + 120_000),
+    })
+    mocks.withCharacterTokenLifecycleLock.mockImplementation(
+      async (_characterId, _lifecycle, operation) => operation(expired, {}),
+    )
+    mocks.verifyAccessToken.mockRejectedValueOnce(new SsoAccessTokenExpiredError())
+
+    await expect(getCharacterAccessToken(characterId, scope)).resolves.toBe('new-access')
+    expect(mocks.refreshAccessToken).toHaveBeenCalledExactlyOnceWith('pending-refresh')
+    expect(mocks.updateCharacterToken).toHaveBeenCalledOnce()
+  })
+
+  test('a definitive expired-pending refusal revokes without trying the predecessor', async () => {
+    pendingTokens.set(characterId, {
+      characterId,
+      userId,
+      subjectLifecycleId,
+      baseTokenVersion: 1,
+      attemptId: '12892e04-c424-446d-abef-19bef4d6ef5b',
+      encryptedTokens: 'enc:expired-pending:pending-refresh',
+      accessTokenExpiresAt: new Date(0),
+    })
+    mocks.withCharacterTokenLifecycleLock.mockImplementation(
+      async (_characterId, _lifecycle, operation) => operation(expired, {}),
+    )
+    mocks.refreshAccessToken.mockRejectedValueOnce(new mocks.EveSsoTokenRefreshError(400, true))
+
+    await expect(getCharacterAccessToken(characterId, scope)).rejects.toBeInstanceOf(
+      mocks.EveSsoTokenRefreshError,
+    )
+    expect(mocks.refreshAccessToken).toHaveBeenCalledExactlyOnceWith('pending-refresh')
+    expect(mocks.updateCharacterToken).not.toHaveBeenCalled()
+    expect(mocks.deleteCharacterTokenAuthorization).toHaveBeenCalledOnce()
+    expect(pendingTokens.has(characterId)).toBe(false)
   })
 
   test('binds fresh authorization to the requested ownership lifecycle', async () => {
@@ -281,22 +504,17 @@ describe('token refresh', () => {
     expect(operation).not.toHaveBeenCalled()
   })
 
-  test('keeps refresh winner lookup bound to the requested lifecycle', async () => {
-    const transaction = {}
-    mocks.withCharacterTokenLifecycleLock.mockImplementation(
-      async (_characterId, _subjectLifecycleId, operation) => operation(expired, transaction),
-    )
-    mocks.updateCharacterToken.mockResolvedValue(false)
-    mocks.findCharacterTokenForLifecycle.mockResolvedValue(null)
+  test('cannot promote pending credentials after the requested lifecycle disappears', async () => {
+    mocks.withCharacterTokenLifecycleLock
+      .mockImplementationOnce(async (_characterId, _lifecycle, operation) => operation(expired, {}))
+      .mockImplementationOnce(async (_characterId, _lifecycle, operation) => operation(expired, {}))
+      .mockRejectedValueOnce(new mocks.CharacterTokenNotFoundError())
 
     await expect(
       getCharacterAuthorizationForLifecycle(characterId, subjectLifecycleId, scope),
     ).rejects.toBeInstanceOf(mocks.CharacterTokenNotFoundError)
-    expect(mocks.findCharacterTokenForLifecycle).toHaveBeenCalledWith(
-      characterId,
-      subjectLifecycleId,
-      transaction,
-    )
+    expect(mocks.updateCharacterToken).not.toHaveBeenCalled()
+    expect(pendingTokens.has(characterId)).toBe(true)
   })
 
   test('returns a fresh stored access token without refreshing', async () => {
@@ -325,26 +543,50 @@ describe('token refresh', () => {
       async (_characterId, _subjectLifecycleId, operation) =>
         operation({ ...expired, scopes: [] }, {}),
     )
+    mocks.verifyAccessToken.mockResolvedValue({
+      characterId,
+      characterName: 'Test',
+      ownerHash: 'test-owner',
+      scopes: [],
+    })
     await expect(getCharacterAccessToken(characterId, scope)).rejects.toBeInstanceOf(
       ScopeRequiredError,
     )
+    expect(mocks.updateCharacterToken).toHaveBeenCalledWith(
+      expect.objectContaining({ scopes: [] }),
+      expect.anything(),
+    )
   })
 
-  test('refreshes and verifies while holding the database lock', async () => {
-    mocks.updateCharacterToken.mockResolvedValue(true)
-    mocks.withCharacterTokenLifecycleLock
-      .mockImplementationOnce(async (_characterId, _subjectLifecycleId, operation) =>
-        operation(expired, {}),
-      )
-      .mockImplementationOnce(async (_characterId, _subjectLifecycleId, operation) => {
-        const result = await operation(expired, {})
-        expect(mocks.refreshAccessToken).toHaveBeenCalledOnce()
-        expect(mocks.verifyAccessToken).toHaveBeenCalledOnce()
-        return result
-      })
+  test('commits pending credentials under the lock before verifying outside it', async () => {
+    let locked = false
+    mocks.withCharacterTokenLifecycleLock.mockImplementation(
+      async (_characterId, _lifecycle, operation) => {
+        locked = true
+        try {
+          return await operation(expired, {})
+        } finally {
+          locked = false
+        }
+      },
+    )
+    mocks.writePendingCharacterToken.mockImplementationOnce(async (_transaction, input) => {
+      expect(locked).toBe(true)
+      expect(mocks.verifyAccessToken).not.toHaveBeenCalled()
+      pendingTokens.set(characterId, input)
+      return true
+    })
+    mocks.verifyAccessToken.mockImplementationOnce(async () => {
+      expect(locked).toBe(false)
+      expect(pendingTokens.has(characterId)).toBe(true)
+      return { characterId, characterName: 'Test', ownerHash: 'test-owner', scopes: [scope] }
+    })
 
     await expect(getCharacterAccessToken(characterId, scope)).resolves.toBe('new-access')
     expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
+    expect(mocks.writePendingCharacterToken).toHaveBeenCalledOnce()
+    expect(mocks.deletePendingCharacterToken).toHaveBeenCalledOnce()
+    expect(mocks.updateCharacterToken).toHaveBeenCalledOnce()
   })
 
   test('persists a rotated refresh token before reporting job cancellation', async () => {
@@ -381,12 +623,14 @@ describe('token refresh', () => {
     await expect(pending).rejects.toBe(controller.signal.reason)
     expect(controller.signal.reason).toMatchObject({ name: 'AbortError' })
     expect(mocks.refreshAccessToken).toHaveBeenCalledWith('original-refresh')
-    expect(mocks.verifyAccessToken).toHaveBeenCalledWith('new-access')
+    expect(mocks.verifyAccessToken).not.toHaveBeenCalled()
     expect(mocks.encryptTokens).toHaveBeenCalledWith({
       accessToken: 'new-access',
       refreshToken: 'rotated-refresh',
     })
-    expect(mocks.updateCharacterToken).toHaveBeenCalledOnce()
+    expect(mocks.writePendingCharacterToken).toHaveBeenCalledOnce()
+    expect(pendingTokens.has(characterId)).toBe(true)
+    expect(mocks.updateCharacterToken).not.toHaveBeenCalled()
     expect(mocks.deleteCharacterTokenAuthorization).not.toHaveBeenCalled()
     expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
   })
@@ -520,28 +764,33 @@ describe('token refresh', () => {
     })
   })
 
-  test('returns the persisted winner when the compare-and-set loses', async () => {
-    const winner = { ...expired, encryptedTokens: 'winner', tokenVersion: 2 }
+  test('rolls back promotion when the compare-and-set loses', async () => {
     mocks.updateCharacterToken.mockResolvedValue(false)
-    mocks.findCharacterTokenForLifecycle.mockResolvedValue(winner)
-    mocks.withCharacterTokenLifecycleLock.mockImplementation(
-      async (_characterId, _subjectLifecycleId, operation) => operation(expired, {}),
-    )
-
-    await expect(getCharacterAccessToken(characterId, scope)).resolves.toBe('winner-access')
-    expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
-  })
-
-  test('fails with a named error when a compare-and-set winner disappears', async () => {
-    mocks.updateCharacterToken.mockResolvedValue(false)
-    mocks.findCharacterTokenForLifecycle.mockResolvedValue(null)
     mocks.withCharacterTokenLifecycleLock.mockImplementation(
       async (_characterId, _subjectLifecycleId, operation) => operation(expired, {}),
     )
 
     await expect(getCharacterAccessToken(characterId, scope)).rejects.toBeInstanceOf(
-      mocks.CharacterTokenNotFoundError,
+      TokenRefreshUnavailableError,
     )
+    expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
+  })
+
+  test('rejects a stale pending verifier without revoking the replacement', async () => {
+    mocks.withCharacterTokenLifecycleLock.mockImplementation(
+      async (_characterId, _lifecycle, operation) => {
+        if (mocks.verifyAccessToken.mock.calls.length > 0) {
+          return operation({ ...expired, tokenVersion: 2, encryptedTokens: 'replacement' }, {})
+        }
+        return operation(expired, {})
+      },
+    )
+
+    await expect(getCharacterAccessToken(characterId, scope)).rejects.toBeInstanceOf(
+      TokenRefreshUnavailableError,
+    )
+    expect(mocks.updateCharacterToken).not.toHaveBeenCalled()
+    expect(mocks.deleteCharacterTokenAuthorization).not.toHaveBeenCalled()
   })
 
   test('returns the persisted winner without an SSO refresh when another replica won', async () => {
@@ -587,8 +836,8 @@ describe('token refresh', () => {
       ownerHash: 'test-owner',
       scopes: [scope],
     })
-    await expect(getCharacterAccessToken(characterId, scope)).rejects.toThrow(
-      'Refreshed token belongs to a different character',
+    await expect(getCharacterAccessToken(characterId, scope)).rejects.toBeInstanceOf(
+      SsoTokenRejectedError,
     )
 
     mocks.verifyAccessToken.mockResolvedValueOnce({
@@ -668,11 +917,11 @@ describe('token refresh', () => {
   })
 
   test.each([
-    ['refresh transport', 'refreshAccessToken'],
-    ['verification transport', 'verifyAccessToken'],
+    ['refresh transport', 'refreshAccessToken', false],
+    ['verification transport', 'verifyAccessToken', true],
   ] as const)(
-    'maps a transient %s failure without mutating token state',
-    async (_stage, method) => {
+    'maps a transient %s failure while retaining successful pending refreshes',
+    async (_stage, method, persisted) => {
       mocks.withCharacterTokenLifecycleLock.mockImplementation(
         async (_characterId, _subjectLifecycleId, operation) => operation(expired, {}),
       )
@@ -682,6 +931,8 @@ describe('token refresh', () => {
         TokenRefreshUnavailableError,
       )
       expect(mocks.updateCharacterToken).not.toHaveBeenCalled()
+      expect(mocks.writePendingCharacterToken).toHaveBeenCalledTimes(persisted ? 1 : 0)
+      expect(pendingTokens.has(characterId)).toBe(persisted)
       expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
     },
   )
@@ -709,7 +960,7 @@ describe('token refresh', () => {
     expect(mocks.recomputeOrganizationAccountCompliance).toHaveBeenCalledOnce()
   })
 
-  test('preserves unexpected SSO failures without mutating token state', async () => {
+  test('sanitizes unexpected SSO failures without mutating token state', async () => {
     mocks.withCharacterTokenLifecycleLock.mockImplementation(
       async (_characterId, _subjectLifecycleId, operation) => operation(expired, {}),
     )
@@ -717,7 +968,9 @@ describe('token refresh', () => {
     const unexpected = new Error('unexpected SSO failure')
     mocks.refreshAccessToken.mockRejectedValueOnce(unexpected)
 
-    await expect(getCharacterAccessToken(characterId, scope)).rejects.toBe(unexpected)
+    await expect(getCharacterAccessToken(characterId, scope)).rejects.toBeInstanceOf(
+      TokenRefreshUnavailableError,
+    )
     expect(mocks.updateCharacterToken).not.toHaveBeenCalled()
     expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
   })

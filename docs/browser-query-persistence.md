@@ -20,16 +20,22 @@ Private snapshots remain quarantined until the live application session verifies
 authorization revision, validity deadline, and permitted admission scope. Each admission expires at
 most 30 seconds after its request began and is renewed before then, or earlier when an organization
 deadline requires it.
-Logout, session failure, owner changes, authorization changes, and relevant organization or module
-changes invalidate affected private partitions in memory and IndexedDB across tabs.
+Logout, confirmed session denial, owner changes, authorization changes, and relevant organization or
+module changes invalidate affected private partitions in memory and IndexedDB across tabs. A
+pending-verification character has an explicit temporarily unavailable admission: its retained and
+live private results remain stored but are gated, even when the prior admission revision matches.
+Other admitted characters and independently authorized organization scopes stay available. A later
+verified revision reopens matching retained data or invalidates only the changed character partition.
+Network failures, timeouts, and expired admission also suspend access without deleting retained
+entries; only a definitive denial or the original retention deadline removes them.
 Durable invalidation scope watermarks let a resumed tab recover organization-only and character-scoped
 changes across multiple missed notifications while keeping unaffected partitions. Missing or invalid
 scope history fails closed rather than treating an unknown gap as organization-only.
 
 Persisted data never grants access. Protected requests, mutations, ownership checks, scope checks,
 and organization authorization still require current server approval. If EVE Space cannot verify a
-private partition or its durable invalidation generation, it discards or hides that partition and
-continues with normally authorized live requests.
+private partition or its durable invalidation generation, it keeps retained data inaccessible and
+continues with normally authorized live requests. A corrupt or incoherent partition is discarded.
 
 IndexedDB belongs to the browser profile and origin. People or software with access to that browser
 profile or same-origin script execution may be able to inspect its contents. Users on shared devices

@@ -137,6 +137,34 @@ describe('cache admission service', () => {
     }
   })
 
+  test('returns pending character suspension promptly while keeping other character and organization admission', async () => {
+    const scheduleRecovery = vi.fn()
+    const pending = {
+      ...characters[0]!,
+      characterId: 90_000_001,
+      subjectLifecycleId: 'de1e1285-0d02-4dd0-9ca4-c3b7a28e0011',
+      pendingAttemptId: '3ac51698-32d9-412a-abda-2c5dfe26e855',
+    }
+    const result = await loadCacheAdmissionContext(userId, {
+      ...organizationOptions(),
+      loadCharacters: async () => [pending, characters[0]!],
+      scheduleRecovery,
+    })
+
+    expect(result.characters).toEqual([
+      { characterId: pending.characterId, status: 'temporarily-unavailable' },
+      { characterId: characters[0]!.characterId, admissionRevision: expect.any(String) },
+    ])
+    expect(result.organization?.admissionScopes).toContain(
+      coreOrganizationAdmissionScopes.activities,
+    )
+    expect(scheduleRecovery).toHaveBeenCalledExactlyOnceWith(
+      pending.characterId,
+      pending.subjectLifecycleId,
+    )
+    expect(JSON.stringify(result)).not.toContain(pending.pendingAttemptId)
+  })
+
   test('returns authorized core and deduplicated module scopes with bounded validity', async () => {
     const fetch = vi.fn()
     vi.stubGlobal('fetch', fetch)

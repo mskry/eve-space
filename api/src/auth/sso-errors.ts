@@ -24,6 +24,21 @@ export class SsoTokenRejectedError extends Error {
   }
 }
 
+export class SsoAccessTokenInvalidError extends SsoTokenRejectedError {
+  constructor() {
+    super(401)
+    this.message = 'EVE access token is invalid'
+    this.name = 'SsoAccessTokenInvalidError'
+  }
+}
+
+export class SsoAccessTokenExpiredError extends Error {
+  constructor() {
+    super('EVE access token has expired')
+    this.name = 'SsoAccessTokenExpiredError'
+  }
+}
+
 export class CharacterOwnerMismatchError extends SsoTokenRejectedError {
   constructor() {
     super(401)
