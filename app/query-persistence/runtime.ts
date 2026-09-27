@@ -14,10 +14,18 @@ import {
 } from '@pinia/colada-plugin-cache-persister'
 import {
   clearAuthenticatedQueriesAfterSessionTransition,
+  removePlatformQueryScope,
   selectEsiQueryPersistencePresentation,
   type EsiQueryPersistencePresentation,
 } from '@eve-space/platform-module-nuxt/runtime'
-import { computed, onScopeDispose, toValue, type ComputedRef, type MaybeRefOrGetter } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  ref,
+  toValue,
+  type ComputedRef,
+  type MaybeRefOrGetter,
+} from 'vue'
 import type { AuthSession, CacheAdmissionContext, CacheAdmissionBootstrap } from '../queries/auth'
 import { PRIVATE_QUERY_KEYS } from '../queries/query-keys'
 import { isAuthenticationDenial } from '../utils/authentication-denial'
@@ -58,6 +66,7 @@ import {
   touchQueryPersistenceState,
   type QueryPersistenceRuntimeState,
 } from './state'
+import { isRecord } from './shape'
 import { createIndexedDbQueryPersistenceStorage, type QueryPersistenceStorage } from './storage'
 
 const MAX_TIMEOUT_MS = 2_147_483_647
@@ -79,6 +88,8 @@ const QUERY_PERSISTENCE_RUNTIME = Symbol('query-persistence-runtime')
 type QueryPersistencePresentation = EsiQueryPersistencePresentation & {
   readonly retainedPrivateAccess: boolean
 }
+
+export type OrganizationReadiness = 'ready' | 'clearing' | 'loading' | 'unavailable'
 
 export interface QueryPersistenceDependencies {
   readonly document?: Document
@@ -106,6 +117,11 @@ interface QueryPersistenceRuntime {
   invalidate(scope: PrivateQueryInvalidationScope): Promise<boolean>
   reportAuthorizationDenial(scope: PrivateQueryInvalidationScope, error: unknown): boolean
   refreshAdmission(scope: PrivateQueryInvalidationScope): Promise<boolean>
+  reacquireOrganizationAdmission(): Promise<CacheAdmissionContext | null>
+  readOrganizationReadiness(): ComputedRef<OrganizationReadiness>
+  readOrganizationRevision(): ComputedRef<number>
+  setOrganizationReadiness(status: OrganizationReadiness, revision: number): boolean
+  transitionOrganization(): Promise<boolean>
   readActiveState(): ComputedRef<EsiQueryPersistencePresentation | undefined>
   readCharacterOwnership(characterId: MaybeRefOrGetter<number | undefined>): ComputedRef<boolean>
   readState(key: MaybeRefOrGetter<EntryKey>): ComputedRef<QueryPersistencePresentation>
@@ -117,6 +133,7 @@ interface QueryPersistenceRuntime {
 }
 
 type QueryPersistenceAdmissionOptions = Pick<UseQueryOptions, 'key' | 'meta'>
+type ParkedUnscopedData = { entry: UseQueryEntry; data: unknown; when: number }
 
 type QueryCacheWithPersistence = QueryCache & {
   [QUERY_PERSISTENCE_RUNTIME]?: QueryPersistenceRuntime
@@ -184,6 +201,24 @@ export function refreshPrivateQueryAdmission(
   return requireRuntime(queryCache).refreshAdmission(scope)
 }
 
+export const transitionOrganizationQueries = (queryCache: QueryCache) =>
+  requireRuntime(queryCache).transitionOrganization()
+
+export const readOrganizationReadiness = (queryCache: QueryCache) =>
+  requireRuntime(queryCache).readOrganizationReadiness()
+
+export const readOrganizationRevision = (queryCache: QueryCache) =>
+  requireRuntime(queryCache).readOrganizationRevision()
+
+export const setOrganizationReadiness = (
+  queryCache: QueryCache,
+  status: OrganizationReadiness,
+  revision: number,
+) => requireRuntime(queryCache).setOrganizationReadiness(status, revision)
+
+export const reacquireOrganizationAdmission = (queryCache: QueryCache) =>
+  requireRuntime(queryCache).reacquireOrganizationAdmission()
+
 export function suspendPrivateQueryAdmission(queryCache: QueryCache) {
   requireRuntime(queryCache).suspendAdmission()
 }
@@ -232,6 +267,72 @@ export function readQueryCharacterOwnership(
   return requireRuntime(queryCache).readCharacterOwnership(characterId)
 }
 
+const forgetInvalidatedParkedData = (
+  parkedData: Map<string, ParkedUnscopedData>,
+  scope: PrivateQueryInvalidationScope,
+) => {
+  for (const [keyHash, parked] of parkedData) {
+    if (privateQueryEntryMatchesScope(parked.entry, scope)) {
+      parkedData.delete(keyHash)
+    }
+  }
+}
+
+const organizationScopeAffected = (
+  state: QueryPersistenceRuntimeState,
+  scope: PrivateQueryInvalidationScope,
+) =>
+  scope.kind === 'organization' ||
+  (scope.kind === 'all' &&
+    (state.queryCache.getEntries({ key: PRIVATE_QUERY_KEYS.organization() }).length > 0 ||
+      Object.keys(state.envelope.organizations).length > 0))
+
+const shouldRemoveOrganizationEntries = (
+  scope: PrivateQueryInvalidationScope,
+  readiness: OrganizationReadiness,
+  requireReadiness: boolean,
+  preserveFreshSuccesses: boolean,
+) =>
+  !preserveFreshSuccesses &&
+  (requireReadiness || readiness === 'clearing') &&
+  (scope.kind === 'all' || (scope.kind === 'organization' && scope.admissionScope === undefined))
+
+const detachOrganizationEntries = (
+  queryCache: QueryCache,
+  scope: PrivateQueryInvalidationScope,
+  detached: Map<string, UseQueryEntry>,
+) => {
+  if (scope.kind === 'organization') {
+    for (const entry of queryCache.getEntries({ key: PRIVATE_QUERY_KEYS.organization() })) {
+      if (entry.active) {
+        detached.set(entry.keyHash, entry)
+      }
+    }
+  } else {
+    detached.clear()
+  }
+  removePlatformQueryScope(queryCache, PRIVATE_QUERY_KEYS.organization())
+}
+
+const reconnectMountedOrganizationEntries = (
+  queryCache: QueryCache,
+  detached: Map<string, UseQueryEntry>,
+) => {
+  for (const entry of detached.values()) {
+    const current = queryCache.get(entry.key)
+    if (entry.active && current && current !== entry) {
+      return false
+    }
+  }
+  for (const [keyHash, entry] of detached) {
+    if (entry.active && !queryCache.get(entry.key)) {
+      queryCache.caches.set(keyHash, entry)
+    }
+  }
+  detached.clear()
+  return true
+}
+
 function createQueryPersistenceRuntime(
   queryCache: QueryCache,
   storage: QueryPersistenceStorage,
@@ -239,6 +340,10 @@ function createQueryPersistenceRuntime(
   dependencies: QueryPersistenceDependencies,
 ) {
   const state = createQueryPersistenceState(queryCache, emptyEnvelope())
+  const organizationReadiness = ref<OrganizationReadiness>('ready')
+  const organizationRevision = ref(0)
+  const detachedOrganizationEntries = new Map<string, UseQueryEntry>()
+  const parkedUnscopedData = new Map<string, ParkedUnscopedData>()
   const invalidationSubscribers = new Set<{
     readonly listener: () => void
     readonly scope: MaybeRefOrGetter<PrivateQueryInvalidationScope>
@@ -259,7 +364,22 @@ function createQueryPersistenceRuntime(
       clearCorruptCache(envelope) {
         clearCorruptCacheState(state, envelope)
       },
-      closeAndPurge(scope, preserveErrors, preserveFreshSuccesses, preserveSession) {
+      closeAndPurge(
+        scope,
+        preserveErrors,
+        preserveFreshSuccesses,
+        preserveSession,
+        requireOrganizationReadiness,
+      ) {
+        forgetInvalidatedParkedData(parkedUnscopedData, scope)
+        if (
+          requireOrganizationReadiness &&
+          organizationScopeAffected(state, scope) &&
+          organizationReadiness.value !== 'clearing'
+        ) {
+          organizationRevision.value += 1
+          organizationReadiness.value = 'loading'
+        }
         closeAndPurgePrivateCache(
           state,
           scope,
@@ -267,6 +387,16 @@ function createQueryPersistenceRuntime(
           preserveFreshSuccesses,
           preserveSession,
         )
+        if (
+          shouldRemoveOrganizationEntries(
+            scope,
+            organizationReadiness.value,
+            requireOrganizationReadiness,
+            preserveFreshSuccesses,
+          )
+        ) {
+          detachOrganizationEntries(queryCache, scope, detachedOrganizationEntries)
+        }
         if (!preserveFreshSuccesses) {
           notifyPrivateQueryInvalidation(invalidationSubscribers, scope)
         }
@@ -303,6 +433,45 @@ function createQueryPersistenceRuntime(
       },
       quarantineRetainedData() {
         quarantineRetainedPrivateData(state)
+      },
+      quarantineUnscopedData() {
+        for (const entry of queryCache.getEntries({ key: PRIVATE_QUERY_KEYS.root })) {
+          const persistence = readEsiPersistence(entry.meta)
+          if (entry.keyHash === toCacheKey(PRIVATE_QUERY_KEYS.session()) || persistence !== null) {
+            continue
+          }
+          if (entry.pending) {
+            queryCache.cancel(entry, new Error('Private query scope is being verified.'))
+          }
+          if (entry.state.value.data === undefined) {
+            continue
+          }
+          parkedUnscopedData.set(entry.keyHash, {
+            data: entry.state.value.data,
+            entry,
+            when: entry.when,
+          })
+          queryCache.setEntryState(entry, { data: undefined, error: null, status: 'pending' })
+          entry.when = 0
+        }
+      },
+      restoreUnscopedData(admission) {
+        for (const [keyHash, parked] of parkedUnscopedData) {
+          parkedUnscopedData.delete(keyHash)
+          const scope = privateInvalidationScopeForEntry(parked.entry)
+          if (
+            queryCache.get(parked.entry.key) !== parked.entry ||
+            !canRestoreUnscopedData(scope, admission)
+          ) {
+            continue
+          }
+          queryCache.setEntryState(parked.entry, {
+            data: parked.data,
+            error: null,
+            status: 'success',
+          })
+          parked.entry.when = parked.when
+        }
       },
       readCachedUserId() {
         return authenticatedUserId(
@@ -394,6 +563,8 @@ function createQueryPersistenceRuntime(
     dispose() {
       privateLifecycle.dispose()
       invalidationSubscribers.clear()
+      detachedOrganizationEntries.clear()
+      parkedUnscopedData.clear()
       clearRetainedDataExpiryTimer(state, timers)
       state.resolveHydration()
       settleRestoration(state)
@@ -415,7 +586,7 @@ function createQueryPersistenceRuntime(
       reconcileRetainedDataExpiry(state, privateLifecycle, now, timers)
     },
     installOfficialPlugin(context) {
-      initializeQueryCacheHooks(state, privateLifecycle, now, timers)
+      initializeQueryCacheHooks(state, privateLifecycle, detachedOrganizationEntries, now, timers)
       privateLifecycle.installListeners()
       if (globalThis.window === undefined || !storage.available) {
         privateLifecycle.disablePersistence()
@@ -472,6 +643,40 @@ function createQueryPersistenceRuntime(
     },
     refreshAdmission(scope) {
       return privateLifecycle.refreshAdmission(scope)
+    },
+    reacquireOrganizationAdmission() {
+      return privateLifecycle.reacquireOrganizationAdmission()
+    },
+    readOrganizationReadiness() {
+      return computed(() => organizationReadiness.value)
+    },
+    readOrganizationRevision() {
+      return computed(() => organizationRevision.value)
+    },
+    setOrganizationReadiness(status, revision) {
+      if (revision !== organizationRevision.value) {
+        return false
+      }
+      if (status === 'ready') {
+        if (!reconnectMountedOrganizationEntries(queryCache, detachedOrganizationEntries)) {
+          organizationReadiness.value = 'unavailable'
+          return false
+        }
+      }
+      organizationReadiness.value = status
+      return true
+    },
+    async transitionOrganization() {
+      organizationRevision.value += 1
+      const revision = organizationRevision.value
+      organizationReadiness.value = 'clearing'
+      const cleared = await privateLifecycle.transitionOrganization(() =>
+        removePlatformQueryScope(queryCache, PRIVATE_QUERY_KEYS.organization()),
+      )
+      if (revision === organizationRevision.value) {
+        organizationReadiness.value = cleared ? 'loading' : 'unavailable'
+      }
+      return cleared
     },
     reportAuthorizationDenial(scope, error) {
       const invalidationScope = authoritativeDenialInvalidationScope(scope, error)
@@ -1205,13 +1410,51 @@ function privateQueryEntryMatchesScope(
   )
 }
 
+const canRestoreUnscopedData = (
+  scope: PrivateQueryInvalidationScope | null,
+  admission: CacheAdmissionContext,
+) => {
+  if (scope?.kind === 'organization') {
+    return admission.organization !== null
+  }
+  if (scope?.kind === 'character' && scope.characterId !== undefined) {
+    return admission.characters.some(
+      (character) =>
+        character.characterId === scope.characterId && character.admissionRevision !== null,
+    )
+  }
+  return scope !== null
+}
+
+const reconnectDetachedOrganizationEntry = (
+  queryCache: QueryCache,
+  detachedEntries: ReadonlyMap<string, UseQueryEntry>,
+  name: string,
+  args: readonly unknown[],
+) => {
+  if (name !== 'ensure' && name !== 'setQueryData') {
+    return
+  }
+  const key =
+    name === 'ensure' && isRecord(args[0]) && 'key' in args[0] ? toValue(args[0].key) : args[0]
+  if (!Array.isArray(key)) {
+    return
+  }
+  const detached = detachedEntries.get(toCacheKey(key))
+  if (detached?.active && !queryCache.get(key)) {
+    queryCache.caches.set(detached.keyHash, detached)
+  }
+}
+
 function initializeQueryCacheHooks(
   state: QueryPersistenceRuntimeState,
   privateLifecycle: PrivateQueryLifecycle,
+  detachedOrganizationEntries: ReadonlyMap<string, UseQueryEntry>,
   now: () => number,
   timers: QueryPersistenceTimers,
 ) {
   state.queryCache.$onAction(({ name, args, after, onError }) => {
+    reconnectDetachedOrganizationEntry(state.queryCache, detachedOrganizationEntries, name, args)
     if (name === 'setQueryData') {
       const keyHash = toCacheKey(args[0] as EntryKey)
       after(() => {

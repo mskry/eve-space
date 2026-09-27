@@ -10,7 +10,10 @@ import {
   organizationPermissionCatalogQuery,
 } from '../../queries/organization'
 import { refreshPrivateAuthorization } from '../../queries/query-cache'
-import { reportPrivateQueryAuthorizationDenial } from '../../query-persistence/runtime'
+import {
+  readOrganizationReadiness,
+  reportPrivateQueryAuthorizationDenial,
+} from '../../query-persistence/runtime'
 import { toApiQueryError } from '../../utils/query-error'
 
 const props = defineProps<{
@@ -62,8 +65,9 @@ interface CatalogGroup {
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const queryCache = useQueryCache()
+const organizationReady = readOrganizationReadiness(queryCache)
 const access = computed<OrganizationOwnerQueryAccess>(() => ({
-  authenticated: props.authenticated,
+  authenticated: props.authenticated && organizationReady.value === 'ready',
   blocked: props.context.isBlocked,
   isOrganizationOwner: props.context.isOrganizationOwner,
   memberAccess: props.context.memberAccess,
@@ -75,7 +79,9 @@ const canManage = computed(
     access.value.memberAccess &&
     !access.value.blocked,
 )
-const organizationVersion = computed(() => props.context.organization.organizationVersion)
+const organizationVersion = computed(() =>
+  organizationReady.value === 'ready' ? props.context.organization.organizationVersion : 0,
+)
 const catalogQuery = useQuery(() =>
   organizationPermissionCatalogQuery({
     access: access.value,

@@ -6,9 +6,18 @@ import {
   providePlatformQueryPersistence,
 } from '@eve-space/platform-module-nuxt/runtime'
 import { invalidatePrivateQueryScope, readQueryPersistenceState } from './query-persistence/runtime'
+import { observeOrganizationReadiness } from './queries/organization-readiness'
 
 providePlatformIdentity(usePlatformHostIdentity)
 const queryCache = useQueryCache()
+const apiClient = createApiClient(useRuntimeConfig().public.apiBase)
+const { authSession, authVerificationStatus } = useAuthSession(apiClient)
+observeOrganizationReadiness(
+  queryCache,
+  apiClient,
+  authSession,
+  computed(() => authVerificationStatus.value === 'verified'),
+)
 providePlatformQueryPersistence((key) => readQueryPersistenceState(queryCache, key))
 usePlatformModulePersistenceLifecycle(({ admissionScopes }) => {
   for (const admissionScope of admissionScopes) {

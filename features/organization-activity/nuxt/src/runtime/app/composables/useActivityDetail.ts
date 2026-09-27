@@ -85,14 +85,21 @@ export function useActivityDetail(kind: MaybeRefOrGetter<'project' | 'job' | 'ca
     routeId: 'activity-participation',
     subject: { characterId: characterId.value, kind: 'character' },
   }))
-  const activity = computed(
-    () => detail.data.value?.activity ?? participation.data.value?.activity ?? null,
+  const activity = computed(() =>
+    identity.organizationAuthorized.value
+      ? (detail.data.value?.activity ?? participation.data.value?.activity ?? null)
+      : null,
   )
-  const activityResource = computed(() =>
-    detail.data.value?.activity
-      ? detail.data.value.resource
-      : (participation.data.value?.resource ?? detail.data.value?.resource),
-  )
+  const activityResource = computed(() => {
+    if (!identity.organizationAuthorized.value) {
+      return undefined
+    }
+    const detailData = detail.data.value
+    if (detailData?.activity) {
+      return detailData.resource
+    }
+    return participation.data.value?.resource ?? detailData?.resource
+  })
   const activityPresentation = computed(() =>
     detail.data.value?.activity
       ? detail.persistencePresentation.value
@@ -117,6 +124,12 @@ export function useActivityDetail(kind: MaybeRefOrGetter<'project' | 'job' | 'ca
         message: 'Open an activity from your organization overview.',
         status: 'unavailable',
         title: 'Select an activity',
+      }
+    }
+    if (identity.authenticated.value && identity.organizationVersion.value === 0) {
+      return {
+        status: 'unavailable',
+        title: 'Checking current organization access',
       }
     }
     if (!identity.authenticated.value || !identity.organizationAuthorized.value) {
@@ -161,6 +174,9 @@ export function useActivityDetail(kind: MaybeRefOrGetter<'project' | 'job' | 'ca
     return { status: 'ready' }
   })
   const participationState = computed<PlatformResourceState>(() => {
+    if (!identity.organizationAuthorized.value) {
+      return { status: 'authorization-required', title: 'Current organization access required' }
+    }
     const error = participation.error.value
     const resource = participation.data.value?.resource
     const resourceMessage =

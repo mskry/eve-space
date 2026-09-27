@@ -4,6 +4,18 @@ The external seam is `runtime.ts`. Application callers import lifecycle, admissi
 readiness, and presentation operations from that module rather than coordinating the subsystem's
 internal seams themselves.
 
+`transitionOrganizationQueries()` closes organization readiness, cancels and removes the entire
+organization query subtree, and starts one durable scoped invalidation. The application-level
+`queries/organization-readiness.ts` module observes verified session state from the application root,
+serializes live admission and context reloads, and matches the transition revision before reopening
+mounted consumers. A detached stable-key entry remains canonical when another consumer mounts during
+recovery. Views read readiness and can request a retry without coordinating those steps. Failed
+verification leaves the gate unavailable; a failed durable invalidation permits verified live-only
+recovery without re-admitting persisted private data. A verified admission with no organization
+entitlement still allows session-protected context and compliance reads. Scope watermarks preserve
+unaffected partitions across missed notifications; unknown history fails closed. Application pages
+never import the private lifecycle directly.
+
 ## Dependency Direction
 
 - Runtime orchestration depends on private lifecycle, runtime state, entry state, envelope policy,
@@ -21,6 +33,9 @@ internal seams themselves.
   query-error utilities, and platform presentation types, but never runtime state, query caches,
   storage, notifications, or adapters.
 - Envelope policy may depend only on dependency-free local leaves within this directory.
+- Scope-watermark policy is a pure leaf over envelope scope types and shape validation. Storage
+  owns its atomic IndexedDB updates; private lifecycle interprets snapshots and runtime presents
+  the resulting transition readiness.
 - Storage and notification adapters may depend on envelope policy and dependency-free local
   leaves. They must not import private lifecycle, entry state, runtime orchestration, or runtime
   state, and they return outcomes or notifications rather than initiating query-cache transitions.

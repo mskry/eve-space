@@ -27,6 +27,8 @@ import {
   type OrganizationReviewTargetResult,
 } from '../queries/organization-review'
 import { PRIVATE_QUERY_KEYS } from '../queries/query-keys'
+import { readOrganizationReadiness } from '../query-persistence/runtime'
+import { retryOrganizationReadiness } from '../queries/organization-readiness'
 import { createApiClient } from '../utils/api-client'
 import {
   availableOrganizationReviewerPanels,
@@ -49,6 +51,7 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   const route = navigation?.route ?? useRoute()
   const router = navigation?.router ?? useRouter()
   const queryCache = useQueryCache()
+  const organizationReady = readOrganizationReadiness(queryCache)
   const announcer = useAnnouncer()
   const apiClient = createApiClient(useRuntimeConfig().public.apiBase)
   const { authLoading, authSession } = useAuthSession(apiClient)
@@ -74,7 +77,7 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   const entryQuery = useQuery(() =>
     organizationReviewEntryQuery({
       apiClient,
-      authenticated: authSession.value.authenticated,
+      authenticated: authSession.value.authenticated && organizationReady.value === 'ready',
     }),
   )
   const entryError = computed(() => entryQuery.error.value)
@@ -82,7 +85,9 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     () => entryError.value instanceof ApiQueryError && [403, 404].includes(entryError.value.status),
   )
   const authorizedContributions = computed(() =>
-    entryError.value ? [] : (entryQuery.data.value?.contributions ?? []),
+    entryError.value || organizationReady.value !== 'ready'
+      ? []
+      : (entryQuery.data.value?.contributions ?? []),
   )
   const catalogContributions = computed(() =>
     availableOrganizationReviewerPanels(authorizedContributions.value, panelCatalog.contributions),
@@ -95,7 +100,9 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
           enabledSectionKeys.value.has(`${contribution.moduleId}/${contribution.sectionId}`)),
     ),
   )
-  const organizationVersion = computed(() => entryQuery.data.value?.organizationVersion ?? 0)
+  const organizationVersion = computed(() =>
+    organizationReady.value === 'ready' ? (entryQuery.data.value?.organizationVersion ?? 0) : 0,
+  )
   const urlState = computed(() => parseOrganizationReviewUrlState(route.query))
   const directoryInput = computed<OrganizationReviewDirectoryInput>(() => ({
     auditState: auditState.value,
@@ -121,10 +128,14 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     }),
   )
   const members = computed(() =>
-    directoryQuery.error.value ? [] : (directoryQuery.data.value?.items ?? []),
+    directoryQuery.error.value || organizationReady.value !== 'ready'
+      ? []
+      : (directoryQuery.data.value?.items ?? []),
   )
   const groupFacets = computed(() =>
-    directoryQuery.error.value ? [] : (directoryQuery.data.value?.groupFacets ?? []),
+    directoryQuery.error.value || organizationReady.value !== 'ready'
+      ? []
+      : (directoryQuery.data.value?.groupFacets ?? []),
   )
   const browseSelectedMember = computed(() =>
     members.value.find(({ account }) => account.userId === urlState.value.targetUserId),
@@ -147,10 +158,11 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
       input: targetInput.value,
     }),
   )
-  const selectedMember = computed(
-    () =>
-      currentTargetLookupMember(targetQuery.data.value, targetInput.value) ??
-      browseSelectedMember.value,
+  const selectedMember = computed(() =>
+    organizationReady.value === 'ready'
+      ? (currentTargetLookupMember(targetQuery.data.value, targetInput.value) ??
+        browseSelectedMember.value)
+      : undefined,
   )
   const selectedContribution = computed(() => {
     return availableContributions.value.find(
@@ -176,7 +188,7 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     )
   })
   const queryAccess = computed<PlatformReviewerPanelQueryAccess>(() => ({
-    authenticated: authSession.value.authenticated,
+    authenticated: authSession.value.authenticated && organizationReady.value === 'ready',
     authorized:
       !entryError.value &&
       selectedContribution.value !== undefined &&
@@ -343,7 +355,7 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   }
 
   function canonicalizeLocation() {
-    if (!entryQuery.data.value) {
+    if (organizationReady.value !== 'ready' || !entryQuery.data.value) {
       return
     }
     if (!runtimeQuery.data.value) {
@@ -463,6 +475,8 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     members,
     nextDirectoryPage,
     organizationVersion,
+    organizationReady,
+    retryOrganizationReadiness: () => retryOrganizationReadiness(queryCache),
     panelFocusRequest,
     previousDirectoryPage,
     queryAccess,

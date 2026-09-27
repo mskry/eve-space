@@ -43,7 +43,27 @@ const apiServer = await startCorsJsonApi((request) => {
     return { body: { authenticated: false } }
   }
   if (url.pathname === '/api/me/cache-admission') {
-    return { body: cacheAdmissionForOrganization('reviewer-user', reviewerCharacterId, 7) }
+    return {
+      body: cacheAdmissionForOrganization(
+        'reviewer-user',
+        reviewerCharacterId,
+        organizationVersion,
+      ),
+    }
+  }
+  if (url.pathname === '/api/organization/context') {
+    return {
+      body: {
+        memberAccess: true,
+        organization: {
+          organizationId: 98_000_001,
+          organizationName: 'Review Corporation',
+          organizationTicker: 'REV',
+          organizationType: 'corporation',
+          organizationVersion,
+        },
+      },
+    }
   }
   if (url.pathname === '/api/me/characters') {
     return { body: { characters: [] } }

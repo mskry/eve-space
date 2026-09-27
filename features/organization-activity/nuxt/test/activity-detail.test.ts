@@ -106,6 +106,29 @@ test('allows authorized details and exact owned participation only on the client
   expect(enabled(0)).toBe(false)
 })
 
+test('hides cached organization and participation results while the host context is closed', () => {
+  const state = useActivityDetail('job')
+  queries[0]!.data.value = {
+    activity: { id, title: 'Old organization activity' },
+    resource: { status: 'current' },
+  }
+  queries[1]!.data.value = {
+    activity: { id, title: 'Old character activity' },
+    participation: [],
+    resource: { status: 'current' },
+  }
+  expect(state.activity.value?.title).toBe('Old organization activity')
+
+  identity.authorized = false
+  identity.version = 0
+  expect(enabled(0)).toBe(false)
+  expect(enabled(1)).toBe(false)
+  expect(state.activity.value).toBeNull()
+  expect(state.activityResource.value).toBeUndefined()
+  expect(state.state.value).toMatchObject({ status: 'unavailable' })
+  expect(state.participationState.value.status).toBe('authorization-required')
+})
+
 test('changes organization keys and rejects non-owned characters, invalid IDs and disabled modules', () => {
   useActivityDetail('project')
   identity.version = 8

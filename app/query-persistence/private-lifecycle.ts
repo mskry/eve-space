@@ -12,6 +12,11 @@ import {
 } from './envelope'
 import type { QueryPersistenceNotifications } from './notifications'
 import type { QueryPersistenceStorage, QueryPersistenceStorageWrite } from './storage'
+import {
+  initialScopeWatermarks,
+  scopesSinceGeneration,
+  type ScopeWatermarks,
+} from './scope-watermarks'
 
 const PRIVATE_ADMISSION_MAX_AGE_MS = 30_000
 const PRIVATE_ADMISSION_RENEWAL_LEAD_MS = 5000
@@ -30,6 +35,7 @@ interface PrivateQueryLifecycleHost {
     preserveErrors: boolean,
     preserveFreshSuccesses: boolean,
     preserveSession: boolean,
+    requireOrganizationReadiness: boolean,
   ): void
   collectAdmittedCache(admission: CacheAdmissionContext, now: number): PersistedQueryCache
   commitAdmittedCache(cache: PersistedQueryCache, now: number): void
@@ -47,6 +53,8 @@ interface PrivateQueryLifecycleHost {
   readPersistedPrivateOwner(): string | null
   refetchParkedPrivateQueries(): void
   quarantineRetainedData(): void
+  quarantineUnscopedData(): void
+  restoreUnscopedData(admission: CacheAdmissionContext): void
   reconcileRetainedData(): void
   resolveAdmissionInvalidationScope(
     admission: CacheAdmissionContext,
@@ -73,6 +81,30 @@ export interface PrivateQueryLifecycleOptions {
 
 type AdmissionLoader = (signal?: AbortSignal) => Promise<CacheAdmissionContext>
 type PersistedColadaCache = Parameters<typeof serializePersistedEnvelope>[0]
+type DurableInvalidation = Awaited<ReturnType<QueryPersistenceStorage['invalidate']>>
+
+const scopesForInvalidation = (invalidation: DurableInvalidation, previousGeneration: number) => {
+  if (!invalidation) {
+    return [{ kind: 'all' } as const]
+  }
+  return invalidation.generation === previousGeneration + 1
+    ? [invalidation.scope]
+    : scopesSinceGeneration(invalidation.scopeHistory, previousGeneration)
+}
+
+const scopesToReconcile = (
+  invalidation: NonNullable<DurableInvalidation>,
+  previousGeneration: number,
+  requested: PrivateQueryInvalidationScope,
+  changedScopes: readonly PrivateQueryInvalidationScope[],
+) => {
+  if (invalidation.generation !== previousGeneration + 1) {
+    return changedScopes
+  }
+  return invalidation.scope.kind === 'all' && requested.kind !== 'all'
+    ? [{ kind: 'all' } as const]
+    : []
+}
 
 interface AdmissionAttempt {
   readonly alreadyInvalidatedScope?: PrivateQueryInvalidationScope
@@ -111,6 +143,9 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
   let disposed = false
   let durableInvalidationEpoch: number | null = null
   let durableGenerationVerified = false
+  // Live admission may recover after a failed organization invalidation, but old disk partitions
+  // remain ineligible until a later organization-wide or full durable fence commits.
+  let durableOrganizationFencePending = false
   let identityAttempt = 0
   let identityCommitDepth = 0
   let invalidationGeneration = 0
@@ -121,6 +156,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
   let lifecycleRecheckRequested = false
   let listenersInstalled = false
   let parkedRefetchPending = false
+  let organizationTransitionAttempt = 0
   let pendingAdmissionRequest: PendingAdmissionRequest | undefined
   let privateLifecycleEpoch = 0
   let privatePersistenceEnabled = true
@@ -229,6 +265,24 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     ) {
       return invalidatePrivateCache(scope, preserveErrors, false, undefined, preserveFreshSuccesses)
     },
+    async transitionOrganization(afterClose: () => void) {
+      const attempt = ++organizationTransitionAttempt
+      const invalidated = await invalidatePrivateCache(
+        { kind: 'organization' },
+        false,
+        false,
+        afterClose,
+      )
+      if (!disposed && attempt === organizationTransitionAttempt) {
+        durableOrganizationFencePending = !invalidated
+        if (!invalidated) {
+          durableGenerationVerified = false
+          privatePersistenceEnabled = false
+        }
+        host.touch()
+      }
+      return invalidated
+    },
     ownsCharacter(characterId: number | undefined) {
       return (
         !disposed &&
@@ -247,7 +301,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
         if (!guardIsCurrent(guard)) {
           return result.value
         }
-        applyStorageGeneration(result.generation)
+        applyStorageGeneration(result.generation, result.scopeHistory)
         return result.value
       } catch (error) {
         if (!guardIsCurrent(guard)) {
@@ -264,6 +318,15 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
         return false
       }
       return requestAdmission(admissionLoader, scope)
+    },
+    async reacquireOrganizationAdmission() {
+      if (!admissionLoader || verifiedUserId === null) {
+        return null
+      }
+      await requestAdmission(admissionLoader, { kind: 'organization' })
+      return activeAdmission?.userId === verifiedUserId && admissionIsCurrent(now())
+        ? activeAdmission
+        : null
     },
     refreshAdmissionTimers() {
       scheduleAdmissionExpiry()
@@ -475,7 +538,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
 
     retainedPrivateAccessOpen = false
     host.touch()
-    if (!storage.available) {
+    if (!storage.available || durableOrganizationFencePending) {
       applyAdmissionWithoutPersistence(admission, deadline)
       return false
     }
@@ -509,7 +572,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       attempt.alreadyInvalidatedScope,
     )
     if (invalidationScope) {
-      attempt.epoch = closeAndPurgePrivateCache(invalidationScope, false)
+      attempt.epoch = closeAndPurgePrivateCache(invalidationScope, false, false, true, true)
       const invalidated = await advanceInvalidationGeneration(invalidationScope, attempt.epoch)
       if (!admissionAttemptIsCurrent(attempt) || !invalidated || now() >= deadline) {
         return false
@@ -527,6 +590,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       return false
     }
     host.commitAdmittedCache(admittedCache, now())
+    host.restoreUnscopedData(admission)
     retainedPrivateAccessOpen = true
     scheduleAdmissionExpiry()
     host.touch()
@@ -558,13 +622,14 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
   function applyAdmissionWithoutPersistence(admission: CacheAdmissionContext, deadline: number) {
     const scope = host.resolveAdmissionInvalidationScope(admission, lastAcceptedAdmission, now())
     if (scope) {
-      closeAndPurgePrivateCache(scope, false)
+      closeAndPurgePrivateCache(scope, false, false, true, true)
     }
     verifiedUserId = admission.userId
     activeAdmission = admission
     lastAcceptedAdmission = admission
     activeAdmissionDeadline = deadline
     retainedPrivateAccessOpen = false
+    host.restoreUnscopedData(admission)
     scheduleAdmissionExpiry()
     host.touch()
     scheduleParkedQueryRefetch()
@@ -631,13 +696,16 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       }
       return false
     }
+    const effectiveScopes = scopesForInvalidation(invalidation, generationAtStart)
     const effectiveScope =
-      invalidation?.generation === generationAtStart + 1
-        ? invalidation.scope
-        : ({ kind: 'all' } as const)
+      effectiveScopes.length === 1 ? effectiveScopes[0]! : ({ kind: 'all' } as const)
     const nextGeneration = invalidation?.generation
     if (nextGeneration !== undefined && nextGeneration > invalidationGeneration) {
-      notifications.publish({ generation: nextGeneration, scope: effectiveScope })
+      notifications.publish({
+        generation: nextGeneration,
+        scope: effectiveScope,
+        ...(effectiveScopes.length > 1 && { requiresScopeProbe: true }),
+      })
     }
     if (!invalidationStillCurrent(expectedEpoch, generationAtStart)) {
       return false
@@ -651,16 +719,30 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       return false
     }
 
-    if (effectiveScope.kind === 'all' && scope.kind !== 'all') {
-      closeAndPurgePrivateCache(effectiveScope, false)
+    for (const changed of scopesToReconcile(
+      invalidation,
+      generationAtStart,
+      scope,
+      effectiveScopes,
+    )) {
+      closeAndPurgePrivateCache(changed, false, false, true, true)
     }
     invalidationGeneration = invalidation.generation
     host.setEnvelope({
       ...host.readEnvelope(),
       invalidationGeneration: invalidation.generation,
     })
-    durableGenerationVerified = true
-    privatePersistenceEnabled = true
+    if (
+      effectiveScopes.some(
+        (changed) =>
+          changed.kind === 'all' ||
+          (changed.kind === 'organization' && changed.admissionScope === undefined),
+      )
+    ) {
+      durableOrganizationFencePending = false
+    }
+    durableGenerationVerified = !durableOrganizationFencePending
+    privatePersistenceEnabled = !durableOrganizationFencePending
     host.touch()
     return true
   }
@@ -677,21 +759,24 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
   async function verifyDurableGeneration(
     stillCurrent: () => boolean,
   ): Promise<DurableGenerationProbe> {
+    if (durableOrganizationFencePending) {
+      return { kind: 'unusable' }
+    }
     if (durableInvalidationEpoch !== null) {
       return { kind: 'superseded' }
     }
     const guard = lifecycleGuard()
     try {
-      const generation = await storage.readGeneration()
+      const snapshot = await storage.readGeneration()
       if (!stillCurrent() || !guardIsCurrent(guard)) {
         return { kind: 'superseded' }
       }
-      if (generation === null) {
+      if (snapshot === null) {
         disablePrivatePersistence()
         return { kind: 'unusable' }
       }
-      applyVerifiedGeneration(generation)
-      return { generation, kind: 'verified' }
+      applyVerifiedGeneration(snapshot)
+      return { generation: snapshot.invalidationGeneration, kind: 'verified' }
     } catch {
       if (!stillCurrent() || !guardIsCurrent(guard)) {
         return { kind: 'superseded' }
@@ -701,12 +786,12 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     }
   }
 
-  function applyStorageGeneration(generation: number | null) {
+  function applyStorageGeneration(generation: number | null, scopeHistory?: ScopeWatermarks) {
     if (generation === null) {
       disablePrivatePersistence()
       return
     }
-    applyVerifiedGeneration(generation)
+    applyVerifiedGeneration(scopeHistory ?? initialScopeWatermarks(generation))
   }
 
   function applyStorageWrite(result: QueryPersistenceStorageWrite, privateWriteRequested: boolean) {
@@ -715,7 +800,10 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       return
     }
     if (result.generation !== invalidationGeneration) {
-      applyObservedInvalidation(result.generation, { kind: 'all' })
+      applyObservedInvalidation(
+        result.generation,
+        scopesSinceGeneration(result.scopeHistory, invalidationGeneration),
+      )
       return
     }
     if (!result.privateAccepted) {
@@ -724,23 +812,27 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       }
       return
     }
-    applyVerifiedGeneration(result.generation)
+    applyVerifiedGeneration(result.scopeHistory ?? initialScopeWatermarks(result.generation))
   }
 
-  function applyVerifiedGeneration(generation: number) {
+  function applyVerifiedGeneration(snapshot: ScopeWatermarks) {
+    const generation = snapshot.invalidationGeneration
     if (generation !== invalidationGeneration) {
-      applyObservedInvalidation(generation, { kind: 'all' })
+      applyObservedInvalidation(generation, scopesSinceGeneration(snapshot, invalidationGeneration))
     }
     invalidationGeneration = generation
-    durableGenerationVerified = true
-    privatePersistenceEnabled = true
+    durableGenerationVerified = !durableOrganizationFencePending
+    privatePersistenceEnabled = !durableOrganizationFencePending
     host.touch()
   }
 
-  function applyObservedInvalidation(generation: number, scope: PrivateQueryInvalidationScope) {
-    const effectiveScope =
-      generation === invalidationGeneration + 1 ? scope : ({ kind: 'all' } as const)
-    closeAndPurgePrivateCache(effectiveScope, false, false, false)
+  function applyObservedInvalidation(
+    generation: number,
+    scopes: readonly PrivateQueryInvalidationScope[],
+  ) {
+    for (const scope of scopes.length ? scopes : [{ kind: 'all' } as const]) {
+      closeAndPurgePrivateCache(scope, false, false, false, true)
+    }
     invalidationGeneration = generation
     host.setEnvelope({ ...host.readEnvelope(), invalidationGeneration: generation })
     durableGenerationVerified = false
@@ -760,6 +852,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     preserveErrors: boolean,
     preserveFreshSuccesses = false,
     preserveSession = true,
+    requireOrganizationReadiness = false,
   ) {
     retainedPrivateAccessOpen = false
     privateLifecycleEpoch += 1
@@ -768,7 +861,13 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     activeAdmission = null
     activeAdmissionDeadline = 0
     activeAdmissionMayRenew = true
-    host.closeAndPurge(scope, preserveErrors, preserveFreshSuccesses, preserveSession)
+    host.closeAndPurge(
+      scope,
+      preserveErrors,
+      preserveFreshSuccesses,
+      preserveSession,
+      requireOrganizationReadiness,
+    )
     host.touch()
     return privateLifecycleEpoch
   }
@@ -795,7 +894,15 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
         return
       }
       if (notification.generation > invalidationGeneration) {
-        applyObservedInvalidation(notification.generation, notification.scope)
+        if (
+          notification.generation === invalidationGeneration + 1 &&
+          !notification.requiresScopeProbe
+        ) {
+          applyObservedInvalidation(notification.generation, [notification.scope])
+        } else {
+          suspendRetainedPrivateAccess()
+          host.quarantineUnscopedData()
+        }
       }
       void requestLifecycleCheck()
     })
@@ -895,6 +1002,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       }
       retainedPrivateAccessOpen = true
       host.commitAdmittedCache(host.collectAdmittedCache(admission, now()), now())
+      host.restoreUnscopedData(admission)
       scheduleAdmissionExpiry()
       host.touch()
       scheduleParkedQueryRefetch()

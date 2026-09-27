@@ -9,34 +9,48 @@ import {
   toPublicOnlySerializedEnvelope,
   type PrivateQueryInvalidationScope,
 } from './envelope'
-import { isExactRecord } from './shape'
+import { isExactRecord, isRecord } from './shape'
+import {
+  advanceScopeWatermarks,
+  initialScopeWatermarks,
+  type ScopeWatermarks,
+} from './scope-watermarks'
 
 const DATABASE_NAME = 'eve-space-query-cache'
 const DATABASE_VERSION = 1
 const OBJECT_STORE_NAME = 'query-cache'
-const INVALIDATION_CONTROL_VERSION = 1
+const INVALIDATION_CONTROL_VERSION = 2
 const LEGACY_PERSISTED_CACHE_KEY = 'eve-space-character-query-cache'
 const INVALIDATION_CONTROL_KEY = 'eve-space-esi-query-cache-control'
 const INVALIDATION_BARRIER_KEY = 'eve-space-esi-query-cache-invalidation-pending'
 
-interface InvalidationControl {
-  readonly version: typeof INVALIDATION_CONTROL_VERSION
-  readonly invalidationGeneration: number
+type InvalidationControl = ScopeWatermarks
+type ControlRecord = {
+  readonly version?: unknown
+  readonly invalidationGeneration?: unknown
+  readonly historyFromGeneration?: unknown
+  readonly fullGeneration?: unknown
+  readonly organizationGeneration?: unknown
+  readonly charactersGeneration?: unknown
+  readonly characterGenerations?: unknown
 }
 
 interface QueryPersistenceStorageRead {
   readonly generation: number | null
   readonly value: string | null
+  readonly scopeHistory?: ScopeWatermarks
 }
 
 export interface QueryPersistenceStorageWrite {
   readonly generation: number | null
   readonly privateAccepted: boolean
+  readonly scopeHistory?: ScopeWatermarks
 }
 
 interface QueryPersistenceStorageInvalidation {
   readonly generation: number
   readonly scope: PrivateQueryInvalidationScope
+  readonly scopeHistory?: ScopeWatermarks
 }
 
 export interface QueryPersistenceStorage {
@@ -46,7 +60,7 @@ export interface QueryPersistenceStorage {
     deleteEnvelope?: boolean,
   ): Promise<QueryPersistenceStorageInvalidation | null>
   read(): Promise<QueryPersistenceStorageRead>
-  readGeneration(): Promise<number | null>
+  readGeneration(): Promise<ScopeWatermarks | null>
   removeEnvelope(): Promise<void>
   write(value: string, allowPrivateWrite: boolean): Promise<QueryPersistenceStorageWrite>
 }
@@ -155,7 +169,10 @@ export function createIndexedDbQueryPersistenceStorage(
                   complete(null)
                   return
                 }
-                const currentGeneration = control?.invalidationGeneration ?? 0
+                const previous = control ?? initialScopeWatermarks()
+                const resolvedScope =
+                  !control && storedValue !== null ? ({ kind: 'all' } as const) : effectiveScope
+                const currentGeneration = previous.invalidationGeneration
                 if (currentGeneration === Number.MAX_SAFE_INTEGER) {
                   privatePersistencePoisoned = true
                   poisonPrivatePersistence(store)
@@ -164,7 +181,8 @@ export function createIndexedDbQueryPersistenceStorage(
                   return
                 }
                 const generation = currentGeneration + 1
-                store.put(createInvalidationControl(generation), INVALIDATION_CONTROL_KEY)
+                const scopeHistory = advanceScopeWatermarks(previous, resolvedScope)
+                store.put(scopeHistory, INVALIDATION_CONTROL_KEY)
                 store.delete(INVALIDATION_BARRIER_KEY)
                 if (deleteEnvelope) {
                   store.delete(PERSISTED_ESI_QUERY_CACHE_KEY)
@@ -173,7 +191,7 @@ export function createIndexedDbQueryPersistenceStorage(
                     storedValue,
                     currentGeneration,
                     generation,
-                    effectiveScope,
+                    resolvedScope,
                     now(),
                   )
                   if (nextValue === null) {
@@ -182,7 +200,7 @@ export function createIndexedDbQueryPersistenceStorage(
                     store.put(nextValue, PERSISTED_ESI_QUERY_CACHE_KEY)
                   }
                 }
-                complete({ generation, scope: effectiveScope })
+                complete({ generation, scope: resolvedScope, scopeHistory })
               })
             },
           )
@@ -233,7 +251,7 @@ export function createIndexedDbQueryPersistenceStorage(
     readGeneration() {
       return run(async () => {
         const database = await openDatabase()
-        return completeValueTransaction<number | null>(
+        return completeValueTransaction<ScopeWatermarks | null>(
           database,
           'readonly',
           (store, complete, fail) => {
@@ -242,7 +260,7 @@ export function createIndexedDbQueryPersistenceStorage(
                 complete(null)
                 return
               }
-              complete(parseInvalidationControl(storedControl)?.invalidationGeneration ?? null)
+              complete(parseInvalidationControl(storedControl))
             })
           },
         )
@@ -275,14 +293,20 @@ export function createIndexedDbQueryPersistenceStorage(
                 return
               }
 
-              const generation = control?.invalidationGeneration ?? 0
-              if (!control) {
-                store.put(createInvalidationControl(generation), INVALIDATION_CONTROL_KEY)
+              const scopeHistory = control ?? initialScopeWatermarks()
+              const generation = scopeHistory.invalidationGeneration
+              if (
+                !control ||
+                (isExactRecord(storedControl, ['version', 'invalidationGeneration']) &&
+                  storedControl.version === 1)
+              ) {
+                store.put(scopeHistory, INVALIDATION_CONTROL_KEY)
               }
               const invalidationPending =
                 readInvalidationBarrier(durableState) !== null || storedBarrier !== undefined
               const privateAccepted =
                 !invalidationPending &&
+                (control !== null || storedValue === null) &&
                 allowPrivateWrite &&
                 candidate.invalidationGeneration === generation
               const serializedCandidate = serializeBoundedEnvelope(candidate)
@@ -295,7 +319,7 @@ export function createIndexedDbQueryPersistenceStorage(
                 nextValue = mergePublicSerializedEnvelope(candidate, storedValue, generation, now())
               }
               store.put(nextValue, PERSISTED_ESI_QUERY_CACHE_KEY)
-              complete({ generation, privateAccepted })
+              complete({ generation, privateAccepted, scopeHistory })
             })
           },
         )
@@ -334,7 +358,10 @@ function completeStorageRead(
     completeStorageReadWithInvalidControl(store, complete, storedState.value, now)
     return false
   }
-  completeStorageReadAtGeneration(store, complete, storedState.value, control, now)
+  const legacyControl =
+    isExactRecord(storedState.control, ['version', 'invalidationGeneration']) &&
+    storedState.control.version === 1
+  completeStorageReadAtGeneration(store, complete, storedState.value, legacyControl, control, now)
   return false
 }
 
@@ -342,7 +369,7 @@ function completeRecoveredStorageRead(
   store: IndexedDbStore,
   complete: (value: QueryPersistenceStorageRead) => void,
   storedState: StoredState,
-  control: InvalidationControl | null,
+  control: ScopeWatermarks | null,
   now: number,
 ) {
   const invalidControl = storedState.control !== undefined && !control
@@ -354,11 +381,12 @@ function completeRecoveredStorageRead(
   }
 
   const generation = (control?.invalidationGeneration ?? 0) + 1
-  store.put(createInvalidationControl(generation), INVALIDATION_CONTROL_KEY)
+  const scopeHistory = advanceScopeWatermarks(control ?? initialScopeWatermarks(), { kind: 'all' })
+  store.put(scopeHistory, INVALIDATION_CONTROL_KEY)
   store.delete(INVALIDATION_BARRIER_KEY)
   const value = toPublicOnlySerializedEnvelope(storedState.value, generation, now)
   storeSerializedEnvelope(store, value)
-  complete({ generation, value })
+  complete({ generation, value, scopeHistory })
   return false
 }
 
@@ -381,24 +409,32 @@ function completeStorageReadAtGeneration(
   store: IndexedDbStore,
   complete: (value: QueryPersistenceStorageRead) => void,
   storedValue: string | null,
-  control: InvalidationControl | null,
+  legacyControl: boolean,
+  control: ScopeWatermarks | null,
   now: number,
 ) {
   const generation = control?.invalidationGeneration ?? 0
-  if (!control) {
-    store.put(createInvalidationControl(generation), INVALIDATION_CONTROL_KEY)
+  const scopeHistory = control ?? initialScopeWatermarks()
+  if (!control || legacyControl) {
+    store.put(scopeHistory, INVALIDATION_CONTROL_KEY)
   }
 
   const envelopeGeneration = readSerializedEnvelopeGeneration(storedValue)
+  if (!control && storedValue !== null) {
+    const value = toPublicOnlySerializedEnvelope(storedValue, generation, now)
+    storeSerializedEnvelope(store, value)
+    complete({ generation, value, scopeHistory })
+    return
+  }
   if (storedValue === null || envelopeGeneration === generation) {
-    complete({ generation, value: storedValue })
+    complete({ generation, value: storedValue, scopeHistory })
     return
   }
 
   const value = toPublicOnlySerializedEnvelope(storedValue, generation, now)
   if (value === null) {
     store.delete(PERSISTED_ESI_QUERY_CACHE_KEY)
-    complete({ generation, value: null })
+    complete({ generation, value: null, scopeHistory })
     return
   }
   if (value === storedValue && envelopeGeneration === null) {
@@ -409,6 +445,7 @@ function completeStorageReadAtGeneration(
   complete({
     generation,
     value: envelopeGeneration === null ? storedValue : value,
+    scopeHistory,
   })
 }
 
@@ -534,24 +571,95 @@ function readStoredState(
   barrierRequest.addEventListener('error', () => fail(barrierRequest.error), { once: true })
 }
 
-function parseInvalidationControl(value: unknown): InvalidationControl | null {
+const parseCharacterWatermarks = (control: ControlRecord, maximum: number) => {
+  const raw = control.characterGenerations
+  if (!isRecord(raw) || Object.keys(raw).length > 128) {
+    return null
+  }
+  const parsed: Record<string, number> = {}
+  for (const [id, generation] of Object.entries(raw)) {
+    if (
+      !/^[1-9]\d*$/.test(id) ||
+      !Number.isSafeInteger(Number(id)) ||
+      !isInvalidationGeneration(generation) ||
+      generation > maximum
+    ) {
+      return null
+    }
+    parsed[id] = generation
+  }
+  return parsed
+}
+
+const parseCurrentControl = (value: ControlRecord): InvalidationControl | null => {
   if (
-    !isExactRecord(value, ['version', 'invalidationGeneration']) ||
-    !('version' in value) ||
-    !('invalidationGeneration' in value) ||
-    value.version !== INVALIDATION_CONTROL_VERSION ||
-    !isInvalidationGeneration(value.invalidationGeneration)
+    !isExactRecord(value, [
+      'version',
+      'invalidationGeneration',
+      'historyFromGeneration',
+      'fullGeneration',
+      'organizationGeneration',
+      'charactersGeneration',
+      'characterGenerations',
+    ]) ||
+    value.version !== INVALIDATION_CONTROL_VERSION
+  ) {
+    return null
+  }
+  const {
+    invalidationGeneration,
+    historyFromGeneration,
+    fullGeneration,
+    organizationGeneration,
+    charactersGeneration,
+  } = value
+  if (
+    !isInvalidationGeneration(invalidationGeneration) ||
+    !isInvalidationGeneration(historyFromGeneration) ||
+    !isInvalidationGeneration(fullGeneration) ||
+    !isInvalidationGeneration(organizationGeneration) ||
+    !isInvalidationGeneration(charactersGeneration) ||
+    historyFromGeneration > invalidationGeneration
+  ) {
+    return null
+  }
+  const parsedCharacters = parseCharacterWatermarks(value, invalidationGeneration)
+  if (!parsedCharacters) {
+    return null
+  }
+  const latest = Math.max(
+    fullGeneration,
+    organizationGeneration,
+    charactersGeneration,
+    ...Object.values(parsedCharacters),
+  )
+  if (
+    latest > invalidationGeneration ||
+    (invalidationGeneration > historyFromGeneration && latest !== invalidationGeneration)
   ) {
     return null
   }
   return {
-    invalidationGeneration: value.invalidationGeneration,
     version: INVALIDATION_CONTROL_VERSION,
+    invalidationGeneration,
+    historyFromGeneration,
+    fullGeneration,
+    organizationGeneration,
+    charactersGeneration,
+    characterGenerations: parsedCharacters,
   }
 }
 
-function createInvalidationControl(generation: number): InvalidationControl {
-  return { invalidationGeneration: generation, version: INVALIDATION_CONTROL_VERSION }
+function parseInvalidationControl(value: unknown): InvalidationControl | null {
+  if (!isRecord(value)) {
+    return null
+  }
+  if (isExactRecord(value, ['version', 'invalidationGeneration']) && value.version === 1) {
+    return isInvalidationGeneration(value.invalidationGeneration)
+      ? initialScopeWatermarks(value.invalidationGeneration)
+      : null
+  }
+  return parseCurrentControl(value)
 }
 
 function completeTransaction(

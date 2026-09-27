@@ -3,14 +3,18 @@ import { useQueryCache } from '@pinia/colada'
 import { flushPromises, RouterLinkStub } from '@vue/test-utils'
 import { http, HttpResponse } from 'msw'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { computed, defineComponent, h } from 'vue'
 import SettingsIntegrations from '../../app/components/settings/SettingsIntegrations.vue'
 import { useAuthSession } from '../../app/composables/useAuthSession'
+import { observeOrganizationReadiness } from '../../app/queries/organization-readiness'
 import type { OrganizationContext, OrganizationRoles } from '../../app/queries/organization'
 import { refreshPrivateAuthorization } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { createApiClient } from '../../app/utils/api-client'
-import { cacheAdmissionForOrganization } from '../support/cache-admission'
+import {
+  cacheAdmissionForCharacter,
+  cacheAdmissionForOrganization,
+} from '../support/cache-admission'
 import { clearQueryCache } from '../support/clear-query-cache'
 import { queryServer } from '../support/query-server'
 
@@ -21,6 +25,7 @@ const ownerReplacementRequests: unknown[] = []
 const corporationReplacementRequests: unknown[] = []
 let permissionReadCount = 0
 let sessionAuthenticated = true
+let organizationAdmitted = true
 let context = ownerContext()
 let rolesResponse = emptyRoles()
 let grantFails = false
@@ -34,6 +39,7 @@ beforeEach(() => {
   context = ownerContext()
   rolesResponse = emptyRoles()
   sessionAuthenticated = true
+  organizationAdmitted = true
   grantFails = false
   revokeFails = false
   grantRequests.length = 0
@@ -108,6 +114,21 @@ describe('SettingsIntegrations', () => {
       authorityCharacter: null,
       claimAvailable: true,
       isOrganizationOwner: false,
+    }
+    const wrapper = await mountSettingsIntegrations()
+
+    expect(wrapper.get('#authority-character').element).toHaveProperty('value', '1404328063')
+    expect(wrapper.get('.authority-claim-form button').attributes('disabled')).toBeUndefined()
+  })
+
+  it('keeps owner-claim remediation available with verified negative organization admission', async () => {
+    organizationAdmitted = false
+    context = {
+      ...ownerContext(),
+      authorityCharacter: null,
+      claimAvailable: true,
+      isOrganizationOwner: false,
+      memberAccess: false,
     }
     const wrapper = await mountSettingsIntegrations()
 
@@ -211,7 +232,15 @@ async function mountSettingsIntegrations(roles: OrganizationRoles = emptyRoles()
   const Host = defineComponent({
     async setup() {
       const queryCache = useQueryCache()
-      await useAuthSession(createApiClient('http://localhost:8788')).initializeAuth(true)
+      const apiClient = createApiClient('http://localhost:8788')
+      const auth = useAuthSession(apiClient)
+      observeOrganizationReadiness(
+        queryCache,
+        apiClient,
+        auth.authSession,
+        computed(() => auth.authVerificationStatus.value === 'verified'),
+      )
+      await auth.initializeAuth(true)
       queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationContext(), context)
       queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationRoles(), roles)
       return () => h(SettingsIntegrations)
@@ -252,7 +281,11 @@ function installHandlers() {
       ),
     ),
     http.get('http://localhost:8788/api/me/cache-admission', () =>
-      HttpResponse.json(cacheAdmissionForOrganization('owner-user', 1_404_328_063)),
+      HttpResponse.json(
+        organizationAdmitted
+          ? cacheAdmissionForOrganization('owner-user', 1_404_328_063)
+          : cacheAdmissionForCharacter('owner-user', 1_404_328_063),
+      ),
     ),
     http.get('http://localhost:8788/api/admin/setup', () =>
       HttpResponse.json({ available: true, required: false }),

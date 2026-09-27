@@ -11,6 +11,7 @@ const modules = [
   'notifications',
   'private-lifecycle',
   'runtime',
+  'scope-watermarks',
   'shape',
   'state',
   'storage',
@@ -29,8 +30,9 @@ describe('query persistence boundaries', () => {
             "import '../queries/auth'; import './envelope'; import './notifications'; import './shape'; import './storage'",
           runtime:
             "import './entry-state'; import './envelope'; import './notifications'; import './private-lifecycle'; import './state'; import './storage'",
+          'scope-watermarks': "import './envelope'",
           state: "import './entry-state'; import './envelope'",
-          storage: "import './envelope'; import './shape'",
+          storage: "import './envelope'; import './scope-watermarks'; import './shape'",
         }),
       ),
     ).toStrictEqual([])

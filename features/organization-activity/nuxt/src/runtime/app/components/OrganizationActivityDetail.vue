@@ -30,7 +30,7 @@ function selectCharacter(event: Event) {
     <h1>{{ activity?.title ?? title }}</h1>
     <PlatformResourceBoundary
       :state="state"
-      :has-data="Boolean(activity)"
+      :has-data="identity.organizationAuthorized.value && Boolean(activity)"
       :presentation="activityPresentation"
       @retry="detail.refresh()"
     >
@@ -71,7 +71,7 @@ function selectCharacter(event: Event) {
     <PlatformResourceBoundary
       v-if="selectedCharacter"
       :state="participationState"
-      :has-data="Boolean(participation.data.value)"
+      :has-data="identity.organizationAuthorized.value && Boolean(participation.data.value)"
       :presentation="participation.persistencePresentation.value"
       @retry="participation.refresh()"
     >

@@ -17,12 +17,17 @@ import {
   installQueryPersistence,
   invalidatePrivateQueryScope,
   readQueryCharacterOwnership,
+  readOrganizationReadiness,
+  reacquireOrganizationAdmission,
+  readOrganizationRevision,
   readQueryPersistenceState,
   refreshPrivateQueryAdmission,
   reportPrivateQueryAuthorizationDenial,
   signalNuxtHydrationFinished,
   subscribePrivateQueryInvalidation,
   suspendPrivateQueryAdmission,
+  setOrganizationReadiness,
+  transitionOrganizationQueries,
 } from '../../app/query-persistence/runtime'
 import type {
   QueryPersistenceNotification,
@@ -38,10 +43,17 @@ import type {
   PrivateQueryInvalidationScope,
 } from '../../app/query-persistence/envelope'
 import { PERSISTED_ESI_QUERY_CACHE_RETENTION_MS } from '../../app/query-persistence/envelope'
+import {
+  advanceScopeWatermarks,
+  initialScopeWatermarks,
+  type ScopeWatermarks,
+} from '../../app/query-persistence/scope-watermarks'
 import type { CacheAdmissionContext } from '../../app/queries/auth'
 import { prefetchProtectedQuery } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { ApiQueryError } from '../../app/utils/query-error'
+
+type OrganizationDataReader = () => { name: string } | undefined
 
 const NOW = Date.parse('2026-09-14T11:00:00.000Z')
 const PUBLIC_KEY = ['public', 'characters', 7] as const
@@ -67,6 +79,339 @@ afterEach(() => {
 })
 
 describe('query persistence runtime', () => {
+  it('removes every organization key before the durable transition settles', async () => {
+    const storage = new DeferredInvalidationStorage(envelopeWithPrivatePartitions())
+    const runtime = createRuntime(storage)
+    await readyRuntime(runtime)
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
+      admission(),
+    )
+    const context = PRIVATE_QUERY_KEYS.organizationContext()
+    const moduleKey = [...PRIVATE_QUERY_KEYS.organization(), 4, 'modules', 'industry', 'jobs']
+    ensureNonPersistedQuery(runtime.queryCache, context)
+    ensureNonPersistedQuery(runtime.queryCache, moduleKey)
+    runtime.queryCache.setQueryData(context, { organizationVersion: 3 })
+    runtime.queryCache.setQueryData(moduleKey, { jobs: ['old'] })
+    const updating = transitionOrganizationQueries(runtime.queryCache)
+
+    expect(readOrganizationReadiness(runtime.queryCache).value).toBe('clearing')
+    expect(runtime.queryCache.getEntries({ key: PRIVATE_QUERY_KEYS.organization() })).toHaveLength(
+      0,
+    )
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Character' })
+    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({ name: 'Public' })
+    expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
+      authenticatedSession(),
+    )
+    storage.releaseFirstInvalidation()
+    await expect(updating).resolves.toBe(true)
+    expect(storage.invalidationCalls).toBe(1)
+    expect(storage.snapshot()?.organizations).toStrictEqual({})
+    expect(readOrganizationReadiness(runtime.queryCache).value).toBe('loading')
+    runtime.dispose()
+  })
+
+  it('fences late organization fetches and old writes after a missed cross-tab notification', async () => {
+    const storage = new MemoryQueryPersistenceStorage(
+      envelopeWithPrivatePartitions(),
+    ).enableScopeWatermarks()
+    const first = createRuntime(storage, new TestNotifications())
+    const second = createRuntime(storage, new TestNotifications())
+    await Promise.all([readyRuntime(first), readyRuntime(second)])
+    await Promise.all([
+      applyVerifiedQueryIdentity(first.queryCache, authenticatedSession(), async () => admission()),
+      applyVerifiedQueryIdentity(second.queryCache, authenticatedSession(), async () =>
+        admission(),
+      ),
+    ])
+    const late = deferred<{ name: string }>()
+    const entry = ensureNonPersistedQuery(
+      first.queryCache,
+      PRIVATE_QUERY_KEYS.organizationContext(),
+      () => late.promise,
+    )
+    const fetching = first.queryCache.fetch(entry).catch(() => undefined)
+    await transitionOrganizationQueries(first.queryCache)
+    late.resolve({ name: 'Old context' })
+    await fetching
+    expect(first.queryCache.getQueryData(PRIVATE_QUERY_KEYS.organizationContext())).toBeUndefined()
+    expect(
+      (await storage.write(JSON.stringify(envelopeWithPrivatePartitions()), true)).privateAccepted,
+    ).toBe(false)
+    expect(storage.snapshot()?.organizations).toStrictEqual({})
+
+    globalThis.dispatchEvent(new Event('focus'))
+    await vi.waitFor(() => expect(second.queryCache.getQueryData(ORGANIZATION_KEY)).toBeUndefined())
+    expect(readOrganizationReadiness(second.queryCache).value).not.toBe('ready')
+    await reacquireOrganizationAdmission(second.queryCache)
+    expect(second.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Character' })
+    first.dispose()
+    second.dispose()
+  })
+
+  it('recovers mixed missed scopes while retaining a different authorized character', async () => {
+    const characterEight = PRIVATE_QUERY_KEYS.characterOverview(8)
+    const envelope = envelopeWithPrivatePartitions()
+    envelope.characters[8] = {
+      admissionRevision: 'character-revision-1',
+      cache: {
+        [JSON.stringify(characterEight)]: tuple({ name: 'Second character' }, NOW - 60_000, {
+          characterId: 8,
+          kind: 'character-esi',
+        }),
+      },
+      ownerUserId: 'user-1',
+    }
+    const storage = new MemoryQueryPersistenceStorage(envelope).enableScopeWatermarks()
+    const first = createRuntime(storage, new TestNotifications())
+    const second = createRuntime(storage, new TestNotifications())
+    await Promise.all([readyRuntime(first), readyRuntime(second)])
+    const currentAdmission = () => admission({ additionalCharacterId: 8 })
+    await Promise.all([
+      applyVerifiedQueryIdentity(first.queryCache, authenticatedSession(), currentAdmission),
+      applyVerifiedQueryIdentity(second.queryCache, authenticatedSession(), currentAdmission),
+    ])
+    await transitionOrganizationQueries(first.queryCache)
+    await invalidatePrivateQueryScope(first.queryCache, { characterId: 7, kind: 'character' })
+
+    globalThis.dispatchEvent(new Event('focus'))
+    await vi.waitFor(() => expect(second.queryCache.getQueryData(ORGANIZATION_KEY)).toBeUndefined())
+    await reacquireOrganizationAdmission(second.queryCache)
+    expect(second.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
+    expect(second.queryCache.getQueryData(characterEight)).toStrictEqual({
+      name: 'Second character',
+    })
+    first.dispose()
+    second.dispose()
+  })
+
+  it('holds unscoped organization data on a notification gap until durable scopes are verified', async () => {
+    const storage = new MemoryQueryPersistenceStorage(
+      envelopeWithPrivatePartitions(),
+    ).enableScopeWatermarks()
+    const notifications = new TestNotifications()
+    const runtime = createRuntime(storage, notifications)
+    await readyRuntime(runtime)
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
+      admission(),
+    )
+    const contextKey = PRIVATE_QUERY_KEYS.organizationContext()
+    ensureNonPersistedQuery(runtime.queryCache, contextKey)
+    runtime.queryCache.setQueryData(contextKey, { name: 'Old organization' })
+    storage.commitForOtherTab({ kind: 'organization' })
+    storage.commitForOtherTab({ kind: 'organization' })
+
+    notifications.emit({ generation: 2, scope: { kind: 'organization' } })
+    expect(runtime.queryCache.getQueryData(contextKey)).toBeUndefined()
+    await vi.waitFor(() =>
+      expect(readOrganizationReadiness(runtime.queryCache).value).toBe('loading'),
+    )
+    await reacquireOrganizationAdmission(runtime.queryCache)
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Character' })
+    runtime.dispose()
+  })
+
+  it('uses durable scopes for an adjacent mixed-scope notification instead of clearing the session', async () => {
+    const storage = new MemoryQueryPersistenceStorage(
+      envelopeWithPrivatePartitions(),
+    ).enableScopeWatermarks()
+    const notifications = new TestNotifications()
+    const runtime = createRuntime(storage, notifications)
+    await readyRuntime(runtime)
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
+      admission(),
+    )
+    storage.commitForOtherTab({ kind: 'organization' })
+    notifications.emit({ generation: 1, scope: { kind: 'organization' } })
+    await reacquireOrganizationAdmission(runtime.queryCache)
+    storage.commitForOtherTab({ characterId: 7, kind: 'character' })
+
+    notifications.emit({ generation: 2, scope: { kind: 'all' }, requiresScopeProbe: true })
+    expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
+      authenticatedSession(),
+    )
+    await vi.waitFor(() => expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined())
+    expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
+      authenticatedSession(),
+    )
+    runtime.dispose()
+  })
+
+  it('does not restore a mounted stable-key result after an organization transition', async () => {
+    const oldRequest = deferred<{ name: string }>()
+    const query = vi
+      .fn()
+      .mockImplementationOnce(() => oldRequest.promise)
+      .mockResolvedValue({ name: 'Current' })
+    const runtime = createRuntime(
+      new MemoryQueryPersistenceStorage(),
+      undefined,
+      undefined,
+      true,
+      undefined,
+      query,
+    )
+    await readyRuntime(runtime)
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
+      admission(),
+    )
+    await runtime.activatePrivateQuery()
+    await vi.waitFor(() => expect(query).toHaveBeenCalledOnce())
+
+    await transitionOrganizationQueries(runtime.queryCache)
+    oldRequest.resolve({ name: 'Previous' })
+    await nextTick()
+    expect(
+      runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.organizationContext()),
+    ).toBeUndefined()
+    expect(query).toHaveBeenCalledOnce()
+
+    await reacquireOrganizationAdmission(runtime.queryCache)
+    setOrganizationReadiness(
+      runtime.queryCache,
+      'ready',
+      readOrganizationRevision(runtime.queryCache).value,
+    )
+    await vi.waitFor(() => expect(query).toHaveBeenCalledTimes(2))
+    expect(
+      runtime.queryCache
+        .getEntries({ key: PRIVATE_QUERY_KEYS.organizationContext() })
+        .map((entry) => ({
+          status: entry.state.value.status,
+          data: entry.state.value.data,
+          error: entry.state.value.error,
+          active: entry.active,
+        })),
+    ).toMatchObject([{ status: 'success', data: { name: 'Current' } }])
+    await vi.waitFor(() =>
+      expect(
+        runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.organizationContext()),
+      ).toStrictEqual({ name: 'Current' }),
+    )
+    runtime.dispose()
+  })
+
+  it('keeps both stable-key consumers connected when the second mounts during recovery', async () => {
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ name: 'Previous' })
+      .mockResolvedValue({ name: 'Current' })
+    const runtime = createRuntime(
+      new MemoryQueryPersistenceStorage(),
+      undefined,
+      undefined,
+      true,
+      undefined,
+      query,
+    )
+    await readyRuntime(runtime)
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
+      admission(),
+    )
+    await runtime.activatePrivateQuery()
+    await vi.waitFor(() =>
+      expect(runtime.organizationConsumerData()[0]).toStrictEqual({ name: 'Previous' }),
+    )
+
+    await transitionOrganizationQueries(runtime.queryCache)
+    await runtime.activateAdditionalOrganizationConsumer()
+    expect(runtime.organizationConsumerData()).toStrictEqual([undefined, undefined])
+    expect(
+      runtime.queryCache.getEntries({ exact: true, key: PRIVATE_QUERY_KEYS.organizationContext() }),
+    ).toHaveLength(1)
+
+    await reacquireOrganizationAdmission(runtime.queryCache)
+    setOrganizationReadiness(
+      runtime.queryCache,
+      'ready',
+      readOrganizationRevision(runtime.queryCache).value,
+    )
+    await vi.waitFor(() =>
+      expect(runtime.organizationConsumerData()).toStrictEqual([
+        { name: 'Current' },
+        { name: 'Current' },
+      ]),
+    )
+
+    runtime.queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationContext(), { name: 'Updated' })
+    expect(runtime.organizationConsumerData()).toStrictEqual([
+      { name: 'Updated' },
+      { name: 'Updated' },
+    ])
+    await transitionOrganizationQueries(runtime.queryCache)
+    expect(runtime.organizationConsumerData()).toStrictEqual([undefined, undefined])
+    runtime.dispose()
+  })
+
+  it('rechecks live organization admission after a failed durable transition without admitting stored data', async () => {
+    const storage = new RecoveringInvalidationStorage(envelopeWithPrivatePartitions())
+    const runtime = createRuntime(storage)
+    await readyRuntime(runtime)
+    const loadAdmission = vi
+      .fn()
+      .mockResolvedValueOnce(admission())
+      .mockResolvedValue(admission({ organizationVersion: 4 }))
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission)
+    expect(
+      readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
+    ).toBe(true)
+
+    await expect(transitionOrganizationQueries(runtime.queryCache)).resolves.toBe(false)
+    expect(readOrganizationReadiness(runtime.queryCache).value).toBe('unavailable')
+    const currentAdmission = await reacquireOrganizationAdmission(runtime.queryCache)
+    expect(currentAdmission?.organization?.organizationVersion).toBe(4)
+    expect(storage.invalidationCalls).toBe(1)
+    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toBeUndefined()
+    expect(
+      readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
+    ).toBe(false)
+    expect(
+      setOrganizationReadiness(
+        runtime.queryCache,
+        'ready',
+        readOrganizationRevision(runtime.queryCache).value,
+      ),
+    ).toBe(true)
+    runtime.dispose()
+  })
+
+  it('keeps private persistence closed until every organization partition is durably fenced', async () => {
+    const storage = new RecoveringInvalidationStorage(
+      envelopeWithPrivatePartitions(),
+      true,
+    ).enableScopeWatermarks()
+    const runtime = createRuntime(storage)
+    await readyRuntime(runtime)
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
+      admission(),
+    )
+    expect(
+      readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
+    ).toBe(true)
+
+    await expect(transitionOrganizationQueries(runtime.queryCache)).resolves.toBe(false)
+    await expect(
+      invalidatePrivateQueryScope(runtime.queryCache, {
+        admissionScope: 'organization:v1:other:member:unrelated',
+        kind: 'organization',
+      }),
+    ).resolves.toBe(true)
+    expect(storage.snapshot()?.organizations[ORGANIZATION_SCOPE]).toBeDefined()
+    await reacquireOrganizationAdmission(runtime.queryCache)
+    expect(
+      readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
+    ).toBe(false)
+
+    await expect(
+      invalidatePrivateQueryScope(runtime.queryCache, { kind: 'organization' }),
+    ).resolves.toBe(true)
+    expect(storage.snapshot()?.organizations).toStrictEqual({})
+    await reacquireOrganizationAdmission(runtime.queryCache)
+    expect(
+      readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
+    ).toBe(true)
+    runtime.dispose()
+  })
   it('reactively reads bootstrap membership independently of token admission', async () => {
     const runtime = createRuntime(
       new MemoryQueryPersistenceStorage(envelopeWithPrivatePartitions()),
@@ -2223,9 +2568,13 @@ function createRuntime(
   now: () => number = () => NOW,
   mountImmediately = true,
   mountedPrivateQuery?: () => Promise<unknown>,
+  mountedOrganizationQuery?: () => Promise<{ name: string }>,
 ) {
   const pinia = createPinia()
   const active = ref(false)
+  const additionalOrganizationConsumer = ref(false)
+  let readOriginalOrganization: OrganizationDataReader | undefined
+  let readAdditionalOrganization: OrganizationDataReader | undefined
   const Consumer = {
     setup() {
       useQuery({
@@ -2251,11 +2600,37 @@ function createRuntime(
           staleTime: 0,
         })
       }
+      if (mountedOrganizationQuery) {
+        const readiness = readOrganizationReadiness(useQueryCache())
+        const organizationQuery = useQuery({
+          enabled: () => readiness.value === 'ready',
+          key: PRIVATE_QUERY_KEYS.organizationContext(),
+          query: mountedOrganizationQuery,
+          staleTime: 0,
+        })
+        readOriginalOrganization = () => organizationQuery.data.value
+      }
+      return () => null
+    },
+  }
+  const AdditionalOrganizationConsumer = {
+    setup() {
+      const readiness = readOrganizationReadiness(useQueryCache())
+      const organizationQuery = useQuery({
+        enabled: () => readiness.value === 'ready',
+        key: PRIVATE_QUERY_KEYS.organizationContext(),
+        query: mountedOrganizationQuery ?? (async () => ({ name: 'Current' })),
+        staleTime: 0,
+      })
+      readAdditionalOrganization = () => organizationQuery.data.value
       return () => null
     },
   }
   const app = createApp({
-    setup: () => () => (active.value ? h(Consumer) : null),
+    setup: () => () => [
+      active.value ? h(Consumer) : null,
+      additionalOrganizationConsumer.value ? h(AdditionalOrganizationConsumer) : null,
+    ],
   })
   app.use(pinia)
   app.use(PiniaColada, {
@@ -2281,6 +2656,10 @@ function createRuntime(
       active.value = true
       await nextTick()
     },
+    activateAdditionalOrganizationConsumer: async () => {
+      additionalOrganizationConsumer.value = true
+      await nextTick()
+    },
     deactivatePrivateQuery: async () => {
       active.value = false
       await nextTick()
@@ -2290,6 +2669,7 @@ function createRuntime(
       disposePinia(pinia)
     },
     mount,
+    organizationConsumerData: () => [readOriginalOrganization?.(), readAdditionalOrganization?.()],
     queryCache,
   }
 }
@@ -2308,10 +2688,20 @@ class MemoryQueryPersistenceStorage implements QueryPersistenceStorage {
   readonly privateWritePermissions: boolean[] = []
   protected generation: number
   protected value: string | null
+  protected scopeHistory: ScopeWatermarks | undefined
 
   constructor(envelope: EsiQueryCacheEnvelope | null = null) {
     this.generation = envelope?.invalidationGeneration ?? 0
     this.value = envelope ? JSON.stringify(envelope) : null
+  }
+
+  enableScopeWatermarks() {
+    this.scopeHistory = initialScopeWatermarks(this.generation)
+    return this
+  }
+
+  commitForOtherTab(scope: PrivateQueryInvalidationScope) {
+    this.commitInvalidation(scope)
   }
 
   async invalidate(scope: PrivateQueryInvalidationScope, deleteEnvelope = false) {
@@ -2322,6 +2712,7 @@ class MemoryQueryPersistenceStorage implements QueryPersistenceStorage {
   protected commitInvalidation(scope: PrivateQueryInvalidationScope, deleteEnvelope = false) {
     const currentGeneration = this.generation
     this.generation += 1
+    this.scopeHistory = this.scopeHistory && advanceScopeWatermarks(this.scopeHistory, scope)
     if (deleteEnvelope) {
       this.value = null
     } else if (this.value !== null) {
@@ -2334,16 +2725,24 @@ class MemoryQueryPersistenceStorage implements QueryPersistenceStorage {
       }
       this.value = JSON.stringify({ ...envelope, invalidationGeneration: this.generation })
     }
-    return { generation: this.generation, scope }
+    return {
+      generation: this.generation,
+      scope,
+      ...(this.scopeHistory && { scopeHistory: this.scopeHistory }),
+    }
   }
 
   async read() {
-    return { generation: this.generation, value: this.value }
+    return {
+      generation: this.generation,
+      value: this.value,
+      ...(this.scopeHistory && { scopeHistory: this.scopeHistory }),
+    }
   }
 
   async readGeneration() {
     this.generationReads += 1
-    return this.generation
+    return this.scopeHistory ?? initialScopeWatermarks(this.generation)
   }
 
   async removeEnvelope() {
@@ -2371,7 +2770,11 @@ class MemoryQueryPersistenceStorage implements QueryPersistenceStorage {
         public: candidate.public,
       })
     }
-    return { generation: this.generation, privateAccepted }
+    return {
+      generation: this.generation,
+      privateAccepted,
+      ...(this.scopeHistory && { scopeHistory: this.scopeHistory }),
+    }
   }
 
   snapshot() {
@@ -2411,7 +2814,7 @@ class DeferredReadStorage extends MemoryQueryPersistenceStorage {
 }
 
 class DeferredGenerationStorage extends MemoryQueryPersistenceStorage {
-  private readonly generationResult = deferred<number | null>()
+  private readonly generationResult = deferred<ScopeWatermarks | null>()
 
   override async readGeneration() {
     this.generationReads += 1
@@ -2419,24 +2822,24 @@ class DeferredGenerationStorage extends MemoryQueryPersistenceStorage {
   }
 
   releaseGeneration(generation: number | null) {
-    this.generationResult.resolve(generation)
+    this.generationResult.resolve(generation === null ? null : initialScopeWatermarks(generation))
   }
 }
 
 class DeferredResumeGenerationStorage extends MemoryQueryPersistenceStorage {
-  private generationResult: ReturnType<typeof deferred<number>> | undefined
+  private generationResult: ReturnType<typeof deferred<ScopeWatermarks>> | undefined
 
   deferNextGenerationRead() {
-    this.generationResult = deferred<number>()
+    this.generationResult = deferred<ScopeWatermarks>()
   }
 
   override async readGeneration() {
     this.generationReads += 1
-    return this.generationResult?.promise ?? this.generation
+    return this.generationResult?.promise ?? initialScopeWatermarks(this.generation)
   }
 
   releaseGeneration() {
-    this.generationResult?.resolve(this.generation)
+    this.generationResult?.resolve(initialScopeWatermarks(this.generation))
     this.generationResult = undefined
   }
 }
@@ -2448,9 +2851,9 @@ class FailingGenerationStorage extends MemoryQueryPersistenceStorage {
     this.failing = true
   }
 
-  override async readGeneration(): Promise<number | null> {
+  override async readGeneration(): Promise<ScopeWatermarks | null> {
     this.generationReads += 1
-    return this.failing ? null : this.generation
+    return this.failing ? null : initialScopeWatermarks(this.generation)
   }
 }
 
@@ -2494,12 +2897,22 @@ class FailingInvalidationStorage extends MemoryQueryPersistenceStorage {
 }
 
 class RecoveringInvalidationStorage extends MemoryQueryPersistenceStorage {
-  override async invalidate(_scope: PrivateQueryInvalidationScope, deleteEnvelope = false) {
+  constructor(
+    envelope: EsiQueryCacheEnvelope,
+    private readonly recoverWithRequestedScope = false,
+  ) {
+    super(envelope)
+  }
+
+  override async invalidate(scope: PrivateQueryInvalidationScope, deleteEnvelope = false) {
     this.invalidationCalls += 1
     if (this.invalidationCalls === 1) {
       return null
     }
-    return this.commitInvalidation({ kind: 'all' }, deleteEnvelope)
+    return this.commitInvalidation(
+      this.recoverWithRequestedScope ? scope : { kind: 'all' },
+      deleteEnvelope,
+    )
   }
 }
 
@@ -2788,6 +3201,7 @@ function authenticatedSession(userId = 'user-1') {
 function admission(
   overrides: {
     readonly admissionScopes?: readonly string[]
+    readonly additionalCharacterId?: number
     readonly characterRevision?: string | null
     readonly organization?: null
     readonly organizationRevision?: string
@@ -2805,6 +3219,14 @@ function admission(
             ? 'character-revision-1'
             : overrides.characterRevision,
       },
+      ...(overrides.additionalCharacterId === undefined
+        ? []
+        : [
+            {
+              characterId: overrides.additionalCharacterId,
+              admissionRevision: 'character-revision-1',
+            },
+          ]),
     ],
     organization:
       overrides.organization === null
