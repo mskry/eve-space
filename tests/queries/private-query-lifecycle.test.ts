@@ -1,4 +1,4 @@
-import { useQueryCache } from '@pinia/colada'
+import { useQuery, useQueryCache } from '@pinia/colada'
 import { coreOrganizationAdmissionScopes } from '@eve-space/platform-module-contract/server'
 import { http, HttpResponse } from 'msw'
 import { flushPromises } from '@vue/test-utils'
@@ -7,8 +7,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthSession } from '../../app/composables/useAuthSession'
 import { useAuthSessionInitialization } from '../../app/composables/useAuthSessionInitialization'
 import { useCharacterRoster } from '../../app/composables/useCharacterRoster'
-import { unauthenticatedSession } from '../../app/queries/auth'
+import { useCharacterOwnership } from '../../app/composables/useCharacterOwnership'
+import { loadCacheAdmission, unauthenticatedSession } from '../../app/queries/auth'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
+import {
+  applyVerifiedQueryIdentity,
+  refreshPrivateQueryAdmission,
+} from '../../app/query-persistence/runtime'
 import { createApiClient, type ApiClient } from '../../app/utils/api-client'
 import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
@@ -127,6 +132,71 @@ describe('private query lifecycle', () => {
       wrapper.unmount()
     },
   )
+
+  it('keeps session bootstrap authenticated while a pending character retries through admission', async () => {
+    const pending = {
+      ...cacheAdmission(),
+      characters: [{ characterId: 7, status: 'temporarily-unavailable' }],
+    }
+    const sessionRequest = vi.fn(() =>
+      HttpResponse.json({
+        ...authenticatedSession(),
+        cacheAdmission: pending,
+      }),
+    )
+    const admissionRequest = vi.fn(() => HttpResponse.json(cacheAdmission()))
+    queryServer.use(
+      http.get('http://localhost/auth/session', sessionRequest),
+      http.get('http://localhost/api/me/cache-admission', admissionRequest),
+    )
+    let initialization!: ReturnType<typeof useAuthSessionInitialization>
+    let authState!: ReturnType<typeof useAuthSession>
+    const Host = defineComponent({
+      setup() {
+        const api = createApiClient('http://localhost')
+        initialization = useAuthSessionInitialization(api)
+        authState = useAuthSession(api)
+        return () => h('span')
+      },
+    })
+    const { queryCache, wrapper } = mountWithQueryPlugins(Host)
+
+    await expect(initialization.initialize()).resolves.toStrictEqual(authenticatedSession())
+    expect(authState.authSession.value).toStrictEqual(authenticatedSession())
+    expect(sessionRequest).toHaveBeenCalledOnce()
+    expect(admissionRequest).not.toHaveBeenCalled()
+
+    await expect(
+      refreshPrivateQueryAdmission(queryCache, { characterId: 7, kind: 'character' }),
+    ).resolves.toBe(false)
+    expect(admissionRequest).toHaveBeenCalledOnce()
+    expect(authState.authSession.value).toStrictEqual(authenticatedSession())
+    wrapper.unmount()
+  })
+
+  it('keeps a roster-owned pending character out of protected query access until recovery', async () => {
+    let ownsCharacter!: ReturnType<typeof useCharacterOwnership>
+    const Host = defineComponent({
+      setup() {
+        ownsCharacter = useCharacterOwnership(ref(7), ref([{ characterId: 7 }]))
+        return () => h('span')
+      },
+    })
+    const { queryCache, wrapper } = mountWithQueryPlugins(Host)
+    expect(ownsCharacter.value).toBe(true)
+    const pending = {
+      ...cacheAdmission(),
+      characters: [{ characterId: 7, status: 'temporarily-unavailable' }],
+    }
+    await applyVerifiedQueryIdentity(queryCache, authenticatedSession(), async () => pending)
+    expect(ownsCharacter.value).toBe(false)
+
+    await applyVerifiedQueryIdentity(queryCache, authenticatedSession(), async () =>
+      cacheAdmission(),
+    )
+    expect(ownsCharacter.value).toBe(true)
+    wrapper.unmount()
+  })
 
   it('keeps authenticated data gated until cache admission resolves', async () => {
     let releaseAdmission!: () => void
@@ -658,6 +728,57 @@ describe('private query lifecycle', () => {
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(8))).toBeDefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.roster())).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('invalidates a successful character deletion before failed admission and roster reloads', async () => {
+    const api = createApiClient('http://localhost')
+    const deleteRequest = vi.fn(() => new HttpResponse(null, { status: 204 }))
+    const admissionRequest = vi
+      .fn()
+      .mockImplementationOnce(() => HttpResponse.json(cacheAdmission()))
+      .mockImplementationOnce(() => HttpResponse.json({ message: 'Unavailable' }, { status: 503 }))
+    queryServer.use(
+      http.delete('http://localhost/api/me/characters/:characterId', deleteRequest),
+      http.get('http://localhost/api/me/cache-admission', admissionRequest),
+      http.get('http://localhost/api/me/characters', () =>
+        HttpResponse.json({ message: 'Unavailable' }, { status: 503 }),
+      ),
+    )
+    let roster!: ReturnType<typeof useCharacterRoster>
+    const Host = defineComponent({
+      setup() {
+        roster = useCharacterRoster(api)
+        for (const characterId of [7, 8]) {
+          useQuery({
+            key: PRIVATE_QUERY_KEYS.characterAssets(characterId),
+            query: async () => ({ characterId }),
+            enabled: false,
+          })
+        }
+        return () => h('span')
+      },
+    })
+    const { queryCache, wrapper } = mountWithQueryPlugins(Host)
+    await applyVerifiedQueryIdentity(queryCache, authenticatedSession(), () =>
+      loadCacheAdmission(api),
+    )
+    queryCache.setQueryData(PRIVATE_QUERY_KEYS.roster(), {
+      characters: [character(7), character(8)],
+    })
+    queryCache.setQueryData(PRIVATE_QUERY_KEYS.characterAssets(7), { characterId: 7 })
+    queryCache.setQueryData(PRIVATE_QUERY_KEYS.characterAssets(8), { characterId: 8 })
+
+    const removed = await roster.removeCharacter(7)
+    expect(deleteRequest).toHaveBeenCalledOnce()
+    expect(removed).toBe(true)
+    expect(admissionRequest).toHaveBeenCalledTimes(2)
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toBeUndefined()
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.roster())).toBeUndefined()
+    const rosterReload = await api.api.me.characters.$get()
+    expect(rosterReload.status).toBe(503)
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toBeUndefined()
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(8))).toBeDefined()
     wrapper.unmount()
   })
 })

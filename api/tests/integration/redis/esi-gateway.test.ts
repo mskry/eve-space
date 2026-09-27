@@ -43,6 +43,9 @@ let coordination: Redis
 let authorizationVersion = 1
 let lifecycleAuthorizationResolutions = 0
 let lifecycleCacheAuthorizationResolutions = 0
+let pendingVerification = false
+let pendingRecoveryFailure = false
+let pendingRecoveryAttempts = 0
 const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const replacementSubjectLifecycleId = '22222222-2222-4222-8222-222222222222'
 let currentSubjectLifecycleId = subjectLifecycleId
@@ -78,6 +81,14 @@ vi.mock('../../../src/auth/tokens.js', () => ({
   ) => {
     lifecycleCacheAuthorizationResolutions += 1
     assertCurrentSubjectLifecycle(requestedSubjectLifecycleId)
+    if (pendingVerification) {
+      pendingRecoveryAttempts += 1
+      if (pendingRecoveryFailure) {
+        throw new Error('EVE token refresh is temporarily unavailable')
+      }
+      pendingVerification = false
+      authorizationVersion += 1
+    }
     return { tokenVersion: authorizationVersion }
   },
   withCharacterAuthorizationForLifecycle: async (
@@ -114,6 +125,9 @@ afterEach(async () => {
   authorizationVersion = 1
   lifecycleAuthorizationResolutions = 0
   lifecycleCacheAuthorizationResolutions = 0
+  pendingVerification = false
+  pendingRecoveryFailure = false
+  pendingRecoveryAttempts = 0
   currentSubjectLifecycleId = subjectLifecycleId
   vi.resetModules()
   vi.unstubAllGlobals()
@@ -326,6 +340,42 @@ describe('ESI resilience Redis coordination', () => {
     })
     expect(fetch).toHaveBeenCalledTimes(3)
   })
+
+  test.each(['l1', 'shared'] as const)(
+    'rechecks pending authorization before a fresh %s character cache hit',
+    async (cacheLayer) => {
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(esiResponse(10))
+        .mockResolvedValueOnce(esiResponse(20))
+      vi.stubGlobal('fetch', fetch)
+      let representation = await walletRepresentation()
+      await expect(
+        execute(representation, { characterId: 90_000_001 }, { subjectLifecycleId }),
+      ).resolves.toMatchObject({ data: 10, source: 'esi' })
+
+      if (cacheLayer === 'shared') {
+        vi.resetModules()
+        representation = await walletRepresentation()
+      }
+      pendingVerification = true
+      pendingRecoveryFailure = true
+      await expect(
+        execute(representation, { characterId: 90_000_001 }, { subjectLifecycleId }),
+      ).rejects.toThrow('EVE token refresh is temporarily unavailable')
+      expect(fetch).toHaveBeenCalledOnce()
+
+      pendingRecoveryFailure = false
+      await expect(
+        execute(representation, { characterId: 90_000_001 }, { subjectLifecycleId }),
+      ).resolves.toMatchObject({ data: 20, source: 'esi' })
+      await expect(
+        execute(representation, { characterId: 90_000_001 }, { subjectLifecycleId }),
+      ).resolves.toMatchObject({ data: 20, source: 'cache' })
+      expect(pendingRecoveryAttempts).toBe(2)
+      expect(fetch).toHaveBeenCalledTimes(2)
+    },
+  )
 
   test('serves cached platform wire data without resolving token material again', async () => {
     const operation = 'organization-activity-character-jobs'

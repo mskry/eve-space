@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import type { ApiClient } from '../utils/api-client'
 import { toApiQueryError } from '../utils/query-error'
 import { characterRosterQuery, type CharacterRosterEntry } from '../queries/characters'
-import { refreshPrivateAuthorization, removeCharacterQueries } from '../queries/query-cache'
+import { invalidateRemovedCharacter, removeCharacterQueries } from '../queries/query-cache'
 import { reportPrivateQueryAuthorizationDenial } from '../query-persistence/runtime'
 
 export type { CharacterRosterEntry }
@@ -157,7 +157,7 @@ export function useCharacterRoster(apiClient: ApiClient) {
 
     try {
       await deleteCharacterMutation.mutateAsync(characterId)
-      await refreshPrivateAuthorization(queryCache, { characterId, kind: 'character' })
+      await invalidateRemovedCharacter(queryCache, characterId)
       return true
     } catch (error) {
       reportPrivateQueryAuthorizationDenial(queryCache, { characterId, kind: 'character' }, error)

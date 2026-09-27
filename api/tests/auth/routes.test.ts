@@ -1486,6 +1486,26 @@ describe('account sessions', () => {
     expect(mocks.claimOrganizationOwnership).not.toHaveBeenCalled()
   })
 
+  test('bootstraps an authenticated session with a suspended pending character', async () => {
+    const cacheAdmission = {
+      characters: [
+        { characterId: account.mainCharacter.characterId, status: 'temporarily-unavailable' },
+        { characterId: 90_000_002, admissionRevision: 'verified-other-character' },
+      ],
+      organization: null,
+      userId: account.userId,
+    }
+    mocks.loadCacheAdmissionContext.mockResolvedValueOnce(cacheAdmission)
+    const response = await client.auth.session.$get(
+      { query: { includeAdmission: 'true' } },
+      { headers: sessionHeader() },
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toStrictEqual({ account, authenticated: true, cacheAdmission })
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+  })
+
   test('does not load bootstrap admission for an expired session', async () => {
     mocks.findSession.mockResolvedValueOnce(null)
     const response = await client.auth.session.$get(

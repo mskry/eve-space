@@ -31,7 +31,7 @@ import { PRIVATE_QUERY_KEYS } from '../queries/query-keys'
 import { isAuthenticationDenial } from '../utils/authentication-denial'
 import { ApiQueryError } from '../utils/query-error'
 import {
-  combineInvalidationScopes,
+  characterPendingVerification,
   createCache,
   emptyEnvelope,
   forEachPrivateTuple,
@@ -124,6 +124,9 @@ interface QueryPersistenceRuntime {
   transitionOrganization(): Promise<boolean>
   readActiveState(): ComputedRef<EsiQueryPersistencePresentation | undefined>
   readCharacterOwnership(characterId: MaybeRefOrGetter<number | undefined>): ComputedRef<boolean>
+  readCharacterPendingVerification(
+    characterId: MaybeRefOrGetter<number | undefined>,
+  ): ComputedRef<boolean>
   readState(key: MaybeRefOrGetter<EntryKey>): ComputedRef<QueryPersistencePresentation>
   subscribeInvalidation(
     scope: MaybeRefOrGetter<PrivateQueryInvalidationScope>,
@@ -265,6 +268,13 @@ export function readQueryCharacterOwnership(
   characterId: MaybeRefOrGetter<number | undefined>,
 ) {
   return requireRuntime(queryCache).readCharacterOwnership(characterId)
+}
+
+export function readQueryCharacterPendingVerification(
+  queryCache: QueryCache,
+  characterId: MaybeRefOrGetter<number | undefined>,
+) {
+  return requireRuntime(queryCache).readCharacterPendingVerification(characterId)
 }
 
 const forgetInvalidatedParkedData = (
@@ -434,6 +444,9 @@ function createQueryPersistenceRuntime(
       quarantineRetainedData() {
         quarantineRetainedPrivateData(state)
       },
+      quarantineCharacter(characterId) {
+        quarantineRetainedPrivateData(state, characterId)
+      },
       quarantineUnscopedData() {
         for (const entry of queryCache.getEntries({ key: PRIVATE_QUERY_KEYS.root })) {
           const persistence = readEsiPersistence(entry.meta)
@@ -491,15 +504,15 @@ function createQueryPersistenceRuntime(
         reconcileRetainedDataExpiry(state, privateLifecycle, now, timers)
       },
       refetchParkedPrivateQueries() {
-        refetchParkedPrivateQueries(state)
+        refetchParkedPrivateQueries(state, privateLifecycle.hasPendingVerification)
       },
-      resolveAdmissionInvalidationScope(
+      resolveAdmissionInvalidationScopes(
         admission,
         previousAdmission,
         currentTime,
         alreadyInvalidatedScope,
       ) {
-        return admissionInvalidationScope(
+        return admissionInvalidationScopes(
           state,
           admission,
           previousAdmission,
@@ -550,6 +563,12 @@ function createQueryPersistenceRuntime(
       const persistence = meta ? readEsiPersistence(meta) : null
       if (!persistence || persistence.kind === 'public-esi') {
         return true
+      }
+      if (
+        persistence.kind === 'character-esi' &&
+        privateLifecycle.hasPendingVerification(persistence.characterId)
+      ) {
+        return false
       }
       if (privateLifecycle.hasCurrentAdmission(persistence)) {
         return true
@@ -623,6 +642,11 @@ function createQueryPersistenceRuntime(
     },
     readCharacterOwnership(characterId) {
       return computedPresentation(state, () => privateLifecycle.ownsCharacter(toValue(characterId)))
+    },
+    readCharacterPendingVerification(characterId) {
+      return computedPresentation(state, () =>
+        privateLifecycle.hasPendingVerification(toValue(characterId)),
+      )
     },
     readState(key) {
       return computedPresentation(state, () => {
@@ -1052,16 +1076,21 @@ function commitAdmittedPrivateCache(
   extendRestoredEntries(state.queryCache)
 }
 
-function refetchParkedPrivateQueries(state: QueryPersistenceRuntimeState) {
+function refetchParkedPrivateQueries(
+  state: QueryPersistenceRuntimeState,
+  pendingVerification: (characterId: number) => boolean,
+) {
   for (const entry of state.queryCache.getEntries({ key: PRIVATE_QUERY_KEYS.root })) {
     const entryState = entry.state.value
+    const persistence = readEsiPersistence(entry.meta)
     if (
       !entry.active ||
       entry.options === null ||
       !toValue(entry.options.enabled) ||
       entry.pending !== null ||
       entryState.status !== 'pending' ||
-      entryState.data !== undefined
+      entryState.data !== undefined ||
+      (persistence?.kind === 'character-esi' && pendingVerification(persistence.characterId))
     ) {
       continue
     }
@@ -1069,7 +1098,7 @@ function refetchParkedPrivateQueries(state: QueryPersistenceRuntimeState) {
   }
 }
 
-function admissionInvalidationScope(
+function admissionInvalidationScopes(
   state: QueryPersistenceRuntimeState,
   admission: CacheAdmissionContext,
   previousAdmission: CacheAdmissionContext | null,
@@ -1083,10 +1112,10 @@ function admissionInvalidationScope(
     alreadyInvalidatedScope,
   )
   if (!previousAdmission) {
-    return combineInvalidationScopes(scopes)
+    return scopes
   }
   if (previousAdmission.userId !== admission.userId) {
-    return { kind: 'all' } as const
+    return [{ kind: 'all' } as const]
   }
   scopes.push(
     ...changedAdmissionInvalidationScopes(
@@ -1096,7 +1125,7 @@ function admissionInvalidationScope(
       alreadyInvalidatedScope,
     ),
   )
-  return combineInvalidationScopes(scopes)
+  return scopes
 }
 
 function persistedPartitionInvalidationScopes(
@@ -1108,6 +1137,9 @@ function persistedPartitionInvalidationScopes(
   const scopes: PrivateQueryInvalidationScope[] = []
   for (const [characterId, partition] of Object.entries(envelope.characters)) {
     const persistence = { characterId: Number(characterId), kind: 'character-esi' } as const
+    if (characterPendingVerification(admission, persistence.characterId)) {
+      continue
+    }
     if (!partitionMatchesAdmission(partition, persistence, admission, now)) {
       appendUncoveredInvalidationScope(
         scopes,
@@ -1158,6 +1190,12 @@ function changedAdmissionInvalidationScopes(
     ...admission.characters.map(({ characterId }) => characterId),
   ])
   for (const characterId of characterIds) {
+    if (characterPendingVerification(admission, characterId)) {
+      continue
+    }
+    if (characterPendingVerification(previousAdmission, characterId)) {
+      continue
+    }
     if (
       characterAdmissionRevision(previousAdmission, characterId) !==
       characterAdmissionRevision(admission, characterId)
@@ -1185,8 +1223,8 @@ function changedAdmissionInvalidationScopes(
 }
 
 function characterAdmissionRevision(admission: CacheAdmissionContext, characterId: number) {
-  return admission.characters.find((character) => character.characterId === characterId)
-    ?.admissionRevision
+  const character = admission.characters.find((candidate) => candidate.characterId === characterId)
+  return character && 'admissionRevision' in character ? character.admissionRevision : undefined
 }
 
 function organizationAdmissionChanged(
@@ -1244,13 +1282,16 @@ function closeAndPurgePrivateCache(
   touchQueryPersistenceState(state)
 }
 
-function quarantineRetainedPrivateData(state: QueryPersistenceRuntimeState) {
+function quarantineRetainedPrivateData(state: QueryPersistenceRuntimeState, characterId?: number) {
   for (const entry of state.queryCache.getEntries({ predicate: shouldPersistEsiQuery })) {
     const persistence = readEsiPersistence(entry.meta)
     if (
       !persistence ||
       persistence.kind === 'public-esi' ||
-      state.entryState.readRetentionDeadline(entry.keyHash) === undefined
+      (characterId !== undefined &&
+        (persistence.kind !== 'character-esi' || persistence.characterId !== characterId)) ||
+      (characterId === undefined &&
+        state.entryState.readRetentionDeadline(entry.keyHash) === undefined)
     ) {
       continue
     }
@@ -1420,7 +1461,9 @@ const canRestoreUnscopedData = (
   if (scope?.kind === 'character' && scope.characterId !== undefined) {
     return admission.characters.some(
       (character) =>
-        character.characterId === scope.characterId && character.admissionRevision !== null,
+        character.characterId === scope.characterId &&
+        'admissionRevision' in character &&
+        typeof character.admissionRevision === 'string',
     )
   }
   return scope !== null

@@ -74,6 +74,27 @@ describe('GET /api/me/cache-admission', () => {
     expect(mocks.loadCacheAdmissionContext).toHaveBeenCalledWith(userId)
   })
 
+  test('returns a partial pending-verification verdict without token material', async () => {
+    mocks.findSession.mockResolvedValue({ userId, mainCharacter: null })
+    mocks.loadCacheAdmissionContext.mockResolvedValueOnce({
+      ...responseBody,
+      characters: [
+        { characterId: 90_000_001, status: 'temporarily-unavailable' },
+        { characterId: 90_000_002, admissionRevision: 'verified-other-character' },
+      ],
+    })
+    const response = await app.request('/api/me/cache-admission', {
+      headers: { cookie: 'eve_space_session=session-token' },
+    })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.characters).toEqual([
+      { characterId: 90_000_001, status: 'temporarily-unavailable' },
+      { characterId: 90_000_002, admissionRevision: 'verified-other-character' },
+    ])
+    expect(JSON.stringify(body)).not.toContain('encryptedTokens')
+  })
+
   test('preserves the cache-admission route in the chained Hono contract', () => {
     const client = testClient(app)
 

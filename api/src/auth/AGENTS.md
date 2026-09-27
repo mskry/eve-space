@@ -7,10 +7,13 @@ These rules refine the repository module-organization requirements for this dire
 - Policy modules own authentication error classification and import no adapters or workflows.
 - Primitive modules own cryptographic operations and configuration access. They do not import
   persistence, providers, workflows, or transport.
-- Persistence modules own focused OAuth-state, session, character-token, and advisory-lock database
-  operations. They may depend on primitives and other persistence modules only.
+- Persistence modules own focused OAuth-state, session, verified and pending character-token, and
+  advisory-lock database operations. They may depend on primitives and other persistence modules
+  only. Pending credentials remain encrypted and separate from verified token rows until promotion.
 - Provider modules own EVE SSO discovery, exchange, refresh, and verification. They may depend on
   policy and primitives, but not persistence or application workflows.
+- State leaves own process-local pending-recovery coordination without importing workflows or
+  persistence. Recovery is retryable after a process restart.
 - Application modules coordinate character lifecycle, token refresh, transactional domain events,
   and organization-compliance transitions. They depend on lower tiers; lower tiers never import
   them.
@@ -31,3 +34,6 @@ The exact module membership and lower-tier import allowlists are defined in
   character-scoped mutation.
 - Token writes retain compare-and-set generation checks even while advisory locks serialize current
   writers.
+- Pending writes require the current owner, character lifecycle, verified generation, and expected
+  attempt revision. A newer pending rotation must survive a stale writer or verifier; promotion
+  removes pending state in the same transaction that advances verified authorization.

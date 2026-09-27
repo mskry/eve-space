@@ -15,11 +15,13 @@ const modulesByTier = {
     'character-token-store',
     'character-transfer-store',
     'oauth-state-store',
+    'pending-character-token-store',
     'session-store',
   ],
   policy: ['sso-errors', 'token-errors'],
   primitive: ['security'],
   provider: ['sso'],
+  state: ['pending-recovery-state'],
   transport: ['routes'],
 } as const
 
@@ -37,18 +39,28 @@ export const authModuleDeclarations: readonly AuthModuleDeclaration[] = Object.f
 )
 
 const allowedImportTiersBySourceTier: Record<AuthTier, readonly AuthTier[]> = {
-  application: ['policy', 'primitive', 'persistence', 'provider', 'application'],
+  application: ['policy', 'primitive', 'persistence', 'provider', 'state', 'application'],
   persistence: ['primitive', 'persistence'],
   policy: ['policy'],
   primitive: ['policy', 'primitive'],
   provider: ['policy', 'primitive', 'provider'],
-  transport: ['policy', 'primitive', 'persistence', 'provider', 'application', 'transport'],
+  state: ['state'],
+  transport: [
+    'policy',
+    'primitive',
+    'persistence',
+    'provider',
+    'state',
+    'application',
+    'transport',
+  ],
 }
 
 const allowedExternalImportsByTier: Partial<Record<AuthTier, ReadonlySet<string>>> = {
   policy: new Set(),
   primitive: new Set(['node:crypto', 'node:util', 'api/src/env.js']),
   provider: new Set(['jose', 'zod', 'api/src/env.js']),
+  state: new Set(),
 }
 
 const persistenceImports = new Map(
@@ -85,6 +97,11 @@ const persistenceImports = new Map(
       'api/src/db/schema.js',
       'api/src/reviewer-use-disclosure.js',
       'api/src/auth/security.js',
+    ]),
+    'pending-character-token-store': new Set([
+      'drizzle-orm',
+      'api/src/db/client.js',
+      'api/src/db/schema.js',
     ]),
     'session-store': new Set([
       'drizzle-orm',

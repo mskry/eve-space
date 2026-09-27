@@ -1,6 +1,11 @@
 import { and, eq, sql } from 'drizzle-orm'
 import { db, type DatabaseTransaction } from '../db/client.js'
-import { characters, eveTokens, platformSubjectLifecycles } from '../db/schema.js'
+import {
+  characters,
+  eveTokens,
+  pendingCharacterTokens,
+  platformSubjectLifecycles,
+} from '../db/schema.js'
 import { normalizeScopeSet } from '../scopes.js'
 import { lockCharacter, setAuthTransactionLockTimeout } from './character-lock.js'
 import { advanceCharacterReviewerDisclosureAcceptances } from './character-disclosure-store.js'
@@ -26,6 +31,7 @@ export interface StoredCharacterToken {
 export interface StoredCharacterCacheAuthorization {
   scopes: string[]
   tokenVersion: number
+  pendingAttemptId?: string | null
 }
 
 export class TokenRefreshLockUnavailableError extends Error {
@@ -106,12 +112,23 @@ export async function findCharacterCacheAuthorizationForLifecycle(
   connection: TokenReader = db,
 ): Promise<StoredCharacterCacheAuthorization | null> {
   const [record] = await connection
-    .select(characterCacheAuthorizationSelection)
+    .select({
+      ...characterCacheAuthorizationSelection,
+      pendingAttemptId: pendingCharacterTokens.attemptId,
+    })
     .from(eveTokens)
     .innerJoin(characters, eq(characters.characterId, eveTokens.characterId))
     .innerJoin(
       platformSubjectLifecycles,
       eq(platformSubjectLifecycles.characterId, characters.characterId),
+    )
+    .leftJoin(
+      pendingCharacterTokens,
+      and(
+        eq(pendingCharacterTokens.characterId, characters.characterId),
+        eq(pendingCharacterTokens.subjectLifecycleId, platformSubjectLifecycles.subjectLifecycleId),
+        eq(pendingCharacterTokens.baseTokenVersion, eveTokens.tokenVersion),
+      ),
     )
     .where(
       and(
@@ -202,6 +219,9 @@ export async function saveCharacterToken(
     accessTokenExpiresAt: Date
   },
 ) {
+  await transaction
+    .delete(pendingCharacterTokens)
+    .where(eq(pendingCharacterTokens.characterId, input.characterId))
   const [saved] = await transaction
     .insert(eveTokens)
     .values(input)

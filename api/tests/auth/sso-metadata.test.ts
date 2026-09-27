@@ -402,6 +402,87 @@ describe('EVE SSO requests', () => {
     expect(errors.isTransientSsoError(failure)).toBe(true)
   })
 
+  test.each([429, 503])('retains uncertain JWKS HTTP %i as a recoverable error', async (status) => {
+    fetchMock
+      .mockResolvedValueOnce(metadataResponse())
+      .mockResolvedValueOnce(new Response(null, { status }))
+    const { verifyAccessToken } = await import('../../src/auth/sso.js')
+    const failure = await verifyAccessToken(unsignedToken()).catch((error) => error)
+    expect(failure).toMatchObject({ name: 'SsoHttpError', upstreamStatus: status })
+    expect(JSON.stringify(failure)).not.toContain('signature')
+  })
+
+  test('keeps a temporarily absent signing key distinct from a proven-invalid signature', async () => {
+    const signing = await generateKeyPair('RS256')
+    const different = await generateKeyPair('RS256')
+    const token = await new SignJWT({
+      name: 'Pilot',
+      owner: 'owner-hash',
+      scp: 'scope.one',
+      sub: 'CHARACTER:EVE:1404328063',
+    })
+      .setProtectedHeader({ alg: 'RS256', kid: 'key-one' })
+      .setIssuer(metadata.issuer)
+      .setAudience(['EVE Online', 'test-client'])
+      .setExpirationTime('5m')
+      .sign(signing.privateKey)
+    fetchMock.mockResolvedValueOnce(metadataResponse()).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          keys: [{ ...(await exportJWK(signing.publicKey)), kid: 'key-two', alg: 'RS256' }],
+        }),
+      ),
+    )
+    const sso = await import('../../src/auth/sso.js')
+    const unknownKey = await sso.verifyAccessToken(token).catch((error) => error)
+    expect(unknownKey).toMatchObject({ code: 'ERR_JWKS_NO_MATCHING_KEY' })
+    expect(unknownKey).not.toMatchObject({ name: 'SsoAccessTokenInvalidError' })
+
+    vi.resetModules()
+    fetchMock.mockReset()
+    fetchMock.mockResolvedValueOnce(metadataResponse()).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          keys: [{ ...(await exportJWK(different.publicKey)), kid: 'key-one', alg: 'RS256' }],
+        }),
+      ),
+    )
+    const { verifyAccessToken } = await import('../../src/auth/sso.js')
+    const invalidSignature = await verifyAccessToken(token).catch((error) => error)
+    expect(invalidSignature).toMatchObject({ name: 'SsoAccessTokenInvalidError', status: 401 })
+    expect(JSON.stringify(invalidSignature)).not.toContain(token)
+  })
+
+  test.each([
+    ['issuer', 'https://other.example', ['EVE Online', 'test-client']],
+    ['audience', metadata.issuer, ['EVE Online', 'other-client']],
+  ] as const)('rejects a verified token with an invalid %s', async (_claim, issuer, audience) => {
+    const { privateKey, publicKey } = await generateKeyPair('RS256')
+    const token = await new SignJWT({
+      name: 'Pilot',
+      owner: 'owner-hash',
+      scp: 'scope.one',
+      sub: 'CHARACTER:EVE:1404328063',
+    })
+      .setProtectedHeader({ alg: 'RS256', kid: 'key-one' })
+      .setIssuer(issuer)
+      .setAudience([...audience])
+      .setExpirationTime('5m')
+      .sign(privateKey)
+    fetchMock.mockResolvedValueOnce(metadataResponse()).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          keys: [{ ...(await exportJWK(publicKey)), kid: 'key-one', alg: 'RS256' }],
+        }),
+      ),
+    )
+    const { verifyAccessToken } = await import('../../src/auth/sso.js')
+    await expect(verifyAccessToken(token)).rejects.toMatchObject({
+      name: 'SsoAccessTokenInvalidError',
+      status: 401,
+    })
+  })
+
   test('verifies access tokens through the decoded JWKS response', async () => {
     const { privateKey, publicKey } = await generateKeyPair('RS256')
     const publicJwk = await exportJWK(publicKey)

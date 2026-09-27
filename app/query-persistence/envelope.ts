@@ -215,14 +215,28 @@ const parseAdmissionCharacters = (candidates: readonly unknown[]) => {
     if (
       !isRecord(candidate) ||
       !('characterId' in candidate) ||
-      !('admissionRevision' in candidate) ||
       !isPositiveInteger(candidate.characterId) ||
-      characterIds.has(candidate.characterId) ||
-      (candidate.admissionRevision !== null && !isNonemptyString(candidate.admissionRevision))
+      characterIds.has(candidate.characterId)
     ) {
       return null
     }
     characterIds.add(candidate.characterId)
+    if ('status' in candidate) {
+      if (
+        !hasExactKeys(candidate, ['characterId', 'status']) ||
+        candidate.status !== 'temporarily-unavailable'
+      ) {
+        return null
+      }
+      characters.push({ characterId: candidate.characterId, status: 'temporarily-unavailable' })
+      continue
+    }
+    if (
+      !('admissionRevision' in candidate) ||
+      (candidate.admissionRevision !== null && !isNonemptyString(candidate.admissionRevision))
+    ) {
+      return null
+    }
     characters.push({
       admissionRevision: candidate.admissionRevision,
       characterId: candidate.characterId,
@@ -320,6 +334,7 @@ export function partitionMatchesAdmission(
     return admission.characters.some(
       (character) =>
         character.characterId === persistence.characterId &&
+        'admissionRevision' in character &&
         character.admissionRevision === partition.admissionRevision,
     )
   }
@@ -336,6 +351,17 @@ export function partitionMatchesAdmission(
     !isExpired(organization.validUntil, now)
   )
 }
+
+export const characterPendingVerification = (
+  admission: CacheAdmissionContext,
+  characterId: number,
+) =>
+  admission.characters.some(
+    (character) =>
+      character.characterId === characterId &&
+      'status' in character &&
+      character.status === 'temporarily-unavailable',
+  )
 
 export function combineInvalidationScopes(scopes: readonly PrivateQueryInvalidationScope[]) {
   const uniqueScopes = new Map<string, PrivateQueryInvalidationScope>()
@@ -705,37 +731,50 @@ function removePartitions(
   }
 }
 
+const shouldMergePriorTuple = (
+  keyHash: string,
+  tuple: PersistedQueryTuple,
+  partition: PrivatePartition | null,
+  persistence: PersistableEsiQuery,
+  observed: ReadonlySet<string>,
+  options: SerializeEnvelopeOptions,
+) => {
+  if (
+    observed.has(keyHash) ||
+    options.isRemovalTombstoned(keyHash) ||
+    tuple[2] <= options.now - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS
+  ) {
+    return false
+  }
+  if (persistence.kind === 'public-esi') {
+    return options.hasFailedData(keyHash)
+  }
+  if (!options.durableGenerationVerified || !options.privatePersistenceEnabled || !partition) {
+    return false
+  }
+  if (!options.admission) {
+    return !options.verifiedUserId || partition.ownerUserId === options.verifiedUserId
+  }
+  if (
+    persistence.kind === 'character-esi' &&
+    partition.ownerUserId === options.admission.userId &&
+    characterPendingVerification(options.admission, persistence.characterId)
+  ) {
+    return true
+  }
+  return (
+    partitionMatchesAdmission(partition, persistence, options.admission, options.now) &&
+    (options.hasFailedData(keyHash) || options.hasQuarantinedData(keyHash))
+  )
+}
+
 function mergePriorSuccessfulTuples(
   next: EsiQueryCacheEnvelope,
   observed: ReadonlySet<string>,
   options: SerializeEnvelopeOptions,
 ) {
   forEachEnvelopeTuple(options.priorEnvelope, (keyHash, tuple, partition, persistence) => {
-    if (observed.has(keyHash) || options.isRemovalTombstoned(keyHash)) {
-      return
-    }
-    if (tuple[2] <= options.now - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS) {
-      return
-    }
-    if (persistence.kind === 'public-esi') {
-      if (options.hasFailedData(keyHash)) {
-        addTuple(next, keyHash, tuple, partition, persistence)
-      }
-      return
-    }
-    if (!options.durableGenerationVerified || !options.privatePersistenceEnabled || !partition) {
-      return
-    }
-    if (!options.admission) {
-      if (!options.verifiedUserId || partition.ownerUserId === options.verifiedUserId) {
-        addTuple(next, keyHash, tuple, partition, persistence)
-      }
-      return
-    }
-    if (
-      partitionMatchesAdmission(partition, persistence, options.admission, options.now) &&
-      (options.hasFailedData(keyHash) || options.hasQuarantinedData(keyHash))
-    ) {
+    if (shouldMergePriorTuple(keyHash, tuple, partition, persistence, observed, options)) {
       addTuple(next, keyHash, tuple, partition, persistence)
     }
   })
@@ -765,7 +804,7 @@ function addAdmittedTuple(
     const character = admission.characters.find(
       (candidate) => candidate.characterId === persistence.characterId,
     )
-    if (!character?.admissionRevision) {
+    if (!character || !('admissionRevision' in character) || !character.admissionRevision) {
       return false
     }
     const partition = (envelope.characters[String(persistence.characterId)] ??= {

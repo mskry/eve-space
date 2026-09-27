@@ -145,6 +145,15 @@ describe('approved character transfer', () => {
       select encrypted_tokens, token_version, scopes from eve_tokens
       where character_id = ${sourceCharacterId}
     `
+    await connection`
+      insert into pending_character_tokens (
+        character_id, user_id, subject_lifecycle_id, base_token_version,
+        encrypted_tokens, access_token_expires_at
+      ) values (
+        ${sourceCharacterId}, ${sourceUserId}, ${sourceLifecycle!.subjectLifecycleId},
+        ${sourceTokenBefore!.token_version}, 'old-pending-ciphertext', now() + interval '1 hour'
+      )
+    `
     await insertCollectionState(
       sourceCharacterId,
       sourceLifecycle!.subjectLifecycleId,
@@ -254,6 +263,10 @@ describe('approved character transfer', () => {
       accessToken: 'rotated-source-access-token',
       refreshToken: 'rotated-source-refresh-token',
     })
+    const [transferredPending] = await connection`
+      select character_id from pending_character_tokens where character_id = ${sourceCharacterId}
+    `
+    expect(transferredPending).toBeUndefined()
     await expect(
       characterLifecycle.findOwnedCharacter(sourceUserId, sourceCharacterId),
     ).resolves.toBeNull()
@@ -1749,7 +1762,7 @@ describe('approved character transfer', () => {
     await assertCharacterAccountInvariants()
   })
 
-  test('lets an in-flight old-owner token refresh commit only before transfer replaces it', async () => {
+  test('fences an in-flight old-owner verifier after transfer replaces its pending token', async () => {
     const transfer = await prepareNonMainTransfer()
     await connection`
       update eve_tokens set access_token_expires_at = now() - interval '1 minute'
@@ -1784,13 +1797,13 @@ describe('approved character transfer', () => {
     await waitForBlockedDatabaseOperations(1)
     releaseRefresh.resolve()
 
-    await expect(refresh).resolves.toMatchObject({ accessToken: 'late-refresh-access' })
+    await expect(refresh).rejects.toBeInstanceOf(characterTokenStore.CharacterTokenNotFoundError)
     const transferred = await redemption
     const current = await characterTokenStore.findCharacterTokenForLifecycle(
       sourceAlternateCharacterId,
       transferred.subjectLifecycleId,
     )
-    expect(current?.tokenVersion).toBe(2)
+    expect(current?.tokenVersion).toBe(1)
     expect(security.decryptTokens(current!.encryptedTokens).accessToken).toBe('new-access-token')
     await expect(
       characterTokenStore.findCharacterTokenForLifecycle(

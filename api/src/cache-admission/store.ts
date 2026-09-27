@@ -15,6 +15,7 @@ import {
   organizationMemberBlocks,
   organizationPermissionBundleEntries,
   organizationRoleGrants,
+  pendingCharacterTokens,
   platformSubjectLifecycles,
 } from '../db/schema.js'
 import { installedModuleDefinitions } from '../generated/platform/installed-module-runtime.js'
@@ -26,6 +27,7 @@ export interface CharacterAdmissionFact {
   readonly tokenCharacterId: number | null
   readonly tokenVersion: number | null
   readonly scopes: string[] | null
+  readonly pendingAttemptId?: string | null
 }
 
 interface ModuleAdmissionState {
@@ -72,6 +74,7 @@ export async function loadCharacterAdmissionFacts(userId: string) {
       subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
       tokenCharacterId: eveTokens.characterId,
       tokenVersion: eveTokens.tokenVersion,
+      pendingAttemptId: pendingCharacterTokens.attemptId,
     })
     .from(characters)
     .leftJoin(
@@ -79,6 +82,14 @@ export async function loadCharacterAdmissionFacts(userId: string) {
       eq(platformSubjectLifecycles.characterId, characters.characterId),
     )
     .leftJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
+    .leftJoin(
+      pendingCharacterTokens,
+      and(
+        eq(pendingCharacterTokens.characterId, characters.characterId),
+        eq(pendingCharacterTokens.subjectLifecycleId, platformSubjectLifecycles.subjectLifecycleId),
+        eq(pendingCharacterTokens.baseTokenVersion, eveTokens.tokenVersion),
+      ),
+    )
     .where(eq(characters.userId, userId))
     .orderBy(asc(characters.characterId))
 }

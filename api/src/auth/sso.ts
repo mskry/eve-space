@@ -1,7 +1,13 @@
-import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose'
+import { createRemoteJWKSet, customFetch, errors, jwtVerify } from 'jose'
 import { z } from 'zod'
 import { env, getSsoConfig } from '../env.js'
-import { SsoHttpError, SsoTokenRejectedError, SsoTransportError } from './sso-errors.js'
+import {
+  SsoAccessTokenExpiredError,
+  SsoAccessTokenInvalidError,
+  SsoHttpError,
+  SsoTokenRejectedError,
+  SsoTransportError,
+} from './sso-errors.js'
 
 const metadataSchema = z.object({
   authorization_endpoint: z.url(),
@@ -141,6 +147,13 @@ export async function refreshAccessToken(refreshToken: string, signal?: AbortSig
   return refreshResponseSchema.parse(await readJson(response))
 }
 
+const isProvenInvalidAccessToken = (error: Error) =>
+  error instanceof errors.JWSSignatureVerificationFailed ||
+  error instanceof errors.JWTClaimValidationFailed ||
+  error instanceof errors.JWTInvalid ||
+  error instanceof errors.JWSInvalid ||
+  error instanceof errors.JOSEAlgNotAllowed
+
 export async function verifyAccessToken(accessToken: string, signal?: AbortSignal) {
   const config = getSsoConfig()
   const metadata = await getEveMetadata(signal)
@@ -148,17 +161,33 @@ export async function verifyAccessToken(accessToken: string, signal?: AbortSigna
     timeoutDuration: discoveryTimeoutMs,
     [customFetch]: (url, options) => fetchJwks(url, options, signal),
   })
-  const { payload } = await jwtVerify(accessToken, jwks, {
-    audience: 'EVE Online',
-    issuer: [metadata.issuer, 'https://login.eveonline.com/', 'login.eveonline.com'],
-  })
+  let payload: Awaited<ReturnType<typeof jwtVerify>>['payload']
+  try {
+    const verification = await jwtVerify(accessToken, jwks, {
+      audience: 'EVE Online',
+      issuer: [metadata.issuer, 'https://login.eveonline.com/', 'login.eveonline.com'],
+    })
+    payload = verification.payload
+  } catch (error) {
+    if (error instanceof errors.JWTExpired) {
+      throw new SsoAccessTokenExpiredError()
+    }
+    if (error instanceof Error && isProvenInvalidAccessToken(error)) {
+      throw new SsoAccessTokenInvalidError()
+    }
+    throw error
+  }
 
   const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud]
   if (!audiences.includes('EVE Online') || !audiences.includes(config.clientId)) {
-    throw new Error('EVE access token has an invalid audience')
+    throw new SsoAccessTokenInvalidError()
   }
 
-  const claims = claimsSchema.parse(payload)
+  const parsedClaims = claimsSchema.safeParse(payload)
+  if (!parsedClaims.success) {
+    throw new SsoAccessTokenInvalidError()
+  }
+  const claims = parsedClaims.data
 
   return {
     characterId: Number(claims.sub.split(':').at(-1)),
