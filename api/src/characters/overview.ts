@@ -1,8 +1,9 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
-import type {
-  GetCharactersCharacterIdLocationResponse,
-  GetCharactersCharacterIdShipResponse,
-} from '@evespace/esi-client/types'
+import {
+  currentLocationKind,
+  projectCurrentLocationIdentity,
+  projectCurrentShipIdentity,
+} from '@eve-space/core-eve-projections/current-observation'
 import { z } from 'zod'
 import {
   combineEsiReadResultMetadata,
@@ -12,12 +13,6 @@ import {
   type EsiReadResultMetadata,
 } from '../esi-gateway/feature-execution.js'
 import { getUniverseSolarSystem, getUniverseStation } from '../universe/locations.js'
-
-interface CharacterLocationSnapshot {
-  solarSystemId: number
-  stationId?: number
-  structureId?: number
-}
 
 const characterLocationCacheSchema = z.object({
   solarSystemId: z.number(),
@@ -31,15 +26,10 @@ const characterLocationRead = createCharacterEsiRead({
   encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
     path: { character_id: input.characterId },
   }),
-  map: (response) => mapCharacterLocationSnapshot(response.data),
+  map: (response) => projectCurrentLocationIdentity(response.data),
   name: 'character-location-core',
   operation: 'location',
 })
-
-interface CharacterShipSnapshot {
-  typeId: number
-  name: string
-}
 
 const characterShipCacheSchema = z.object({ name: z.string(), typeId: z.number() })
 const universeTypeCacheSchema = z.object({ groupId: z.number(), name: z.string() })
@@ -50,7 +40,7 @@ const characterShipRead = createCharacterEsiRead({
   encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
     path: { character_id: input.characterId },
   }),
-  map: (response) => mapCharacterShipSnapshot(response.data),
+  map: (response) => projectCurrentShipIdentity(response.data),
   name: 'character-ship-core',
   operation: 'ship',
 })
@@ -95,12 +85,7 @@ export async function getCharacterLocation(
     getUniverseSolarSystem(position.solarSystemId),
     position.stationId ? getUniverseStation(position.stationId) : Promise.resolve(),
   ])
-  let locationType: CharacterLocation['locationType'] = 'space'
-  if (position.stationId) {
-    locationType = 'station'
-  } else if (position.structureId) {
-    locationType = 'structure'
-  }
+  const locationType = currentLocationKind(position)
 
   return {
     locationType,
@@ -134,24 +119,5 @@ export async function getCharacterShip(
       toEsiReadResultMetadata(shipResult),
       toEsiReadResultMetadata(typeResult),
     ]),
-  }
-}
-
-function mapCharacterLocationSnapshot(
-  result: GetCharactersCharacterIdLocationResponse,
-): CharacterLocationSnapshot {
-  return {
-    solarSystemId: result.solar_system_id,
-    ...(result.station_id !== undefined && { stationId: result.station_id }),
-    ...(result.structure_id !== undefined && { structureId: result.structure_id }),
-  }
-}
-
-function mapCharacterShipSnapshot(
-  result: GetCharactersCharacterIdShipResponse,
-): CharacterShipSnapshot {
-  return {
-    name: result.ship_name,
-    typeId: result.ship_type_id,
   }
 }

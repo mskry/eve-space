@@ -1,15 +1,16 @@
 import { useQuery, useQueryCache } from '@pinia/colada'
 import {
   platformReviewerDirectoryDefaultSortDirection,
-  platformReviewerDirectoryDefaultSortField,
   type PlatformReviewerDirectoryAuditState,
   type PlatformReviewerDirectoryComplianceState,
   type PlatformReviewerDirectorySortDirection,
-  type PlatformReviewerDirectorySortField,
+  type PlatformReviewerCharacterDirectorySortField,
 } from '@eve-space/platform-module-contract/reviewer-directory'
 import {
   removePlatformQueryScope,
   removePlatformReviewerContributionTargetQueries,
+  resolveCharacterLandingPanels,
+  resolveReviewerDirectoryActions,
   type PlatformReviewerContributionTargetIdentity,
   type PlatformReviewerPanelCatalogEntry,
   type PlatformReviewerPanelQueryAccess,
@@ -21,7 +22,7 @@ import {
   organizationReviewEntryQuery,
   organizationReviewTargetQuery,
   type OrganizationReviewDirectoryInput,
-  type OrganizationReviewDirectoryMember,
+  type OrganizationReviewDirectoryCharacter,
   type OrganizationReviewTargetInput,
   type OrganizationReviewTargetMember,
   type OrganizationReviewTargetResult,
@@ -63,7 +64,7 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   const complianceState = ref<PlatformReviewerDirectoryComplianceState>()
   const blocked = ref<boolean>()
   const auditState = ref<PlatformReviewerDirectoryAuditState>()
-  const sort = ref<PlatformReviewerDirectorySortField>(platformReviewerDirectoryDefaultSortField)
+  const sort = ref<PlatformReviewerCharacterDirectorySortField>('character')
   const direction = ref<PlatformReviewerDirectorySortDirection>(
     platformReviewerDirectoryDefaultSortDirection,
   )
@@ -137,11 +138,15 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
       ? []
       : (directoryQuery.data.value?.groupFacets ?? []),
   )
-  const browseSelectedMember = computed(() =>
-    members.value.find(({ account }) => account.userId === urlState.value.targetUserId),
+  const browseSelectedCharacter = computed(() =>
+    members.value.find(
+      ({ account, character }) =>
+        account.userId === urlState.value.targetUserId &&
+        character.characterId === urlState.value.targetCharacterId,
+    ),
   )
   const targetInput = computed<OrganizationReviewTargetInput>(() => ({
-    managedMemberLifecycleId: browseSelectedMember.value?.managedMemberLifecycleId,
+    managedMemberLifecycleId: browseSelectedCharacter.value?.managedMemberLifecycleId,
     organizationVersion: organizationVersion.value,
     targetCharacterId: urlState.value.targetCharacterId,
     targetUserId: urlState.value.targetUserId ?? '',
@@ -160,8 +165,12 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   )
   const selectedMember = computed(() =>
     organizationReady.value === 'ready'
-      ? (currentTargetLookupMember(targetQuery.data.value, targetInput.value) ??
-        browseSelectedMember.value)
+      ? currentTargetLookupMember(targetQuery.data.value, targetInput.value)
+      : undefined,
+  )
+  const selectedCharacterId = computed(() =>
+    selectedMember.value && 'character' in selectedMember.value
+      ? selectedMember.value.character.characterId
       : undefined,
   )
   const selectedContribution = computed(() => {
@@ -169,6 +178,9 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
       (contribution) => reviewerContributionIdentity(contribution) === urlState.value.contribution,
     )
   })
+  const directoryActions = computed(() =>
+    resolveReviewerDirectoryActions(availableContributions.value),
+  )
   const selectedTarget = computed<PlatformReviewerSelectedTarget | undefined>(() => {
     if (!selectedMember.value || !selectedContribution.value) {
       return
@@ -205,6 +217,33 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
           `${selectedContribution.value.moduleId}/${selectedContribution.value.sectionId}`,
         )),
   }))
+  const landingPanels = computed(() => {
+    const member = selectedMember.value
+    if (
+      selectedContribution.value?.placement !== 'character-landing' ||
+      !member ||
+      !('character' in member) ||
+      !selectedTarget.value ||
+      !queryAccess.value.authorized ||
+      !queryAccess.value.moduleEnabled
+    ) {
+      return []
+    }
+    return resolveCharacterLandingPanels({
+      installed: panelCatalog.contributions,
+      authorized: authorizedContributions.value,
+      enabledModuleIds: enabledModuleIds.value,
+      enabledSections: runtimeQuery.data.value?.enabledSections ?? [],
+      authenticated: queryAccess.value.authenticated,
+      organizationVersion: organizationVersion.value,
+      expectedCharacterId: urlState.value.targetCharacterId ?? 0,
+      target: {
+        userId: member.account.userId,
+        managedMemberLifecycleId: member.managedMemberLifecycleId,
+        character: member.character,
+      },
+    })
+  })
 
   watch(
     [
@@ -283,11 +322,11 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     await nextTick()
     const result = await directoryQuery.refresh()
     const count = result.data?.items.length ?? 0
-    announcer.polite(`${count} managed ${count === 1 ? 'member' : 'members'} found.`)
+    announcer.polite(`${count} managed ${count === 1 ? 'character' : 'characters'} found.`)
   }
 
   function changeDirectorySort(input: {
-    readonly sort: PlatformReviewerDirectorySortField
+    readonly sort: PlatformReviewerCharacterDirectorySortField
     readonly direction: PlatformReviewerDirectorySortDirection
   }) {
     sort.value = input.sort
@@ -312,18 +351,32 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     await announceDirectoryPage()
   }
 
-  async function selectMember(member: OrganizationReviewDirectoryMember) {
-    const contribution = selectedContribution.value
-    announcer.polite(`Selected ${member.account.mainCharacter?.name ?? 'managed member'}.`)
+  async function selectMember(member: OrganizationReviewDirectoryCharacter) {
+    announcer.polite(`Selected ${member.character.name}.`)
     await router.push({
-      query: contribution
-        ? canonicalQuery(member, contribution)
-        : { targetUserId: member.account.userId },
+      query: {
+        targetUserId: member.account.userId,
+        targetCharacterId: String(member.character.characterId),
+      },
     })
-    await nextTick()
-    if (contribution) {
-      panelFocusRequest.value += 1
+  }
+
+  const reviewCharacter = async (member: OrganizationReviewDirectoryCharacter) => {
+    const contribution = directoryActions.value.reviewCharacter
+    if (!contribution) {
+      return
     }
+    await router.push({ query: canonicalQuery(member, contribution) })
+    await nextTick()
+    panelFocusRequest.value += 1
+  }
+
+  async function manageAccount(member: OrganizationReviewDirectoryCharacter) {
+    const contribution = directoryActions.value.manageAccount
+    if (!contribution) return
+    await router.push({ query: canonicalQuery(member, contribution) })
+    await nextTick()
+    panelFocusRequest.value += 1
   }
 
   async function selectContribution(identity: string) {
@@ -351,7 +404,7 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   async function announceDirectoryPage() {
     await nextTick()
     const result = await directoryQuery.refresh()
-    announcer.polite(`Loaded ${result.data?.items.length ?? 0} managed members.`)
+    announcer.polite(`Loaded ${result.data?.items.length ?? 0} managed characters.`)
   }
 
   function canonicalizeLocation() {
@@ -359,9 +412,6 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
       return
     }
     if (!runtimeQuery.data.value) {
-      return
-    }
-    if (directoryQuery.asyncStatus.value === 'loading') {
       return
     }
     if (
@@ -383,7 +433,7 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     }
     const member = selectedMember.value
     if (!member) {
-      canonicalizeUnresolvedTarget(contribution)
+      canonicalizeUnresolvedTarget()
       return
     }
     replaceLocationQuery(canonicalQuery(member, contribution, state.targetCharacterId))
@@ -403,29 +453,25 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
       canonicalizeUnresolvedTarget()
       return
     }
-    replaceLocationQuery({ targetUserId: member.account.userId })
+    replaceLocationQuery({
+      targetUserId: member.account.userId,
+      ...(state.targetCharacterId && { targetCharacterId: String(state.targetCharacterId) }),
+    })
   }
 
   function replaceWithContribution(contribution: PlatformReviewerPanelCatalogEntry) {
     replaceLocationQuery({ contribution: reviewerContributionIdentity(contribution) })
   }
 
-  function canonicalizeUnresolvedTarget(contribution?: PlatformReviewerPanelCatalogEntry) {
+  function canonicalizeUnresolvedTarget() {
     const lookupResult = currentTargetLookupResult(targetQuery.data.value, targetInput.value)
     const lookupDenied =
       targetQuery.error.value instanceof ApiQueryError &&
       [403, 404].includes(targetQuery.error.value.status)
-    if (!directoryQuery.data.value) {
-      return
-    }
     if (targetLookupRequired.value && !lookupResult && !lookupDenied) {
       return
     }
-    if (contribution) {
-      replaceWithContribution(contribution)
-    } else {
-      replaceLocationQuery({})
-    }
+    // Keep a failed exact URL visible so it cannot silently resolve to another character.
   }
 
   function replaceLocationQuery(query: Record<string, string>) {
@@ -457,6 +503,7 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
 
   return {
     auditState,
+    accountActionAvailable: computed(() => directoryActions.value.manageAccount !== undefined),
     authLoading,
     authSession,
     availableContributions,
@@ -471,7 +518,9 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     entryQuery,
     groupFacets,
     groupId,
+    landingPanels,
     limit,
+    manageAccount,
     members,
     nextDirectoryPage,
     organizationVersion,
@@ -482,11 +531,13 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     queryAccess,
     retryDirectory,
     retryEntry,
+    reviewCharacter,
     runtimeQuery,
     searchText,
     selectContribution,
     selectMember,
     selectedContribution,
+    selectedCharacterId,
     selectedMember,
     selectedTarget,
     sort,
@@ -518,17 +569,17 @@ function currentTargetLookupResult(
 }
 
 function canonicalQuery(
-  member: OrganizationReviewDirectoryMember | OrganizationReviewTargetMember,
+  member: OrganizationReviewDirectoryCharacter | OrganizationReviewTargetMember,
   contribution: PlatformReviewerPanelCatalogEntry,
   requestedCharacterId?: number,
 ) {
-  const targetCharacterId = requestedCharacterId ?? member.managedAffiliation.characterId
+  let targetCharacterId = requestedCharacterId
+  if (targetCharacterId === undefined && 'character' in member) {
+    targetCharacterId = member.character.characterId
+  }
   return {
     targetUserId: member.account.userId,
-    ...((requestedCharacterId !== undefined ||
-      contribution.target === 'managed-organization-character') && {
-      targetCharacterId: String(targetCharacterId),
-    }),
+    ...(targetCharacterId !== undefined && { targetCharacterId: String(targetCharacterId) }),
     contribution: reviewerContributionIdentity(contribution),
   }
 }

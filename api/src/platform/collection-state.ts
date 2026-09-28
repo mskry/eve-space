@@ -37,6 +37,7 @@ export const platformCollectionStateIdentitySchema = z
 export const platformCollectionStateWriteSchema = platformCollectionStateIdentitySchema
   .extend({
     authorizationGeneration: z.number().int().nonnegative().max(2_147_483_647).nullable(),
+    cachedUntil: z.date().nullable().optional(),
     disclosureVersion: z.number().int().positive().optional(),
     lastFailureClass: z.enum(platformCollectionFailureClasses).nullable(),
     managedMemberLifecycleId: z.uuid().optional(),
@@ -68,6 +69,9 @@ export const platformCollectionStateWriteSchema = platformCollectionStateIdentit
         code: 'custom',
         message: 'Managed collection authority requires an authorization generation',
       })
+    }
+    if (value.cachedUntil && (!value.validatedAt || value.cachedUntil < value.validatedAt)) {
+      context.addIssue({ code: 'custom', message: 'Collection expiry precedes validation' })
     }
   })
 

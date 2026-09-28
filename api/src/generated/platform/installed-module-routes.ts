@@ -12,16 +12,19 @@ import {
 import { installedReviewerContributions } from './installed-reviewer-contributions.js'
 import {
   memberSummaryRoutes as module0Route0Factory,
-  memberSkillsRoutes as module0Route1Factory,
-  readTrainedSkillsEvidenceOperation as module0Route1EvidenceOperation,
-  memberAssetsRoutes as module0Route2Factory,
-  readAssetEvidenceOperation as module0Route2EvidenceOperation,
-  memberWalletRoutes as module0Route3Factory,
-  readWalletEvidenceOperation as module0Route3EvidenceOperation,
-  memberMailRoutes as module0Route4Factory,
-  readMailEvidenceOperation as module0Route4EvidenceOperation,
-  memberGroupRoutes as module0Route5Factory,
-  memberBlockRoutes as module0Route6Factory,
+  memberCharacterOverviewRoutes as module0Route1Factory,
+  memberCurrentObservationRoutes as module0Route2Factory,
+  readCurrentObservationOperation as module0Route2EvidenceOperation,
+  memberSkillsRoutes as module0Route3Factory,
+  readTrainedSkillsEvidenceOperation as module0Route3EvidenceOperation,
+  memberAssetsRoutes as module0Route4Factory,
+  readAssetEvidenceOperation as module0Route4EvidenceOperation,
+  memberWalletRoutes as module0Route5Factory,
+  readWalletEvidenceOperation as module0Route5EvidenceOperation,
+  memberMailRoutes as module0Route6Factory,
+  readMailEvidenceOperation as module0Route6EvidenceOperation,
+  memberGroupRoutes as module0Route7Factory,
+  memberBlockRoutes as module0Route8Factory,
 } from '@eve-space/member-audit-server'
 import {
   activityRoutes as module1Route0Factory,
@@ -35,14 +38,9 @@ const module0Route0 = module0Route0Factory(
   ),
 )
 const module0Route1 = module0Route1Factory(
-  createPlatformReviewerContributionRouteCapabilities(
-    installedReviewerContributions[1]!,
-    [] as const,
-  ),
-  {
-    operation: module0Route1EvidenceOperation,
-    resources: [{ resourceId: 'trained-skills', field: 'trainedSkills' }] as const,
-  },
+  createPlatformReviewerContributionRouteCapabilities(installedReviewerContributions[1]!, [
+    'public-character-profile',
+  ] as const),
 )
 const module0Route2 = module0Route2Factory(
   createPlatformReviewerContributionRouteCapabilities(
@@ -51,7 +49,10 @@ const module0Route2 = module0Route2Factory(
   ),
   {
     operation: module0Route2EvidenceOperation,
-    resources: [{ resourceId: 'assets', field: null }] as const,
+    resources: [
+      { resourceId: 'current-ship', field: 'currentShip' },
+      { resourceId: 'current-location', field: 'currentLocation' },
+    ] as const,
   },
 )
 const module0Route3 = module0Route3Factory(
@@ -61,11 +62,7 @@ const module0Route3 = module0Route3Factory(
   ),
   {
     operation: module0Route3EvidenceOperation,
-    resources: [
-      { resourceId: 'wallet-balance', field: 'balance' },
-      { resourceId: 'wallet-journal', field: 'journal' },
-      { resourceId: 'wallet-transactions', field: 'transactions' },
-    ] as const,
+    resources: [{ resourceId: 'trained-skills', field: 'trainedSkills' }] as const,
   },
 )
 const module0Route4 = module0Route4Factory(
@@ -75,10 +72,7 @@ const module0Route4 = module0Route4Factory(
   ),
   {
     operation: module0Route4EvidenceOperation,
-    resources: [
-      { resourceId: 'mail-headers', field: 'headers' },
-      { resourceId: 'mail-details', field: 'contents' },
-    ] as const,
+    resources: [{ resourceId: 'assets', field: null }] as const,
   },
 )
 const module0Route5 = module0Route5Factory(
@@ -86,10 +80,37 @@ const module0Route5 = module0Route5Factory(
     installedReviewerContributions[5]!,
     [] as const,
   ),
+  {
+    operation: module0Route5EvidenceOperation,
+    resources: [
+      { resourceId: 'wallet-balance', field: 'balance' },
+      { resourceId: 'wallet-journal', field: 'journal' },
+      { resourceId: 'wallet-transactions', field: 'transactions' },
+    ] as const,
+  },
 )
 const module0Route6 = module0Route6Factory(
   createPlatformReviewerContributionRouteCapabilities(
     installedReviewerContributions[6]!,
+    [] as const,
+  ),
+  {
+    operation: module0Route6EvidenceOperation,
+    resources: [
+      { resourceId: 'mail-headers', field: 'headers' },
+      { resourceId: 'mail-details', field: 'contents' },
+    ] as const,
+  },
+)
+const module0Route7 = module0Route7Factory(
+  createPlatformReviewerContributionRouteCapabilities(
+    installedReviewerContributions[7]!,
+    [] as const,
+  ),
+)
+const module0Route8 = module0Route8Factory(
+  createPlatformReviewerContributionRouteCapabilities(
+    installedReviewerContributions[8]!,
     [] as const,
   ),
 )
@@ -127,15 +148,74 @@ export const installedModuleRoutes = new Hono()
           'wallet-transactions',
           'mail-headers',
           'mail-details',
+          'current-ship',
+          'current-location',
         ] as const,
       },
       module0Route0,
     ),
   )
   .route(
-    '/member-audit/accounts/:userId/characters/:characterId/skills',
+    '/member-audit/accounts/:userId/characters/:characterId/overview',
     composePlatformReviewerContributionRoute(
       installedReviewerContributions[1]!,
+      {
+        publisherPackage: '@eve-space/member-audit-manifest',
+        moduleId: 'member-audit',
+        routeId: 'character-overview',
+        namespace: '/member-audit/accounts/:userId/characters/:characterId/overview',
+        audience: 'hr',
+        requiredPermission: 'member-audit.summary.read',
+        sectionId: 'overview',
+        target: 'managed-organization-character',
+        exposure: 'standard',
+        reviewerResourceIds: [
+          'trained-skills',
+          'assets',
+          'wallet-balance',
+          'wallet-journal',
+          'wallet-transactions',
+          'mail-headers',
+          'mail-details',
+          'current-ship',
+          'current-location',
+        ] as const,
+        coreDataProducts: ['public-character-profile'] as const,
+      },
+      module0Route1,
+    ),
+  )
+  .route(
+    '/member-audit/accounts/:userId/characters/:characterId/current-observation',
+    composePlatformReviewerContributionRoute(
+      installedReviewerContributions[2]!,
+      {
+        publisherPackage: '@eve-space/member-audit-manifest',
+        moduleId: 'member-audit',
+        routeId: 'current-observation-detail',
+        namespace: '/member-audit/accounts/:userId/characters/:characterId/current-observation',
+        audience: 'hr',
+        requiredPermission: 'member-audit.current-observation.read',
+        sectionId: 'current-observation',
+        target: 'managed-organization-character',
+        exposure: 'sensitive-evidence',
+        reviewerEvidence: {
+          routeId: 'current-observation-detail',
+          resources: [
+            { resourceId: 'current-ship', field: 'currentShip' },
+            { resourceId: 'current-location', field: 'currentLocation' },
+          ] as const,
+          operationId: 'read-current-observation',
+        },
+        reviewerResourceIds: ['current-ship', 'current-location'] as const,
+      },
+      module0Route2,
+    ),
+  )
+  .route(
+    '/member-audit/accounts/:userId/characters/:characterId/skills',
+    composePlatformReviewerContributionRoute(
+      installedReviewerContributions[3]!,
       {
         publisherPackage: '@eve-space/member-audit-manifest',
         moduleId: 'member-audit',
@@ -153,13 +233,13 @@ export const installedModuleRoutes = new Hono()
         },
         reviewerResourceIds: ['trained-skills'] as const,
       },
-      module0Route1,
+      module0Route3,
     ),
   )
   .route(
     '/member-audit/accounts/:userId/characters/:characterId/assets',
     composePlatformReviewerContributionRoute(
-      installedReviewerContributions[2]!,
+      installedReviewerContributions[4]!,
       {
         publisherPackage: '@eve-space/member-audit-manifest',
         moduleId: 'member-audit',
@@ -177,13 +257,13 @@ export const installedModuleRoutes = new Hono()
         },
         reviewerResourceIds: ['assets'] as const,
       },
-      module0Route2,
+      module0Route4,
     ),
   )
   .route(
     '/member-audit/accounts/:userId/characters/:characterId/wallet',
     composePlatformReviewerContributionRoute(
-      installedReviewerContributions[3]!,
+      installedReviewerContributions[5]!,
       {
         publisherPackage: '@eve-space/member-audit-manifest',
         moduleId: 'member-audit',
@@ -205,13 +285,13 @@ export const installedModuleRoutes = new Hono()
         },
         reviewerResourceIds: ['wallet-balance', 'wallet-journal', 'wallet-transactions'] as const,
       },
-      module0Route3,
+      module0Route5,
     ),
   )
   .route(
     '/member-audit/accounts/:userId/characters/:characterId/mail',
     composePlatformReviewerContributionRoute(
-      installedReviewerContributions[4]!,
+      installedReviewerContributions[6]!,
       {
         publisherPackage: '@eve-space/member-audit-manifest',
         moduleId: 'member-audit',
@@ -232,13 +312,13 @@ export const installedModuleRoutes = new Hono()
         },
         reviewerResourceIds: ['mail-headers', 'mail-details'] as const,
       },
-      module0Route4,
+      module0Route6,
     ),
   )
   .route(
     '/member-audit/accounts/:userId/groups',
     composePlatformReviewerContributionRoute(
-      installedReviewerContributions[5]!,
+      installedReviewerContributions[7]!,
       {
         publisherPackage: '@eve-space/member-audit-manifest',
         moduleId: 'member-audit',
@@ -252,13 +332,13 @@ export const installedModuleRoutes = new Hono()
         reviewerResourceIds: [] as const,
         organizationCommands: ['assign-ordinary-group', 'revoke-ordinary-group'] as const,
       },
-      module0Route5,
+      module0Route7,
     ),
   )
   .route(
     '/member-audit/accounts/:userId/block',
     composePlatformReviewerContributionRoute(
-      installedReviewerContributions[6]!,
+      installedReviewerContributions[8]!,
       {
         publisherPackage: '@eve-space/member-audit-manifest',
         moduleId: 'member-audit',
@@ -272,7 +352,7 @@ export const installedModuleRoutes = new Hono()
         reviewerResourceIds: [] as const,
         organizationCommands: ['block-member', 'unblock-member'] as const,
       },
-      module0Route6,
+      module0Route8,
     ),
   )
   .route(

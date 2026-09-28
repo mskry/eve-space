@@ -13,6 +13,11 @@ export function createCoreDataCapability<const ProductIds extends readonly CoreD
   assertCoreDataProductDeclarations(productIds, context)
   const methods: Partial<CoreDataMethods> = {}
   for (const productId of productIds) {
+    if (productId === 'public-character-profile') {
+      methods.publicCharacterProfile = getCoreDataProductDefinition(
+        'public-character-profile',
+      ).adapter
+    }
     if (productId === 'published-type-groups') {
       methods.publishedTypeGroups = getCoreDataProductDefinition('published-type-groups').adapter
     }

@@ -545,11 +545,6 @@ const zCharactersCharacterIdKillmailsRecentGet = z.array(z.looseObject({
   killmail_hash: z.string(),
   killmail_id: z.int()
 }));
-const zCharactersCharacterIdLocationGet = z.looseObject({
-  solar_system_id: z.int(),
-  station_id: z.int().optional(),
-  structure_id: z.int().optional()
-});
 const zCharactersCharacterIdLoyaltyPointsGet = z.array(z.looseObject({
   corporation_id: z.int(),
   loyalty_points: z.int()
@@ -921,12 +916,6 @@ const zCharactersCharacterIdNotificationsGet = z.array(z.looseObject({
     "WarSurrenderOfferMsg"
   ])
 }));
-const zCharactersCharacterIdOnlineGet = z.looseObject({
-  last_login: z.iso.datetime({ offset: true }).optional(),
-  last_logout: z.iso.datetime({ offset: true }).optional(),
-  logins: z.int().optional(),
-  online: z.boolean()
-});
 const zCharactersCharacterIdOrdersGet = z.array(z.looseObject({
   duration: z.int(),
   escrow: z.number().optional(),
@@ -1292,11 +1281,6 @@ const zCharactersCharacterIdSearchGet = z.looseObject({
   station: z.array(z.int()).optional(),
   structure: z.array(z.int()).optional()
 });
-const zCharactersCharacterIdShipGet = z.looseObject({
-  ship_item_id: z.int(),
-  ship_name: z.string(),
-  ship_type_id: z.int()
-});
 const zCharactersCharacterIdStandingsGet = z.array(z.looseObject({
   from_id: z.int(),
   from_type: z.enum([
@@ -1546,6 +1530,12 @@ const zCharactersFreelanceJobsParticipation = z.looseObject({
     "Kicked",
     "Resigned"
   ])
+});
+const zCharactersOnline = z.looseObject({
+  last_login: z.iso.datetime({ offset: true }).optional(),
+  last_logout: z.iso.datetime({ offset: true }).optional(),
+  logins: z.int().optional(),
+  online: z.boolean()
 });
 const zCharactersSkillsSkill = z.looseObject({
   active_skill_level: z.int(),
@@ -3973,7 +3963,7 @@ const zError = z.looseObject({
   status: z.int().optional()
 });
 const zFactionId = z.int();
-const zAllianceDetail = z.looseObject({
+const zAlliancesDetail = z.looseObject({
   creator_corporation_id: zCorporationId,
   creator_id: zCharacterId,
   date_founded: z.iso.datetime({ offset: true }),
@@ -4437,7 +4427,7 @@ const zMetaName = z.looseObject({
   current: z.string(),
   history: z.array(zMetaNameEntry)
 });
-const zMetaStatusRoutestatus = z.looseObject({
+const zMetaStatusRoute = z.looseObject({
   method: z.enum([
     "GET",
     "POST",
@@ -4454,7 +4444,7 @@ const zMetaStatusRoutestatus = z.looseObject({
   ])
 });
 const zMetaStatus = z.looseObject({
-  routes: z.array(zMetaStatusRoutestatus)
+  routes: z.array(zMetaStatusRoute)
 });
 const zMilitaryCampaignsObjectivesDetailParticipants = z.looseObject({
   committed: z.int(),
@@ -4708,6 +4698,11 @@ const zSovereigntySystems = z.looseObject({
   solar_systems: z.array(zSovereigntySystemsSolarsystem)
 });
 const zStationId = z.int();
+const zCharactersLocation = z.looseObject({
+  solar_system_id: zSolarSystemId,
+  station_id: zStationId.optional(),
+  structure_id: zItemId.optional()
+});
 const zCorporationsDetail = z.looseObject({
   alliance_id: zAllianceId.optional(),
   ceo_id: zCharacterId.optional(),
@@ -4735,6 +4730,11 @@ const zStatus = z.looseObject({
   vip: z.boolean()
 });
 const zTypeId = z.int();
+const zCharactersShip = z.looseObject({
+  ship_item_id: zItemId,
+  ship_name: z.string(),
+  ship_type_id: zTypeId
+});
 const zCharactersSkillqueueSkill = z.looseObject({
   finish_date: z.iso.datetime({ offset: true }).optional(),
   finished_level: z.int(),
@@ -5857,7 +5857,7 @@ const zGetAlliancesAllianceIdHeaders = z.looseObject({
 const zGetAlliancesAllianceIdPath = z.looseObject({
   alliance_id: zAllianceId
 });
-const zGetAlliancesAllianceIdResponse = zAllianceDetail;
+const zGetAlliancesAllianceIdResponse = zAlliancesDetail;
 const zGetAlliancesAllianceIdContactsHeaders = z.looseObject({
   "If-None-Match": z.string().optional(),
   "X-Tenant": z.string().optional().default("tranquility"),
@@ -6353,7 +6353,7 @@ const zGetCharactersCharacterIdLocationHeaders = z.looseObject({
 const zGetCharactersCharacterIdLocationPath = z.looseObject({
   character_id: zCharacterId
 });
-const zGetCharactersCharacterIdLocationResponse = zCharactersCharacterIdLocationGet;
+const zGetCharactersCharacterIdLocationResponse = zCharactersLocation;
 const zGetCharactersCharacterIdLoyaltyPointsHeaders = z.looseObject({
   "If-None-Match": z.string().optional(),
   "X-Tenant": z.string().optional().default("tranquility"),
@@ -6583,7 +6583,7 @@ const zGetCharactersCharacterIdOnlineHeaders = z.looseObject({
 const zGetCharactersCharacterIdOnlinePath = z.looseObject({
   character_id: zCharacterId
 });
-const zGetCharactersCharacterIdOnlineResponse = zCharactersCharacterIdOnlineGet;
+const zGetCharactersCharacterIdOnlineResponse = zCharactersOnline;
 const zGetCharactersCharacterIdOrdersHeaders = z.looseObject({
   "If-None-Match": z.string().optional(),
   "X-Tenant": z.string().optional().default("tranquility"),
@@ -6690,7 +6690,7 @@ const zGetCharactersCharacterIdShipHeaders = z.looseObject({
 const zGetCharactersCharacterIdShipPath = z.looseObject({
   character_id: zCharacterId
 });
-const zGetCharactersCharacterIdShipResponse = zCharactersCharacterIdShipGet;
+const zGetCharactersCharacterIdShipResponse = zCharactersShip;
 const zGetCharactersCharacterIdSkillqueueHeaders = z.looseObject({
   "If-None-Match": z.string().optional(),
   "X-Tenant": z.string().optional().default("tranquility"),
@@ -8251,12 +8251,12 @@ const zGetWarsWarIdKillmailsResponse = zWarsWarIdKillmailsGet;
 export {
   zAcceptLanguage,
   zAccessListId,
-  zAllianceDetail,
   zAllianceId,
   zAlliancesAllianceIdContactsGet,
   zAlliancesAllianceIdContactsLabelsGet,
   zAlliancesAllianceIdCorporationsGet,
   zAlliancesAllianceIdIconsGet,
+  zAlliancesDetail,
   zAlliancesGet,
   zArchetypeId,
   zAttributeId,
@@ -8296,7 +8296,6 @@ export {
   zCharactersCharacterIdImplantsGet,
   zCharactersCharacterIdIndustryJobsGet,
   zCharactersCharacterIdKillmailsRecentGet,
-  zCharactersCharacterIdLocationGet,
   zCharactersCharacterIdLoyaltyPointsGet,
   zCharactersCharacterIdMailGet,
   zCharactersCharacterIdMailLabelsGet,
@@ -8308,7 +8307,6 @@ export {
   zCharactersCharacterIdMiningGet,
   zCharactersCharacterIdNotificationsContactsGet,
   zCharactersCharacterIdNotificationsGet,
-  zCharactersCharacterIdOnlineGet,
   zCharactersCharacterIdOrdersGet,
   zCharactersCharacterIdOrdersHistoryGet,
   zCharactersCharacterIdPlanetsGet,
@@ -8316,7 +8314,6 @@ export {
   zCharactersCharacterIdPortraitGet,
   zCharactersCharacterIdRolesGet,
   zCharactersCharacterIdSearchGet,
-  zCharactersCharacterIdShipGet,
   zCharactersCharacterIdStandingsGet,
   zCharactersCharacterIdTitlesGet,
   zCharactersCharacterIdWalletGet,
@@ -8329,14 +8326,17 @@ export {
   zCharactersDetail,
   zCharactersFreelanceJobsListing,
   zCharactersFreelanceJobsParticipation,
+  zCharactersLocation,
   zCharactersMercenaryTacticalOperationsDetail,
   zCharactersMercenaryTacticalOperationsListing,
   zCharactersMercenaryTacticalOperationsListingOperation,
   zCharactersMilitaryCampaignsObjectivesListing,
   zCharactersMilitaryCampaignsObjectivesParticipation,
   zCharactersMilitaryCampaignsObjectivesParticipationCharacterobjective,
+  zCharactersOnline,
   zCharactersParagonHubSkinr,
   zCharactersParagonHubSkinrItem,
+  zCharactersShip,
   zCharactersSkillqueueSkill,
   zCharactersSkills,
   zCharactersSkillsSkill,
@@ -9168,7 +9168,7 @@ export {
   zMetaName,
   zMetaNameEntry,
   zMetaStatus,
-  zMetaStatusRoutestatus,
+  zMetaStatusRoute,
   zMilitaryCampaignsDetail,
   zMilitaryCampaignsDetailCampaign,
   zMilitaryCampaignsListing,

@@ -3,13 +3,24 @@ import { useQueryCache } from '@pinia/colada'
 import { computed, defineAsyncComponent } from 'vue'
 import {
   providePlatformIdentity,
+  providePlatformCharacterProfile,
+  providePlatformReviewerActionInvalidation,
   providePlatformQueryPersistence,
 } from '@eve-space/platform-module-nuxt/runtime'
-import { invalidatePrivateQueryScope, readQueryPersistenceState } from './query-persistence/runtime'
+import AppReviewerCharacterProfile from './components/AppReviewerCharacterProfile.vue'
+import {
+  invalidatePrivateQueryScope,
+  readQueryPersistenceState,
+  transitionOrganizationQueries,
+} from './query-persistence/runtime'
 import { observeOrganizationReadiness } from './queries/organization-readiness'
 
 providePlatformIdentity(usePlatformHostIdentity)
+providePlatformCharacterProfile(AppReviewerCharacterProfile)
 const queryCache = useQueryCache()
+providePlatformReviewerActionInvalidation(async () => {
+  await transitionOrganizationQueries(queryCache)
+})
 const apiClient = createApiClient(useRuntimeConfig().public.apiBase)
 const { authSession, authVerificationStatus } = useAuthSession(apiClient)
 observeOrganizationReadiness(

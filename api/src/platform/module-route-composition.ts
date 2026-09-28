@@ -6,6 +6,7 @@ import type {
   PlatformReviewerTargetRouteEnv,
   PlatformRouteSecurityClassification,
 } from '@eve-space/platform-module-contract/server'
+import type { CoreDataProductId } from '@eve-space/core-data-contract'
 import { resolvePlatformModuleRoutePath } from '@eve-space/platform-module-contract/server'
 import type {
   PlatformInstalledOrganizationContributionAuthorization,
@@ -22,7 +23,9 @@ import {
 import { privateNoStore } from '../http/private-response.js'
 import { zValidator } from '../http/validation.js'
 import { recordDiagnostic } from '../logging.js'
-import { loadSession, requireSession } from '../middleware/auth-session.js'
+import { findSession } from '../auth/session-store.js'
+import { readAuthCookie } from '../http/auth-cookie.js'
+import { loadSession, requireSession, sessionCookie } from '../middleware/auth-session.js'
 import {
   exposeAuthenticatedSessionModuleContext,
   exposeOwnedCharacterModuleContext,
@@ -33,7 +36,10 @@ import {
   type ModuleOrganizationAuthorizationEnv,
 } from '../middleware/module-authorization.js'
 import { requireInstalledModuleEnabled } from '../middleware/module-enablement.js'
-import { loadOrganizationSession } from '../middleware/organization-session.js'
+import {
+  loadOrganizationSession,
+  loadOrganizationSessionContext,
+} from '../middleware/organization-session.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
 import {
   loadOrganizationReviewerTarget,
@@ -43,6 +49,7 @@ import {
 } from '../middleware/reviewer-target.js'
 import { recordModuleSensitiveAccessDecision } from './module-sensitive-access-audit.js'
 import { requireInstalledReviewerContribution } from './reviewer-contributions.js'
+import { isReviewerProfileReleaseCurrent } from './reviewer-profile-release.js'
 
 const sensitiveAccessSections: ReadonlySet<string> = new Set(organizationSensitiveAccessSections)
 
@@ -142,6 +149,7 @@ function composeReviewerTargetModuleRoute<
     PlatformRouteSecurityClassification & {
       readonly reviewerEvidence?: ReviewerEvidenceBinding
       readonly reviewerResourceIds?: readonly string[]
+      readonly coreDataProducts?: readonly CoreDataProductId[]
     },
   Evidence extends object,
   RouteSchema extends Schema,
@@ -176,6 +184,12 @@ function composeReviewerTargetModuleRoute<
     .use('*', sensitiveAccessAudit?.allowed ?? passThrough)
     .use(
       '*',
+      organization.coreDataProducts?.includes('public-character-profile')
+        ? createReviewerProfileReleaseGate(organization)
+        : passThrough,
+    )
+    .use(
+      '*',
       exposeReviewerTargetModuleContext(
         organization.publisherPackage,
         moduleId,
@@ -202,6 +216,40 @@ function composeReviewerTargetModuleRoute<
     reviewerContributionFailureResponse(error, contribution, context),
   )
 }
+
+const createReviewerProfileReleaseGate = (
+  declaration: PlatformInstalledOrganizationContributionAuthorization &
+    PlatformRouteSecurityClassification,
+) =>
+  createMiddleware<OrganizationReviewerTargetEnv>(async (context, next) => {
+    const initial = context.var.organizationReviewerTarget
+    const actor = context.var.session
+    await next()
+    if (context.res.status !== 200) return
+    const bearer = readAuthCookie(context, sessionCookie)
+    const currentSession = bearer ? await findSession(bearer) : null
+    if (!initial || !actor || currentSession?.userId !== actor.userId) {
+      context.res = context.json(
+        { code: 'REVIEW_TARGET_NOT_FOUND', message: 'Review target not found.' },
+        404,
+      )
+      return
+    }
+    const organization = await loadOrganizationSessionContext(actor.userId)
+    const admitted = await isReviewerProfileReleaseCurrent({
+      actorUserId: actor.userId,
+      organization,
+      initial,
+      declaration,
+      sectionId: declaration.sectionId,
+    })
+    if (!admitted) {
+      context.res = context.json(
+        { code: 'REVIEW_TARGET_NOT_FOUND', message: 'Review target not found.' },
+        404,
+      )
+    }
+  })
 
 function assertReviewerContributionRouteBinding(
   contribution: PlatformInstalledReviewerContributionDescriptor,

@@ -5,6 +5,7 @@ import type {
   PlatformReviewerManagedAffiliation,
   PlatformReviewerMemberBlock,
   PlatformReviewerTargetCompliance,
+  PlatformReviewerTargetCharacter,
 } from './server.js'
 
 export const platformReviewerDirectoryAuditStates = [
@@ -93,6 +94,44 @@ export interface PlatformReviewerDirectoryPage {
   readonly organizationVersion: number
   readonly status: 'available' | 'unavailable'
   readonly items: readonly PlatformReviewerDirectoryRow[]
+  readonly groupFacets: readonly PlatformReviewerGroupIdentity[]
+  readonly nextCursor: string | null
+}
+
+export const platformReviewerCharacterDirectorySortFields = [
+  'character',
+  ...platformReviewerDirectorySortFields.filter(
+    (field): field is Exclude<PlatformReviewerDirectorySortField, 'member'> => field !== 'member',
+  ),
+] as const
+
+export type PlatformReviewerCharacterDirectorySortField =
+  (typeof platformReviewerCharacterDirectorySortFields)[number]
+
+export interface PlatformReviewerCharacterDirectoryInput extends Omit<
+  PlatformReviewerDirectoryInput,
+  'sort'
+> {
+  readonly sort?: PlatformReviewerCharacterDirectorySortField
+}
+
+export interface PlatformReviewerCharacterDirectoryRow {
+  readonly account: PlatformReviewerAccountIdentity
+  readonly character: PlatformReviewerTargetCharacter
+  readonly managedMemberLifecycleId: string
+  readonly managedSince: string
+  readonly siteRegisteredAt: string
+  readonly disclosedCharacterCount: number
+  readonly groups: readonly PlatformReviewerGroupIdentity[]
+  readonly compliance: PlatformReviewerTargetCompliance
+  readonly block: PlatformReviewerMemberBlock
+  readonly auditData: PlatformReviewerDirectoryRow['auditData']
+}
+
+export interface PlatformReviewerCharacterDirectoryPage {
+  readonly organizationVersion: number
+  readonly status: 'available' | 'unavailable'
+  readonly items: readonly PlatformReviewerCharacterDirectoryRow[]
   readonly groupFacets: readonly PlatformReviewerGroupIdentity[]
   readonly nextCursor: string | null
 }

@@ -148,7 +148,7 @@ over pending rule work or reverse applied migrations.
 The organization fixture is a one-shot development aid for exercising member, HR, director, owner,
 corporation-source, compliance-group, and organization-activity behavior through production services.
 It creates synthetic identities and encrypted synthetic EVE tokens; it does not call ESI or bypass
-authorization. The deployment administrator login is `fixture-admin@localhost` with password
+authorization. The deployment administrator login is `fixture-admin@example.test` with password
 `eve-space-fixture`, and the attached character is `Fixture Director` (`90000001`).
 
 Use a new disposable PostgreSQL database whose name is `eve_space_fixture` or starts with

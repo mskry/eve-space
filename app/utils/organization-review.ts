@@ -4,7 +4,6 @@ import type {
 } from '@eve-space/platform-module-nuxt/runtime'
 import type {
   OrganizationReviewContribution,
-  OrganizationReviewDirectoryMember,
   OrganizationReviewTargetMember,
 } from '../queries/organization-review'
 
@@ -33,6 +32,8 @@ export function availableOrganizationReviewerPanels(
       contribution?.routeId === panel.routeId &&
       contribution.routePath === panel.routePath &&
       contribution.target === panel.target &&
+      contribution.placement === panel.placement &&
+      contribution.directoryAction === panel.directoryAction &&
       contribution.sectionId === panel.sectionId
     )
   })
@@ -53,7 +54,7 @@ export function parseOrganizationReviewUrlState(query: Record<string, unknown>) 
 }
 
 export function selectedReviewerTarget(
-  member: OrganizationReviewDirectoryMember | OrganizationReviewTargetMember,
+  member: OrganizationReviewTargetMember,
   contribution: PlatformReviewerPanelCatalogEntry,
   requestedCharacterId?: number,
   sectionAuthority?: { readonly disclosureVersion: number; readonly activationVersion: number },
@@ -69,17 +70,17 @@ export function selectedReviewerTarget(
       userId: member.account.userId,
     }
   }
-  if (!('characters' in member)) {
+  if (requestedCharacterId === undefined) {
     return undefined
   }
-  const characterId = requestedCharacterId ?? member.managedAffiliation.characterId
-  const character = member.characters.find((candidate) => candidate.characterId === characterId)
+  const characters = 'character' in member ? [member.character] : member.characters
+  const character = characters.find((candidate) => candidate.characterId === requestedCharacterId)
   if (!character) {
     return undefined
   }
   return {
     authorizationGeneration: character.authorizationGeneration,
-    characterId,
+    characterId: character.characterId,
     characterLifecycleId: character.subjectLifecycleId,
     disclosureVersion: sectionAuthority.disclosureVersion,
     kind: 'managed-organization-character',

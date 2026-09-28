@@ -51,14 +51,18 @@ export interface RevokeOrganizationReviewerGroupCommand extends OrganizationRevi
   readonly assignmentId: string
 }
 
-export type BlockOrganizationReviewerMemberCommand = OrganizationReviewerCommandBinding
+export interface BlockOrganizationReviewerMemberCommand extends OrganizationReviewerCommandBinding {
+  readonly expectedOrganizationVersion: number
+  readonly expectedManagedMemberLifecycleId: string
+}
 
-export type UnblockOrganizationReviewerMemberCommand = OrganizationReviewerCommandBinding
+export type UnblockOrganizationReviewerMemberCommand = BlockOrganizationReviewerMemberCommand
 
 export class OrganizationReviewerCommandError extends Error {
   constructor(
     readonly code:
       | 'invalid-binding'
+      | 'stale-confirmation'
       | 'invalid-reason'
       | 'reviewer-authority-required'
       | 'reviewer-permission-required'
@@ -147,12 +151,22 @@ export async function revokeOrganizationReviewerOrdinaryGroup(
   })
 }
 
+const requireCurrentBlockConfirmation = (input: BlockOrganizationReviewerMemberCommand) => {
+  if (
+    input.expectedOrganizationVersion !== input.organizationVersion ||
+    input.expectedManagedMemberLifecycleId !== input.managedMemberLifecycleId
+  ) {
+    throw new OrganizationReviewerCommandError('stale-confirmation')
+  }
+}
+
 export async function blockOrganizationReviewerMember(
   input: BlockOrganizationReviewerMemberCommand,
 ) {
   const reason = requireReason(input.reason)
   return db.transaction(async (transaction) => {
     const organization = await authorizeCommand(transaction, input)
+    requireCurrentBlockConfirmation(input)
     requireDifferentTarget(input)
     await requireNonReviewerTarget(transaction, input)
     const block = await blockOrganizationMemberInTransaction(transaction, organization, {
@@ -176,6 +190,7 @@ export async function unblockOrganizationReviewerMember(
   const reason = requireReason(input.reason)
   return db.transaction(async (transaction) => {
     const organization = await authorizeCommand(transaction, input)
+    requireCurrentBlockConfirmation(input)
     requireDifferentTarget(input)
     await requireNonReviewerTarget(transaction, input)
     const block = await unblockOrganizationMemberInTransaction(transaction, organization, {

@@ -3,7 +3,7 @@ import { nextTick, defineComponent, h, type PropType } from 'vue'
 import { afterEach, describe, expect, it } from 'vitest'
 import OrganizationReviewDirectory from '../../app/components/organization-review/OrganizationReviewDirectory.vue'
 import { ORGANIZATION_REVIEW_DIRECTORY_COLUMN_PREFERENCE_STORAGE_KEY } from '../../app/composables/useOrganizationReviewDirectoryColumnPreferences'
-import type { OrganizationReviewDirectoryMember } from '../../app/queries/organization-review'
+import type { OrganizationReviewDirectoryCharacter } from '../../app/queries/organization-review'
 import type { OrganizationReviewDirectoryPreference } from '../../app/utils/organization-review-directory-fields'
 
 const mountedWrappers: { unmount(): void }[] = []
@@ -21,24 +21,26 @@ describe('organization review directory', () => {
       hasPreviousPage: true,
       members: [directoryMember(), directoryMember({ secondary: true })],
       page: 2,
-      selectedUserId: directoryMember().account.userId,
+      selectedCharacterId: directoryMember().character.characterId,
     })
 
     expect(wrapper.get('table').attributes('aria-busy')).toBe('false')
-    expect(wrapper.get('caption').text()).toContain('Current managed organization accounts')
+    expect(wrapper.get('caption').text()).toContain('Current managed organization characters')
     expect(headerLabels(wrapper)).toStrictEqual([
-      'Member',
+      'Character',
       'Corporation',
-      'Managed since',
+      'Account managed since',
       'Audit data',
-      'Groups',
-      'Access status',
+      'Account groups',
+      'Account access status',
       'Actions',
     ])
     expect(wrapper.findAll('tbody tr')).toHaveLength(2)
-    expect(wrapper.get('tbody tr.is-selected').text()).toContain('Selected member')
+    expect(wrapper.get('tbody tr.is-selected').text()).toContain('Selected character')
     expect(
-      wrapper.get('button[aria-label="Selected member Review Pilot"]').attributes('aria-pressed'),
+      wrapper
+        .get('button[aria-label="Selected character Review Pilot"]')
+        .attributes('aria-pressed'),
     ).toBe('true')
     expect(
       wrapper
@@ -49,7 +51,7 @@ describe('organization review directory', () => {
     expect(wrapper.text()).toContain('7 of 7 covered')
     expect(wrapper.text()).toContain('Compliant')
     expect(wrapper.text()).toContain('+2')
-    expect(wrapper.get('output[aria-live="polite"]').text()).toBe('Page 2, 2 managed members.')
+    expect(wrapper.get('output[aria-live="polite"]').text()).toBe('Page 2, 2 managed characters.')
     for (const forbidden of [
       'CSV',
       'raw evidence',
@@ -76,28 +78,30 @@ describe('organization review directory', () => {
     const wrapper = await mountDirectory()
 
     expect(headerLabels(wrapper)).toStrictEqual([
-      'Member',
-      'Site registered',
-      'Disclosed characters',
+      'Character',
+      'Account site registered',
+      'Account disclosed characters',
       'Actions',
     ])
-    expect(wrapper.get('#review-directory-column-member').attributes()).toHaveProperty('disabled')
+    expect(wrapper.get('#review-directory-column-character').attributes()).toHaveProperty(
+      'disabled',
+    )
     expect(wrapper.get('#review-directory-column-actions').attributes()).toHaveProperty('disabled')
 
     await wrapper.get('#review-directory-column-groups').setValue(true)
     expect(headerLabels(wrapper)).toStrictEqual([
-      'Member',
-      'Site registered',
-      'Disclosed characters',
-      'Groups',
+      'Character',
+      'Account site registered',
+      'Account disclosed characters',
+      'Account groups',
       'Actions',
     ])
-    await wrapper.get('button[aria-label="Move Groups earlier"]').trigger('click')
+    await wrapper.get('button[aria-label="Move Account groups earlier"]').trigger('click')
     expect(headerLabels(wrapper)).toStrictEqual([
-      'Member',
-      'Site registered',
-      'Groups',
-      'Disclosed characters',
+      'Character',
+      'Account site registered',
+      'Account groups',
+      'Account disclosed characters',
       'Actions',
     ])
 
@@ -105,23 +109,23 @@ describe('organization review directory', () => {
       localStorage.getItem(ORGANIZATION_REVIEW_DIRECTORY_COLUMN_PREFERENCE_STORAGE_KEY)!,
     )
     expect(persisted).toStrictEqual({
-      fieldIds: ['member', 'site_registered_at', 'groups', 'disclosed_characters', 'actions'],
-      version: 1,
+      fieldIds: ['character', 'site_registered_at', 'groups', 'disclosed_characters', 'actions'],
+      version: 2,
     })
 
     await buttonWithText(wrapper, 'RESET TO DEFAULT').trigger('click')
     expect(headerLabels(wrapper)).toStrictEqual([
-      'Member',
+      'Character',
       'Corporation',
-      'Managed since',
+      'Account managed since',
       'Audit data',
-      'Groups',
-      'Access status',
+      'Account groups',
+      'Account access status',
       'Actions',
     ])
   })
 
-  it('emits normalized server controls, sorting, paging, and explicit member selection', async () => {
+  it('emits normalized server controls, sorting, paging, and distinct selection and Review', async () => {
     const member = directoryMember()
     const wrapper = await mountDirectory({
       direction: 'asc',
@@ -129,13 +133,15 @@ describe('organization review directory', () => {
       hasPreviousPage: true,
       members: [member],
       page: 2,
-      sort: 'member',
+      sort: 'character',
     })
 
-    await wrapper.get('button[aria-label="Sort by Member, currently ascending"]').trigger('click')
-    await wrapper.get('button[aria-label="Sort by Managed since"]').trigger('click')
+    await wrapper
+      .get('button[aria-label="Sort by Character, currently ascending"]')
+      .trigger('click')
+    await wrapper.get('button[aria-label="Sort by Account managed since"]').trigger('click')
     expect(wrapper.emitted('change-sort')).toStrictEqual([
-      [{ direction: 'desc', sort: 'member' }],
+      [{ direction: 'desc', sort: 'character' }],
       [{ direction: 'asc', sort: 'managed_since' }],
     ])
 
@@ -157,8 +163,8 @@ describe('organization review directory', () => {
     expect(wrapper.emitted('update:limit')?.at(-1)).toStrictEqual([50])
     expect(wrapper.emitted('search')).toHaveLength(1)
 
-    await wrapper.get('button[aria-label="Previous member page"]').trigger('click')
-    await wrapper.get('button[aria-label="Next member page"]').trigger('click')
+    await wrapper.get('button[aria-label="Previous character page"]').trigger('click')
+    await wrapper.get('button[aria-label="Next character page"]').trigger('click')
     await wrapper.get('button[aria-label="Select Review Pilot"]').trigger('click')
     await wrapper
       .get('button.ui-action-secondary.organization-review-directory__review')
@@ -166,7 +172,8 @@ describe('organization review directory', () => {
 
     expect(wrapper.emitted('previous')).toHaveLength(1)
     expect(wrapper.emitted('next')).toHaveLength(1)
-    expect(wrapper.emitted('select')).toStrictEqual([[member], [member]])
+    expect(wrapper.emitted('select')).toStrictEqual([[member]])
+    expect(wrapper.emitted('review')).toStrictEqual([[member]])
     expect(wrapper.text()).toContain('Page 2')
     expect(wrapper.text()).not.toContain('Page 2 of')
   })
@@ -194,6 +201,22 @@ describe('organization review directory', () => {
     expect(wrapper.text()).toContain('Access blocked')
     expect(wrapper.text()).toContain('Evidence stale')
     expect(wrapper.find('time[datetime=""]').exists()).toBe(false)
+  })
+
+  it('offers account-wide actions only when admitted and distinguishes blocked state', async () => {
+    const clear = directoryMember()
+    const blocked = directoryMember({
+      secondary: true,
+      block: { blocked: true, blockedAt: '2026-09-18T00:00:00.000Z' },
+    })
+    const wrapper = await mountDirectory({ members: [clear, blocked] })
+    expect(wrapper.find('button[aria-label="Block account for Review Pilot"]').exists()).toBe(false)
+
+    await wrapper.setProps({ accountActionAvailable: true })
+    await wrapper.get('button[aria-label="Block account for Review Pilot"]').trigger('click')
+    await wrapper.get('button[aria-label="Unblock account for Remote Pilot"]').trigger('click')
+    expect(wrapper.emitted('manage-account')).toStrictEqual([[clear], [blocked]])
+    expect(wrapper.emitted('review')).toBeUndefined()
   })
 })
 
@@ -311,8 +334,8 @@ function passThroughStub(name: string) {
 }
 
 function directoryMember(
-  overrides: Partial<OrganizationReviewDirectoryMember> & { secondary?: boolean } = {},
-): OrganizationReviewDirectoryMember {
+  overrides: Partial<OrganizationReviewDirectoryCharacter> & { secondary?: boolean } = {},
+): OrganizationReviewDirectoryCharacter {
   const secondary = overrides.secondary ?? false
   const characterId = secondary ? 90_000_002 : 90_000_001
   const base = {
@@ -344,20 +367,22 @@ function directoryMember(
       { groupId: 'group-charlie', name: 'Charlie' },
       { groupId: 'group-delta', name: 'Delta' },
     ],
-    managedAffiliation: {
-      allianceId: null,
+    character: {
       characterId,
-      checkedAt: '2026-09-18T00:00:00.000Z',
-      corporationId: secondary ? 98_000_002 : 98_000_001,
       name: secondary ? 'Remote Pilot' : 'Review Pilot',
+      subjectLifecycleId: `character-lifecycle-${characterId}`,
+      authorizationGeneration: 4,
+      isMain: true,
+      affiliation: {
+        allianceId: null,
+        checkedAt: '2026-09-18T00:00:00.000Z',
+        corporationId: secondary ? 98_000_002 : 98_000_001,
+        membership: 'managed' as const,
+        freshness: 'fresh' as const,
+      },
     },
     managedMemberLifecycleId: secondary ? 'member-lifecycle-2' : 'member-lifecycle-1',
     managedSince: secondary ? '2026-02-01T00:00:00.000Z' : '2026-01-01T00:00:00.000Z',
-    portraitCharacter: {
-      characterId,
-      name: secondary ? 'Remote Pilot' : 'Review Pilot',
-      source: 'main-character' as const,
-    },
     siteRegisteredAt: '2025-12-01T00:00:00.000Z',
   }
   const { secondary: _secondary, ...memberOverrides } = overrides

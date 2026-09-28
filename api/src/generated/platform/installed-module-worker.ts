@@ -17,6 +17,8 @@ import {
   walletTransactionsResource as module0Resource4,
   mailHeadersResource as module0Resource5,
   mailDetailsResource as module0Resource6,
+  currentShipResource as module0Resource7,
+  currentLocationResource as module0Resource8,
 } from '@eve-space/member-audit-server'
 import {
   campaignsResource as module1Resource0,
@@ -213,6 +215,58 @@ export const installedModuleResources = [
       readonly [],
       InstalledModuleResourceProjectionPersistence<'member-audit/mail-details'>,
       InstalledModuleResourceMaterializationPersistence<'member-audit/mail-details'>
+    >,
+  } as const,
+  {
+    moduleId: 'member-audit',
+    resourceId: 'current-ship',
+    operationId: 'ship',
+    sectionId: 'current-observation',
+    coreDataProducts: ['published-type-details'] as const,
+    freshness: 'representation-expiry',
+    subjectKind: 'character',
+    materializationIntervalSeconds: 300,
+    eligibility: { kind: 'current-managed-member-character' },
+    persistence: {
+      materialization: [
+        { operationId: 'write-current-observation' },
+        { operationId: 'purge-current-observation' },
+      ],
+      projection: [],
+    } as const,
+    implementation: module0Resource7 satisfies PlatformResourceImplementationForContract<
+      typeof module0Resource7,
+      'ship',
+      PlatformEsiOperationProtocol<'ship'>,
+      readonly ['published-type-details'],
+      InstalledModuleResourceProjectionPersistence<'member-audit/current-ship'>,
+      InstalledModuleResourceMaterializationPersistence<'member-audit/current-ship'>
+    >,
+  } as const,
+  {
+    moduleId: 'member-audit',
+    resourceId: 'current-location',
+    operationId: 'location',
+    sectionId: 'current-observation',
+    coreDataProducts: ['static-location-labels'] as const,
+    freshness: 'representation-expiry',
+    subjectKind: 'character',
+    materializationIntervalSeconds: 300,
+    eligibility: { kind: 'current-managed-member-character' },
+    persistence: {
+      materialization: [
+        { operationId: 'write-current-observation' },
+        { operationId: 'purge-current-observation' },
+      ],
+      projection: [],
+    } as const,
+    implementation: module0Resource8 satisfies PlatformResourceImplementationForContract<
+      typeof module0Resource8,
+      'location',
+      PlatformEsiOperationProtocol<'location'>,
+      readonly ['static-location-labels'],
+      InstalledModuleResourceProjectionPersistence<'member-audit/current-location'>,
+      InstalledModuleResourceMaterializationPersistence<'member-audit/current-location'>
     >,
   } as const,
   {

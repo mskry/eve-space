@@ -57,7 +57,7 @@ describe('organization review directory column preferences', () => {
     expect(storage.getItem).toHaveBeenCalledWith(
       ORGANIZATION_REVIEW_DIRECTORY_COLUMN_PREFERENCE_STORAGE_KEY,
     )
-    expect(wrapper.text()).toBe('member,site_registered_at,actions')
+    expect(wrapper.text()).toBe('character,site_registered_at,actions')
     expect(storage.setItem).not.toHaveBeenCalled()
   })
 
@@ -72,7 +72,7 @@ describe('organization review directory column preferences', () => {
     const { preferences } = mountPreferences(() => storage)
 
     expect(preferences.visibleFieldIds.value).toStrictEqual([
-      'member',
+      'character',
       'blocked_since',
       'groups',
       'corporation',
@@ -86,11 +86,11 @@ describe('organization review directory column preferences', () => {
 
     preferences.hideField('groups')
     preferences.showField('site_registered_at')
-    preferences.hideField('member')
+    preferences.hideField('character')
     preferences.showField('actions')
 
     const expectedFieldIds = [
-      'member',
+      'character',
       'corporation',
       'managed_since',
       'audit_data',
@@ -117,7 +117,7 @@ describe('organization review directory column preferences', () => {
 
     preferences.moveField('groups', 'up')
     expect(preferences.visibleFieldIds.value).toStrictEqual([
-      'member',
+      'character',
       'corporation',
       'managed_since',
       'groups',
@@ -129,7 +129,7 @@ describe('organization review directory column preferences', () => {
     preferences.moveField('groups', 'down')
     preferences.moveField('corporation', 'up')
     preferences.moveField('access_status', 'down')
-    preferences.moveField('member', 'down')
+    preferences.moveField('character', 'down')
     preferences.moveField('actions', 'up')
 
     expect(preferences.visibleFieldIds.value).toStrictEqual(
@@ -149,7 +149,7 @@ describe('organization review directory column preferences', () => {
     const { preferences } = mountPreferences(() => storage)
 
     expect(preferences.visibleFieldIds.value).toStrictEqual([
-      'member',
+      'character',
       'groups',
       'site_registered_at',
       'actions',

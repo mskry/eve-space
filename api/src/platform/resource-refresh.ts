@@ -114,6 +114,7 @@ export async function processInstalledResourceRefresh(
       signal: options.signal,
       subject: execution.subject,
       validatedAt: execution.result.validatedAt,
+      cachedUntil: execution.result.cachedUntil,
     })
   } catch (error) {
     options.signal?.throwIfAborted()
@@ -147,6 +148,7 @@ type PlatformResourceObservation = {
   readonly managedAuthority: PlatformManagedCollectionAuthority | null
   readonly corporationAuthorityFence?: PlatformCorporationAuthorityFence
   readonly validatedAt: string
+  readonly cachedUntil?: string
   readonly organizationVersion?: number
   readonly complete?: boolean
   readonly signal?: AbortSignal
@@ -251,7 +253,7 @@ export async function applyInstalledResourceObservation(
     }
     await recordInstalledResourceCollectionSuccess(
       observation.identity,
-      { validatedAt: observation.validatedAt },
+      { validatedAt: observation.validatedAt, cachedUntil: observation.cachedUntil },
       observation.authorizationGeneration,
       {
         managedAuthority: eligibility.managedAuthority,
@@ -386,6 +388,7 @@ function materializationContext(
       observation.organizationVersion ?? observation.managedAuthority?.organizationVersion ?? null,
     subject: observation.subject,
     validatedAt: observation.validatedAt,
+    ...(observation.cachedUntil && { cachedUntil: observation.cachedUntil }),
   }
 }
 

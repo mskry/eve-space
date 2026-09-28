@@ -203,6 +203,17 @@ const collectApiRoutes = (
     })),
   )
 
+const sectionResourceIdsForRoute = (
+  manifest: PlatformModuleManifest,
+  sectionId: string | undefined,
+) => {
+  const section = manifest.sections?.find(({ id }) => id === sectionId)
+  if (section?.kind === 'workspace') return manifest.server.resources.map(({ id }) => id)
+  return manifest.server.resources
+    .filter((resource) => resource.sectionId === sectionId)
+    .map(({ id }) => id)
+}
+
 function renderApiRoutes(compiled: CompiledPlatformModules) {
   const manifests = readCompiledPlatformModules(compiled)
   const reviewerContributions = installedReviewerContributionDescriptors(manifests)
@@ -219,19 +230,22 @@ function renderApiRoutes(compiled: CompiledPlatformModules) {
     ...(hasLegacyRoutes ? ['platformModuleRouteComposers'] : []),
   ]
   const capabilityImports = [
-    ...(routes.some(
-      ({ route, reviewerContributionIndex }) =>
-        reviewerContributionIndex < 0 && (route.target === undefined || route.target === 'caller'),
-    )
-      ? ['createPlatformModuleRouteCapabilities']
-      : []),
-    ...(hasReviewerContributions ? ['createPlatformReviewerContributionRouteCapabilities'] : []),
-    ...(routes.some(
-      ({ route, reviewerContributionIndex }) =>
-        reviewerContributionIndex < 0 && route.target !== undefined && route.target !== 'caller',
-    )
-      ? ['createPlatformReviewerContributionRouteCapabilities']
-      : []),
+    ...new Set([
+      ...(routes.some(
+        ({ route, reviewerContributionIndex }) =>
+          reviewerContributionIndex < 0 &&
+          (route.target === undefined || route.target === 'caller'),
+      )
+        ? ['createPlatformModuleRouteCapabilities']
+        : []),
+      ...(hasReviewerContributions ? ['createPlatformReviewerContributionRouteCapabilities'] : []),
+      ...(routes.some(
+        ({ route, reviewerContributionIndex }) =>
+          reviewerContributionIndex < 0 && route.target !== undefined && route.target !== 'caller',
+      )
+        ? ['createPlatformReviewerContributionRouteCapabilities']
+        : []),
+    ]),
   ]
   const platformImports = routes.length
     ? [
@@ -266,13 +280,7 @@ function renderApiRoutes(compiled: CompiledPlatformModules) {
     const target = route.target ? `, target: ${quote(route.target)}` : ''
     const exposure = route.exposure ? `, exposure: ${quote(route.exposure)}` : ''
     const reviewerEvidence = renderEvidenceRouteBinding(route)
-    const sectionDescriptor = manifest.sections?.find(({ id }) => id === route.sectionId)
-    const sectionResourceIds =
-      sectionDescriptor?.kind === 'workspace'
-        ? manifest.server.resources.map(({ id }) => id)
-        : manifest.server.resources
-            .filter(({ sectionId }) => sectionId === route.sectionId)
-            .map(({ id }) => id)
+    const sectionResourceIds = sectionResourceIdsForRoute(manifest, route.sectionId)
     const reviewerResourceIds =
       reviewerContributionIndex < 0
         ? ''
@@ -280,15 +288,18 @@ function renderApiRoutes(compiled: CompiledPlatformModules) {
     const organizationCommands = route.organizationCommands
       ? `, organizationCommands: ${JSON.stringify(route.organizationCommands)} as const`
       : ''
+    const coreDataProducts = route.coreDataProducts?.length
+      ? `, coreDataProducts: ${JSON.stringify(route.coreDataProducts)} as const`
+      : ''
     const contributionRoute =
       reviewerContributionIndex >= 0
         ? `, routeId: ${quote(route.id)}, namespace: ${quote(route.namespace)}`
         : ''
-    const organization = `{ publisherPackage: ${quote(manifest.release.publisherPackage)}, moduleId: ${quote(manifest.id)}${contributionRoute}, audience: ${quote(route.audience)}, requiredPermission: ${quote(route.requiredPermission)}${additionalPermissions}${section}${target}${exposure}${reviewerEvidence}${reviewerResourceIds}${organizationCommands} }`
+    const organization = `{ publisherPackage: ${quote(manifest.release.publisherPackage)}, moduleId: ${quote(manifest.id)}${contributionRoute}, audience: ${quote(route.audience)}, requiredPermission: ${quote(route.requiredPermission)}${additionalPermissions}${section}${target}${exposure}${reviewerEvidence}${reviewerResourceIds}${organizationCommands}${coreDataProducts} }`
     if (reviewerContributionIndex >= 0) {
       return `\n  .route(\n    ${quote(route.namespace)},\n    composePlatformReviewerContributionRoute(\n      installedReviewerContributions[${reviewerContributionIndex}]!,\n      ${organization},\n      ${binding},\n    ),\n  )`
     }
-    return `\n  .route(\n    ${quote(route.namespace)},\n    platformModuleRouteComposers[${quote(composer)}](\n      ${quote(manifest.id)},\n      { publisherPackage: ${quote(manifest.release.publisherPackage)}, moduleId: ${quote(manifest.id)}, audience: ${quote(route.audience)}, requiredPermission: ${quote(route.requiredPermission)}${additionalPermissions}${section}${target}${exposure}${reviewerEvidence}${organizationCommands} },\n      ${binding},\n    ),\n  )`
+    return `\n  .route(\n    ${quote(route.namespace)},\n    platformModuleRouteComposers[${quote(composer)}](\n      ${quote(manifest.id)},\n      ${organization},\n      ${binding},\n    ),\n  )`
   })
   const composition = routes.length ? `${platformImports}${imports}\n${factories.join('')}\n` : '\n'
   return `${generatedHeader}import { Hono } from 'hono'\n${composition}export const installedModuleRoutes = new Hono()${chain.join('')}\n`
@@ -369,13 +380,14 @@ function renderWorkerResources(compiled: CompiledPlatformModules) {
       : ''
     const sectionId = resource.sectionId ? ` sectionId: ${quote(resource.sectionId)},` : ''
     const scheduled = resource.scheduled === false ? ' scheduled: false,' : ''
+    const freshness = resource.freshness ? ` freshness: ${quote(resource.freshness)},` : ''
     const protocolOperations = [
       ...new Set([resource.operationId, ...(resource.dependentOperationIds ?? [])]),
     ]
       .map(quote)
       .join(' | ')
     const contract = `PlatformResourceImplementationForContract<typeof ${binding}, ${quote(resource.operationId)}, PlatformEsiOperationProtocol<${protocolOperations}>, readonly ${coreDataProducts}, InstalledModuleResourceProjectionPersistence<${capabilityKey}>, InstalledModuleResourceMaterializationPersistence<${capabilityKey}>>`
-    return `({ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${sectionId} coreDataProducts: ${coreDataProducts} as const,${dependent}${batch}${scheduled} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, persistence: ${JSON.stringify(resource.persistence)} as const, implementation: ${binding} satisfies ${contract} } as const)`
+    return `({ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${sectionId} coreDataProducts: ${coreDataProducts} as const,${dependent}${batch}${scheduled}${freshness} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, persistence: ${JSON.stringify(resource.persistence)} as const, implementation: ${binding} satisfies ${contract} } as const)`
   })
   const rendered = descriptors.length ? `[${descriptors.join(', ')}]` : '[]'
   const importedTypes = resources.length
@@ -392,7 +404,8 @@ function renderResourceDeclarations(compiled: CompiledPlatformModules) {
   const descriptors = manifests.flatMap((manifest) =>
     manifest.server.resources.map((resource) => {
       const sectionId = resource.sectionId ? ` sectionId: ${quote(resource.sectionId)},` : ''
-      return `{ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${sectionId} subjectKind: ${quote(resource.subjectKind)}, eligibility: { kind: ${quote(resource.eligibility.kind)} } }`
+      const freshness = resource.freshness ? ` freshness: ${quote(resource.freshness)},` : ''
+      return `{ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${sectionId}${freshness} subjectKind: ${quote(resource.subjectKind)}, eligibility: { kind: ${quote(resource.eligibility.kind)} } }`
     }),
   )
   const rendered = descriptors.length ? `[${descriptors.join(', ')}]` : '[]'
@@ -790,6 +803,8 @@ function reviewerNuxtContributionDescriptors(
         icon: contribution.icon,
         label: contribution.label,
         order: contribution.order,
+        placement: contribution.placement,
+        directoryAction: contribution.directoryAction,
         panelExport: contribution.panelExport,
         requiredPermission: contribution.requiredPermission,
         routeId: route.id,
@@ -900,6 +915,8 @@ function installedReviewerContributionDescriptors(
           label: contribution.label,
           moduleId: manifest.id,
           order: contribution.order,
+          placement: contribution.placement,
+          directoryAction: contribution.directoryAction,
           panelExport: contribution.panelExport,
           panelPackage: manifest.nuxt.package,
           publisherPackage: manifest.release.publisherPackage,

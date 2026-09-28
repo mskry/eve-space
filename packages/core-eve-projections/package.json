@@ -8,6 +8,10 @@
     "node": ">=24.20.0"
   },
   "exports": {
+    "./current-observation": {
+      "types": "./dist/current-observation.d.ts",
+      "import": "./dist/current-observation.js"
+    },
     "./assets": {
       "types": "./dist/assets.d.ts",
       "import": "./dist/assets.js"

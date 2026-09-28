@@ -21,6 +21,8 @@ import {
   platformNavigationPlacements,
   platformPageExtensionPoints,
   platformIconTokens,
+  platformReviewerPlacements,
+  platformReviewerDirectoryActions,
 } from './nuxt.js'
 import {
   platformPersistenceOperationModes,
@@ -28,7 +30,11 @@ import {
   type PlatformPersistenceOperationMode,
   type PlatformPersistenceOperationReference,
 } from './persistence.js'
-import { platformResourceBatchModes, type PlatformResourceContribution } from './resources.js'
+import {
+  platformResourceBatchModes,
+  platformResourceFreshnessPolicies,
+  type PlatformResourceContribution,
+} from './resources.js'
 import {
   platformAuthorizationStrategies,
   platformModuleSectionKinds,
@@ -861,6 +867,14 @@ function validateResourceMaterializationInterval(
   identity: string,
   issues: string[],
 ) {
+  if (resource.freshness !== undefined) {
+    validateMember(
+      resource.freshness,
+      platformResourceFreshnessPolicies,
+      `resource ${identity} uses invalid freshness policy`,
+      issues,
+    )
+  }
   if (
     !Number.isSafeInteger(resource.materializationIntervalSeconds) ||
     resource.materializationIntervalSeconds <= 0
@@ -1348,6 +1362,26 @@ function validateReviewerContributions(
   }
 }
 
+const validateReviewerDirectoryAction = (
+  contribution: PlatformReviewerContribution,
+  identity: string,
+  issues: string[],
+) => {
+  if (contribution.directoryAction === undefined) return
+  validateMember(
+    contribution.directoryAction,
+    platformReviewerDirectoryActions,
+    `${identity} uses invalid directory action`,
+    issues,
+  )
+  if (
+    contribution.directoryAction === 'manage-account' &&
+    contribution.target !== 'managed-organization-account'
+  ) {
+    issues.push(`${identity} directory action requires target managed-organization-account`)
+  }
+}
+
 function validateReviewerContribution(
   contribution: PlatformReviewerContribution,
   context: ReviewerContributionValidationContext,
@@ -1384,6 +1418,17 @@ function validateReviewerContribution(
     `${identity} uses unsupported target ${String(contribution.target)}`,
     issues,
   )
+  if (contribution.placement !== undefined) {
+    validateMember(
+      contribution.placement,
+      platformReviewerPlacements,
+      `${identity} uses invalid placement ${String(contribution.placement)}`,
+      issues,
+    )
+    if (contribution.target !== 'managed-organization-character') {
+      issues.push(`${identity} placement requires an exact managed-organization character target`)
+    }
+  }
   if (contribution.audience !== 'hr' && contribution.audience !== 'director') {
     issues.push(`${identity} must require an HR or director audience`)
   }
@@ -1398,6 +1443,7 @@ function validateReviewerContribution(
     issues,
   )
   const route = manifest.server.routes.find(({ id }) => id === contribution.routeId)
+  validateReviewerDirectoryAction(contribution, identity, issues)
   validateReviewerContributionRoute(contribution, route, identity, issues)
   if (!isPlatformPackageExport(contribution.panelExport)) {
     issues.push(`${identity} panel export must be a package subpath export`)
@@ -1425,6 +1471,9 @@ function validateReviewerContributionRoute(
   }
   if (route.target !== contribution.target) {
     issues.push(`${identity} target must match route ${contribution.routeId}`)
+  }
+  if (contribution.placement && !route.sectionId) {
+    issues.push(`${identity} landing placement requires a section-bound route`)
   }
   if (route.audience !== contribution.audience) {
     issues.push(`${identity} audience must match route ${contribution.routeId}`)

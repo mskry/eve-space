@@ -157,9 +157,11 @@ export const platformCoreEsiOperationCatalog = {
     'character-asset-names',
     'character-assets-page',
     'corporation-members',
+    'location',
     'mail-headers',
     'mail-lists',
     'mail-message',
+    'ship',
     'skill-queue',
     'skills',
     'universe-resolve-names',
@@ -167,7 +169,7 @@ export const platformCoreEsiOperationCatalog = {
     'wallet-journal',
     'wallet-transactions',
   ],
-  version: 1,
+  version: 2,
 } as const
 
 export type PlatformCoreEsiOperationId =
@@ -178,9 +180,11 @@ export const platformCoreEsiOperationSdkIdentities = {
   'character-asset-names': 'PostCharactersCharacterIdAssetsNames',
   'character-assets-page': 'GetCharactersCharacterIdAssets',
   'corporation-members': 'GetCorporationsCorporationIdMembers',
+  location: 'GetCharactersCharacterIdLocation',
   'mail-headers': 'GetCharactersCharacterIdMail',
   'mail-lists': 'GetCharactersCharacterIdMailLists',
   'mail-message': 'GetCharactersCharacterIdMailMailId',
+  ship: 'GetCharactersCharacterIdShip',
   'skill-queue': 'GetCharactersCharacterIdSkillqueue',
   skills: 'GetCharactersCharacterIdSkills',
   'universe-resolve-names': 'PostUniverseNames',

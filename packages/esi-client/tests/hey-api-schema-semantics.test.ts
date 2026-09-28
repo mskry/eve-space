@@ -273,7 +273,7 @@ describe('Hey API schema semantics', () => {
         },
         {
           name: 'date-time, required, optional, reference, and loose object',
-          schema: getSchema(generated, 'zAllianceDetail'),
+          schema: getSchema(generated, 'zAlliancesDetail'),
           valid: [true, false, false],
           values: [
             {

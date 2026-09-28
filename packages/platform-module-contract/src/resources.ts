@@ -5,6 +5,9 @@ import type { PlatformModuleContributionCapabilities, PlatformModuleLogger } fro
 export const platformSubjectKinds = ['deployment', 'character', 'corporation', 'alliance'] as const
 export type PlatformSubjectKind = (typeof platformSubjectKinds)[number]
 
+export const platformResourceFreshnessPolicies = ['representation-expiry'] as const
+export type PlatformResourceFreshnessPolicy = (typeof platformResourceFreshnessPolicies)[number]
+
 export const platformResourceBatchModes = ['complete-observation', 'change-hint'] as const
 export type PlatformResourceBatchMode = (typeof platformResourceBatchModes)[number]
 
@@ -21,6 +24,7 @@ interface PlatformResourceContributionBase {
   readonly id: string
   readonly operationId: string
   readonly materializationIntervalSeconds: number
+  readonly freshness?: PlatformResourceFreshnessPolicy
   readonly exportName: string
   readonly sectionId?: string
 }
@@ -113,6 +117,7 @@ export interface PlatformResourceMaterializationContext<
   readonly subject: Subject
   readonly data: Data
   readonly validatedAt: string
+  readonly cachedUntil?: string
   readonly authorizationGeneration: number | null
   readonly organizationVersion: number | null
   readonly managedAuthority: PlatformManagedResourceAuthority | null
@@ -619,6 +624,7 @@ interface PlatformInstalledResourceDescriptorBase<
   readonly resourceId: string
   readonly operationId: string
   readonly materializationIntervalSeconds: number
+  readonly freshness?: PlatformResourceFreshnessPolicy
   readonly persistence?: PlatformResourcePersistenceReferences
   readonly scheduled?: boolean
   readonly implementation: Implementation
@@ -658,5 +664,11 @@ export type PlatformInstalledResourceDescriptor<
 
 export type PlatformInstalledResourceDeclaration = Pick<
   PlatformInstalledResourceDescriptor,
-  'eligibility' | 'moduleId' | 'operationId' | 'resourceId' | 'sectionId' | 'subjectKind'
+  | 'eligibility'
+  | 'freshness'
+  | 'moduleId'
+  | 'operationId'
+  | 'resourceId'
+  | 'sectionId'
+  | 'subjectKind'
 >

@@ -1,11 +1,13 @@
 import { useQueryCache } from '@pinia/colada'
 import type { PlatformReviewerPanelProps } from '@eve-space/platform-module-nuxt/runtime/reviewer-panel'
+import type { PlatformReviewerActionInvalidation } from '@eve-space/platform-module-nuxt/runtime'
 import { computed, ref, watch } from 'vue'
 
 export const useMemberAuditManagementAction = (
   props: PlatformReviewerPanelProps,
   refresh: () => Promise<void>,
   clearForm: () => void,
+  invalidateReviewerAccess?: PlatformReviewerActionInvalidation,
 ) => {
   const queryCache = useQueryCache()
   const pending = ref(false)
@@ -39,6 +41,16 @@ export const useMemberAuditManagementAction = (
     { flush: 'sync' },
   )
 
+  const refreshAfterAction = async () => {
+    if (invalidateReviewerAccess) return invalidateReviewerAccess()
+    await Promise.all([
+      refresh(),
+      queryCache.invalidateQueries({
+        key: ['private', 'organization', 'reviewer', props.organizationVersion],
+      }),
+    ])
+  }
+
   const run = async (request: () => Promise<void>, success: string, failure: string) => {
     if (pending.value || !authorized.value) return
     pending.value = true
@@ -50,12 +62,7 @@ export const useMemberAuditManagementAction = (
       clearForm()
       message.value = success
       try {
-        await Promise.all([
-          refresh(),
-          queryCache.invalidateQueries({
-            key: ['private', 'organization', 'reviewer', props.organizationVersion],
-          }),
-        ])
+        await refreshAfterAction()
       } catch {
         if (started === revision)
           message.value = `${success} Refresh review data to see the latest state.`

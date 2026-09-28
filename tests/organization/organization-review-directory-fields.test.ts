@@ -1,4 +1,4 @@
-import type { PlatformReviewerDirectoryRow } from '@eve-space/platform-module-contract/reviewer-directory'
+import type { PlatformReviewerCharacterDirectoryRow } from '@eve-space/platform-module-contract/reviewer-directory'
 import { describe, expect, it } from 'vitest'
 import {
   normalizeOrganizationReviewDirectoryFieldIds,
@@ -11,7 +11,7 @@ import {
 describe('organization reviewer directory fields', () => {
   it('publishes the stable catalogue and documented default layout', () => {
     expect(organizationReviewDirectoryFields.map(({ id }) => id)).toStrictEqual([
-      'member',
+      'character',
       'corporation',
       'managed_since',
       'audit_data',
@@ -26,7 +26,7 @@ describe('organization reviewer directory fields', () => {
       'actions',
     ])
     expect(organizationReviewDirectoryDefaultFieldIds).toStrictEqual([
-      'member',
+      'character',
       'corporation',
       'managed_since',
       'audit_data',
@@ -35,9 +35,9 @@ describe('organization reviewer directory fields', () => {
       'actions',
     ])
     expect(organizationReviewDirectoryFields[0]).toMatchObject({
-      id: 'member',
+      id: 'character',
       locked: 'leading',
-      sort: 'member',
+      sort: 'character',
     })
     expect(organizationReviewDirectoryFields.at(-1)).toMatchObject({
       id: 'actions',
@@ -56,8 +56,8 @@ describe('organization reviewer directory fields', () => {
         'member',
         'site_registered_at',
       ]),
-    ).toStrictEqual(['member', 'groups', 'site_registered_at', 'actions'])
-    expect(normalizeOrganizationReviewDirectoryFieldIds([])).toStrictEqual(['member', 'actions'])
+    ).toStrictEqual(['character', 'groups', 'site_registered_at', 'actions'])
+    expect(normalizeOrganizationReviewDirectoryFieldIds([])).toStrictEqual(['character', 'actions'])
   })
 
   it('accepts only the current preference version and array shape', () => {
@@ -66,7 +66,13 @@ describe('organization reviewer directory fields', () => {
         fieldIds: ['blocked_since', 'corporation'],
         version: organizationReviewDirectoryPreferenceVersion,
       }),
-    ).toStrictEqual(['member', 'blocked_since', 'corporation', 'actions'])
+    ).toStrictEqual(['character', 'blocked_since', 'corporation', 'actions'])
+    expect(
+      normalizeOrganizationReviewDirectoryPreference({
+        fieldIds: ['member', 'groups', 'groups'],
+        version: 1,
+      }),
+    ).toStrictEqual(['character', 'groups', 'actions'])
     expect(
       normalizeOrganizationReviewDirectoryPreference({ fieldIds: ['groups'], version: 0 }),
     ).toStrictEqual(organizationReviewDirectoryDefaultFieldIds)
@@ -81,7 +87,7 @@ describe('organization reviewer directory fields', () => {
     )
   })
 
-  it('presents the server-authorized portrait identity without recomputing it', () => {
+  it('presents the exact character rather than substituting the account main', () => {
     const member = {
       account: {
         mainCharacter: { characterId: 90_000_001, name: 'Untrusted Choice' },
@@ -104,27 +110,29 @@ describe('organization reviewer directory fields', () => {
       },
       disclosedCharacterCount: 2,
       groups: [],
-      managedAffiliation: {
-        allianceId: null,
+      character: {
         characterId: 90_000_002,
-        checkedAt: '2026-09-18T00:00:00.000Z',
-        corporationId: 98_000_001,
-        name: 'Managed Pilot',
+        subjectLifecycleId: 'character-lifecycle-2',
+        authorizationGeneration: 4,
+        name: 'Authorized Alt',
+        isMain: false,
+        affiliation: {
+          allianceId: null,
+          checkedAt: '2026-09-18T00:00:00.000Z',
+          corporationId: 98_000_001,
+          membership: 'approved-external' as const,
+          freshness: 'fresh' as const,
+        },
       },
       managedMemberLifecycleId: 'member-lifecycle-1',
       managedSince: '2026-01-01T00:00:00.000Z',
-      portraitCharacter: {
-        characterId: 90_000_002,
-        name: 'Authorized Portrait',
-        source: 'managed-affiliation' as const,
-      },
       siteRegisteredAt: '2025-12-01T00:00:00.000Z',
-    } satisfies PlatformReviewerDirectoryRow
-    const memberField = organizationReviewDirectoryFields.find(({ id }) => id === 'member')!
+    } satisfies PlatformReviewerCharacterDirectoryRow
+    const memberField = organizationReviewDirectoryFields.find(({ id }) => id === 'character')!
 
     expect(memberField.present(member)).toMatchObject({
-      identity: { characterId: 90_000_002, name: 'Authorized Portrait' },
-      kind: 'member',
+      identity: { characterId: 90_000_002, name: 'Authorized Alt' },
+      kind: 'character',
     })
   })
 })

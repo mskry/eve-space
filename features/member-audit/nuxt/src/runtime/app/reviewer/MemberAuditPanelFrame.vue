@@ -2,7 +2,10 @@
 import type { VNode } from 'vue'
 
 defineProps<{
-  classification: 'Sensitive organization data' | 'Organization access data'
+  classification:
+    | 'Sensitive organization data'
+    | 'Organization access data'
+    | 'Public profile · read-only review'
   description: string
   permission: string
   target: string

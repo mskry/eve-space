@@ -17,6 +17,14 @@
       "reviewAllowed": false
     },
     {
+      "key": "member-audit.current-observation.read",
+      "label": "View current ship and location",
+      "purpose": "View separately authorized current ship and location snapshots for managed member characters.",
+      "audiences": ["director", "hr"],
+      "sensitivity": "sensitive",
+      "reviewAllowed": false
+    },
+    {
       "key": "member-audit.groups.manage",
       "label": "Manage ordinary groups",
       "purpose": "Assign and revoke ordinary groups for managed members.",
@@ -111,6 +119,7 @@
   "reviewerContributions": [
     {
       "id": "overview",
+      "directoryAction": "review",
       "routeId": "member-summary",
       "directoryPermission": "member-audit.search",
       "audience": "hr",
@@ -123,7 +132,38 @@
       "order": 100
     },
     {
+      "id": "character-landing-profile",
+      "directoryAction": "review",
+      "routeId": "character-overview",
+      "directoryPermission": "member-audit.search",
+      "audience": "hr",
+      "requiredPermission": "member-audit.summary.read",
+      "target": "managed-organization-character",
+      "placement": "character-landing",
+      "panelExport": "./reviewer/character-overview",
+      "label": "Character profile",
+      "description": "Read-only public profile for one exact disclosed character.",
+      "icon": "character",
+      "order": 105
+    },
+    {
+      "id": "current-observation",
+      "directoryAction": "review",
+      "routeId": "current-observation-detail",
+      "directoryPermission": "member-audit.search",
+      "audience": "hr",
+      "requiredPermission": "member-audit.current-observation.read",
+      "target": "managed-organization-character",
+      "placement": "character-landing",
+      "panelExport": "./reviewer/current-observation",
+      "label": "Current ship and location",
+      "description": "Independently authorized current ship and location snapshots.",
+      "icon": "location",
+      "order": 106
+    },
+    {
       "id": "trained-skills",
+      "directoryAction": "review",
       "routeId": "skills-detail",
       "directoryPermission": "member-audit.search",
       "audience": "hr",
@@ -137,6 +177,7 @@
     },
     {
       "id": "assets",
+      "directoryAction": "review",
       "routeId": "assets-detail",
       "directoryPermission": "member-audit.search",
       "audience": "hr",
@@ -150,6 +191,7 @@
     },
     {
       "id": "wallet",
+      "directoryAction": "review",
       "routeId": "wallet-detail",
       "directoryPermission": "member-audit.search",
       "audience": "hr",
@@ -163,6 +205,7 @@
     },
     {
       "id": "mail",
+      "directoryAction": "review",
       "routeId": "mail-detail",
       "directoryPermission": "member-audit.search",
       "audience": "hr",
@@ -189,6 +232,7 @@
     },
     {
       "id": "member-block",
+      "directoryAction": "manage-account",
       "routeId": "block-actions",
       "directoryPermission": "member-audit.search",
       "audience": "hr",
@@ -211,7 +255,7 @@
       "id": "skills",
       "kind": "sensitive-evidence",
       "defaultEnabled": false,
-      "disclosureRevision": 1
+      "disclosureRevision": 2
     },
     {
       "id": "assets",
@@ -227,6 +271,12 @@
     },
     {
       "id": "mail",
+      "kind": "sensitive-evidence",
+      "defaultEnabled": false,
+      "disclosureRevision": 1
+    },
+    {
+      "id": "current-observation",
       "kind": "sensitive-evidence",
       "defaultEnabled": false,
       "disclosureRevision": 1
@@ -251,6 +301,35 @@
         "sectionId": "overview",
         "target": "managed-organization-account",
         "exposure": "standard"
+      },
+      {
+        "id": "character-overview",
+        "namespace": "/member-audit/accounts/:userId/characters/:characterId/overview",
+        "exportName": "memberCharacterOverviewRoutes",
+        "authorization": "authenticated-session",
+        "audience": "hr",
+        "requiredPermission": "member-audit.summary.read",
+        "coreDataProducts": ["public-character-profile"],
+        "persistenceOperations": [],
+        "sectionId": "overview",
+        "target": "managed-organization-character",
+        "exposure": "standard"
+      },
+      {
+        "id": "current-observation-detail",
+        "namespace": "/member-audit/accounts/:userId/characters/:characterId/current-observation",
+        "exportName": "memberCurrentObservationRoutes",
+        "authorization": "authenticated-session",
+        "audience": "hr",
+        "requiredPermission": "member-audit.current-observation.read",
+        "persistenceOperations": [{ "operationId": "read-current-observation" }],
+        "sectionId": "current-observation",
+        "target": "managed-organization-character",
+        "exposure": "sensitive-evidence",
+        "reviewerEvidenceResources": [
+          { "resourceId": "current-ship", "field": "currentShip" },
+          { "resourceId": "current-location", "field": "currentLocation" }
+        ]
       },
       {
         "id": "skills-detail",
@@ -357,6 +436,9 @@
     "migrations": [
       {
         "name": "member-audit-001-baseline.sql"
+      },
+      {
+        "name": "member-audit-002-current-observation.sql"
       }
     ],
     "persistenceOperations": [
@@ -447,6 +529,30 @@
         "mode": "write",
         "exportName": "purgeEvidenceOperation",
         "migration": "member-audit-001-baseline.sql"
+      },
+      {
+        "id": "write-current-observation",
+        "method": "writeCurrentObservation",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "writeCurrentObservationOperation",
+        "migration": "member-audit-002-current-observation.sql"
+      },
+      {
+        "id": "read-current-observation",
+        "method": "readCurrentObservation",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readCurrentObservationOperation",
+        "migration": "member-audit-002-current-observation.sql"
+      },
+      {
+        "id": "purge-current-observation",
+        "method": "purgeCurrentObservation",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "purgeCurrentObservationOperation",
+        "migration": "member-audit-002-current-observation.sql"
       }
     ],
     "resources": [
@@ -652,6 +758,44 @@
           "kind": "current-managed-member-character"
         },
         "sectionId": "mail"
+      },
+      {
+        "id": "current-ship",
+        "freshness": "representation-expiry",
+        "operationId": "ship",
+        "materializationIntervalSeconds": 300,
+        "exportName": "currentShipResource",
+        "coreDataProducts": ["published-type-details"],
+        "dependentOperationIds": [],
+        "persistence": {
+          "projection": [],
+          "materialization": [
+            { "operationId": "write-current-observation" },
+            { "operationId": "purge-current-observation" }
+          ]
+        },
+        "subjectKind": "character",
+        "eligibility": { "kind": "current-managed-member-character" },
+        "sectionId": "current-observation"
+      },
+      {
+        "id": "current-location",
+        "freshness": "representation-expiry",
+        "operationId": "location",
+        "materializationIntervalSeconds": 300,
+        "exportName": "currentLocationResource",
+        "coreDataProducts": ["static-location-labels"],
+        "dependentOperationIds": [],
+        "persistence": {
+          "projection": [],
+          "materialization": [
+            { "operationId": "write-current-observation" },
+            { "operationId": "purge-current-observation" }
+          ]
+        },
+        "subjectKind": "character",
+        "eligibility": { "kind": "current-managed-member-character" },
+        "sectionId": "current-observation"
       }
     ],
     "esiOperations": [],

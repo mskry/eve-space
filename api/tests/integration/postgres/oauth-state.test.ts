@@ -121,9 +121,11 @@ describe('OAuth state return path persistence', () => {
     const userId = await insertOwnedCharacter()
     const state = 'raw-oauth-state'
     const returnPath = `/characters/${characterId}/mail?label=7`
+    const expectedSubjectLifecycleId = randomUUID()
 
     await oauthStateStore.storeOAuthState(state, {
       characterId,
+      expectedSubjectLifecycleId,
       intent: 'reauthorize',
       returnPath,
       reviewerUseDisclosures,
@@ -143,6 +145,7 @@ describe('OAuth state return path persistence', () => {
     expect(stored?.state_hash).not.toBe(state)
     await expect(oauthStateStore.consumeOAuthState(state)).resolves.toStrictEqual({
       characterId,
+      expectedSubjectLifecycleId,
       intent: 'reauthorize',
       returnPath,
       reviewerUseDisclosures,
@@ -191,8 +194,10 @@ describe('OAuth state return path persistence', () => {
 
   test('preserves legacy omitted paths and stores null for other intents', async () => {
     const userId = await insertOwnedCharacter()
+    const expectedSubjectLifecycleId = randomUUID()
     await oauthStateStore.storeOAuthState('legacy-reauthorization', {
       characterId,
+      expectedSubjectLifecycleId,
       intent: 'reauthorize',
       reviewerUseDisclosures: [],
       userId,
@@ -213,6 +218,7 @@ describe('OAuth state return path persistence', () => {
       oauthStateStore.consumeOAuthState('legacy-reauthorization'),
     ).resolves.toStrictEqual({
       characterId,
+      expectedSubjectLifecycleId,
       intent: 'reauthorize',
       reviewerUseDisclosures: [],
       userId,
@@ -236,8 +242,10 @@ describe('OAuth state return path persistence', () => {
 
   test('allows exactly one concurrent consumer', async () => {
     const userId = await insertOwnedCharacter()
+    const expectedSubjectLifecycleId = randomUUID()
     const context = {
       characterId,
+      expectedSubjectLifecycleId,
       intent: 'reauthorize' as const,
       returnPath: `/characters/${characterId}/mail`,
       reviewerUseDisclosures: [],
@@ -256,6 +264,7 @@ describe('OAuth state return path persistence', () => {
 
   test('round-trips a single-use organization-owner claim context', async () => {
     const userId = await insertOwnedCharacter()
+    const expectedSubjectLifecycleId = randomUUID()
     await connection`
       insert into organization_epochs (
         deployment_id,
@@ -269,6 +278,7 @@ describe('OAuth state return path persistence', () => {
     `
     const context = {
       characterId,
+      expectedSubjectLifecycleId,
       intent: 'claim-organization-owner' as const,
       organizationId: 1_000_166,
       organizationVersion: 1,

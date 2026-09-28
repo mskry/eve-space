@@ -108,6 +108,7 @@ test('consumes durable account and lifecycle purge work after maintenance succee
     subjectKind: 'character',
   } satisfies PlatformInstalledResourceDescriptor
 
+  // SAFETY: The mocked connection implements only the SQL tag exercised by this maintenance test.
   await runInstalledResourceMaintenance({ connection: connection as never, resources: [resource] })
 
   expect(maintain).toHaveBeenCalledWith(
@@ -123,4 +124,46 @@ test('consumes durable account and lifecycle purge work after maintenance succee
         .includes('delete from platform_resource_purge_work'),
     ),
   ).toHaveLength(2)
+})
+
+test('drains invalid-authority pages beyond the first thousand before completing maintenance', async () => {
+  const maintain = vi.fn().mockResolvedValue(undefined)
+  const authority = {
+    authorizationGeneration: 4,
+    characterId: 90_000_001,
+    characterLifecycleId: '33333333-3333-4333-8333-333333333333',
+    disclosureVersion: 2,
+    managedMemberLifecycleId: '22222222-2222-4222-8222-222222222222',
+    organizationVersion: 2,
+    sectionActivationVersion: 3,
+    targetUserId: '11111111-1111-4111-8111-111111111111',
+  }
+  const connection = vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => {
+    const statement = strings.join(' ')
+    if (!statement.includes('from platform_collection_state')) return Promise.resolve([])
+    return Promise.resolve(
+      values.at(-1) === 0 ? Array.from({ length: 1000 }, () => authority) : [authority],
+    )
+  })
+  const resource = {
+    eligibility: { kind: 'current-managed-member-character' },
+    implementation: { maintain },
+    materializationIntervalSeconds: 300,
+    moduleId: 'member-audit',
+    operationId: 'ship',
+    resourceId: 'current-ship',
+    sectionId: 'current-observation',
+    subjectKind: 'character',
+  } satisfies PlatformInstalledResourceDescriptor
+
+  // SAFETY: The mock returns bounded PostgreSQL-tag pages for the maintenance query.
+  await runInstalledResourceMaintenance({ connection: connection as never, resources: [resource] })
+
+  expect(maintain).toHaveBeenCalledTimes(2)
+  expect(maintain.mock.calls[0]?.[0].invalidAuthorities).toHaveLength(1000)
+  expect(maintain.mock.calls[1]?.[0]).toMatchObject({
+    invalidAuthorities: [authority],
+    purgeAccountIds: [],
+    purgeRetention: false,
+  })
 })

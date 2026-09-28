@@ -49,6 +49,7 @@ describe('OAuth state store', () => {
       context: { intent: 'login', returnPath: '/dashboard', reviewerUseDisclosures } as const,
       expected: {
         characterId: null,
+        expectedSubjectLifecycleId: null,
         intent: 'login',
         organizationDeploymentId: null,
         organizationId: null,
@@ -65,6 +66,7 @@ describe('OAuth state store', () => {
       context: { intent: 'attach', reviewerUseDisclosures, userId: 'user-1' } as const,
       expected: {
         characterId: null,
+        expectedSubjectLifecycleId: null,
         intent: 'attach',
         organizationDeploymentId: null,
         organizationId: null,
@@ -80,12 +82,14 @@ describe('OAuth state store', () => {
     {
       context: {
         characterId: 90_000_001,
+        expectedSubjectLifecycleId: 'lifecycle-1',
         intent: 'reauthorize',
         reviewerUseDisclosures,
         userId: 'user-1',
       } as const,
       expected: {
         characterId: 90_000_001,
+        expectedSubjectLifecycleId: 'lifecycle-1',
         intent: 'reauthorize',
         organizationDeploymentId: null,
         organizationId: null,
@@ -101,6 +105,7 @@ describe('OAuth state store', () => {
     {
       context: {
         characterId: 90_000_001,
+        expectedSubjectLifecycleId: 'lifecycle-1',
         intent: 'claim-organization-owner',
         organizationId: 98_000_001,
         organizationVersion: 8,
@@ -109,6 +114,7 @@ describe('OAuth state store', () => {
       } as const,
       expected: {
         characterId: 90_000_001,
+        expectedSubjectLifecycleId: 'lifecycle-1',
         intent: 'claim-organization-owner',
         organizationDeploymentId: 1,
         organizationId: 98_000_001,
@@ -125,6 +131,7 @@ describe('OAuth state store', () => {
       context: {
         approvalId: 'approval-1',
         characterId: 90_000_001,
+        expectedSubjectLifecycleId: null,
         intent: 'transfer',
         reviewerUseDisclosures,
         sourceSubjectLifecycleId: 'lifecycle-1',
@@ -181,6 +188,7 @@ describe('OAuth state store', () => {
     {
       expected: {
         characterId: 90_000_001,
+        expectedSubjectLifecycleId: 'lifecycle-1',
         intent: 'reauthorize',
         returnPath: '/characters/90000001',
         reviewerUseDisclosures: [],
@@ -188,6 +196,7 @@ describe('OAuth state store', () => {
       },
       record: record({
         intent: 'reauthorize',
+        expectedSubjectLifecycleId: 'lifecycle-1',
         userId: 'user-1',
         characterId: 90_000_001,
         returnPath: '/characters/90000001',
@@ -197,12 +206,14 @@ describe('OAuth state store', () => {
     {
       expected: {
         characterId: 90_000_001,
+        expectedSubjectLifecycleId: 'lifecycle-1',
         intent: 'reauthorize',
         reviewerUseDisclosures: [],
         userId: 'user-1',
       },
       record: record({
         intent: 'reauthorize',
+        expectedSubjectLifecycleId: 'lifecycle-1',
         userId: 'user-1',
         characterId: 90_000_001,
       }),
@@ -210,6 +221,7 @@ describe('OAuth state store', () => {
     {
       expected: {
         characterId: 90_000_001,
+        expectedSubjectLifecycleId: 'lifecycle-1',
         intent: 'claim-organization-owner',
         organizationId: 98_000_001,
         organizationVersion: 8,
@@ -218,6 +230,7 @@ describe('OAuth state store', () => {
       },
       record: record({
         intent: 'claim-organization-owner',
+        expectedSubjectLifecycleId: 'lifecycle-1',
         userId: 'user-1',
         characterId: 90_000_001,
         organizationId: 98_000_001,
@@ -278,6 +291,14 @@ describe('OAuth state store', () => {
     record({ intent: 'attach', userId: null }),
     record({ characterId: 90_000_001, intent: 'reauthorize', userId: null }),
     record({ characterId: null, intent: 'reauthorize', userId: 'user-1' }),
+    record({ characterId: 90_000_001, intent: 'reauthorize', userId: 'user-1' }),
+    record({
+      characterId: 90_000_001,
+      intent: 'claim-organization-owner',
+      organizationId: 98_000_001,
+      organizationVersion: 8,
+      userId: 'user-1',
+    }),
     record({
       characterId: 90_000_001,
       intent: 'claim-organization-owner',
@@ -402,6 +423,7 @@ function query(result: unknown[]) {
 function record(overrides: Record<string, unknown>) {
   return {
     characterId: null,
+    expectedSubjectLifecycleId: null,
     intent: 'login',
     organizationId: null,
     organizationVersion: null,

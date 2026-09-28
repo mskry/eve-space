@@ -42,7 +42,7 @@ const isPlatformResourceDueReason = (value: string | null): value is PlatformRes
 const isPlatformCollectionFailureClass = (value: string): value is PlatformCollectionFailureClass =>
   collectionFailureClassSet.has(value)
 
-export type PlatformResourceEligibility =
+export type PlatformResourceEligibility = (
   | {
       readonly status: 'eligible'
       readonly due: boolean
@@ -89,6 +89,10 @@ export type PlatformResourceEligibility =
       readonly managedAuthority: PlatformManagedCollectionAuthority | null
     }
   | { readonly status: 'obsolete' | 'resource-unavailable' }
+) & {
+  readonly observationState?: 'current' | 'unavailable' | 'never-collected'
+  readonly cachedUntil?: Date | null
+}
 
 export interface PlatformManagedCollectionAuthority {
   readonly organizationDeploymentId: 1
@@ -231,6 +235,41 @@ interface DueCandidateCursor {
   readonly subjectId: string
 }
 
+const loadCurrentObservationEligibility = async (
+  connection: postgres.Sql | postgres.TransactionSql,
+  row: ClassificationRow,
+  parsed: PlatformCollectionStateIdentity,
+  base: PlatformResourceEligibility,
+  effectiveAt: Date,
+  signal?: AbortSignal,
+): Promise<PlatformResourceEligibility> => {
+  const [freshness] = await connection<
+    {
+      cachedUntil: Date | string | null
+      state: 'current' | 'unavailable' | 'never-collected'
+    }[]
+  >`
+    select state.cached_until as "cachedUntil",
+      platform_current_observation_state(
+        ${toDate(row.validatedAt)?.toISOString() ?? null}::timestamptz,
+        state.cached_until, ${effectiveAt.toISOString()}::timestamptz
+      ) as state
+    from platform_collection_state state
+    where state.module_id = ${parsed.moduleId}
+      and state.resource_id = ${parsed.resourceId}
+      and state.subject_kind = ${parsed.subjectKind}
+      and state.subject_lifecycle_id = ${parsed.subjectLifecycleId}
+      and state.subject_id = ${parsed.subjectId}
+  `
+  signal?.throwIfAborted()
+  const validatedAt = 'validatedAt' in base ? base.validatedAt : null
+  return {
+    ...base,
+    observationState: freshness?.state ?? 'never-collected',
+    cachedUntil: validatedAt ? toDate(freshness?.cachedUntil ?? null) : null,
+  }
+}
+
 export async function resolveInstalledResourceEligibility(
   identity: PlatformCollectionStateIdentity,
   options: EligibilityOptions = {},
@@ -246,6 +285,7 @@ export async function resolveInstalledResourceEligibility(
   }
 
   const connection = options.connection ?? sql
+  const effectiveAt = options.now ?? new Date()
   const [row] = await connection<ClassificationRow[]>`
     select
       module_id as "moduleId",
@@ -273,7 +313,7 @@ export async function resolveInstalledResourceEligibility(
       last_failure_class as "lastFailureClass"
     from platform_classify_resources(
       ${JSON.stringify(createPlatformResourceClassifierInput([resource]))}::text::jsonb,
-      ${(options.now ?? new Date()).toISOString()}::text::timestamptz,
+      ${effectiveAt.toISOString()}::text::timestamptz,
       ${parsed.moduleId},
       ${parsed.resourceId},
       ${parsed.subjectKind},
@@ -284,6 +324,16 @@ export async function resolveInstalledResourceEligibility(
   options.signal?.throwIfAborted()
   if (!row) return { status: 'obsolete' }
   const base = parseClassification(row)
+  if (resource.freshness === 'representation-expiry') {
+    return loadCurrentObservationEligibility(
+      connection,
+      row,
+      parsed,
+      base,
+      effectiveAt,
+      options.signal,
+    )
+  }
   if (
     base.status !== 'eligible' ||
     resource.eligibility.kind !== 'current-managed-corporation-source'

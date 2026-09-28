@@ -36,7 +36,7 @@ describe('organization review queries', () => {
       'organization',
       'reviewer',
       7,
-      'members',
+      'characters',
       'pilot',
       98_000_001,
       '00000000-0000-4000-8000-000000000099',
@@ -55,8 +55,8 @@ describe('organization review queries', () => {
   it('uses typed review paths, forwards abort signals, and handles responses strictly', async () => {
     const signal = new AbortController().signal
     const entryGet = vi.fn().mockResolvedValue(Response.json(entryResponse()))
-    const membersGet = vi.fn().mockResolvedValue(Response.json(directoryResponse()))
-    const client = apiClient(entryGet, membersGet)
+    const charactersGet = vi.fn().mockResolvedValue(Response.json(directoryResponse()))
+    const client = apiClient(entryGet, charactersGet)
     const entry = organizationReviewEntryQuery({ apiClient: client, authenticated: true })
     const directory = organizationReviewDirectoryQuery({
       apiClient: client,
@@ -67,7 +67,7 @@ describe('organization review queries', () => {
     await expect(entry.query({ signal } as never)).resolves.toStrictEqual(entryResponse())
     await expect(directory.query({ signal } as never)).resolves.toStrictEqual(directoryResponse())
     expect(entryGet).toHaveBeenCalledWith(undefined, { init: { signal } })
-    expect(membersGet).toHaveBeenCalledWith({ query: { limit: '25' } }, { init: { signal } })
+    expect(charactersGet).toHaveBeenCalledWith({ query: { limit: '25' } }, { init: { signal } })
 
     entryGet.mockResolvedValueOnce(
       Response.json(
@@ -83,9 +83,9 @@ describe('organization review queries', () => {
 
   it('keys exact targets by organization and identity and forwards character lookups and aborts', async () => {
     const signal = new AbortController().signal
-    const targetGet = vi.fn().mockResolvedValue(Response.json(targetResponse()))
+    const targetGet = vi.fn().mockResolvedValue(Response.json(characterTargetResponse()))
     const options = organizationReviewTargetQuery({
-      apiClient: apiClient(vi.fn(), vi.fn(), targetGet),
+      apiClient: apiClient(vi.fn(), vi.fn(), vi.fn(), targetGet),
       enabled: true,
       input: {
         organizationVersion: 7,
@@ -106,18 +106,18 @@ describe('organization review queries', () => {
     ])
     expect(options.meta?.esiPersistence).toStrictEqual({ kind: 'none' })
     await expect(options.query({ signal } as never)).resolves.toMatchObject({
-      member: targetResponse().member,
+      member: characterTargetResponse().member,
     })
     expect(targetGet).toHaveBeenCalledWith(
-      { param: { userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c' } },
+      { param: { userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c', characterId: '90000001' } },
       { init: { signal } },
     )
   })
 
   it('rejects a character outside the resolved disclosed target', async () => {
-    const targetGet = vi.fn().mockResolvedValue(Response.json(targetResponse()))
+    const targetGet = vi.fn().mockResolvedValue(Response.json(characterTargetResponse()))
     const options = organizationReviewTargetQuery({
-      apiClient: apiClient(vi.fn(), vi.fn(), targetGet),
+      apiClient: apiClient(vi.fn(), vi.fn(), vi.fn(), targetGet),
       enabled: true,
       input: {
         organizationVersion: 7,
@@ -217,11 +217,23 @@ describe('organization review selection policy', () => {
   })
 })
 
-function apiClient(entryGet = vi.fn(), membersGet = vi.fn(), targetGet = vi.fn()) {
+function apiClient(
+  entryGet = vi.fn(),
+  charactersGet = vi.fn(),
+  targetGet = vi.fn(),
+  exactGet = vi.fn(),
+) {
+  // SAFETY: The mock implements only the typed Hono methods exercised by these query tests.
   return {
     api: {
       organization: {
-        review: { $get: entryGet, members: { $get: membersGet, ':userId': { $get: targetGet } } },
+        review: {
+          $get: entryGet,
+          characters: { $get: charactersGet },
+          members: {
+            ':userId': { $get: targetGet, characters: { ':characterId': { $get: exactGet } } },
+          },
+        },
       },
     },
   } as unknown as ApiClient
@@ -244,17 +256,19 @@ function directoryResponse() {
           userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
           mainCharacter: { characterId: 90_000_001, name: 'Review Pilot' },
         },
-        portraitCharacter: {
+        character: {
           characterId: 90_000_001,
           name: 'Review Pilot',
-          source: 'main-character' as const,
-        },
-        managedAffiliation: {
-          characterId: 90_000_001,
-          name: 'Review Pilot',
-          corporationId: 98_000_001,
-          allianceId: null,
-          checkedAt: '2026-09-18T00:00:00.000Z',
+          subjectLifecycleId: 'character-lifecycle-1',
+          authorizationGeneration: 4,
+          isMain: true,
+          affiliation: {
+            corporationId: 98_000_001,
+            allianceId: null,
+            checkedAt: '2026-09-18T00:00:00.000Z',
+            membership: 'managed' as const,
+            freshness: 'fresh' as const,
+          },
         },
         disclosedCharacterCount: 1,
         groups: [],
@@ -282,9 +296,17 @@ function directoryResponse() {
 }
 
 function targetResponse() {
+  const { character: _directoryCharacter, ...accountFacts } = directoryResponse().items[0]!
   return {
     member: {
-      ...directoryResponse().items[0]!,
+      ...accountFacts,
+      managedAffiliation: {
+        allianceId: null,
+        characterId: 90_000_001,
+        checkedAt: '2026-09-18T00:00:00.000Z',
+        corporationId: 98_000_001,
+        name: 'Review Pilot',
+      },
       characters: [
         {
           characterId: 90_000_001,
@@ -317,6 +339,20 @@ function targetResponse() {
       ],
     },
     organizationVersion: 7,
+  }
+}
+
+function characterTargetResponse() {
+  const member = targetResponse().member
+  return {
+    organizationVersion: 7,
+    member: {
+      account: member.account,
+      block: { blocked: false as const },
+      character: member.characters[0],
+      compliance: directoryResponse().items[0]!.compliance,
+      managedMemberLifecycleId: member.managedMemberLifecycleId,
+    },
   }
 }
 

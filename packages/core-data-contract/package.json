@@ -26,6 +26,9 @@
     "test:package": "pnpm build && vitest run test/package.test.ts",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@eve-space/core-eve-projections": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:vitest4",

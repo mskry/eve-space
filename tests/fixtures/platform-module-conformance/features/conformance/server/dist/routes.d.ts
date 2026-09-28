@@ -12,18 +12,21 @@ export declare function conformanceRoutes(capabilities: ConformanceRouteCapabili
                     readonly authorizationGeneration: number | null;
                     readonly lastFailureClass: import("@eve-space/platform-module-contract/server").PlatformCollectionFailureClass | null;
                     readonly validatedAt: string | null;
+                    readonly cachedUntil?: string | null;
                     readonly status: 'current' | 'stale';
                 } | {
                     readonly subjectLifecycleId?: string;
                     readonly authorizationGeneration: number | null;
                     readonly lastFailureClass: import("@eve-space/platform-module-contract/server").PlatformCollectionFailureClass | null;
                     readonly validatedAt: string | null;
+                    readonly cachedUntil?: string | null;
                     readonly status: 'never-collected' | 'never-configured' | 'unavailable';
                 } | {
                     readonly subjectLifecycleId?: string;
                     readonly authorizationGeneration: number | null;
                     readonly lastFailureClass: "authorization-required";
                     readonly validatedAt: string | null;
+                    readonly cachedUntil?: string | null;
                     readonly status: 'authorization-required';
                     readonly requiredScope: string;
                     readonly authorizationReason?: 'scope-missing' | 'role-unsatisfied' | 'role-evidence-unavailable' | 'source-invalid';

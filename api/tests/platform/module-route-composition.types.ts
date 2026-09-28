@@ -86,8 +86,16 @@ const blockCommandRoute = new Hono<
   PlatformReviewerTargetRouteEnv<readonly ['block-member', 'unblock-member']>
 >().post('/block', async (context) => {
   const commands = context.var.platform.organizationCommands
-  const result: PlatformBlockMemberResult = await commands.blockMember({ reason: 'Immediate deny' })
-  await commands.unblockMember({ reason: 'Review completed' })
+  const result: PlatformBlockMemberResult = await commands.blockMember({
+    reason: 'Immediate deny',
+    expectedOrganizationVersion: 7,
+    expectedManagedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+  })
+  await commands.unblockMember({
+    reason: 'Review completed',
+    expectedOrganizationVersion: 7,
+    expectedManagedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+  })
   // @ts-expect-error actor, target, and organization version are bound by core
   await commands.blockMember({ reason: 'Invalid', targetUserId: 'user-2' })
   // @ts-expect-error this route did not declare the group command

@@ -69,7 +69,7 @@ afterAll(async () => {
   await container?.stop()
 })
 
-test('records the squashed member audit baseline once across repeated startup', async () => {
+test('retains the squashed baseline and applies the current-observation migration once', async () => {
   const databaseName = 'member_audit_upgrade'
   await connection.unsafe(`create database ${databaseName}`).simple()
   const upgradeUrl = new URL(databaseUrl)
@@ -100,10 +100,501 @@ test('records the squashed member audit baseline once across repeated startup', 
       where module = 'member-audit'
       order by name
     `
-    expect([...migrations]).toStrictEqual([{ name: 'member-audit-001-baseline.sql' }])
+    expect([...migrations]).toStrictEqual([
+      { name: 'member-audit-001-baseline.sql' },
+      { name: 'member-audit-002-current-observation.sql' },
+    ])
   } finally {
     await upgradeConnection.end()
   }
+})
+
+test('atomically replaces independent current observations with full authority and rolls back failed writes', async () => {
+  const writeOperation =
+    installedModulePersistenceOperationCatalog['member-audit/write-current-observation']
+  const readOperation =
+    installedModulePersistenceOperationCatalog['member-audit/read-current-observation']
+  const write = bindPlatformPersistenceOperation(writeOperation, memberAuditInvoker())
+  const read = bindPlatformPersistenceOperation(
+    readOperation,
+    memberAuditInvoker({ readOnly: true }),
+  )
+  const now = new Date()
+  const validatedAt = now.toISOString()
+  const cachedUntil = new Date(now.getTime() + 60_000).toISOString()
+  const common = {
+    ...memberAuditAuthority,
+    dtoRevision: 1 as const,
+    validatedAt,
+    cachedUntil,
+  }
+  const ship = {
+    kind: 'current-ship' as const,
+    typeId: 34,
+    typeName: 'Merlin',
+    groupId: 25,
+    groupName: 'Frigate',
+    name: 'First ship',
+  }
+  const location = {
+    kind: 'current-location' as const,
+    solarSystemId: 30_000_001,
+    solarSystemName: 'System',
+    solarSystemSecurityStatus: null,
+    locationType: 'space' as const,
+  }
+  await expect(
+    write({ ...common, resourceId: 'current-ship', snapshot: ship, observationId: randomUUID() }),
+  ).resolves.toStrictEqual({ outcome: 'applied' })
+  await expect(
+    write({
+      ...common,
+      resourceId: 'current-location',
+      snapshot: location,
+      observationId: randomUUID(),
+    }),
+  ).resolves.toStrictEqual({ outcome: 'applied' })
+  const first = await read(memberAuditAuthority)
+  expect(first).toMatchObject({
+    currentShip: { snapshot: ship },
+    currentLocation: { snapshot: location },
+  })
+  expect(new Date(first.currentShip!.validatedAt).toISOString()).toBe(validatedAt)
+  expect(new Date(first.currentShip!.cachedUntil).toISOString()).toBe(cachedUntil)
+  expect(new Date(first.currentLocation!.validatedAt).toISOString()).toBe(validatedAt)
+
+  const newer = {
+    ...common,
+    validatedAt: new Date(now.getTime() + 1000).toISOString(),
+    cachedUntil: new Date(now.getTime() + 61_000).toISOString(),
+    resourceId: 'current-ship' as const,
+    observationId: randomUUID(),
+    snapshot: { ...ship, name: 'Second ship' },
+  }
+  await expect(write(newer)).resolves.toStrictEqual({ outcome: 'applied' })
+  expect(await read(memberAuditAuthority)).toMatchObject({
+    currentShip: { snapshot: newer.snapshot },
+    currentLocation: { snapshot: location },
+  })
+  await expect(
+    write({
+      ...common,
+      resourceId: 'current-ship',
+      snapshot: ship,
+      observationId: randomUUID(),
+      validatedAt: new Date(now.getTime() - 1000).toISOString(),
+    }),
+  ).resolves.toStrictEqual({ outcome: 'obsolete' })
+  await expect(
+    read({ ...memberAuditAuthority, authorizationGeneration: 2 }),
+  ).resolves.toStrictEqual({ currentShip: null, currentLocation: null })
+  const [count] = await connection<{ count: number }[]>`
+    select count(*)::integer as count from eve_module_member_audit.current_observation_snapshots
+    where character_id = ${memberAuditAuthority.characterId}
+  `
+  expect(count?.count).toBe(2)
+
+  const nextGeneration = { ...memberAuditAuthority, authorizationGeneration: 2 }
+  const generationShip = {
+    ...newer,
+    ...nextGeneration,
+    observationId: randomUUID(),
+    validatedAt: new Date(now.getTime() + 3000).toISOString(),
+    cachedUntil: new Date(now.getTime() + 63_000).toISOString(),
+    snapshot: { ...ship, name: 'New generation ship' },
+  }
+  await write(generationShip)
+  expect(await read(nextGeneration)).toMatchObject({
+    currentShip: { snapshot: generationShip.snapshot },
+    currentLocation: null,
+  })
+  const generationLocation = {
+    ...common,
+    ...nextGeneration,
+    resourceId: 'current-location' as const,
+    observationId: randomUUID(),
+    validatedAt: new Date(now.getTime() + 3000).toISOString(),
+    cachedUntil: new Date(now.getTime() + 63_000).toISOString(),
+    snapshot: { ...location, solarSystemId: 30_000_002 },
+  }
+  await write(generationLocation)
+  expect(await read(nextGeneration)).toMatchObject({
+    currentShip: { snapshot: generationShip.snapshot },
+    currentLocation: { snapshot: generationLocation.snapshot },
+  })
+  await expect(read(memberAuditAuthority)).resolves.toStrictEqual({
+    currentShip: null,
+    currentLocation: null,
+  })
+
+  await expect(
+    connection.begin(async (transaction) => {
+      const scoped = createTransactionScopedModulePersistenceOperationInvoker(
+        transaction,
+        'member-audit',
+        installedModulePersistenceOperations,
+      )
+      await scoped.invoke(writeOperation, {
+        ...generationShip,
+        observationId: randomUUID(),
+        validatedAt: new Date(now.getTime() + 4000).toISOString(),
+        cachedUntil: new Date(now.getTime() + 64_000).toISOString(),
+        snapshot: { ...ship, name: 'Rolled back ship' },
+      })
+      scoped.close()
+      throw new Error('rollback observation')
+    }),
+  ).rejects.toThrow('rollback observation')
+  expect(await read(nextGeneration)).toMatchObject({
+    currentShip: { snapshot: generationShip.snapshot },
+  })
+  const [foreignKeys] = await connection<{ count: number }[]>`
+    select count(*)::integer as count from pg_constraint
+    where conrelid = 'eve_module_member_audit.current_observation_snapshots'::regclass
+      and contype = 'f'
+  `
+  expect(foreignKeys?.count).toBe(0)
+})
+
+test('hides observations immediately at upstream expiry or the 24-hour readable ceiling', async () => {
+  const write = bindPlatformPersistenceOperation(
+    installedModulePersistenceOperationCatalog['member-audit/write-current-observation'],
+    memberAuditInvoker(),
+  )
+  const read = bindPlatformPersistenceOperation(
+    installedModulePersistenceOperationCatalog['member-audit/read-current-observation'],
+    memberAuditInvoker({ readOnly: true }),
+  )
+  const authority = { ...memberAuditAuthority, characterId: 90_000_202 }
+  const now = Date.now()
+  const ship = {
+    kind: 'current-ship' as const,
+    typeId: 34,
+    typeName: 'Merlin',
+    groupId: 25,
+    groupName: 'Frigate',
+    name: 'Expired ship',
+  }
+  const location = {
+    kind: 'current-location' as const,
+    solarSystemId: 30_000_001,
+    solarSystemName: 'System',
+    solarSystemSecurityStatus: null,
+    locationType: 'space' as const,
+  }
+  const shared = { ...authority, dtoRevision: 1 as const }
+  await write({
+    ...shared,
+    resourceId: 'current-ship',
+    snapshot: ship,
+    observationId: randomUUID(),
+    validatedAt: new Date(now - 60_000).toISOString(),
+    cachedUntil: new Date(now - 1000).toISOString(),
+  })
+  await write({
+    ...shared,
+    resourceId: 'current-location',
+    snapshot: location,
+    observationId: randomUUID(),
+    validatedAt: new Date(now - 24 * 60 * 60 * 1000 - 1000).toISOString(),
+    cachedUntil: new Date(now + 60_000).toISOString(),
+  })
+  await expect(read(authority)).resolves.toStrictEqual({ currentShip: null, currentLocation: null })
+  const expiredStates = await connection<{ resource_id: string; state: string }[]>`
+    select resource_id,
+      public.platform_current_observation_state(validated_at, cached_until, now()) as state
+    from eve_module_member_audit.current_observation_snapshots
+    where character_id = ${authority.characterId}
+    order by resource_id
+  `
+  expect([...expiredStates]).toStrictEqual([
+    { resource_id: 'current-location', state: 'unavailable' },
+    { resource_id: 'current-ship', state: 'unavailable' },
+  ])
+
+  const currentShip = { ...ship, name: 'Fresh ship' }
+  await write({
+    ...shared,
+    resourceId: 'current-ship',
+    snapshot: currentShip,
+    observationId: randomUUID(),
+    validatedAt: new Date(now).toISOString(),
+    cachedUntil: new Date(now + 60_000).toISOString(),
+  })
+  expect(await read(authority)).toMatchObject({
+    currentShip: { snapshot: currentShip },
+    currentLocation: null,
+  })
+  const [freshState] = await connection<{ state: string }[]>`
+    select public.platform_current_observation_state(validated_at, cached_until, now()) as state
+    from eve_module_member_audit.current_observation_snapshots
+    where character_id = ${authority.characterId} and resource_id = 'current-ship'
+  `
+  expect(freshState?.state).toBe('current')
+})
+
+test('purges expired and invalid-authority observations without deleting a newer generation', async () => {
+  const write = bindPlatformPersistenceOperation(
+    installedModulePersistenceOperationCatalog['member-audit/write-current-observation'],
+    memberAuditInvoker(),
+  )
+  const read = bindPlatformPersistenceOperation(
+    installedModulePersistenceOperationCatalog['member-audit/read-current-observation'],
+    memberAuditInvoker({ readOnly: true }),
+  )
+  const purge = bindPlatformPersistenceOperation(
+    installedModulePersistenceOperationCatalog['member-audit/purge-current-observation'],
+    memberAuditInvoker(),
+  )
+  const authority = {
+    ...memberAuditAuthority,
+    characterId: 90_000_303,
+    targetUserId: '70000000-0000-4000-8000-000000000303',
+  }
+  const now = Date.now()
+  const ship = {
+    kind: 'current-ship' as const,
+    typeId: 34,
+    typeName: 'Merlin',
+    groupId: 25,
+    groupName: 'Frigate',
+    name: 'Old vessel',
+  }
+  const location = {
+    kind: 'current-location' as const,
+    solarSystemId: 30_000_001,
+    solarSystemName: 'System',
+    solarSystemSecurityStatus: null,
+    locationType: 'space' as const,
+  }
+  const common = { ...authority, dtoRevision: 1 as const }
+  await write({
+    ...common,
+    resourceId: 'current-ship',
+    snapshot: ship,
+    observationId: randomUUID(),
+    validatedAt: new Date(now - 60_000).toISOString(),
+    cachedUntil: new Date(now - 30_000).toISOString(),
+  })
+  await write({
+    ...common,
+    resourceId: 'current-location',
+    snapshot: location,
+    observationId: randomUUID(),
+    validatedAt: new Date(now).toISOString(),
+    cachedUntil: new Date(now + 60_000).toISOString(),
+  })
+  await expect(
+    purge({
+      mode: 'retention',
+      store: 'current-ship',
+      cutoff: new Date(now).toISOString(),
+      limit: 10,
+    }),
+  ).resolves.toStrictEqual({ deleted: 1, remaining: false })
+  expect(await read(authority)).toMatchObject({
+    currentShip: null,
+    currentLocation: { snapshot: location },
+  })
+
+  const nextGeneration = { ...authority, authorizationGeneration: 2 }
+  await write({
+    ...common,
+    ...nextGeneration,
+    resourceId: 'current-ship',
+    snapshot: { ...ship, name: 'New vessel' },
+    observationId: randomUUID(),
+    validatedAt: new Date(now + 1000).toISOString(),
+    cachedUntil: new Date(now + 61_000).toISOString(),
+  })
+  await expect(
+    purge({ mode: 'authority', store: 'current-ship', ...authority, limit: 10 }),
+  ).resolves.toStrictEqual({ deleted: 0, remaining: false })
+  for (const mismatch of [
+    { organizationVersion: 2 },
+    { targetUserId: randomUUID() },
+    { managedMemberLifecycleId: randomUUID() },
+    { characterLifecycleId: randomUUID() },
+    { authorizationGeneration: 3 },
+    { disclosureVersion: 2 },
+    { sectionActivationVersion: 2 },
+  ]) {
+    await expect(
+      purge({
+        mode: 'authority',
+        store: 'current-ship',
+        ...nextGeneration,
+        ...mismatch,
+        limit: 10,
+      }),
+    ).resolves.toStrictEqual({ deleted: 0, remaining: false })
+  }
+  expect(await read(nextGeneration)).toMatchObject({
+    currentShip: { snapshot: { name: 'New vessel' } },
+    currentLocation: null,
+  })
+  await expect(
+    purge({
+      mode: 'account',
+      store: 'current-location',
+      targetUserId: authority.targetUserId,
+      limit: 10,
+    }),
+  ).resolves.toStrictEqual({ deleted: 1, remaining: false })
+  await expect(
+    purge({
+      mode: 'account',
+      store: 'current-ship',
+      targetUserId: authority.targetUserId,
+      limit: 10,
+    }),
+  ).resolves.toStrictEqual({ deleted: 1, remaining: false })
+  const [count] = await connection<{ count: number }[]>`
+    select count(*)::integer as count from eve_module_member_audit.current_observation_snapshots
+    where character_id = ${authority.characterId}
+  `
+  expect(count?.count).toBe(0)
+})
+
+test.each([
+  ['detachment', { characterLifecycleId: '80000000-0000-4000-8000-000000000001' }, 90_000_601],
+  ['transfer', { targetUserId: '80000000-0000-4000-8000-000000000002' }, 90_000_602],
+  [
+    'departure and re-entry',
+    { managedMemberLifecycleId: '80000000-0000-4000-8000-000000000003' },
+    90_000_603,
+  ],
+  ['organization replacement', { organizationVersion: 2 }, 90_000_604],
+  ['reauthorization', { authorizationGeneration: 2 }, 90_000_605],
+  ['disclosure change', { disclosureVersion: 2 }, 90_000_606],
+  ['section reactivation', { sectionActivationVersion: 2 }, 90_000_607],
+] as const)('purges both old observations after %s', async (_label, changed, characterId) => {
+  const write = bindPlatformPersistenceOperation(
+    installedModulePersistenceOperationCatalog['member-audit/write-current-observation'],
+    memberAuditInvoker(),
+  )
+  const read = bindPlatformPersistenceOperation(
+    installedModulePersistenceOperationCatalog['member-audit/read-current-observation'],
+    memberAuditInvoker({ readOnly: true }),
+  )
+  const purge = bindPlatformPersistenceOperation(
+    installedModulePersistenceOperationCatalog['member-audit/purge-current-observation'],
+    memberAuditInvoker(),
+  )
+  const authority = { ...memberAuditAuthority, characterId }
+  const now = new Date()
+  const common = {
+    ...authority,
+    dtoRevision: 1 as const,
+    validatedAt: now.toISOString(),
+    cachedUntil: new Date(now.getTime() + 60_000).toISOString(),
+  }
+  await write({
+    ...common,
+    resourceId: 'current-ship',
+    observationId: randomUUID(),
+    snapshot: {
+      kind: 'current-ship',
+      typeId: 34,
+      typeName: 'Merlin',
+      groupId: 25,
+      groupName: 'Frigate',
+      name: 'Old ship',
+    },
+  })
+  await write({
+    ...common,
+    resourceId: 'current-location',
+    observationId: randomUUID(),
+    snapshot: {
+      kind: 'current-location',
+      solarSystemId: 30_000_001,
+      solarSystemName: 'System',
+      solarSystemSecurityStatus: null,
+      locationType: 'space',
+    },
+  })
+  await expect(read({ ...authority, ...changed })).resolves.toStrictEqual({
+    currentShip: null,
+    currentLocation: null,
+  })
+  for (const store of ['current-ship', 'current-location'] as const) {
+    await expect(
+      purge({ mode: 'authority', store, ...authority, limit: 1 }),
+    ).resolves.toStrictEqual({ deleted: 1, remaining: true })
+    await expect(
+      purge({ mode: 'authority', store, ...authority, limit: 1 }),
+    ).resolves.toStrictEqual({ deleted: 0, remaining: false })
+  }
+  const [remaining] = await connection<{ count: number }[]>`
+    select count(*)::integer as count from eve_module_member_audit.current_observation_snapshots
+    where character_id = ${authority.characterId}
+  `
+  expect(remaining?.count).toBe(0)
+})
+
+test('bounds organization-version purge batches and preserves replacement-version snapshots', async () => {
+  const write = bindPlatformPersistenceOperation(
+    installedModulePersistenceOperationCatalog['member-audit/write-current-observation'],
+    memberAuditInvoker(),
+  )
+  const purge = bindPlatformPersistenceOperation(
+    installedModulePersistenceOperationCatalog['member-audit/purge-current-observation'],
+    memberAuditInvoker(),
+  )
+  const now = new Date()
+  for (const characterId of [90_000_401, 90_000_402]) {
+    await write({
+      ...memberAuditAuthority,
+      organizationVersion: 31,
+      characterId,
+      dtoRevision: 1,
+      resourceId: 'current-ship',
+      observationId: randomUUID(),
+      snapshot: {
+        kind: 'current-ship',
+        typeId: 34,
+        typeName: 'Merlin',
+        groupId: 25,
+        groupName: 'Frigate',
+        name: 'Version one',
+      },
+      validatedAt: now.toISOString(),
+      cachedUntil: new Date(now.getTime() + 60_000).toISOString(),
+    })
+  }
+  await write({
+    ...memberAuditAuthority,
+    characterId: 90_000_403,
+    organizationVersion: 32,
+    dtoRevision: 1,
+    resourceId: 'current-ship',
+    observationId: randomUUID(),
+    snapshot: {
+      kind: 'current-ship',
+      typeId: 34,
+      typeName: 'Merlin',
+      groupId: 25,
+      groupName: 'Frigate',
+      name: 'Version two',
+    },
+    validatedAt: now.toISOString(),
+    cachedUntil: new Date(now.getTime() + 60_000).toISOString(),
+  })
+  const input = {
+    mode: 'organization' as const,
+    organizationVersion: 31,
+    store: 'current-ship' as const,
+    limit: 1,
+  }
+  await expect(purge(input)).resolves.toStrictEqual({ deleted: 1, remaining: true })
+  await expect(purge(input)).resolves.toStrictEqual({ deleted: 1, remaining: true })
+  await expect(purge(input)).resolves.toStrictEqual({ deleted: 0, remaining: false })
+  const [remaining] = await connection<{ character_id: string }[]>`
+    select character_id::text from eve_module_member_audit.current_observation_snapshots
+    where character_id in (90000401, 90000402, 90000403)
+  `
+  expect(remaining?.character_id).toBe('90000403')
 })
 
 test('replaces trained snapshots across authority revisions', async () => {
@@ -358,8 +849,8 @@ test('attests the declared routines and denies the runtime role direct table acc
   `
 
   expect(state).toStrictEqual({
-    attestationCount: 11,
-    migrationCount: 1,
+    attestationCount: 14,
+    migrationCount: 2,
     moduleTableAccess: false,
     publicTableAccess: false,
     routineAccess: true,
@@ -1111,6 +1602,51 @@ test('bounds retention and authority purges without retaining evidence through a
 
   const userId = '77777777-7777-4777-8777-777777777777'
   await connection`insert into public.users (id) values (${userId})`
+  const writeObservation = bindPlatformPersistenceOperation(
+    installedModulePersistenceOperationCatalog['member-audit/write-current-observation'],
+    memberAuditInvoker(),
+  )
+  const purgeObservation = bindPlatformPersistenceOperation(
+    installedModulePersistenceOperationCatalog['member-audit/purge-current-observation'],
+    memberAuditInvoker(),
+  )
+  const observationAuthority = {
+    ...memberAuditAuthority,
+    targetUserId: userId,
+    characterId: 90_001_102,
+  }
+  const observedAt = new Date()
+  const observationWrite = {
+    ...observationAuthority,
+    dtoRevision: 1 as const,
+    validatedAt: observedAt.toISOString(),
+    cachedUntil: new Date(observedAt.getTime() + 60_000).toISOString(),
+  }
+  await writeObservation({
+    ...observationWrite,
+    resourceId: 'current-ship',
+    snapshot: {
+      kind: 'current-ship',
+      typeId: 34,
+      typeName: 'Merlin',
+      groupId: 25,
+      groupName: 'Frigate',
+      name: 'Current vessel',
+    },
+    observationId: randomUUID(),
+  })
+  await writeObservation({
+    ...observationWrite,
+    resourceId: 'current-location',
+    snapshot: {
+      kind: 'current-location',
+      solarSystemId: 30_000_001,
+      solarSystemName: 'System',
+      solarSystemSecurityStatus: null,
+      locationType: 'space',
+    },
+    observationId: randomUUID(),
+  })
   await connection`
     insert into eve_module_member_audit.wallet_balance_snapshots (
       organization_version, target_user_id, managed_member_lifecycle_id, character_id,
@@ -1138,14 +1674,23 @@ test('bounds retention and authority purges without retaining evidence through a
       targetUserId: userId,
     }),
   ).resolves.toStrictEqual({ deleted: 2, remaining: false })
+  for (const store of ['current-ship', 'current-location'] as const) {
+    await expect(
+      purgeObservation({ mode: 'account', store, targetUserId: userId, limit: 100 }),
+    ).resolves.toStrictEqual({ deleted: 1, remaining: false })
+  }
   await expect(connection`delete from public.users where id = ${userId}`).resolves.toBeDefined()
-  const [retention] = await connection<{ evidenceCount: number; userCount: number }[]>`
+  const [retention] = await connection<
+    { evidenceCount: number; observationCount: number; userCount: number }[]
+  >`
     select
       (select count(*)::integer from public.users where id = ${userId}) as "userCount",
-      (select count(*)::integer from eve_module_member_audit.wallet_balance_snapshots
-       where target_user_id = ${userId}) as "evidenceCount"
+       (select count(*)::integer from eve_module_member_audit.wallet_balance_snapshots
+        where target_user_id = ${userId}) as "evidenceCount",
+       (select count(*)::integer from eve_module_member_audit.current_observation_snapshots
+        where target_user_id = ${userId}) as "observationCount"
   `
-  expect(retention).toStrictEqual({ evidenceCount: 0, userCount: 0 })
+  expect(retention).toStrictEqual({ evidenceCount: 0, observationCount: 0, userCount: 0 })
 })
 
 test('retains module evidence while module and section collection are disabled', async () => {

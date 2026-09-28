@@ -1,16 +1,16 @@
 import type {
-  PlatformReviewerDirectoryRow,
-  PlatformReviewerDirectorySortField,
+  PlatformReviewerCharacterDirectoryRow,
+  PlatformReviewerCharacterDirectorySortField,
 } from '@eve-space/platform-module-contract/reviewer-directory'
 import {
   organizationReviewDirectoryAccess,
   organizationReviewDirectoryAuditStateLabel,
 } from './organization-review-directory-presentation'
 
-export const organizationReviewDirectoryPreferenceVersion = 1
+export const organizationReviewDirectoryPreferenceVersion = 2
 
 export const organizationReviewDirectoryFieldIds = [
-  'member',
+  'character',
   'corporation',
   'managed_since',
   'audit_data',
@@ -30,26 +30,26 @@ export type OrganizationReviewDirectoryFieldId =
 
 export type OrganizationReviewDirectoryCell =
   | {
-      readonly kind: 'member'
-      readonly identity: PlatformReviewerDirectoryRow['portraitCharacter']
+      readonly kind: 'character'
+      readonly identity: PlatformReviewerCharacterDirectoryRow['character']
       readonly detail: string
     }
   | { readonly kind: 'text'; readonly value: string }
   | { readonly kind: 'date'; readonly timestamp: string | null }
   | {
       readonly kind: 'audit'
-      readonly state: PlatformReviewerDirectoryRow['auditData']['state']
+      readonly state: PlatformReviewerCharacterDirectoryRow['auditData']['state']
       readonly label: string
       readonly covered: number
       readonly expected: number
       readonly asOf: string | null
     }
-  | { readonly kind: 'groups'; readonly groups: PlatformReviewerDirectoryRow['groups'] }
+  | { readonly kind: 'groups'; readonly groups: PlatformReviewerCharacterDirectoryRow['groups'] }
   | {
       readonly kind: 'access'
       readonly state: string
       readonly label: string
-      readonly evidenceFreshness: PlatformReviewerDirectoryRow['compliance']['evidenceFreshness']
+      readonly evidenceFreshness: PlatformReviewerCharacterDirectoryRow['compliance']['evidenceFreshness']
     }
   | { readonly kind: 'actions' }
 
@@ -58,24 +58,24 @@ export interface OrganizationReviewDirectoryFieldDefinition {
   readonly label: string
   readonly defaultVisible: boolean
   readonly locked: 'leading' | 'trailing' | null
-  readonly sort: PlatformReviewerDirectorySortField | null
-  present(member: PlatformReviewerDirectoryRow): OrganizationReviewDirectoryCell
+  readonly sort: PlatformReviewerCharacterDirectorySortField | null
+  present(member: PlatformReviewerCharacterDirectoryRow): OrganizationReviewDirectoryCell
 }
 
 export const organizationReviewDirectoryFields = [
-  field('member', 'Member', true, 'leading', 'member', (member) => ({
+  field('character', 'Character', true, 'leading', 'character', (member) => ({
     detail:
-      member.portraitCharacter.source === 'main-character'
-        ? `Managed via ${member.managedAffiliation.name}`
-        : 'Managed affiliation',
-    identity: member.portraitCharacter,
-    kind: 'member',
+      member.character.affiliation.membership === 'approved-external'
+        ? `Approved external · Account ${member.account.mainCharacter?.name ?? 'unknown main'}`
+        : `Account ${member.account.mainCharacter?.name ?? 'unknown main'}`,
+    identity: member.character,
+    kind: 'character',
   })),
   field('corporation', 'Corporation', true, null, 'corporation', (member) => ({
     kind: 'text',
-    value: `Corporation ${member.managedAffiliation.corporationId}`,
+    value: `Corporation ${member.character.affiliation.corporationId} (${member.character.affiliation.membership}, ${member.character.affiliation.freshness})`,
   })),
-  field('managed_since', 'Managed since', true, null, 'managed_since', (member) => ({
+  field('managed_since', 'Account managed since', true, null, 'managed_since', (member) => ({
     kind: 'date',
     timestamp: member.managedSince,
   })),
@@ -87,11 +87,11 @@ export const organizationReviewDirectoryFields = [
     label: organizationReviewDirectoryAuditStateLabel(member.auditData.state),
     state: member.auditData.state,
   })),
-  field('groups', 'Groups', true, null, null, (member) => ({
+  field('groups', 'Account groups', true, null, null, (member) => ({
     groups: member.groups,
     kind: 'groups',
   })),
-  field('access_status', 'Access status', true, null, 'access_status', (member) => {
+  field('access_status', 'Account access status', true, null, 'access_status', (member) => {
     const access = organizationReviewDirectoryAccess(member.compliance.state, member.block)
     return {
       evidenceFreshness: member.compliance.evidenceFreshness,
@@ -102,7 +102,7 @@ export const organizationReviewDirectoryFields = [
   }),
   field(
     'disclosed_characters',
-    'Disclosed characters',
+    'Account disclosed characters',
     false,
     null,
     'disclosed_characters',
@@ -114,25 +114,32 @@ export const organizationReviewDirectoryFields = [
     false,
     null,
     'affiliation_checked_at',
-    (member) => ({ kind: 'date', timestamp: member.managedAffiliation.checkedAt }),
+    (member) => ({ kind: 'date', timestamp: member.character.affiliation.checkedAt }),
   ),
-  field('site_registered_at', 'Site registered', false, null, 'site_registered_at', (member) => ({
-    kind: 'date',
-    timestamp: member.siteRegisteredAt,
-  })),
-  field('review_deadline', 'Review deadline', false, null, 'review_deadline', (member) => ({
+  field(
+    'site_registered_at',
+    'Account site registered',
+    false,
+    null,
+    'site_registered_at',
+    (member) => ({
+      kind: 'date',
+      timestamp: member.siteRegisteredAt,
+    }),
+  ),
+  field('review_deadline', 'Account review deadline', false, null, 'review_deadline', (member) => ({
     kind: 'date',
     timestamp: member.compliance.reviewDeadline,
   })),
   field(
     'access_valid_until',
-    'Access valid until',
+    'Account access valid until',
     false,
     null,
     'access_valid_until',
     (member) => ({ kind: 'date', timestamp: member.compliance.accessValidUntil }),
   ),
-  field('blocked_since', 'Blocked since', false, null, 'blocked_since', (member) => ({
+  field('blocked_since', 'Account blocked since', false, null, 'blocked_since', (member) => ({
     kind: 'date',
     timestamp: member.block.blocked ? member.block.blockedAt : null,
   })),
@@ -151,7 +158,10 @@ export interface OrganizationReviewDirectoryPreference {
 export function normalizeOrganizationReviewDirectoryPreference(
   value: unknown,
 ): readonly OrganizationReviewDirectoryFieldId[] {
-  if (!isRecord(value) || value.version !== organizationReviewDirectoryPreferenceVersion) {
+  if (
+    !isRecord(value) ||
+    (value.version !== 1 && value.version !== organizationReviewDirectoryPreferenceVersion)
+  ) {
     return organizationReviewDirectoryDefaultFieldIds
   }
   if (!Array.isArray(value.fieldIds)) {
@@ -166,7 +176,14 @@ export function normalizeOrganizationReviewDirectoryFieldIds(
   const optionalFields: OrganizationReviewDirectoryFieldId[] = []
   const seen = new Set<OrganizationReviewDirectoryFieldId>()
   for (const value of values) {
-    if (!isOrganizationReviewDirectoryFieldId(value) || value === 'member' || value === 'actions') {
+    if (value === 'member') {
+      continue
+    }
+    if (
+      !isOrganizationReviewDirectoryFieldId(value) ||
+      value === 'character' ||
+      value === 'actions'
+    ) {
       continue
     }
     if (seen.has(value)) {
@@ -175,7 +192,7 @@ export function normalizeOrganizationReviewDirectoryFieldIds(
     seen.add(value)
     optionalFields.push(value)
   }
-  return ['member', ...optionalFields, 'actions']
+  return ['character', ...optionalFields, 'actions']
 }
 
 function field(
@@ -183,7 +200,7 @@ function field(
   label: string,
   defaultVisible: boolean,
   locked: OrganizationReviewDirectoryFieldDefinition['locked'],
-  sort: PlatformReviewerDirectorySortField | null,
+  sort: PlatformReviewerCharacterDirectorySortField | null,
   present: OrganizationReviewDirectoryFieldDefinition['present'],
 ): OrganizationReviewDirectoryFieldDefinition {
   return { defaultVisible, id, label, locked, present, sort }

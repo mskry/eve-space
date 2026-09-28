@@ -224,6 +224,8 @@ describe('approved character transfer', () => {
     `
     expect([...accountPurgeWork].map(({ resource_id }) => resource_id)).toStrictEqual([
       'assets',
+      'current-location',
+      'current-ship',
       'mail-details',
       'mail-headers',
       'trained-skills',
@@ -2920,6 +2922,11 @@ async function insertManagedCollectionState(
 }
 
 async function storeSourceOAuthStates(userId: string, characterId: number) {
+  const [lifecycle] = await connection<{ subject_lifecycle_id: string }[]>`
+    select subject_lifecycle_id from platform_subject_lifecycles
+    where character_id = ${characterId}
+  `
+  const expectedSubjectLifecycleId = lifecycle!.subject_lifecycle_id
   await oauthStateStore.storeOAuthState('pending-source-attachment-state', {
     intent: 'attach',
     reviewerUseDisclosures: [],
@@ -2927,12 +2934,14 @@ async function storeSourceOAuthStates(userId: string, characterId: number) {
   })
   await oauthStateStore.storeOAuthState('pending-source-reauthorization-state', {
     characterId,
+    expectedSubjectLifecycleId,
     intent: 'reauthorize',
     reviewerUseDisclosures: [],
     userId,
   })
   await oauthStateStore.storeOAuthState('pending-source-owner-claim-state', {
     characterId,
+    expectedSubjectLifecycleId,
     intent: 'claim-organization-owner',
     organizationId: 1_000_166,
     organizationVersion: 1,

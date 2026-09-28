@@ -10,6 +10,7 @@ import {
 import { loadPublishedTypeGroupsProduct } from './published-type-groups-adapter.js'
 import { loadPublishedSkillCatalogueProduct } from './published-skill-catalogue-adapter.js'
 import { loadPublishedTypeDetailsProduct } from './published-type-details-adapter.js'
+import { loadPublicCharacterProfileProduct } from './public-character-profile-adapter.js'
 import { loadStaticLocationLabelsProduct } from './static-location-labels-adapter.js'
 
 type CoreDataProductAdapter<ProductId extends CoreDataProductId> = (
@@ -20,15 +21,15 @@ interface ExecutableCoreDataProduct<ProductId extends CoreDataProductId = CoreDa
   id: ProductId
   method: (typeof CORE_DATA_PRODUCT_CONTRACTS)[ProductId]['method']
   adapter: CoreDataProductAdapter<ProductId>
-  sourceAuthority: 'official-sde'
+  sourceAuthority: 'official-sde' | 'esi-gateway'
   audience: 'installed-module'
   sensitivity: 'public'
   dtoVersion: number
   requestBound: number
-  revisionStrategy: 'committed-sde-projection'
+  revisionStrategy: 'committed-sde-projection' | 'gateway-observation'
   availabilityBehavior: 'fail-closed'
   permittedContexts: readonly CoreDataContributionContext[]
-  networkAllowed: false
+  networkAllowed: boolean
 }
 
 type AnyExecutableCoreDataProduct = {
@@ -54,6 +55,20 @@ const productIds: ReadonlySet<string> = new Set(CORE_DATA_PRODUCT_IDS)
 const contributionContexts: ReadonlySet<string> = new Set(CORE_DATA_CONTRIBUTION_CONTEXTS)
 
 export const coreDataProductCatalog = [
+  {
+    adapter: loadPublicCharacterProfileProduct,
+    audience: 'installed-module',
+    availabilityBehavior: 'fail-closed',
+    dtoVersion: 1,
+    id: 'public-character-profile',
+    method: 'publicCharacterProfile',
+    networkAllowed: true,
+    permittedContexts: ['route'],
+    requestBound: 1,
+    revisionStrategy: 'gateway-observation',
+    sensitivity: 'public',
+    sourceAuthority: 'esi-gateway',
+  },
   {
     adapter: loadPublishedTypeGroupsProduct,
     audience: 'installed-module',
@@ -151,6 +166,22 @@ export function getCoreDataProductDefinition<ProductId extends CoreDataProductId
   return definition
 }
 
+const validateSourcePolicy = (candidate: UnvalidatedCoreDataProduct, id: CoreDataProductId) => {
+  const routeProfile = id === 'public-character-profile'
+  if (candidate.sourceAuthority !== (routeProfile ? 'esi-gateway' : 'official-sde')) {
+    throw new Error(`Invalid core-data source authority for product: ${id}`)
+  }
+  if (
+    candidate.revisionStrategy !==
+    (routeProfile ? 'gateway-observation' : 'committed-sde-projection')
+  ) {
+    throw new Error(`Invalid core-data revision strategy for product: ${id}`)
+  }
+  if (candidate.networkAllowed !== routeProfile) {
+    throw new Error(`Invalid core-data network policy for product: ${id}`)
+  }
+}
+
 function validateDefinition(candidate: UnvalidatedCoreDataProduct, id: CoreDataProductId) {
   const contract = CORE_DATA_PRODUCT_CONTRACTS[id]
   if (typeof candidate.adapter !== 'function') {
@@ -168,22 +199,15 @@ function validateDefinition(candidate: UnvalidatedCoreDataProduct, id: CoreDataP
   if (candidate.requestBound !== contract.requestBound) {
     throw new Error(`Core-data request bound drift for product: ${id}`)
   }
-  if (candidate.sourceAuthority !== 'official-sde') {
-    throw new Error(`Invalid core-data source authority for product: ${id}`)
-  }
-  if (candidate.revisionStrategy !== 'committed-sde-projection') {
-    throw new Error(`Invalid core-data revision strategy for product: ${id}`)
-  }
+  validateSourcePolicy(candidate, id)
   if (candidate.availabilityBehavior !== 'fail-closed') {
     throw new Error(`Invalid core-data availability behavior for product: ${id}`)
   }
   if (!sameContexts(candidate.permittedContexts, contract.permittedContexts)) {
     throw new Error(`Core-data context policy drift for product: ${id}`)
   }
-  if (
-    contract.permittedContexts.includes('resource-projection') &&
-    candidate.networkAllowed !== false
-  ) {
+  const contexts: readonly CoreDataContributionContext[] = contract.permittedContexts
+  if (contexts.includes('resource-projection') && candidate.networkAllowed !== false) {
     throw new Error(`Resource-projection core-data product cannot allow network access: ${id}`)
   }
 }

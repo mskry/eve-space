@@ -2,6 +2,7 @@ import type {
   PlatformAssignOrdinaryGroupCapability,
   PlatformAuthorizedOrganizationContext,
   PlatformBlockMemberCapability,
+  PlatformBlockMemberInput,
   PlatformOrganizationCommandCapabilities,
   PlatformOrganizationCommandId,
   PlatformRevokeOrdinaryGroupCapability,
@@ -123,10 +124,12 @@ function addCommandCapability(
     return
   }
   if (commandId === 'block-member') {
-    capabilities.blockMember = async (input: { reason: string }) => {
+    capabilities.blockMember = async (input: PlatformBlockMemberInput) => {
       const result = await translateCommandError(() =>
         blockOrganizationReviewerMember({
           ...commandBinding(binding),
+          expectedOrganizationVersion: input.expectedOrganizationVersion,
+          expectedManagedMemberLifecycleId: input.expectedManagedMemberLifecycleId,
           reason: input.reason,
         }),
       )
@@ -141,10 +144,12 @@ function addCommandCapability(
   if (commandId !== 'unblock-member') {
     throw new Error(`Unsupported organization command ${commandId}`)
   }
-  capabilities.unblockMember = async (input: { reason: string }) => {
+  capabilities.unblockMember = async (input: PlatformBlockMemberInput) => {
     const result = await translateCommandError(() =>
       unblockOrganizationReviewerMember({
         ...commandBinding(binding),
+        expectedOrganizationVersion: input.expectedOrganizationVersion,
+        expectedManagedMemberLifecycleId: input.expectedManagedMemberLifecycleId,
         reason: input.reason,
       }),
     )
@@ -201,6 +206,12 @@ async function translateCommandError<Result>(operation: () => Promise<Result>) {
 }
 
 function reviewerCommandError(code: OrganizationReviewerCommandError['code']) {
+  if (code === 'stale-confirmation') {
+    return platformModuleError(409, {
+      code: 'MEMBER_BLOCK_CONTEXT_CHANGED',
+      message: 'The selected account changed. Review its current state before confirming again.',
+    })
+  }
   if (code === 'invalid-reason') {
     return platformModuleError(422, {
       code: 'INVALID_ACTION_REASON',

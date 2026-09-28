@@ -25,6 +25,7 @@ import { guardInstalledResourceExecution } from '../../../src/platform/resource-
 import { coreResources } from '../../../src/platform/core-resources.js'
 import { materializeCoreResourceObservation } from '../../../src/platform/core-resource-materialization.js'
 import { applyInstalledResourceObservation } from '../../../src/platform/resource-refresh.js'
+import { runInstalledResourceMaintenance } from '../../../src/platform/resource-maintenance.js'
 import {
   reconcileInstalledModuleSections,
   setInstalledModuleEnabled,
@@ -282,7 +283,7 @@ describe('platform collection state PostgreSQL persistence', () => {
     }
   })
 
-  test('reconciles disabled section defaults and advances only material disclosure policy', async () => {
+  test('reconciles disabled section defaults and advances disclosure on new activations and policy revisions', async () => {
     const connection = postgres(databaseUrl)
     const moduleId = 'section-policy-test'
     const definitions = [
@@ -324,7 +325,7 @@ describe('platform collection state PostgreSQL persistence', () => {
       await setInstalledModuleSectionEnabled(moduleId, 'skills', false, connection, definitions)
       await expect(
         setInstalledModuleSectionEnabled(moduleId, 'skills', true, connection, definitions),
-      ).resolves.toMatchObject({ activationVersion: 2, disclosureVersion: 1 })
+      ).resolves.toMatchObject({ activationVersion: 2, disclosureVersion: 2 })
 
       const revisedDefinitions = [definitions[0]!, { ...definitions[1]!, disclosureRevision: 2 }]
       await reconcileInstalledModuleSections(connection, revisedDefinitions)
@@ -336,7 +337,7 @@ describe('platform collection state PostgreSQL persistence', () => {
           from deployment_module_sections
           where module_id = ${moduleId} and section_id = 'skills'
         `.then((rows) => [...rows]),
-      ).resolves.toStrictEqual([{ activationVersion: 2, disclosureVersion: 2, enabled: true }])
+      ).resolves.toStrictEqual([{ activationVersion: 2, disclosureVersion: 3, enabled: true }])
 
       await expect(
         setInstalledModuleSectionEnabled(moduleId, 'overview', true, connection, definitions),
@@ -348,15 +349,17 @@ describe('platform collection state PostgreSQL persistence', () => {
         { defaultEnabled: false, moduleId },
       ])
       await expect(
-        connection<{ section_id: string; activation_version: number }[]>`
-        select section_id, activation_version
+        connection<
+          { section_id: string; activation_version: number; disclosure_version: number }[]
+        >`
+        select section_id, activation_version, disclosure_version
         from deployment_module_sections
         where module_id = ${moduleId}
         order by section_id
       `.then((rows) => [...rows]),
       ).resolves.toStrictEqual([
-        { activation_version: 2, section_id: 'overview' },
-        { activation_version: 3, section_id: 'skills' },
+        { activation_version: 2, disclosure_version: 0, section_id: 'overview' },
+        { activation_version: 3, disclosure_version: 4, section_id: 'skills' },
       ])
     } finally {
       await connection.end()
@@ -1262,6 +1265,187 @@ describe('platform resource authority PostgreSQL persistence', () => {
       await expect(
         resolveInstalledResourceEligibility(identity, { connection, now, resources: [resource] }),
       ).resolves.toMatchObject({ due: false, dueReason: 'future', status: 'eligible' })
+
+      await connection`
+        insert into deployment_module_sections (
+          module_id, section_id, kind, enabled, declaration_revision,
+          disclosure_version, activation_version
+        ) values ('member-audit', 'current-observation', 'sensitive-evidence', true, 1, 1, 1)
+      `
+      await connection`
+        insert into character_reviewer_disclosure_acceptances (
+          character_id, module_id, section_id, disclosure_version, authorization_generation
+        ) values (${characterId}, 'member-audit', 'current-observation', 1, 3)
+      `
+      await connection`
+        update eve_tokens set scopes = ${JSON.stringify([
+          'esi-skills.read_skills.v1',
+          'esi-location.read_ship_type.v1',
+        ])}::jsonb where character_id = ${characterId}
+      `
+      const shipResource = {
+        ...resource,
+        resourceId: 'current-ship',
+        freshness: 'representation-expiry' as const,
+        operationId: 'ship',
+        sectionId: 'current-observation',
+      }
+      const locationResource = {
+        ...resource,
+        resourceId: 'current-location',
+        freshness: 'representation-expiry' as const,
+        operationId: 'location',
+        sectionId: 'current-observation',
+      }
+      const shipIdentity = { ...identity, resourceId: 'current-ship' }
+      const locationIdentity = { ...identity, resourceId: 'current-location' }
+      await expect(
+        resolveInstalledResourceEligibility(shipIdentity, {
+          connection,
+          now,
+          resources: [shipResource],
+        }),
+      ).resolves.toMatchObject({
+        status: 'eligible',
+        managedAuthority: { sectionId: 'current-observation' },
+      })
+      await expect(
+        resolveInstalledResourceEligibility(locationIdentity, {
+          connection,
+          now,
+          resources: [locationResource],
+        }),
+      ).resolves.toMatchObject({ status: 'authorization-required' })
+      await connection`
+        update eve_tokens set scopes = ${JSON.stringify([
+          'esi-skills.read_skills.v1',
+          'esi-location.read_ship_type.v1',
+          'esi-location.read_location.v1',
+        ])}::jsonb where character_id = ${characterId}
+      `
+      await expect(
+        resolveInstalledResourceEligibility(locationIdentity, {
+          connection,
+          now,
+          resources: [locationResource],
+        }),
+      ).resolves.toMatchObject({ status: 'eligible' })
+      const shipAuthority = await resolveInstalledResourceEligibility(shipIdentity, {
+        connection,
+        now,
+        resources: [shipResource],
+      })
+      if (shipAuthority.status !== 'eligible' || !shipAuthority.managedAuthority) {
+        throw new Error('Current observation authority is unavailable')
+      }
+      const shipExpiry = new Date(now.getTime() + 5_000)
+      const locationExpiry = new Date(now.getTime() + 10_000)
+      for (const [resourceIdentity, expiry] of [
+        [shipIdentity, shipExpiry],
+        [locationIdentity, locationExpiry],
+      ] as const) {
+        await upsertPlatformCollectionState(
+          {
+            ...resourceIdentity,
+            ...shipAuthority.managedAuthority,
+            authorizationGeneration: 3,
+            cachedUntil: expiry,
+            lastFailureClass: null,
+            nextEligibleAt: new Date(now.getTime() + 300_000),
+            validatedAt: now,
+          },
+          drizzle(connection, { schema }),
+        )
+      }
+      const classifyObservation = (
+        resourceIdentity: typeof shipIdentity,
+        selectedResource: PlatformInstalledResourceDescriptor,
+        effectiveAt: Date,
+      ) =>
+        resolveInstalledResourceEligibility(resourceIdentity, {
+          connection,
+          now: effectiveAt,
+          resources: [selectedResource],
+        })
+      await upsertPlatformCollectionState(
+        {
+          ...shipIdentity,
+          ...shipAuthority.managedAuthority,
+          authorizationGeneration: 3,
+          lastFailureClass: 'esi-unavailable',
+          nextEligibleAt: new Date(now.getTime() + 300_000),
+          validatedAt: now,
+        },
+        drizzle(connection, { schema }),
+      )
+      await expect(
+        classifyObservation(shipIdentity, shipResource, new Date(now.getTime() + 4_999)),
+      ).resolves.toMatchObject({
+        observationState: 'current',
+        cachedUntil: shipExpiry,
+        validatedAt: now,
+      })
+      await expect(
+        classifyObservation(shipIdentity, shipResource, shipExpiry),
+      ).resolves.toMatchObject({
+        observationState: 'unavailable',
+        cachedUntil: shipExpiry,
+        validatedAt: now,
+      })
+      await expect(
+        classifyObservation(shipIdentity, { ...shipResource, freshness: undefined }, shipExpiry),
+      ).resolves.not.toHaveProperty('observationState')
+      await expect(
+        classifyObservation(locationIdentity, locationResource, shipExpiry),
+      ).resolves.toMatchObject({
+        observationState: 'current',
+        cachedUntil: locationExpiry,
+      })
+      await upsertPlatformCollectionState(
+        {
+          ...locationIdentity,
+          ...shipAuthority.managedAuthority,
+          authorizationGeneration: 3,
+          cachedUntil: new Date(now.getTime() + 48 * 60 * 60 * 1000),
+          lastFailureClass: null,
+          nextEligibleAt: new Date(now.getTime() + 300_000),
+          validatedAt: now,
+        },
+        drizzle(connection, { schema }),
+      )
+      const [retention] = await connection<{ state: string }[]>`
+        select platform_current_observation_state(
+          ${now.toISOString()}::timestamptz,
+          ${new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString()}::timestamptz,
+          ${new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString()}::timestamptz
+        ) as state
+      `
+      expect(retention?.state).toBe('unavailable')
+
+      await connection`
+        update deployment_module_sections set enabled = false
+        where module_id = 'member-audit' and section_id = 'current-observation'
+      `
+      const maintainShip = vi.fn().mockResolvedValue(undefined)
+      const maintainLocation = vi.fn().mockResolvedValue(undefined)
+      await runInstalledResourceMaintenance({
+        connection,
+        now: new Date(Date.now() + 1000),
+        resources: [
+          { ...shipResource, implementation: { maintain: maintainShip } },
+          { ...locationResource, implementation: { maintain: maintainLocation } },
+        ],
+      })
+      expect(maintainShip.mock.calls[0]?.[0].invalidAuthorities).toEqual(
+        expect.arrayContaining([expect.objectContaining({ characterId })]),
+      )
+      expect(maintainLocation.mock.calls[0]?.[0].invalidAuthorities).toEqual(
+        expect.arrayContaining([expect.objectContaining({ characterId })]),
+      )
+      await connection`
+        update deployment_module_sections set enabled = true
+        where module_id = 'member-audit' and section_id = 'current-observation'
+      `
 
       await connection`
         update eve_tokens set token_version = 4 where character_id = ${characterId}

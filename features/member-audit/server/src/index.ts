@@ -1,17 +1,21 @@
 export {
   materializeCurrentSnapshotOperation,
   promoteEvidenceObservationOperation,
+  purgeCurrentObservationOperation,
   purgeEvidenceOperation,
   readActiveEvidenceContinuationOperation,
+  readCurrentObservationOperation,
   readAssetEvidenceOperation,
   readEvidenceContinuationOperation,
   readMailEvidenceOperation,
   readTrainedSkillsEvidenceOperation,
   readWalletEvidenceOperation,
   writeEvidenceContinuationOperation,
+  writeCurrentObservationOperation,
   writeSkillSnapshotOperation,
 } from './persistence.js'
 export { trainedSkillsResource } from './skill-resources.js'
+export { currentShipResource, currentLocationResource } from './current-observation-resources.js'
 export { assetsResource } from './asset-resource.js'
 export { mailDetailsResource, mailHeadersResource } from './mail-resources.js'
 export {
@@ -22,6 +26,8 @@ export {
 export {
   memberAssetsRoutes,
   memberBlockRoutes,
+  memberCharacterOverviewRoutes,
+  memberCurrentObservationRoutes,
   memberGroupRoutes,
   memberMailRoutes,
   memberSkillsRoutes,

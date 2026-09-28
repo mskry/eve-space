@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 const packageRoot = fileURLToPath(new URL('..', import.meta.url))
 
 describe('packed package graph', () => {
-  it('contains only the dependency-free ESM contract', async () => {
+  it('contains only the pure ESM contract and its canonical projection types', async () => {
     const packageJson = JSON.parse(
       await readFile(new URL('../package.json', import.meta.url), 'utf8'),
     ) as Record<string, unknown>
@@ -14,7 +14,9 @@ describe('packed package graph', () => {
     expect(packageRoot).toContain('packages/core-data-contract')
     expect(packageJson.type).toBe('module')
     expect(packageJson.files).toStrictEqual(['dist'])
-    expect(packageJson).not.toHaveProperty('dependencies')
+    expect(packageJson.dependencies).toStrictEqual({
+      '@eve-space/core-eve-projections': 'workspace:*',
+    })
     expect(packageJson).not.toHaveProperty('peerDependencies')
     expect(declaration).not.toMatch(
       /(?:hono|vue|nuxt|postgres|drizzle|redis|bullmq|@evespace\/esi-client)/,
