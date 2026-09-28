@@ -121,7 +121,7 @@ canonical source interfaces, while platform capability construction points towar
 data never imports platform orchestration or features. Mechanical verification also restricts reverse
 imports to approved startup validation and platform capability construction.
 
-`published-type-groups` is the initial public product. It validates and bounds requests before source
+`published-type-groups` is a bounded local public product. It validates and bounds requests before source
 access, reads published rows and the committed SDE revision in one transaction, and performs no
 network work. Coverage state alone grants no product access, ESI scope, scheduling, or storage.
 Protected products are deferred until a separate accepted change defines a concrete consumer and

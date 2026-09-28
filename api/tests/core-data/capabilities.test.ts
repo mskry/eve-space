@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   loadPublishedSkillCatalogueProduct: vi.fn(),
   loadPublishedTypeDetailsProduct: vi.fn(),
   loadPublishedTypeGroupsProduct: vi.fn(),
+  loadPublicCharacterProfileProduct: vi.fn(),
   loadStaticLocationLabelsProduct: vi.fn(),
 }))
 
@@ -18,6 +19,9 @@ vi.mock('../../src/core-data/published-type-details-adapter.js', () => ({
 }))
 vi.mock('../../src/core-data/static-location-labels-adapter.js', () => ({
   loadStaticLocationLabelsProduct: mocks.loadStaticLocationLabelsProduct,
+}))
+vi.mock('../../src/core-data/public-character-profile-adapter.js', () => ({
+  loadPublicCharacterProfileProduct: mocks.loadPublicCharacterProfileProduct,
 }))
 
 import { createCoreDataCapability } from '../../src/core-data/capabilities.js'
@@ -62,6 +66,15 @@ describe('core-data capabilities', () => {
     expect(mocks.loadPublishedTypeGroupsProduct).not.toHaveBeenCalled()
     await capability.publishedTypeGroups({ typeIds: [34] })
     expect(mocks.loadPublishedTypeGroupsProduct).toHaveBeenCalledWith({ typeIds: [34] })
+  })
+
+  test('exposes the public profile only in route contexts', () => {
+    const capability = createCoreDataCapability(['public-character-profile'], 'route')
+    expect(Object.keys(capability)).toStrictEqual(['publicCharacterProfile'])
+    expect(() =>
+      createCoreDataCapability(['public-character-profile'], 'resource-projection'),
+    ).toThrow('not permitted')
+    expect(mocks.loadPublicCharacterProfileProduct).not.toHaveBeenCalled()
   })
 
   test('rejects duplicate and context-incompatible products during construction', () => {

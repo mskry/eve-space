@@ -18,6 +18,17 @@ export const installedPermissionCatalog = [
   },
   {
     audiences: ['director', 'hr'],
+    key: 'member-audit.current-observation.read',
+    label: 'View current ship and location',
+    moduleId: 'member-audit',
+    publisherPackage: '@eve-space/member-audit-manifest',
+    purpose:
+      'View separately authorized current ship and location snapshots for managed member characters.',
+    reviewAllowed: false,
+    sensitivity: 'sensitive',
+  },
+  {
+    audiences: ['director', 'hr'],
     key: 'member-audit.groups.manage',
     label: 'Manage ordinary groups',
     moduleId: 'member-audit',

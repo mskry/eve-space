@@ -185,6 +185,63 @@ describe('platform collection status', () => {
       expect(write.lastFailureClass).toBeNull()
     }
   })
+
+  test('retains independent observation expiry and validation across gateway cache hits', async () => {
+    const upsertState = vi.fn().mockImplementation((input) => Promise.resolve(input))
+    const observationIdentity = {
+      ...identity,
+      moduleId: 'test-feature',
+      resourceId: 'presence',
+    }
+    const observationResource = {
+      ...resource,
+      moduleId: 'test-feature',
+      resourceId: 'presence',
+      operationId: 'ship',
+      sectionId: 'presence',
+      freshness: 'representation-expiry' as const,
+      materializationIntervalSeconds: 300,
+    }
+    const result = {
+      validatedAt: '2026-09-18T10:00:00.000Z',
+      cachedUntil: '2026-09-18T10:00:05.000Z',
+    }
+    await recordInstalledResourceCollectionSuccess(observationIdentity, result, 4, {
+      resources: [observationResource],
+      upsertState,
+    })
+    await recordInstalledResourceCollectionSuccess(observationIdentity, result, 4, {
+      resources: [observationResource],
+      upsertState,
+    })
+    for (const [write] of upsertState.mock.calls) {
+      expect(write).toMatchObject({
+        validatedAt: new Date(result.validatedAt),
+        cachedUntil: new Date(result.cachedUntil),
+        nextEligibleAt: new Date('2026-09-18T10:05:00.000Z'),
+      })
+    }
+  })
+
+  test('uses interval freshness when an observation-named resource has no expiry policy', async () => {
+    const namedIdentity = { ...identity, moduleId: 'member-audit', resourceId: 'current-ship' }
+    const upsertState = vi.fn().mockImplementation((input) => Promise.resolve(input))
+    await recordInstalledResourceCollectionSuccess(
+      namedIdentity,
+      {
+        validatedAt: '2026-09-18T10:00:00.000Z',
+        cachedUntil: '2026-09-18T10:00:05.000Z',
+      },
+      4,
+      {
+        resources: [
+          { ...resource, moduleId: namedIdentity.moduleId, resourceId: namedIdentity.resourceId },
+        ],
+        upsertState,
+      },
+    )
+    expect(upsertState.mock.calls[0]?.[0]).not.toHaveProperty('cachedUntil')
+  })
 })
 
 function eligible(

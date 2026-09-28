@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "pnpm build:nuxt:dependencies && nuxt build",
-    "build:nuxt:dependencies": "pnpm --filter @evespace/esi-client build && pnpm --filter @eve-space/core-data-contract build && pnpm --filter @eve-space/core-eve-projections build && pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-persistence-policy build && pnpm --filter @eve-space/platform-module-conformance build && pnpm --filter @eve-space/platform-module-server build && pnpm --filter @eve-space/platform-module-nuxt build && tsx scripts/run-installed-module-package-script.ts server build && tsx scripts/run-installed-module-package-script.ts nuxt build",
+    "build:nuxt:dependencies": "pnpm --filter @evespace/esi-client build && pnpm --filter @eve-space/core-eve-projections build && pnpm --filter @eve-space/core-data-contract build && pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-persistence-policy build && pnpm --filter @eve-space/platform-module-conformance build && pnpm --filter @eve-space/platform-module-server build && pnpm --filter @eve-space/platform-module-nuxt build && tsx scripts/run-installed-module-package-script.ts server build && tsx scripts/run-installed-module-package-script.ts nuxt build",
     "dev": "nuxt dev",
     "dev:api": "pnpm --filter @eve-space/api dev",
     "dev:fixture:organization": "pnpm --filter @eve-space/api dev:fixture:organization",

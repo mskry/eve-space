@@ -9,13 +9,43 @@ describe('core-data boundaries', () => {
     expect(coreDataBoundaryViolations(sources)).toStrictEqual([])
   }, 60_000)
 
-  it('keeps the contract package dependency-free', () => {
+  it('keeps the contract package limited to the canonical biography type', () => {
     expect(
       coreDataBoundaryViolations([
         source('packages/core-data-contract/src/index.ts', "import type { Sql } from 'postgres'"),
       ]),
     ).toStrictEqual([
       'packages/core-data-contract/src/index.ts: pure core-data contract cannot import postgres',
+    ])
+  })
+
+  it('permits only a type-only biography dependency and the exact profile adapter source', () => {
+    expect(
+      coreDataBoundaryViolations([
+        source(
+          'packages/core-data-contract/src/index.ts',
+          "import type { EveFormattedText } from '@eve-space/core-eve-projections/eve-formatted-text'",
+        ),
+        source(
+          'api/src/core-data/public-character-profile-adapter.ts',
+          "import { getCharacterProfile } from '../characters/profile.js'",
+        ),
+      ]),
+    ).toStrictEqual([])
+    expect(
+      coreDataBoundaryViolations([
+        source(
+          'packages/core-data-contract/src/index.ts',
+          "import { parseEveFormattedText } from '@eve-space/core-eve-projections/eve-formatted-text'",
+        ),
+        source(
+          'api/src/core-data/published-type-groups-adapter.ts',
+          "import { getCharacterProfile } from '../characters/profile.js'",
+        ),
+      ]),
+    ).toStrictEqual([
+      'api/src/core-data/published-type-groups-adapter.ts: adapter module published-type-groups-adapter cannot import source implementation ../characters/profile.js',
+      'packages/core-data-contract/src/index.ts: pure core-data contract cannot import @eve-space/core-eve-projections/eve-formatted-text',
     ])
   })
 

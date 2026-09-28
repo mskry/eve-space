@@ -124,6 +124,32 @@ describe('credential-bound resource operations', () => {
       sectionId: 'wallet',
       corporationInput: null,
     })
+    expect(installedBindings('member-audit', 'current-ship').ship).toStrictEqual({
+      kind: 'current-managed-member-character',
+      requestSubjects: ['character_id'],
+      scope: 'esi-location.read_ship_type.v1',
+      sectionId: 'current-observation',
+      corporationInput: null,
+    })
+    expect(installedBindings('member-audit', 'current-location').location).toStrictEqual({
+      kind: 'current-managed-member-character',
+      requestSubjects: ['character_id'],
+      scope: 'esi-location.read_location.v1',
+      sectionId: 'current-observation',
+      corporationInput: null,
+    })
+    expect(getPlatformEsiOperationDefinition('ship').contract.cache).toMatchObject({
+      stale: { kind: 'none' },
+    })
+    expect(getPlatformEsiOperationDefinition('location').contract.freshness).toStrictEqual({
+      kind: 'runtime-only',
+    })
+    for (const operation of ['ship', 'location'] as const) {
+      expect(
+        getPlatformEsiOperationDefinition(operation).descriptor.transport.protocol
+          .conditionalRequestValidators,
+      ).toEqual(expect.arrayContaining(['if-none-match', 'if-modified-since']))
+    }
     expect(
       installedBindings('organization-activity', 'corporation-jobs')[
         'organization-activity-corporation-jobs'
@@ -180,6 +206,118 @@ describe('credential-bound resource operations', () => {
     expect(() =>
       getInstalledResourceCredentialBindings({ ...resource, scope: 'weaker' } as never),
     ).toThrow('cannot override generated operation authority')
+  })
+
+  test('refuses arbitrary character and private structure requests from current observation', async () => {
+    const ship = platformResources.find(
+      (item) => item.moduleId === 'member-audit' && item.resourceId === 'current-ship',
+    )!
+    const shipIdentity = { ...identity, moduleId: 'member-audit', resourceId: 'current-ship' }
+    const executeEsiOperation = vi
+      .fn()
+      .mockResolvedValue(platformExecution({ ship_type_id: 34, ship_name: 'Pilot' }, 4))
+    const options = {
+      resources: [ship],
+      guardExecution: vi.fn().mockResolvedValue({
+        outcome: 'ready',
+        resource: ship,
+        subject: {
+          kind: 'character',
+          characterId: 1_404_328_063,
+          lifecycleId: identity.subjectLifecycleId,
+        },
+        authorization: { tokenVersion: 4 },
+        authorizationCharacterId: 1_404_328_063,
+        authorizationCharacterLifecycleId: identity.subjectLifecycleId,
+        managedAuthority: { ...managedAuthority, sectionId: 'current-observation' },
+      }),
+      executeEsiOperation,
+    }
+    await expect(
+      executeInstalledResourceOperation(shipIdentity, {
+        ...options,
+        request: { operationId: 'ship', inputs: { path: { character_id: 1_404_328_064 } } },
+      }),
+    ).rejects.toThrow('outside its bound subject')
+    await expect(
+      executeInstalledResourceOperation(shipIdentity, {
+        ...options,
+        request: { operationId: 'universe-station', inputs: { path: { station_id: 1 } } },
+      }),
+    ).rejects.toThrow('is not registered for platform execution')
+    expect(executeEsiOperation).not.toHaveBeenCalled()
+    const controller = new AbortController()
+    await expect(
+      executeInstalledResourceOperation(shipIdentity, {
+        ...options,
+        signal: controller.signal,
+        request: { operationId: 'ship', inputs: { path: { character_id: 1_404_328_063 } } },
+      }),
+    ).resolves.toMatchObject({ outcome: 'loaded' })
+    expect(executeEsiOperation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: 'ship',
+        signal: controller.signal,
+        authorization: {
+          kind: 'character-lifecycle',
+          characterId: 1_404_328_063,
+          lifecycleId: identity.subjectLifecycleId,
+          generation: 4,
+        },
+      }),
+    )
+  })
+
+  test('keeps a successful ship observation independent of a location cooldown', async () => {
+    const ship = platformResources.find(
+      (item) => item.moduleId === 'member-audit' && item.resourceId === 'current-ship',
+    )!
+    const location = platformResources.find(
+      (item) => item.moduleId === 'member-audit' && item.resourceId === 'current-location',
+    )!
+    const guarded = (selectedResource: typeof ship) => ({
+      outcome: 'ready' as const,
+      resource: selectedResource,
+      subject: {
+        kind: 'character' as const,
+        characterId: 1_404_328_063,
+        lifecycleId: identity.subjectLifecycleId,
+      },
+      authorization: { tokenVersion: 4 },
+      authorizationCharacterId: 1_404_328_063,
+      authorizationCharacterLifecycleId: identity.subjectLifecycleId,
+      managedAuthority: { ...managedAuthority, sectionId: 'current-observation' },
+    })
+    const shipExecution = platformExecution({ ship_type_id: 34, ship_name: 'Vessel' }, 4, 'cache')
+    const executeEsiOperation = vi
+      .fn()
+      .mockResolvedValueOnce(shipExecution)
+      .mockRejectedValueOnce(new Error('esi-cooldown'))
+    const shipResult = await executeInstalledResourceOperation(
+      { ...identity, moduleId: 'member-audit', resourceId: 'current-ship' },
+      {
+        resources: [ship],
+        guardExecution: vi.fn().mockResolvedValue(guarded(ship)),
+        executeEsiOperation,
+        request: { operationId: 'ship', inputs: { path: { character_id: 1_404_328_063 } } },
+      },
+    )
+    expect(shipResult).toMatchObject({
+      outcome: 'loaded',
+      result: { source: 'cache', validatedAt: shipExecution.validatedAt },
+    })
+    await expect(
+      executeInstalledResourceOperation(
+        { ...identity, moduleId: 'member-audit', resourceId: 'current-location' },
+        {
+          resources: [location],
+          guardExecution: vi.fn().mockResolvedValue(guarded(location)),
+          executeEsiOperation,
+          request: { operationId: 'location', inputs: { path: { character_id: 1_404_328_063 } } },
+        },
+      ),
+    ).rejects.toThrow('esi-cooldown')
+    expect(shipResult).toMatchObject({ outcome: 'loaded', result: { data: shipExecution.data } })
   })
 
   test('deduplicates and fingerprints root and dependent corporation requirements', () => {

@@ -3,16 +3,15 @@ import {
   platformReviewerDirectoryAuditStates,
   platformReviewerDirectoryComplianceStates,
   platformReviewerDirectoryDefaultSortDirection,
-  platformReviewerDirectoryDefaultSortField,
   type PlatformReviewerDirectoryAuditState,
   type PlatformReviewerDirectoryComplianceState,
   type PlatformReviewerDirectorySortDirection,
-  type PlatformReviewerDirectorySortField,
+  type PlatformReviewerCharacterDirectorySortField,
 } from '@eve-space/platform-module-contract/reviewer-directory'
 import { useOrganizationReviewDirectoryColumnPreferences } from '../../composables/useOrganizationReviewDirectoryColumnPreferences'
 import {
   type OrganizationReviewDirectoryGroupFacet,
-  type OrganizationReviewDirectoryMember,
+  type OrganizationReviewDirectoryCharacter,
 } from '../../queries/organization-review'
 import {
   organizationReviewDirectoryFields,
@@ -23,6 +22,7 @@ import {
 const props = withDefaults(
   defineProps<{
     auditState?: PlatformReviewerDirectoryAuditState
+    accountActionAvailable?: boolean
     blocked?: boolean
     complianceState?: PlatformReviewerDirectoryComplianceState
     corporationText: string
@@ -33,21 +33,22 @@ const props = withDefaults(
     hasPreviousPage: boolean
     limit: number
     loading: boolean
-    members: readonly OrganizationReviewDirectoryMember[]
+    members: readonly OrganizationReviewDirectoryCharacter[]
     page?: number
     searchText: string
-    selectedUserId?: string
-    sort?: PlatformReviewerDirectorySortField
+    selectedCharacterId?: number
+    sort?: PlatformReviewerCharacterDirectorySortField
   }>(),
   {
     auditState: undefined,
+    accountActionAvailable: false,
     blocked: undefined,
     complianceState: undefined,
     direction: platformReviewerDirectoryDefaultSortDirection,
     groupId: undefined,
     page: 1,
-    selectedUserId: undefined,
-    sort: platformReviewerDirectoryDefaultSortField,
+    selectedCharacterId: undefined,
+    sort: 'character',
   },
 )
 
@@ -55,10 +56,12 @@ const emit = defineEmits<{
   next: []
   previous: []
   search: []
-  select: [member: OrganizationReviewDirectoryMember]
+  select: [member: OrganizationReviewDirectoryCharacter]
+  review: [member: OrganizationReviewDirectoryCharacter]
+  'manage-account': [member: OrganizationReviewDirectoryCharacter]
   'change-sort': [
     value: {
-      readonly sort: PlatformReviewerDirectorySortField
+      readonly sort: PlatformReviewerCharacterDirectorySortField
       readonly direction: PlatformReviewerDirectorySortDirection
     },
   ]
@@ -84,10 +87,10 @@ const renderedRows = computed(() =>
 )
 const resultAnnouncement = computed(() => {
   if (props.loading) {
-    return 'Loading managed members.'
+    return 'Loading managed characters.'
   }
   const count = props.members.length
-  return `Page ${props.page}, ${count} managed ${count === 1 ? 'member' : 'members'}.`
+  return `Page ${props.page}, ${count} managed ${count === 1 ? 'character' : 'characters'}.`
 })
 const auditFilter = computed<string>({
   get: () => props.auditState ?? allFilterValue,
@@ -117,7 +120,12 @@ const blockFilter = computed<string>({
 })
 const sortModel = computed<string>({
   get: () => props.sort,
-  set: (value) => requestSort(value as PlatformReviewerDirectorySortField, props.direction),
+  set: (value) => {
+    const selectedSort = organizationReviewDirectoryFields.find(
+      (field) => field.sort === value,
+    )?.sort
+    if (selectedSort) requestSort(selectedSort, props.direction)
+  },
 })
 const directionModel = computed<string>({
   get: () => props.direction,
@@ -185,8 +193,8 @@ function fieldClass(fieldId: OrganizationReviewDirectoryFieldId) {
   return `organization-review-directory__cell--${fieldId.replaceAll('_', '-')}`
 }
 
-function selected(member: OrganizationReviewDirectoryMember) {
-  return member.account.userId === props.selectedUserId
+function selected(member: OrganizationReviewDirectoryCharacter) {
+  return member.character.characterId === props.selectedCharacterId
 }
 
 function requestHeaderSort(field: OrganizationReviewDirectoryFieldDefinition) {
@@ -199,7 +207,7 @@ function requestHeaderSort(field: OrganizationReviewDirectoryFieldDefinition) {
 }
 
 function requestSort(
-  sort: PlatformReviewerDirectorySortField,
+  sort: PlatformReviewerCharacterDirectorySortField,
   direction: PlatformReviewerDirectorySortDirection,
 ) {
   emit('change-sort', { direction, sort })
@@ -277,7 +285,7 @@ function canMove(fieldId: OrganizationReviewDirectoryFieldId, direction: 'up' | 
     <header class="organization-review-directory__heading">
       <div>
         <p class="ui-eyebrow">MANAGED DIRECTORY</p>
-        <h2 id="review-directory-heading">Select a member</h2>
+        <h2 id="review-directory-heading">Select a character</h2>
       </div>
       <UiPopover align="end" close-label="Close column settings">
         <template #trigger>
@@ -342,13 +350,13 @@ function canMove(fieldId: OrganizationReviewDirectoryFieldId, direction: 'up' | 
     <form
       class="organization-review-directory__filters"
       role="search"
-      aria-label="Managed member directory filters"
+      aria-label="Managed character directory filters"
       @submit.prevent="emit('search')"
     >
       <label
         class="organization-review-directory__filter organization-review-directory__filter--search"
       >
-        <span>Member search</span>
+        <span>Character search</span>
         <input
           class="ui-input"
           :value="props.searchText"
@@ -424,16 +432,16 @@ function canMove(fieldId: OrganizationReviewDirectoryFieldId, direction: 'up' | 
       v-if="props.loading && props.members.length === 0"
       class="organization-review-directory__status"
     >
-      Searching managed members...
+      Searching managed characters...
     </output>
     <output v-else-if="props.members.length === 0" class="organization-review-directory__status">
-      No managed members match these filters.
+      No managed characters match these filters.
     </output>
     <div v-else class="organization-review-directory__table-frame">
       <UiScrollArea horizontal class="organization-review-directory__scroll">
         <table :aria-busy="props.loading">
           <caption>
-            Current managed organization accounts and their bounded review summaries
+            Current managed organization characters and their bounded review summaries
           </caption>
           <thead>
             <tr>
@@ -461,16 +469,16 @@ function canMove(fieldId: OrganizationReviewDirectoryFieldId, direction: 'up' | 
           <tbody>
             <tr
               v-for="row in renderedRows"
-              :key="row.member.managedMemberLifecycleId"
+              :key="`${row.member.account.userId}/${row.member.character.characterId}`"
               :class="{ 'is-selected': selected(row.member) }"
             >
               <td v-for="cell in row.cells" :key="cell.field.id" :class="fieldClass(cell.field.id)">
                 <button
-                  v-if="cell.presentation.kind === 'member'"
+                  v-if="cell.presentation.kind === 'character'"
                   class="organization-review-directory__member"
                   type="button"
                   :aria-pressed="selected(row.member)"
-                  :aria-label="`${selected(row.member) ? 'Selected member' : 'Select'} ${cell.presentation.identity.name}`"
+                  :aria-label="`${selected(row.member) ? 'Selected character' : 'Select'} ${cell.presentation.identity.name}`"
                   @click="emit('select', row.member)"
                 >
                   <UiEveImage
@@ -490,7 +498,7 @@ function canMove(fieldId: OrganizationReviewDirectoryFieldId, direction: 'up' | 
                       v-if="selected(row.member)"
                       class="organization-review-directory__selected"
                     >
-                      Selected member
+                      Selected character
                     </small>
                   </span>
                 </button>
@@ -529,15 +537,25 @@ function canMove(fieldId: OrganizationReviewDirectoryFieldId, direction: 'up' | 
                   </strong>
                   <small>Evidence {{ cell.presentation.evidenceFreshness }}</small>
                 </div>
-                <button
-                  v-else
-                  class="ui-action-secondary organization-review-directory__review"
-                  type="button"
-                  :aria-pressed="selected(row.member)"
-                  @click="emit('select', row.member)"
-                >
-                  {{ selected(row.member) ? 'SELECTED' : 'REVIEW' }}
-                </button>
+                <div v-else class="organization-review-directory__actions">
+                  <button
+                    class="ui-action-secondary organization-review-directory__review"
+                    type="button"
+                    :aria-label="`Review ${row.member.character.name}`"
+                    @click="emit('review', row.member)"
+                  >
+                    REVIEW
+                  </button>
+                  <button
+                    v-if="props.accountActionAvailable"
+                    class="ui-action-secondary"
+                    type="button"
+                    :aria-label="`${row.member.block.blocked ? 'Unblock account' : 'Block account'} for ${row.member.character.name}`"
+                    @click="emit('manage-account', row.member)"
+                  >
+                    {{ row.member.block.blocked ? 'UNBLOCK ACCOUNT' : 'BLOCK ACCOUNT' }}
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -552,9 +570,9 @@ function canMove(fieldId: OrganizationReviewDirectoryFieldId, direction: 'up' | 
       :disabled="props.loading"
       :has-next="props.hasNextPage"
       :has-previous="props.hasPreviousPage"
-      label="Managed member directory pages"
-      next-label="Next member page"
-      previous-label="Previous member page"
+      label="Managed character directory pages"
+      next-label="Next character page"
+      previous-label="Previous character page"
       @next="emit('next')"
       @previous="emit('previous')"
     />
@@ -749,14 +767,14 @@ function canMove(fieldId: OrganizationReviewDirectoryFieldId, direction: 'up' | 
     inset 0 -1px color-mix(in srgb, var(--ui-primary) 55%, transparent);
 }
 
-.organization-review-directory__cell--member {
+.organization-review-directory__cell--character {
   position: sticky;
   left: 0;
   z-index: 1;
   min-width: 14rem !important;
 }
 
-.organization-review-directory th.organization-review-directory__cell--member,
+.organization-review-directory th.organization-review-directory__cell--character,
 .organization-review-directory th.organization-review-directory__cell--actions {
   z-index: 3;
 }
@@ -856,7 +874,13 @@ function canMove(fieldId: OrganizationReviewDirectoryFieldId, direction: 'up' | 
   color: var(--ui-danger);
 }
 
-.organization-review-directory__review {
+.organization-review-directory__actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.organization-review-directory__actions button {
   min-height: 2rem;
   padding: 0.35rem 0.55rem;
 }

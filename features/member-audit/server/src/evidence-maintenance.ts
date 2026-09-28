@@ -1,5 +1,6 @@
 import type { PlatformResourceMaintenanceContext } from '@eve-space/platform-module-contract/resources'
 import type { EvidenceMaintenancePersistence } from './persistence.js'
+import { purgeInBatches } from './purge-batches.js'
 
 type EvidencePurgeInput = Parameters<EvidenceMaintenancePersistence['purgeEvidence']>[0]
 type WithoutLimit<Input> = Input extends unknown ? Omit<Input, 'limit'> : never
@@ -31,7 +32,11 @@ export async function maintainEvidence(
   for (const purge of purges) {
     context.signal?.throwIfAborted()
     // oxlint-disable-next-line no-await-in-loop -- A resource can issue overlapping account and authority purges.
-    await purgeAllBatches(context, purge)
+    await purgeInBatches<EvidencePurgeInput>(
+      purge,
+      context.capabilities.persistence.purgeEvidence,
+      context.signal,
+    )
   }
 }
 
@@ -55,20 +60,10 @@ async function purgeExpiredEvidence(context: EvidenceMaintenanceContext) {
   }
   for (const purge of purges) {
     // oxlint-disable-next-line no-await-in-loop -- Retention stores share promotion and staging rows.
-    await purgeAllBatches(context, purge)
-  }
-}
-
-async function purgeAllBatches(
-  context: EvidenceMaintenanceContext,
-  input: WithoutLimit<EvidencePurgeInput>,
-) {
-  context.signal?.throwIfAborted()
-  const { remaining } = await context.capabilities.persistence.purgeEvidence({
-    ...input,
-    limit: 1000,
-  } as EvidencePurgeInput)
-  if (remaining) {
-    await purgeAllBatches(context, input)
+    await purgeInBatches<EvidencePurgeInput>(
+      purge,
+      context.capabilities.persistence.purgeEvidence,
+      context.signal,
+    )
   }
 }

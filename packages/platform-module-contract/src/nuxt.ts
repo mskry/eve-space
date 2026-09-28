@@ -50,7 +50,15 @@ export const platformIconTokens = [
 ] as const
 export type PlatformIconToken = (typeof platformIconTokens)[number]
 
+export const platformReviewerPlacements = ['character-landing'] as const
+export type PlatformReviewerPlacement = (typeof platformReviewerPlacements)[number]
+
+export const platformReviewerDirectoryActions = ['review', 'manage-account'] as const
+export type PlatformReviewerDirectoryAction = (typeof platformReviewerDirectoryActions)[number]
+
 export interface PlatformReviewerPanelDeclaration {
+  readonly placement?: PlatformReviewerPlacement
+  readonly directoryAction?: PlatformReviewerDirectoryAction
   readonly panelExport: string
   readonly label: string
   readonly description: string

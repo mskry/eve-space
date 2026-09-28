@@ -28,6 +28,7 @@ const modulesByTier = {
   entry: ['collection-state-repair'],
   representation: [
     'collection-state',
+    'current-observation-status',
     'module-navigation',
     'resource-batch-contract',
     'resource-id-list',
@@ -45,6 +46,7 @@ const modulesByTier = {
     'resource-operation-executor',
     'resource-planning',
     'reviewer-contributions',
+    'reviewer-profile-release',
     'reviewer-search-capabilities',
   ],
   state: ['module-runtime-cache'],

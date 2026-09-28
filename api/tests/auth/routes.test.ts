@@ -150,6 +150,7 @@ const mainCharacter = {
   characterId: 1_404_328_063,
   corporationId: 1_000_166,
   name: 'Bandera Primary',
+  subjectLifecycleId: '8c069b76-e15f-4084-9f76-1aba185dd94b',
 }
 const account = { mainCharacter, userId }
 const transferApprovalId = '66503848-72b8-4fa3-8af5-de056001a37e'
@@ -265,6 +266,7 @@ describe('EVE SSO start routes', () => {
 
   test('requires explicit acceptance of the exact enabled reviewer-use disclosure snapshot', async () => {
     const snapshot = [
+      { disclosureVersion: 1, moduleId: 'member-audit', sectionId: 'current-observation' },
       { disclosureVersion: 2, moduleId: 'member-audit', sectionId: 'skills' },
       { disclosureVersion: 4, moduleId: 'member-audit', sectionId: 'wallet' },
     ] as const
@@ -294,6 +296,10 @@ describe('EVE SSO start routes', () => {
     expect(disclosureResponse.status).toBe(200)
     await expect(disclosureResponse.json()).resolves.toMatchObject({
       disclosures: [
+        expect.objectContaining({
+          fields: expect.stringContaining('Current ship type and name'),
+          sectionId: 'current-observation',
+        }),
         expect.objectContaining({ fields: expect.stringContaining('skills'), sectionId: 'skills' }),
         expect.objectContaining({
           retention: expect.stringContaining('90 days'),
@@ -532,6 +538,7 @@ describe('EVE SSO start routes', () => {
     expect(response.status).toBe(302)
     expect(mocks.storeOAuthState).toHaveBeenCalledWith(state, {
       characterId: mainCharacter.characterId,
+      expectedSubjectLifecycleId: mainCharacter.subjectLifecycleId,
       intent: 'reauthorize',
       reviewerUseDisclosures: [],
       userId,
@@ -548,6 +555,7 @@ describe('EVE SSO start routes', () => {
     expect(response.status).toBe(302)
     expect(mocks.storeOAuthState).toHaveBeenCalledWith(state, {
       characterId: mainCharacter.characterId,
+      expectedSubjectLifecycleId: mainCharacter.subjectLifecycleId,
       intent: 'claim-organization-owner',
       organizationId: mainCharacter.corporationId,
       organizationVersion: 1,
@@ -575,6 +583,7 @@ describe('EVE SSO start routes', () => {
     expect(response.status).toBe(302)
     expect(mocks.storeOAuthState).toHaveBeenCalledWith(state, {
       characterId: mainCharacter.characterId,
+      expectedSubjectLifecycleId: mainCharacter.subjectLifecycleId,
       intent: 'reauthorize',
       returnPath: returnTo,
       reviewerUseDisclosures: [],
@@ -754,7 +763,7 @@ describe('EVE SSO callback intents', () => {
 
   test('binds only the disclosure versions consumed from state to callback authorization', async () => {
     const persistedDisclosures = [
-      { disclosureVersion: 3, moduleId: 'member-audit', sectionId: 'wallet' },
+      { disclosureVersion: 1, moduleId: 'member-audit', sectionId: 'current-observation' },
     ] as const
     mocks.consumeOAuthState.mockResolvedValueOnce({
       intent: 'login',
@@ -1051,7 +1060,11 @@ describe('EVE SSO callback intents', () => {
   test('rejects a wrong-character reauthorization before affiliation or persistence', async () => {
     mocks.consumeOAuthState.mockResolvedValue({
       characterId: mainCharacter.characterId,
+      expectedSubjectLifecycleId: mainCharacter.subjectLifecycleId,
       intent: 'reauthorize',
+      reviewerUseDisclosures: [
+        { disclosureVersion: 1, moduleId: 'member-audit', sectionId: 'current-observation' },
+      ],
       returnPath: `/characters/${mainCharacter.characterId}/mail?label=7`,
       userId,
     })

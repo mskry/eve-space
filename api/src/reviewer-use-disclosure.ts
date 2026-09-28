@@ -25,6 +25,15 @@ const disclosurePresentationBySection = {
     retention: 'Only the current complete asset snapshot is retained.',
     title: 'Assets',
   },
+  'current-observation': {
+    fields:
+      'Current ship type and name with available type/group labels; current solar system, location kind, and applicable station or structure identity with available public labels. Ship and location have separate validation times and upstream expiries. No ship instance ID, coordinates, or movement history are retained.',
+    purpose:
+      'Authorized organization reviewers may inspect the latest ship and location observations for a managed character.',
+    retention:
+      'Only the latest complete snapshot per resource is readable, for at most 24 hours after its own successful validation and only until earlier upstream expiry. The current policy permits no stale observation evidence. Invalid content becomes unreadable immediately and is purged within 24 hours of invalidation; expired content is purged within 24 hours after expiry.',
+    title: 'Current ship and location',
+  },
   mail: {
     fields:
       'Mail headers, parties, and sanitized plain-text message content. Raw markup is not retained.',
@@ -33,10 +42,10 @@ const disclosurePresentationBySection = {
     title: 'Mail',
   },
   skills: {
-    fields: 'Trained skills, skill levels, skill points, and queued training entries.',
+    fields: 'Trained skills, skill levels, and skill points.',
     purpose: 'Authorized organization reviewers may verify training and skill readiness.',
-    retention: 'Only the current complete skills and training-queue snapshots are retained.',
-    title: 'Skills and training queue',
+    retention: 'Only the current complete trained-skills snapshot is retained.',
+    title: 'Trained skills',
   },
   wallet: {
     fields: 'Wallet balance plus bounded journal and transaction records.',

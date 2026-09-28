@@ -248,6 +248,7 @@ export async function reauthorizeCharacter(
   input: CharacterAuthorizationInput & {
     userId: string
     expectedCharacterId: number
+    expectedSubjectLifecycleId?: string
     sessionToken?: string
   },
 ) {
@@ -284,7 +285,11 @@ export async function reauthorizeCharacter(
         and(eq(characters.characterId, input.characterId), eq(characters.userId, input.userId)),
       )
 
-    if (!ownedCharacter) {
+    if (
+      !ownedCharacter ||
+      (input.expectedSubjectLifecycleId &&
+        ownedCharacter.subjectLifecycleId !== input.expectedSubjectLifecycleId)
+    ) {
       throw new CharacterOwnershipError()
     }
     if (ownedCharacter.ownerHash !== input.ownerHash) {

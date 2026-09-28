@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto'
+import type { SQL } from 'drizzle-orm'
+import { PgDialect } from 'drizzle-orm/pg-core'
 import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -66,6 +68,7 @@ let loadOrganizationSessionContext: typeof import('../../../src/middleware/organ
 let listOrganizationRosterCoverage: typeof import('../../../src/organization/roster-coverage.js').listOrganizationRosterCoverage
 let searchManagedOrganizationAccounts: typeof import('../../../src/organization/reviewer-account-search.js').searchManagedOrganizationAccounts
 let searchManagedOrganizationDirectory: typeof import('../../../src/organization/reviewer-account-search.js').searchManagedOrganizationDirectory
+let searchManagedOrganizationCharacters: typeof import('../../../src/organization/reviewer-character-directory.js').searchManagedOrganizationCharacters
 let resolveOrganizationReviewerTarget: typeof import('../../../src/organization/reviewer-target.js').resolveOrganizationReviewerTarget
 let assignOrganizationReviewerOrdinaryGroup: typeof import('../../../src/organization/reviewer-commands.js').assignOrganizationReviewerOrdinaryGroup
 let blockOrganizationReviewerMember: typeof import('../../../src/organization/reviewer-commands.js').blockOrganizationReviewerMember
@@ -167,6 +170,8 @@ beforeAll(async () => {
     await import('../../../src/organization/roster-coverage.js'))
   ;({ searchManagedOrganizationAccounts, searchManagedOrganizationDirectory } =
     await import('../../../src/organization/reviewer-account-search.js'))
+  ;({ searchManagedOrganizationCharacters } =
+    await import('../../../src/organization/reviewer-character-directory.js'))
   ;({ resolveOrganizationReviewerTarget } =
     await import('../../../src/organization/reviewer-target.js'))
   ;({
@@ -186,6 +191,10 @@ beforeEach(async () => {
     'truncate organization_epochs, deployment_admins, users, domain_events restart identity cascade',
   )
   await seedDeployment()
+  await connection`
+    update deployment_module_sections set enabled = false
+    where module_id = 'member-audit' and section_id = 'current-observation'
+  `
   const [lifecycle] = await connection<{ subject_lifecycle_id: string }[]>`
     select subject_lifecycle_id
     from platform_subject_lifecycles
@@ -568,6 +577,561 @@ describe('organization storage invariants', () => {
       organizationVersion: 2,
       status: 'unavailable',
     })
+  })
+
+  test('selects independently eligible character candidates before page bounding', async () => {
+    await seedAdditionalDirectoryCharacter(userId, 90_000_101, 'Alpha Managed', false)
+    await seedAdditionalDirectoryCharacter(userId, 90_000_102, 'Bravo External', false)
+    await seedAdditionalDirectoryCharacter(userId, 90_000_103, 'Charlie Hidden', false)
+    await connection`
+      update characters set corporation_id = 98000002
+      where character_id in (90000102, 90000103)
+    `
+    await connection`
+      insert into organization_character_exceptions (
+        deployment_id, organization_version, user_id, character_id, approver_user_id, reason
+      ) values (1, 1, ${userId}, 90000102, ${userId}, 'Current external exception')
+    `
+    await seedDirectoryBlock(userId, '2026-09-18T11:00:00Z')
+    await seedDirectoryCompliance({
+      targetUserId: userId,
+      state: 'suspended',
+      evidenceFreshness: 'unavailable',
+    })
+
+    const directory = await searchManagedOrganizationCharacters({
+      organizationVersion: 1,
+      now: directoryNow,
+    })
+    expect(directory.status).toBe('available')
+    expect(directory.items.map(({ character }) => character.characterId)).toStrictEqual([
+      90_000_101,
+      90_000_102,
+      characterId,
+    ])
+    expect(directory.items[0]).toMatchObject({
+      disclosedCharacterCount: 3,
+      account: { userId, mainCharacter: { characterId } },
+      character: { affiliation: { membership: 'managed' } },
+    })
+    expect(directory.items[1]).toMatchObject({
+      account: { userId, mainCharacter: { characterId } },
+      character: {
+        characterId: 90_000_102,
+        affiliation: { corporationId: 98_000_002, membership: 'approved-external' },
+      },
+      auditData: { state: 'not-enabled', expected: 0, covered: 0, asOf: null },
+      block: { blocked: true },
+      compliance: { state: 'suspended' },
+      disclosedCharacterCount: 3,
+    })
+    const firstPage = await searchManagedOrganizationCharacters({
+      organizationVersion: 1,
+      now: directoryNow,
+      limit: 1,
+    })
+    expect(firstPage.items.map(({ character }) => character.characterId)).toStrictEqual([
+      90_000_101,
+    ])
+    expect(firstPage.nextCursor).toEqual(expect.any(String))
+    const secondPage = await searchManagedOrganizationCharacters({
+      organizationVersion: 1,
+      now: directoryNow,
+      limit: 1,
+      cursor: firstPage.nextCursor!,
+    })
+    expect(secondPage.items.map(({ character }) => character.characterId)).toStrictEqual([
+      90_000_102,
+    ])
+    const thirdPage = await searchManagedOrganizationCharacters({
+      organizationVersion: 1,
+      now: directoryNow,
+      limit: 1,
+      cursor: secondPage.nextCursor!,
+    })
+    expect(thirdPage.items.map(({ character }) => character.characterId)).toStrictEqual([
+      characterId,
+    ])
+    expect(thirdPage.nextCursor).toBeNull()
+    await expect(
+      searchManagedOrganizationCharacters({
+        organizationVersion: 1,
+        now: directoryNow,
+        limit: 2,
+        cursor: firstPage.nextCursor!,
+      }),
+    ).rejects.toThrow('Invalid reviewer character directory input')
+    await expect(
+      searchManagedOrganizationCharacters({
+        organizationVersion: 1,
+        now: directoryNow,
+        limit: 1,
+        query: 'Bravo External',
+      }),
+    ).resolves.toMatchObject({ items: [{ character: { characterId: 90_000_102 } }] })
+    await expect(
+      searchManagedOrganizationCharacters({
+        organizationVersion: 1,
+        now: directoryNow,
+        limit: 1,
+        query: String(90_000_102),
+      }),
+    ).resolves.toMatchObject({ items: [{ character: { characterId: 90_000_102 } }] })
+    await expect(
+      searchManagedOrganizationCharacters({
+        organizationVersion: 1,
+        now: directoryNow,
+        query: userId,
+      }),
+    ).resolves.toMatchObject({
+      items: expect.arrayContaining([
+        expect.objectContaining({
+          character: expect.objectContaining({ characterId: 90_000_102 }),
+        }),
+      ]),
+    })
+    await expect(
+      searchManagedOrganizationCharacters({
+        organizationVersion: 1,
+        now: directoryNow,
+        corporationId: 98_000_002,
+      }),
+    ).resolves.toMatchObject({ items: [{ character: { characterId: 90_000_102 } }] })
+    await expect(
+      searchManagedOrganizationCharacters({
+        organizationVersion: 1,
+        now: directoryNow,
+        blocked: false,
+      }),
+    ).resolves.toMatchObject({ items: [] })
+    await expect(
+      searchManagedOrganizationCharacters({
+        organizationVersion: 1,
+        now: directoryNow,
+        complianceState: 'suspended',
+        auditState: 'not-enabled',
+      }),
+    ).resolves.toMatchObject({
+      items: expect.arrayContaining([
+        expect.objectContaining({
+          character: expect.objectContaining({ characterId: 90_000_102 }),
+        }),
+      ]),
+    })
+    const nullSorted = await searchManagedOrganizationCharacters({
+      organizationVersion: 1,
+      now: directoryNow,
+      sort: 'review_deadline',
+      limit: 1,
+    })
+    const nullNext = await searchManagedOrganizationCharacters({
+      organizationVersion: 1,
+      now: directoryNow,
+      sort: 'review_deadline',
+      limit: 1,
+      cursor: nullSorted.nextCursor!,
+    })
+    expect([
+      nullSorted.items[0]?.character.characterId,
+      nullNext.items[0]?.character.characterId,
+    ]).toStrictEqual([90_000_101, 90_000_102])
+    await expect(
+      searchManagedOrganizationCharacters({
+        organizationVersion: 1,
+        now: directoryNow,
+        sort: 'review_deadline',
+        direction: 'desc',
+        limit: 1,
+        cursor: nullSorted.nextCursor!,
+      }),
+    ).rejects.toThrow('Invalid reviewer character directory input')
+    await expect(
+      searchManagedOrganizationCharacters({
+        organizationVersion: 2,
+        now: directoryNow,
+        limit: 1,
+        cursor: firstPage.nextCursor!,
+      }),
+    ).rejects.toThrow('Invalid reviewer character directory input')
+    const tampered = `${firstPage.nextCursor!.slice(0, -1)}${firstPage.nextCursor!.endsWith('A') ? 'B' : 'A'}`
+    await expect(
+      searchManagedOrganizationCharacters({
+        organizationVersion: 1,
+        now: directoryNow,
+        limit: 1,
+        cursor: tampered,
+      }),
+    ).rejects.toThrow('Invalid reviewer character directory input')
+    const groups = await seedDirectoryGroups()
+    await expect(
+      searchManagedOrganizationCharacters({
+        organizationVersion: 1,
+        now: directoryNow,
+        groupId: groups.alpha,
+      }),
+    ).resolves.toMatchObject({
+      items: expect.arrayContaining([
+        expect.objectContaining({
+          character: expect.objectContaining({ characterId: 90_000_102 }),
+        }),
+      ]),
+    })
+    await expect(
+      searchManagedOrganizationCharacters({
+        organizationVersion: 1,
+        now: directoryNow,
+        groupId: groups.alpha,
+        limit: 1,
+        cursor: firstPage.nextCursor!,
+      }),
+    ).rejects.toThrow('Invalid reviewer character directory input')
+
+    await connection`
+      update organization_character_exceptions
+      set expires_at = now() + interval '1 minute', expired_at = now() + interval '1 minute'
+      where character_id = 90000102
+    `
+    const withoutException = await searchManagedOrganizationCharacters({
+      organizationVersion: 1,
+      now: directoryNow,
+    })
+    expect(withoutException.items.map(({ character }) => character.characterId)).toStrictEqual([
+      90_000_101,
+      characterId,
+    ])
+    await connection`delete from characters where character_id = 90000101`
+    await expect(
+      searchManagedOrganizationCharacters({ organizationVersion: 1, now: directoryNow }),
+    ).resolves.toMatchObject({ items: [{ character: { characterId } }] })
+    await seedAdditionalDirectoryCharacter(userId, 90_000_104, 'Transferred Alt', false)
+    const destinationUserId = randomUUID()
+    await connection`insert into users (id) values (${destinationUserId})`
+    await connection`
+      update characters set user_id = ${destinationUserId} where character_id = 90000104
+    `
+    await expect(
+      searchManagedOrganizationCharacters({ organizationVersion: 1, now: directoryNow }),
+    ).resolves.toMatchObject({ items: [{ character: { characterId } }] })
+    await connection`
+      update characters set next_affiliation_check = '2026-09-18T11:00:00Z'
+      where character_id = ${characterId}
+    `
+    await expect(
+      searchManagedOrganizationCharacters({ organizationVersion: 1, now: directoryNow }),
+    ).resolves.toMatchObject({ items: [] })
+    await expect(
+      searchManagedOrganizationCharacters({ organizationVersion: 2, now: directoryNow }),
+    ).resolves.toMatchObject({ items: [] })
+    await seedDirectoryAccount({
+      targetUserId: randomUUID(),
+      targetCharacterId: 90_000_110,
+      name: 'Zed Other',
+      corporationId: 98_000_001,
+      siteRegisteredAt: '2026-09-01T00:00:00Z',
+      managedSince: '2026-09-02T00:00:00Z',
+      affiliationCheckedAt: '2026-09-18T10:00:00Z',
+    })
+    await seedDirectoryAccount({
+      targetUserId: randomUUID(),
+      targetCharacterId: 90_000_111,
+      name: 'Yara Other',
+      corporationId: 98_000_001,
+      siteRegisteredAt: '2026-09-01T00:00:00Z',
+      managedSince: '2026-09-02T00:00:00Z',
+      affiliationCheckedAt: '2026-09-18T10:00:00Z',
+    })
+    const accountPage = await searchManagedOrganizationDirectory({
+      organizationVersion: 1,
+      now: directoryNow,
+      filters: { limit: 1 },
+    })
+    expect(accountPage.nextCursor).toEqual(expect.any(String))
+    await expect(
+      searchManagedOrganizationCharacters({
+        organizationVersion: 1,
+        now: directoryNow,
+        limit: 1,
+        cursor: accountPage.nextCursor!,
+      }),
+    ).rejects.toThrow('Invalid reviewer character directory input')
+    const managedFirst = await searchManagedOrganizationCharacters({
+      organizationVersion: 1,
+      now: directoryNow,
+      sort: 'managed_since',
+      direction: 'desc',
+      limit: 1,
+    })
+    const managedSecond = await searchManagedOrganizationCharacters({
+      organizationVersion: 1,
+      now: directoryNow,
+      sort: 'managed_since',
+      direction: 'desc',
+      limit: 1,
+      cursor: managedFirst.nextCursor!,
+    })
+    expect([
+      managedFirst.items[0]?.character.characterId,
+      managedSecond.items[0]?.character.characterId,
+    ]).toStrictEqual([90_000_111, 90_000_110])
+  })
+
+  test.each(['a'.repeat(40), 'a'.repeat(255), '界'.repeat(255)])(
+    'continues character pagination with a long encoded name %#',
+    async (name) => {
+      await connection`update characters set name = ${name} where character_id = ${characterId}`
+      await seedAdditionalDirectoryCharacter(userId, 90_000_101, name, false)
+      const input = { organizationVersion: 1, now: directoryNow, limit: 1 }
+
+      const first = await searchManagedOrganizationCharacters(input)
+      expect(first.items.map(({ character }) => character.characterId)).toStrictEqual([90_000_101])
+      expect(first.nextCursor!.length).toBeGreaterThan(512)
+
+      const second = await searchManagedOrganizationCharacters({
+        ...input,
+        cursor: first.nextCursor!,
+      })
+      expect(second.items.map(({ character }) => character.characterId)).toStrictEqual([
+        characterId,
+      ])
+      expect(second.nextCursor).toBeNull()
+    },
+  )
+
+  test.each(['asc', 'desc'] as const)(
+    'paginates null affiliation timestamps after known timestamps in %s order',
+    async (direction) => {
+      await seedAdditionalDirectoryCharacter(userId, 90_000_101, 'Alpha External', false)
+      await seedAdditionalDirectoryCharacter(userId, 90_000_102, 'Bravo External', false)
+      await connection`
+        update characters set corporation_id = 98000002, affiliation_checked_at = null
+        where character_id in (90000101, 90000102)
+      `
+      await connection`
+        insert into organization_character_exceptions (
+          deployment_id, organization_version, user_id, character_id, approver_user_id, reason
+        ) values
+          (1, 1, ${userId}, 90000101, ${userId}, 'Current external exception'),
+          (1, 1, ${userId}, 90000102, ${userId}, 'Current external exception')
+      `
+      const input = {
+        organizationVersion: 1,
+        now: directoryNow,
+        sort: 'affiliation_checked_at' as const,
+        direction,
+        limit: 1,
+      }
+
+      const first = await searchManagedOrganizationCharacters(input)
+      expect(first.items.map(({ character }) => character.characterId)).toStrictEqual([characterId])
+      expect(first.nextCursor).toEqual(expect.any(String))
+
+      const second = await searchManagedOrganizationCharacters({
+        ...input,
+        cursor: first.nextCursor!,
+      })
+      expect(second.items.map(({ character }) => character.characterId)).toStrictEqual([90_000_101])
+      expect(second.items[0]?.character.affiliation).toMatchObject({
+        checkedAt: null,
+        membership: 'approved-external',
+      })
+      expect(second.nextCursor).toEqual(expect.any(String))
+
+      const third = await searchManagedOrganizationCharacters({
+        ...input,
+        cursor: second.nextCursor!,
+      })
+      expect(third.items.map(({ character }) => character.characterId)).toStrictEqual([90_000_102])
+      expect(third.nextCursor).toBeNull()
+    },
+  )
+
+  test('aggregates audit coverage by exact character without borrowing a sibling validation', async () => {
+    await seedAdditionalDirectoryCharacter(userId, 90_000_101, 'Other Managed', false)
+    await enableDirectoryAuditSections(['skills', 'assets'])
+    await authorizeDirectoryAuditSections(['skills', 'assets'])
+    await seedDirectoryAuditState({
+      resourceId: 'trained-skills',
+      sectionId: 'skills',
+      validatedAt: '2026-09-18T11:50:00Z',
+      nextEligibleAt: '2026-09-18T13:00:00Z',
+    })
+    await seedDirectoryAuditState({
+      resourceId: 'assets',
+      sectionId: 'assets',
+      validatedAt: '2026-09-18T11:40:00Z',
+      nextEligibleAt: '2026-09-18T13:00:00Z',
+    })
+
+    const page = await searchManagedOrganizationCharacters({
+      organizationVersion: 1,
+      now: directoryNow,
+    })
+    const main = page.items.find(({ character }) => character.characterId === characterId)
+    const sibling = page.items.find(({ character }) => character.characterId === 90_000_101)
+    expect(main?.auditData).toStrictEqual({
+      state: 'current',
+      expected: 2,
+      covered: 2,
+      asOf: '2026-09-18T11:40:00.000Z',
+    })
+    expect(sibling?.auditData).toMatchObject({
+      state: 'authorization-required',
+      expected: 2,
+      covered: 0,
+      asOf: null,
+    })
+  })
+
+  test('agrees on independent observation expiry across directory and summary reads', async () => {
+    await connection`
+      update deployment_module_sections set enabled = false
+      where module_id = 'member-audit' and section_id in ('skills', 'assets', 'wallet', 'mail')
+    `
+    await enableDirectoryAuditSections(['current-observation'])
+    await connection`
+      update eve_tokens set scopes = ${connection.json([
+        'esi-location.read_ship_type.v1',
+        'esi-location.read_location.v1',
+      ])} where character_id = ${characterId}
+    `
+    await connection`
+      insert into character_reviewer_disclosure_acceptances (
+        character_id, module_id, section_id, disclosure_version, authorization_generation
+      ) values (${characterId}, 'member-audit', 'current-observation', 1, 0)
+    `
+    for (const [resourceId, expiry] of [
+      ['current-ship', '2026-09-18T12:00:05Z'],
+      ['current-location', '2026-09-18T12:00:10Z'],
+    ] as const) {
+      await seedDirectoryAuditState({
+        resourceId,
+        sectionId: 'current-observation',
+        validatedAt: '2026-09-18T11:59:00Z',
+        nextEligibleAt: '2026-09-18T12:05:00Z',
+      })
+      await connection`
+        update platform_collection_state set cached_until = ${expiry}
+        where module_id = 'member-audit' and resource_id = ${resourceId}
+          and subject_id = ${String(characterId)}
+      `
+    }
+    const before = await searchManagedOrganizationCharacters({
+      organizationVersion: 1,
+      now: directoryNow,
+    })
+    expect(before.items[0]?.auditData).toStrictEqual({
+      state: 'current',
+      expected: 2,
+      covered: 2,
+      asOf: '2026-09-18T11:59:00.000Z',
+    })
+    const { createPlatformReviewerCollectionStatusReads } =
+      await import('../../../src/platform/module-reviewer-collection-status-capabilities.js')
+    const { resolveInstalledResourceEligibility } =
+      await import('../../../src/platform/resource-eligibility.js')
+    const { platformResources } = await import('../../../src/platform/resources.js')
+    const row = before.items[0]!
+    let effectiveAt = directoryNow
+    const reads = createPlatformReviewerCollectionStatusReads(
+      {
+        moduleId: 'member-audit',
+        sectionId: 'current-observation',
+        resourceIds: ['current-ship', 'current-location'],
+        target: {
+          account: row.account,
+          block: row.block,
+          characters: [row.character],
+          compliance: row.compliance,
+          groups: [],
+          managedMemberLifecycleId: row.managedMemberLifecycleId,
+          organizationVersion: 1,
+          selection: {
+            kind: 'character',
+            characterId,
+            subjectLifecycleId: row.character.subjectLifecycleId,
+          },
+        },
+      },
+      {
+        resources: platformResources,
+        now: () => effectiveAt,
+        resolveEligibility: (identity, options) =>
+          resolveInstalledResourceEligibility(identity, {
+            connection,
+            lockAuthority: false,
+            now: options?.now,
+            resources: options?.resources,
+          }),
+      },
+    )
+    await expect(reads.read('current-ship', characterId)).resolves.toMatchObject({
+      status: 'current',
+    })
+    effectiveAt = new Date(directoryNow.getTime() + 6000)
+    const after = await searchManagedOrganizationCharacters({
+      organizationVersion: 1,
+      now: effectiveAt,
+    })
+    expect(after.items[0]?.auditData).toStrictEqual({
+      state: 'unavailable',
+      expected: 2,
+      covered: 1,
+      asOf: null,
+    })
+    await expect(reads.read('current-ship', characterId)).resolves.toMatchObject({
+      status: 'unavailable',
+    })
+    await expect(reads.read('current-location', characterId)).resolves.toMatchObject({
+      status: 'current',
+    })
+  })
+
+  test('keeps character-page database calls bounded at 50 rows', async () => {
+    for (let index = 1; index < 50; index += 1) {
+      await seedAdditionalDirectoryCharacter(
+        userId,
+        90_001_000 + index,
+        `Directory Pilot ${String(index).padStart(2, '0')}`,
+        false,
+      )
+    }
+    const transaction = dbClient.db.transaction.bind(dbClient.db)
+    const calls: { select: number; execute: number }[] = []
+    let directoryQuery: SQL | undefined
+    const spy = vi.spyOn(dbClient.db, 'transaction').mockImplementation((callback, config) =>
+      transaction(async (transactionConnection) => {
+        const select = vi.spyOn(transactionConnection, 'select')
+        const execute = vi.spyOn(transactionConnection, 'execute')
+        const result = await callback(transactionConnection)
+        // SAFETY: This spy observes Drizzle's SQL execute argument before the query runs.
+        directoryQuery = execute.mock.calls[0]?.[0] as SQL | undefined
+        calls.push({ select: select.mock.calls.length, execute: execute.mock.calls.length })
+        return result
+      }, config),
+    )
+    try {
+      const page = await searchManagedOrganizationCharacters({
+        organizationVersion: 1,
+        now: directoryNow,
+        limit: 50,
+      })
+      expect(page.items).toHaveLength(50)
+      expect(
+        page.items.every(({ disclosedCharacterCount }) => disclosedCharacterCount === 50),
+      ).toBe(true)
+      expect(calls).toStrictEqual([{ select: 2, execute: 1 }])
+      const prepared = new PgDialect().sqlToQuery(directoryQuery!)
+      const [plan] = await connection.unsafe<
+        { 'QUERY PLAN': { Plan: { 'Node Type': string; 'Total Cost': number } }[] }[]
+      >(
+        `explain (format json) ${prepared.sql}`,
+        // SAFETY: PgDialect prepared these parameter values for the same PostgreSQL connection.
+        prepared.params as NonNullable<Parameters<typeof connection.unsafe>[1]>,
+      )
+      expect(plan?.['QUERY PLAN'][0]?.Plan['Node Type']).toBe('Limit')
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   test('projects the current lifecycle, fallback identity, disclosed characters, and current groups', async () => {
@@ -1132,7 +1696,7 @@ describe('organization storage invariants', () => {
     const options = dbClient.sql.options
     const previousDebug = options.debug
     options.debug = (_connection, query, parameters) => {
-      if (query.includes('with resource_classification')) {
+      if (query.includes('resource_classification as')) {
         capture.value = { parameters: parameters as UnsafeParameters, query }
       }
     }
@@ -3453,6 +4017,8 @@ describe('organization storage invariants', () => {
     await expect(
       blockOrganizationReviewerMember({
         ...reviewerCommandBinding(fixture, 'member-audit.members.block'),
+        expectedOrganizationVersion: 1,
+        expectedManagedMemberLifecycleId: fixture.targetManagedMemberLifecycleId,
         reason: 'Immediate review hold.',
       }),
     ).resolves.toMatchObject({
@@ -3467,6 +4033,8 @@ describe('organization storage invariants', () => {
     await expect(
       unblockOrganizationReviewerMember({
         ...reviewerCommandBinding(fixture, 'member-audit.members.block'),
+        expectedOrganizationVersion: 1,
+        expectedManagedMemberLifecycleId: fixture.targetManagedMemberLifecycleId,
         reason: 'Review hold cleared.',
       }),
     ).resolves.toMatchObject({
@@ -3488,6 +4056,8 @@ describe('organization storage invariants', () => {
     await expect(
       blockOrganizationReviewerMember({
         ...reviewerCommandBinding(fixture, 'member-audit.members.block'),
+        expectedOrganizationVersion: 1,
+        expectedManagedMemberLifecycleId: fixture.targetManagedMemberLifecycleId,
         reason: 'Peer lockout attempt.',
       }),
     ).rejects.toMatchObject({ code: 'reviewer-target-not-allowed' })
@@ -3505,6 +4075,51 @@ describe('organization storage invariants', () => {
             and subject_id = 'discord.reviewer-command') as transitions
     `
     expect(counts).toStrictEqual({ decisions: 2, events: 2, transitions: 2 })
+  })
+
+  test('rejects a block confirmation from an earlier managed-member lifecycle', async () => {
+    const fixture = await establishReviewerCommandFixture()
+    await expect(
+      blockOrganizationReviewerMember({
+        ...reviewerCommandBinding(fixture, 'member-audit.members.block'),
+        expectedOrganizationVersion: 2,
+        expectedManagedMemberLifecycleId: fixture.targetManagedMemberLifecycleId,
+        reason: 'Outdated organization confirmation.',
+      }),
+    ).rejects.toMatchObject({ code: 'stale-confirmation' })
+    await connection`
+      update organization_managed_member_lifecycles
+      set ended_at = now(), updated_at = now()
+      where managed_member_lifecycle_id = ${fixture.targetManagedMemberLifecycleId}
+    `
+    await connection`
+      insert into organization_managed_member_lifecycles (
+        deployment_id, organization_version, user_id, started_at
+      ) values (1, 1, ${fixture.targetUserId}, now())
+    `
+    const currentLifecycle = await loadActiveManagedMemberLifecycleId(fixture.targetUserId)
+    const command = {
+      ...reviewerCommandBinding(
+        { ...fixture, targetManagedMemberLifecycleId: currentLifecycle },
+        'member-audit.members.block',
+      ),
+      expectedOrganizationVersion: 1,
+      expectedManagedMemberLifecycleId: fixture.targetManagedMemberLifecycleId,
+      reason: 'Stale confirmation from previous management.',
+    }
+    await expect(blockOrganizationReviewerMember(command)).rejects.toMatchObject({
+      code: 'stale-confirmation',
+    })
+    await expect(unblockOrganizationReviewerMember(command)).rejects.toMatchObject({
+      code: 'stale-confirmation',
+    })
+    const [row] = await connection<{ blocks: number; decisions: number }[]>`
+      select
+        (select count(*)::integer from organization_member_blocks where user_id = ${fixture.targetUserId}) as blocks,
+        (select count(*)::integer from organization_audit_events where subject_id = ${fixture.targetUserId}
+          and event_type in ('member.blocked', 'member.unblocked')) as decisions
+    `
+    expect(row).toStrictEqual({ blocks: 0, decisions: 0 })
   })
 
   test('gives director-issued member blocks precedence and reevaluates only current grants on unblock', async () => {
@@ -4155,6 +4770,68 @@ describe('organization storage invariants', () => {
         ${userId}, 'mail', 0
       )
     `).rejects.toThrow('organization_audit_events_context_check')
+  })
+
+  test('retains content-free allow and deny decisions for current observations', async () => {
+    for (const [decision, reason] of [
+      ['allowed', 'authorized'],
+      ['denied', 'reviewer-permission-required'],
+    ] as const) {
+      await dbClient.db.transaction((transaction) =>
+        appendOrganizationSensitiveAccessDecision(transaction, {
+          actorUserId: userId,
+          decision,
+          disclosureVersion: 1,
+          occurredAt: new Date('2026-09-18T12:00:00Z'),
+          organizationVersion: 1,
+          policyVersion: 1,
+          reason,
+          sectionId: 'current-observation',
+          targetCharacterId: characterId,
+          targetUserId: userId,
+        }),
+      )
+    }
+    const rows = await connection<
+      {
+        section_id: string
+        reason: string
+        outcome: string
+        target_character_id: string
+        disclosure_version: string
+      }[]
+    >`
+      select section_id, reason, outcome, target_character_id, disclosure_version
+      from organization_audit_events
+      where event_type = 'sensitive-access.decided' and section_id = 'current-observation'
+      order by audit_sequence
+    `
+    expect([...rows]).toStrictEqual([
+      {
+        section_id: 'current-observation',
+        reason: 'authorized',
+        outcome: 'granted',
+        target_character_id: String(characterId),
+        disclosure_version: '1',
+      },
+      {
+        section_id: 'current-observation',
+        reason: 'reviewer-permission-required',
+        outcome: 'denied',
+        target_character_id: String(characterId),
+        disclosure_version: '1',
+      },
+    ])
+    const serialized = JSON.stringify(rows)
+    for (const forbidden of [
+      'snapshot',
+      'ship_item_id',
+      'solar_system_id',
+      'access_token',
+      'cached_until',
+    ]) {
+      expect(serialized).not.toContain(forbidden)
+    }
   })
 
   test('rejects updates and deletes from the append-only audit ledger', async () => {

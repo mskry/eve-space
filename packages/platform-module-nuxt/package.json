@@ -41,6 +41,7 @@
     "typecheck": "tsc --noEmit && nuxt prepare test/fixtures/basic && vue-tsc --noEmit -p tsconfig.runtime.json && nuxt typecheck test/fixtures/basic"
   },
   "dependencies": {
+    "@eve-space/core-data-contract": "workspace:*",
     "@eve-space/platform-module-contract": "workspace:*",
     "@nuxt/kit": "catalog:",
     "@nuxt/schema": "catalog:"

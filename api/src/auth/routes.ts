@@ -166,6 +166,7 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
       const organization = await loadCurrentOrganizationIdentity()
       return startAuthorization(context, {
         characterId: context.var.ownedCharacter.characterId,
+        expectedSubjectLifecycleId: context.var.ownedCharacter.subjectLifecycleId,
         intent: 'claim-organization-owner',
         organizationId: organization.organizationId,
         organizationVersion: organization.organizationVersion,
@@ -195,6 +196,7 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
       const { returnTo } = context.req.valid('query')
       return startAuthorization(context, {
         characterId: context.var.ownedCharacter.characterId,
+        expectedSubjectLifecycleId: context.var.ownedCharacter.subjectLifecycleId,
         intent: 'reauthorize',
         userId: session!.userId,
         ...(returnTo && {
@@ -483,6 +485,7 @@ async function saveAuthorizationForIntent(
       await reauthorizeCharacter({
         ...disclosedAuthorization,
         expectedCharacterId: stateContext.characterId,
+        expectedSubjectLifecycleId: stateContext.expectedSubjectLifecycleId,
         sessionToken: readAuthCookie(context, sessionCookie)!,
         userId: stateContext.userId,
       })
@@ -529,6 +532,7 @@ async function saveOrganizationOwnerClaim(
   const { subjectLifecycleId } = await reauthorizeCharacter({
     ...authorization,
     expectedCharacterId: state.characterId,
+    expectedSubjectLifecycleId: state.expectedSubjectLifecycleId,
     sessionToken,
     userId: state.userId,
   })

@@ -15,6 +15,8 @@ const ALTERNATIVE_GATES = new Map(
     'api/src/characters/public-routes.ts': null,
     // HR reviewers act on another member's character, so ownership cannot apply.
     'api/src/organization/routes-review.ts': 'requireOrganizationHr',
+    // The platform reviewer directory verifies current reviewer and summary permission before exact lookup.
+    'api/src/platform/organization-review-routes.ts': 'requireReviewerDirectoryPermission',
   }),
 )
 
@@ -71,7 +73,13 @@ const toRouteDefinition = (
   const middleware = handler === -1 ? rest : rest.slice(0, handler)
 
   return {
-    gates: middleware.filter(ts.isIdentifier).map((argument) => argument.text),
+    gates: middleware.flatMap((argument) => {
+      if (ts.isIdentifier(argument)) return [argument.text]
+      if (ts.isCallExpression(argument) && ts.isIdentifier(argument.expression)) {
+        return [argument.expression.text]
+      }
+      return []
+    }),
     line: sourceFile.getLineAndCharacterOfPosition(first.getStart(sourceFile)).line + 1,
     method: method.toUpperCase(),
     path: first.text,

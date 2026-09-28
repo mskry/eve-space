@@ -144,6 +144,19 @@ describe('character route ownership', () => {
     ])
   })
 
+  it('requires the platform directory permission gate on exact reviewer character lookup', () => {
+    const path = 'api/src/platform/organization-review-routes.ts'
+    const guarded = `.get('/members/:userId/characters/:characterId',
+      requireReviewerDirectoryPermission(), zValidator('param', reviewerCharacterTargetParams),
+      async (context) => context.json({}))`
+    expect(characterRouteOwnershipViolations(route(guarded, path))).toStrictEqual([])
+    const unguarded = `.get('/members/:userId/characters/:characterId',
+      zValidator('param', reviewerCharacterTargetParams), async (context) => context.json({}))`
+    expect(characterRouteOwnershipViolations(route(unguarded, path))).toStrictEqual([
+      `${path}:2 GET /members/:userId/characters/:characterId: must load authorization through requireReviewerDirectoryPermission before its handler`,
+    ])
+  })
+
   it('accepts the intentionally public character route', () => {
     const source = route(
       `.get('/:characterId', zValidator('param', characterIdParams), async (context) => context.json({}))`,

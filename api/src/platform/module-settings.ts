@@ -40,7 +40,7 @@ export type InstalledModuleSetting = PlatformInstalledModuleDefinition & {
 interface DeploymentModuleRow {
   readonly module_id: string
   readonly enabled: boolean
-  readonly updated_at: Date
+  readonly updated_at: Date | string
 }
 
 interface DeploymentModuleSectionRow {
@@ -51,7 +51,7 @@ interface DeploymentModuleSectionRow {
   readonly declaration_revision: number | null
   readonly disclosure_version: number
   readonly activation_version: number
-  readonly updated_at: Date
+  readonly updated_at: Date | string
 }
 
 export async function reconcileInstalledModules(
@@ -175,7 +175,9 @@ export async function setInstalledModuleEnabled(
       returning module_id, enabled, updated_at
     ), rotated_sections as (
       update deployment_module_sections
-      set activation_version = activation_version + 1, updated_at = now()
+      set activation_version = activation_version + 1,
+        disclosure_version = disclosure_version + case when kind = 'sensitive-evidence' then 1 else 0 end,
+        updated_at = now()
       where module_id = ${moduleId}
         and enabled
         and ${enabled}
@@ -229,11 +231,10 @@ export async function setInstalledModuleSectionEnabled(
     set
       enabled = ${enabled},
       activation_version = activation_version + case when not enabled and ${enabled} then 1 else 0 end,
-      disclosure_version = disclosure_version + case
-        when kind = 'sensitive-evidence' and not enabled and ${enabled} and disclosure_version = 0
-          then 1
-        else 0
-      end,
+       disclosure_version = disclosure_version + case
+         when kind = 'sensitive-evidence' and not enabled and ${enabled} then 1
+         else 0
+       end,
       updated_at = case when enabled is distinct from ${enabled} then now() else updated_at end
     where module_id = ${moduleId} and section_id = ${sectionId}
     returning module_id, section_id, kind, enabled, declaration_revision,
@@ -444,6 +445,8 @@ async function loadNavigationOrderRows(connection: postgres.Sql) {
   `
 }
 
+const moduleTimestamp = (value: Date | string) => new Date(value).toISOString()
+
 function toModuleSetting(
   definition: PlatformInstalledModuleDefinition,
   row: DeploymentModuleRow,
@@ -454,7 +457,7 @@ function toModuleSetting(
     enabled: row.enabled,
     moduleId: definition.moduleId,
     sections,
-    updatedAt: row.updated_at.toISOString(),
+    updatedAt: moduleTimestamp(row.updated_at),
   }
 }
 
@@ -467,7 +470,7 @@ function toModuleSectionSetting(
     activationVersion: row.activation_version,
     disclosureVersion: row.disclosure_version,
     enabled: row.enabled,
-    updatedAt: row.updated_at.toISOString(),
+    updatedAt: moduleTimestamp(row.updated_at),
   }
 }
 

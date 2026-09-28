@@ -1,4 +1,4 @@
-import type { PlatformReviewerDirectoryInput } from '@eve-space/platform-module-contract/reviewer-directory'
+import type { PlatformReviewerCharacterDirectoryInput } from '@eve-space/platform-module-contract/reviewer-directory'
 import { defineEsiQueryOptions } from '@eve-space/platform-module-nuxt/runtime'
 import type { InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
@@ -11,19 +11,25 @@ type OrganizationReviewClient = ApiClient['api']['organization']['review']
 type OrganizationReviewEntry = InferResponseType<OrganizationReviewClient['$get'], 200>
 export type OrganizationReviewContribution = OrganizationReviewEntry['contributions'][number]
 type OrganizationReviewDirectory = InferResponseType<
-  OrganizationReviewClient['members']['$get'],
+  OrganizationReviewClient['characters']['$get'],
   200
 >
-export type OrganizationReviewDirectoryMember = OrganizationReviewDirectory['items'][number]
+export type OrganizationReviewDirectoryCharacter = OrganizationReviewDirectory['items'][number]
 export type OrganizationReviewDirectoryGroupFacet =
   OrganizationReviewDirectory['groupFacets'][number]
-type OrganizationReviewTarget = InferResponseType<
+type OrganizationReviewAccountTarget = InferResponseType<
   OrganizationReviewClient['members'][':userId']['$get'],
   200
 >
-export type OrganizationReviewTargetMember = OrganizationReviewTarget['member']
+type OrganizationReviewCharacterTarget = InferResponseType<
+  OrganizationReviewClient['members'][':userId']['characters'][':characterId']['$get'],
+  200
+>
+export type OrganizationReviewTargetMember =
+  | OrganizationReviewAccountTarget['member']
+  | OrganizationReviewCharacterTarget['member']
 
-export interface OrganizationReviewDirectoryInput extends PlatformReviewerDirectoryInput {
+export interface OrganizationReviewDirectoryInput extends PlatformReviewerCharacterDirectoryInput {
   readonly organizationVersion: number
   readonly limit: number
 }
@@ -69,7 +75,7 @@ export const organizationReviewDirectoryQuery = defineEsiQueryOptions(
   }) => ({
     key: PRIVATE_QUERY_KEYS.organizationReviewerDirectory(input.organizationVersion, input),
     query: async ({ signal }) => {
-      const response = await apiClient.api.organization.review.members.$get(
+      const response = await apiClient.api.organization.review.characters.$get(
         {
           query: {
             ...(input.query && { query: input.query }),
@@ -89,7 +95,7 @@ export const organizationReviewDirectoryQuery = defineEsiQueryOptions(
         { init: { signal } },
       )
       if (response.status !== 200) {
-        throw await toApiQueryError(response, 'Managed member directory is unavailable.')
+        throw await toApiQueryError(response, 'Managed character directory is unavailable.')
       }
       return response.json()
     },
@@ -101,7 +107,7 @@ export const organizationReviewDirectoryQuery = defineEsiQueryOptions(
     retry: 0,
     ...QUERY_POLICY.organizationReviewerDirectory,
     esiPersistence: { kind: 'none' },
-    meta: { globalErrorMessage: 'Managed member directory is unavailable.' },
+    meta: { globalErrorMessage: 'Managed character directory is unavailable.' },
   }),
 )
 
@@ -122,6 +128,28 @@ export const organizationReviewTargetQuery = defineEsiQueryOptions(
       input.managedMemberLifecycleId,
     ),
     query: async ({ signal }) => {
+      if (input.targetCharacterId !== undefined) {
+        const response = await apiClient.api.organization.review.members[':userId'].characters[
+          ':characterId'
+        ].$get(
+          { param: { userId: input.targetUserId, characterId: String(input.targetCharacterId) } },
+          { init: { signal } },
+        )
+        if (response.status !== 200) {
+          throw await toApiQueryError(response, 'Managed character target is unavailable.')
+        }
+        const target = await response.json()
+        const candidate = target.member
+        const member =
+          target.organizationVersion === input.organizationVersion &&
+          candidate.account.userId === input.targetUserId &&
+          candidate.character.characterId === input.targetCharacterId &&
+          (input.managedMemberLifecycleId === undefined ||
+            candidate.managedMemberLifecycleId === input.managedMemberLifecycleId)
+            ? candidate
+            : null
+        return { ...input, member } satisfies OrganizationReviewTargetResult
+      }
       const response = await apiClient.api.organization.review.members[':userId'].$get(
         { param: { userId: input.targetUserId } },
         { init: { signal } },
@@ -133,11 +161,9 @@ export const organizationReviewTargetQuery = defineEsiQueryOptions(
       const candidate = target.member
       const member =
         target.organizationVersion === input.organizationVersion &&
-        candidate?.account.userId === input.targetUserId &&
+        candidate.account.userId === input.targetUserId &&
         (input.managedMemberLifecycleId === undefined ||
-          candidate.managedMemberLifecycleId === input.managedMemberLifecycleId) &&
-        (input.targetCharacterId === undefined ||
-          candidate.characters.some(({ characterId }) => characterId === input.targetCharacterId))
+          candidate.managedMemberLifecycleId === input.managedMemberLifecycleId)
           ? candidate
           : null
       return { ...input, member } satisfies OrganizationReviewTargetResult

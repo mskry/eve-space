@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import {
   platformReviewerDirectoryAuditStates,
   platformReviewerDirectoryComplianceStates,
@@ -42,23 +42,21 @@ import {
   deploymentSettings,
   organizationAccountCompliance,
   organizationCharacterExceptions,
-  organizationGroupAssignments,
-  organizationGroups,
   organizationManagedCorporations,
   organizationManagedMemberLifecycles,
   organizationMemberBlocks,
   platformSubjectLifecycles,
 } from '../db/schema.js'
-import { env } from '../env.js'
-import { installedModuleResourceDeclarations } from '../generated/platform/installed-module-resource-declarations.js'
-import { createPlatformResourceClassifierInput } from '../platform/resource-classifier-input.js'
+import { reviewerEligibleCharacterCondition } from './reviewer-character-eligibility.js'
+import { decryptReviewerCursor, encryptReviewerCursor } from './reviewer-cursor-crypto.js'
+import { reviewerResourceClassificationCte } from './reviewer-directory-audit.js'
+import { loadDirectoryGroupData } from './reviewer-directory-groups.js'
+import { escapeReviewerLikePattern, parseReviewerCharacterId } from './reviewer-directory-query.js'
 import { hasCurrentReviewerOrganizationSnapshot } from './reviewer-organization-snapshot.js'
 
 const defaultPageSize = 25
 const maximumPageSize = 50
 const cursorVersion = 1
-const cursorNonceLength = 12
-const cursorTagLength = 16
 const cursorAdditionalData = Buffer.from('eve-space:reviewer-account-search:v1')
 const directoryCursorVersion = 2
 const directoryCursorAdditionalData = Buffer.from('eve-space:reviewer-directory:v2')
@@ -96,13 +94,6 @@ const nullableDirectorySortFields = new Set<PlatformReviewerDirectorySortField>(
   'access_valid_until',
   'blocked_since',
 ])
-const memberAuditDirectoryResources = installedModuleResourceDeclarations.filter(
-  ({ eligibility, moduleId, subjectKind }) =>
-    moduleId === 'member-audit' &&
-    subjectKind === 'character' &&
-    eligibility.kind === 'current-managed-member-character',
-)
-
 export async function searchManagedOrganizationAccounts(input: {
   readonly organizationVersion: number
   readonly filters: PlatformReviewerAccountSearchInput
@@ -259,22 +250,8 @@ async function loadDirectoryPage(
   const filterCondition = directoryFilterCondition(filters, organizationVersion, now)
   const cursorCondition = directoryCursorCondition(sortExpression, filters, cursorPosition)
   const direction = sql.raw(filters.direction)
-  const classifierInput = JSON.stringify(
-    createPlatformResourceClassifierInput(memberAuditDirectoryResources),
-  )
   const rows = await transaction.execute<DirectoryDatabaseRow>(sql`
-    with resource_classification as (
-      select *
-      from platform_classify_resources(
-        ${classifierInput}::text::jsonb,
-        ${now.toISOString()}::text::timestamptz,
-        ${'member-audit'}::text,
-        null::text,
-        ${'character'}::text,
-        null::uuid,
-        null::text
-      )
-    ), disclosed_characters as (
+    with ${reviewerResourceClassificationCte(now)}, disclosed_characters as (
       select
         member.user_id as target_user_id,
         member.managed_member_lifecycle_id,
@@ -290,34 +267,7 @@ async function loadDirectoryPage(
         and lifecycle.subject_kind = 'character'
       where settings.id = 1
         and settings.organization_version = ${organizationVersion}
-        and (
-          (
-            character.affiliation_resolution_state = 'resolved'
-            and character.affiliation_checked_at is not null
-            and character.next_affiliation_check > ${now.toISOString()}::text::timestamptz
-            and exists (
-              select 1
-              from organization_managed_corporations managed
-              where managed.deployment_id = settings.id
-                and managed.organization_version = settings.organization_version
-                and managed.corporation_id = character.corporation_id
-                and managed.is_current
-            )
-          ) or exists (
-            select 1
-            from organization_character_exceptions exception
-            where exception.deployment_id = settings.id
-              and exception.organization_version = settings.organization_version
-              and exception.user_id = member.user_id
-              and exception.character_id = character.character_id
-              and exception.revoked_at is null
-              and exception.expired_at is null
-              and (
-                exception.expires_at is null
-                or exception.expires_at > ${now.toISOString()}::text::timestamptz
-              )
-          )
-        )
+        and (${reviewerEligibleCharacterCondition(organizationVersion, now)})
       group by member.user_id, member.managed_member_lifecycle_id
     ), enabled_audit_resources as (
       select *
@@ -331,24 +281,32 @@ async function loadDirectoryPage(
         target_user_id,
         managed_member_lifecycle_id,
         count(*)::integer as expected,
-        count(*) filter (where validated_at is not null)::integer as covered,
+        count(*) filter (where validated_at is not null
+          and eligibility_status <> 'authorization-required'
+          and observation_state is distinct from 'unavailable')::integer as covered,
         case
           when bool_or(eligibility_status = 'authorization-required')
             then 'authorization-required'
+          when bool_or(observation_state = 'unavailable') then 'unavailable'
           when bool_or(
             validated_at is null
             and (eligibility_status = 'suppressed' or last_failure_class is not null)
           ) then 'unavailable'
           when bool_or(validated_at is null) then 'never-collected'
+          when bool_or(observation_state = 'never-collected') then 'never-collected'
           when bool_or(
-            eligibility_status = 'suppressed'
-            or last_failure_class is not null
-            or due_reason is distinct from 'future'
+            observation_state is null and (
+              eligibility_status = 'suppressed'
+              or last_failure_class is not null
+              or due_reason is distinct from 'future'
+            )
           ) then 'stale'
           else 'current'
         end as state,
         case
-          when count(*) = count(validated_at) then min(validated_at)
+          when count(*) = count(validated_at)
+            and not coalesce(bool_or(eligibility_status = 'authorization-required' or observation_state = 'unavailable'), false)
+            then min(validated_at)
           else null
         end as as_of
       from enabled_audit_resources
@@ -424,34 +382,7 @@ async function loadDirectoryPage(
         and lifecycle.subject_kind = 'character'
       where character.user_id = affiliation.user_id
         and character.is_main
-        and (
-          (
-            character.affiliation_resolution_state = 'resolved'
-            and character.affiliation_checked_at is not null
-            and character.next_affiliation_check > ${now.toISOString()}::text::timestamptz
-            and exists (
-              select 1
-              from organization_managed_corporations managed
-              where managed.deployment_id = 1
-                and managed.organization_version = ${organizationVersion}
-                and managed.corporation_id = character.corporation_id
-                and managed.is_current
-            )
-          ) or exists (
-            select 1
-            from organization_character_exceptions exception
-            where exception.deployment_id = 1
-              and exception.organization_version = ${organizationVersion}
-              and exception.user_id = affiliation.user_id
-              and exception.character_id = character.character_id
-              and exception.revoked_at is null
-              and exception.expired_at is null
-              and (
-                exception.expires_at is null
-                or exception.expires_at > ${now.toISOString()}::text::timestamptz
-              )
-          )
-        )
+        and (${reviewerEligibleCharacterCondition(organizationVersion, now)})
       order by lower(character.name), character.character_id
       limit 1
     ) main_character on true
@@ -525,8 +456,8 @@ function directoryFilterCondition(
 }
 
 function directorySearchCondition(query: string, organizationVersion: number, now: Date) {
-  const characterId = parseCharacterId(query)
-  const queryPattern = `%${escapeLikePattern(query)}%`
+  const characterId = parseReviewerCharacterId(query)
+  const queryPattern = `%${escapeReviewerLikePattern(query)}%`
   const identityConditions: SQL[] = [sql`character.name ilike ${queryPattern}`]
   if (characterId) {
     identityConditions.push(sql`character.character_id = ${characterId}`)
@@ -545,34 +476,7 @@ function directorySearchCondition(query: string, organizationVersion: number, no
           and lifecycle.subject_kind = 'character'
         where character.user_id = affiliation.user_id
           and (${identityCondition})
-          and (
-            (
-              character.affiliation_resolution_state = 'resolved'
-              and character.affiliation_checked_at is not null
-              and character.next_affiliation_check > ${now.toISOString()}::text::timestamptz
-              and exists (
-                select 1
-                from organization_managed_corporations managed
-                where managed.deployment_id = 1
-                  and managed.organization_version = ${organizationVersion}
-                  and managed.corporation_id = character.corporation_id
-                  and managed.is_current
-              )
-            ) or exists (
-              select 1
-              from organization_character_exceptions exception
-              where exception.deployment_id = 1
-                and exception.organization_version = ${organizationVersion}
-                and exception.user_id = affiliation.user_id
-                and exception.character_id = character.character_id
-                and exception.revoked_at is null
-                and exception.expired_at is null
-                and (
-                  exception.expires_at is null
-                  or exception.expires_at > ${now.toISOString()}::text::timestamptz
-                )
-            )
-          )
+          and (${reviewerEligibleCharacterCondition(organizationVersion, now)})
       )
       ${accountCondition}
     )
@@ -637,68 +541,6 @@ function directoryCursorCondition(
   }
   const comparisonCondition = sql.join(comparisons, sql` or `)
   return sql`(${comparisonCondition})`
-}
-
-async function loadDirectoryGroupData(
-  transaction: DatabaseTransaction,
-  organizationVersion: number,
-  userIds: readonly string[],
-  now: Date,
-) {
-  const rows = await transaction
-    .select({
-      groupId: organizationGroups.groupId,
-      name: organizationGroups.name,
-      userId: organizationGroupAssignments.userId,
-    })
-    .from(organizationGroups)
-    .leftJoin(
-      organizationGroupAssignments,
-      and(
-        eq(organizationGroups.groupId, organizationGroupAssignments.groupId),
-        eq(organizationGroups.deploymentId, organizationGroupAssignments.deploymentId),
-        eq(
-          organizationGroups.organizationVersion,
-          organizationGroupAssignments.organizationVersion,
-        ),
-        userIds.length > 0
-          ? inArray(organizationGroupAssignments.userId, [...userIds])
-          : sql`false`,
-        isNull(organizationGroupAssignments.revokedAt),
-        or(
-          isNull(organizationGroupAssignments.expiresAt),
-          gt(organizationGroupAssignments.expiresAt, now),
-        ),
-      ),
-    )
-    .where(
-      and(
-        eq(organizationGroups.deploymentId, 1),
-        eq(organizationGroups.organizationVersion, organizationVersion),
-      ),
-    )
-    .orderBy(
-      asc(organizationGroups.name),
-      asc(organizationGroups.groupId),
-      asc(organizationGroupAssignments.userId),
-      asc(organizationGroupAssignments.assignmentId),
-    )
-  const facets: { groupId: string; name: string }[] = []
-  const groupsByUserId = new Map<string, { groupId: string; name: string }[]>()
-  for (const row of rows) {
-    if (!facets.some(({ groupId }) => groupId === row.groupId)) {
-      facets.push({ groupId: row.groupId, name: row.name })
-    }
-    if (!row.userId) {
-      continue
-    }
-    const groups = groupsByUserId.get(row.userId) ?? []
-    if (!groups.some(({ groupId }) => groupId === row.groupId)) {
-      groups.push({ groupId: row.groupId, name: row.name })
-    }
-    groupsByUserId.set(row.userId, groups)
-  }
-  return { facets, groupsByUserId }
 }
 
 async function isCurrentDirectoryOrganizationVersion(
@@ -851,24 +693,15 @@ function encodeDirectoryCursor(
   filters: NormalizedDirectoryFilters,
   fingerprint: string,
 ) {
-  const nonce = randomBytes(cursorNonceLength)
-  const cipher = createCipheriv('aes-256-gcm', reviewerDirectoryCursorKey(), nonce)
-  cipher.setAAD(directoryCursorAdditionalData)
-  const ciphertext = Buffer.concat([
-    cipher.update(
-      JSON.stringify({
-        d: filters.direction,
-        f: fingerprint,
-        o: organizationVersion,
-        p: position.sortValue,
-        s: filters.sort,
-        u: position.userId,
-        v: directoryCursorVersion,
-      }),
-    ),
-    cipher.final(),
-  ])
-  return Buffer.concat([nonce, cipher.getAuthTag(), ciphertext]).toString('base64url')
+  return encryptReviewerCursor(directoryCursorAdditionalData, {
+    d: filters.direction,
+    f: fingerprint,
+    o: organizationVersion,
+    p: position.sortValue,
+    s: filters.sort,
+    u: position.userId,
+    v: directoryCursorVersion,
+  })
 }
 
 function decodeDirectoryCursor(
@@ -877,26 +710,8 @@ function decodeDirectoryCursor(
   filters: NormalizedDirectoryFilters,
   expectedFingerprint: string,
 ): DirectoryCursorPosition {
-  const key = reviewerDirectoryCursorKey()
   try {
-    const encoded = Buffer.from(cursor, 'base64url')
-    if (
-      encoded.length <= cursorNonceLength + cursorTagLength ||
-      encoded.toString('base64url') !== cursor
-    ) {
-      invalidInput()
-    }
-    const nonce = encoded.subarray(0, cursorNonceLength)
-    const tag = encoded.subarray(cursorNonceLength, cursorNonceLength + cursorTagLength)
-    const decipher = createDecipheriv('aes-256-gcm', key, nonce)
-    decipher.setAAD(directoryCursorAdditionalData)
-    decipher.setAuthTag(tag)
-    const decoded: unknown = JSON.parse(
-      Buffer.concat([
-        decipher.update(encoded.subarray(cursorNonceLength + cursorTagLength)),
-        decipher.final(),
-      ]).toString('utf8'),
-    )
+    const decoded = decryptReviewerCursor(directoryCursorAdditionalData, cursor)
     if (
       !isRecord(decoded) ||
       decoded.v !== directoryCursorVersion ||
@@ -952,21 +767,6 @@ function normalizedDatabaseSortValue(
     invalidInput()
   }
   return number
-}
-
-function reviewerDirectoryCursorKey() {
-  if (!env.TOKEN_ENCRYPTION_KEY) {
-    throw new Error('Reviewer directory is unavailable.')
-  }
-  return Buffer.from(
-    hkdfSync(
-      'sha256',
-      Buffer.from(env.TOKEN_ENCRYPTION_KEY, 'base64'),
-      Buffer.alloc(0),
-      directoryCursorAdditionalData,
-      32,
-    ),
-  )
 }
 
 function directoryFingerprint(filters: NormalizedDirectoryFilters) {
@@ -1076,10 +876,10 @@ function loadSearchPage(
     conditions.push(eq(characters.corporationId, filters.corporationId))
   }
   if (filters.query) {
-    const characterId = parseCharacterId(filters.query)
+    const characterId = parseReviewerCharacterId(filters.query)
     conditions.push(
       or(
-        ilike(characters.name, `%${escapeLikePattern(filters.query)}%`),
+        ilike(characters.name, `%${escapeReviewerLikePattern(filters.query)}%`),
         ...(characterId ? [eq(characters.characterId, characterId)] : []),
         ...(uuidPattern.test(filters.query) ? [eq(characters.userId, filters.query)] : []),
       )!,
@@ -1332,39 +1132,17 @@ function validateSearchCursor(cursor: string | undefined) {
 }
 
 function encodeCursor(userId: string, organizationVersion: number, fingerprint: string) {
-  const nonce = randomBytes(cursorNonceLength)
-  const cipher = createCipheriv('aes-256-gcm', reviewerSearchCursorKey(), nonce)
-  cipher.setAAD(cursorAdditionalData)
-  const ciphertext = Buffer.concat([
-    cipher.update(
-      JSON.stringify({ f: fingerprint, o: organizationVersion, u: userId, v: cursorVersion }),
-    ),
-    cipher.final(),
-  ])
-  return Buffer.concat([nonce, cipher.getAuthTag(), ciphertext]).toString('base64url')
+  return encryptReviewerCursor(cursorAdditionalData, {
+    f: fingerprint,
+    o: organizationVersion,
+    u: userId,
+    v: cursorVersion,
+  })
 }
 
 function decodeCursor(cursor: string, organizationVersion: number, expectedFingerprint: string) {
-  const key = reviewerSearchCursorKey()
   try {
-    const encoded = Buffer.from(cursor, 'base64url')
-    if (
-      encoded.length <= cursorNonceLength + cursorTagLength ||
-      encoded.toString('base64url') !== cursor
-    ) {
-      invalidInput()
-    }
-    const nonce = encoded.subarray(0, cursorNonceLength)
-    const tag = encoded.subarray(cursorNonceLength, cursorNonceLength + cursorTagLength)
-    const decipher = createDecipheriv('aes-256-gcm', key, nonce)
-    decipher.setAAD(cursorAdditionalData)
-    decipher.setAuthTag(tag)
-    const decoded: unknown = JSON.parse(
-      Buffer.concat([
-        decipher.update(encoded.subarray(cursorNonceLength + cursorTagLength)),
-        decipher.final(),
-      ]).toString('utf8'),
-    )
+    const decoded = decryptReviewerCursor(cursorAdditionalData, cursor)
     if (
       !isRecord(decoded) ||
       decoded.v !== cursorVersion ||
@@ -1381,21 +1159,6 @@ function decodeCursor(cursor: string, organizationVersion: number, expectedFinge
   }
 }
 
-function reviewerSearchCursorKey() {
-  if (!env.TOKEN_ENCRYPTION_KEY) {
-    throw new Error('Reviewer account search is unavailable.')
-  }
-  return Buffer.from(
-    hkdfSync(
-      'sha256',
-      Buffer.from(env.TOKEN_ENCRYPTION_KEY, 'base64'),
-      Buffer.alloc(0),
-      cursorAdditionalData,
-      32,
-    ),
-  )
-}
-
 function searchFingerprint(filters: NormalizedSearchFilters) {
   return createHash('sha256')
     .update(
@@ -1408,24 +1171,6 @@ function searchFingerprint(filters: NormalizedSearchFilters) {
     )
     .digest('base64url')
     .slice(0, 16)
-}
-
-function escapeLikePattern(value: string) {
-  return value
-    .replaceAll('\\', String.raw`\\`)
-    .replaceAll('%', String.raw`\%`)
-    .replaceAll('_', String.raw`\_`)
-}
-
-function parseCharacterId(value: string) {
-  if (value.length > 16) {
-    return null
-  }
-  for (const character of value) {
-    if (character < '0' || character > '9') return null
-  }
-  const parsed = Number(value)
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

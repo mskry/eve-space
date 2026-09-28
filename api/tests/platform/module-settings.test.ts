@@ -8,8 +8,13 @@ import {
   loadModuleRuntimeState,
   reconcileInstalledModules,
   reconcileInstalledModuleSections,
+  setInstalledModuleEnabled,
+  setInstalledModuleSectionEnabled,
 } from '../../src/platform/module-settings.js'
-import { platformNavigationDefaults } from '../../src/generated/platform/installed-module-runtime.js'
+import {
+  installedModuleSectionDefinitions,
+  platformNavigationDefaults,
+} from '../../src/generated/platform/installed-module-runtime.js'
 
 describe('installed module reconciliation', () => {
   test('does nothing when no modules are installed', async () => {
@@ -154,6 +159,59 @@ describe('installed module section reconciliation', () => {
     ).resolves.toStrictEqual([{ disclosureVersion: 4, moduleId: 'alpha', sectionId: 'skills' }])
     expect(connection).toHaveBeenCalledOnce()
   })
+})
+
+test('returns ISO timestamps when raw PostgreSQL module settings contain timestamp strings', async () => {
+  const timestamp = '2026-09-27T20:30:00.000Z'
+  const connection = vi.fn((parts: TemplateStringsArray) => {
+    const query = parts.join(' ')
+    if (query.includes('with changed as')) {
+      return Promise.resolve([{ module_id: 'member-audit', enabled: true, updated_at: timestamp }])
+    }
+    if (query.includes('from deployment_module_sections')) {
+      return Promise.resolve(
+        installedModuleSectionDefinitions
+          .filter(({ moduleId }) => moduleId === 'member-audit')
+          .map((section) => ({
+            module_id: 'member-audit',
+            section_id: section.id,
+            kind: section.kind,
+            enabled: false,
+            declaration_revision:
+              section.kind === 'sensitive-evidence' ? section.disclosureRevision : null,
+            disclosure_version: 0,
+            activation_version: 0,
+            updated_at: timestamp,
+          })),
+      )
+    }
+    return Promise.resolve([])
+  })
+  // SAFETY: The mock supplies exactly the raw SQL rows read by this setting operation.
+  const result = await setInstalledModuleEnabled('member-audit', true, connection as never)
+  expect(result?.updatedAt).toBe(timestamp)
+  expect(result?.sections.every(({ updatedAt }) => updatedAt === timestamp)).toBe(true)
+
+  const sectionConnection = vi.fn().mockResolvedValue([
+    {
+      module_id: 'member-audit',
+      section_id: 'overview',
+      kind: 'workspace',
+      enabled: true,
+      declaration_revision: null,
+      disclosure_version: 0,
+      activation_version: 1,
+      updated_at: timestamp,
+    },
+  ])
+  // SAFETY: This fixture matches the single raw section row returned by PostgreSQL.
+  const section = await setInstalledModuleSectionEnabled(
+    'member-audit',
+    'overview',
+    true,
+    sectionConnection as never,
+  )
+  expect(section?.updatedAt).toBe(timestamp)
 })
 
 describe('shell navigation order resolution', () => {

@@ -4,6 +4,10 @@ export function registerPlatformRuntime() {
   const resolver = createResolver(import.meta.url)
   addImports([
     {
+      from: resolver.resolve('./runtime/character-profile'),
+      name: 'usePlatformCharacterProfile',
+    },
+    {
       from: resolver.resolve('./runtime/confirm-dialog'),
       name: 'providePlatformConfirmDialog',
     },

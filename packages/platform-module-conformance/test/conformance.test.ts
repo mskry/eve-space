@@ -48,6 +48,36 @@ describe('public conformance fixtures', () => {
     )
   })
 
+  it('allows the host-supplied profile presenter while rejecting root application imports', () => {
+    const input = {
+      moduleId: 'sample',
+      environment: 'nuxt' as const,
+      scope: 'source' as const,
+      boundaryRoot: 'features/sample/nuxt',
+      path: 'features/sample/nuxt/src/runtime/app/reviewer/CharacterPanel.vue',
+    }
+    expect(
+      platformModuleSourceIssues(
+        {
+          ...input,
+          source:
+            '<script setup lang="ts">const presenter = usePlatformCharacterProfile()</script><template><component :is="presenter" /></template>',
+        },
+        new Set(),
+      ),
+    ).toStrictEqual([])
+    expect(
+      platformModuleSourceIssues(
+        {
+          ...input,
+          source:
+            '<script setup lang="ts">import AppReviewerCharacterProfile from "../../../../../../app/components/AppReviewerCharacterProfile.vue"</script>',
+        },
+        new Set(),
+      ),
+    ).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'IMPORT_ESCAPE' })]))
+  })
+
   it('uses public route, resource, provider, and persistence contracts at runtime', async () => {
     const route = fixtureRoutes({ coreData: {}, logger: logger(), persistence: { readFixture } })
     const response = await route.request('/')

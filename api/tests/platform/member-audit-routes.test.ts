@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   evidenceRead: vi.fn(),
   evidenceSummaryRead: vi.fn(),
   findSession: vi.fn(),
+  publicProfileRead: vi.fn(),
   recordSensitiveAccess: vi.fn(),
   resolveTarget: vi.fn(),
   revokeOrdinaryGroup: vi.fn(),
@@ -28,15 +29,21 @@ vi.mock('../../src/platform/module-settings.js', () => ({
   isInstalledModuleContributionEnabled: vi.fn(async () => mocks.enabled),
   loadModuleRuntimeState: vi.fn(async () => ({
     enabledModuleIds: ['member-audit'],
-    enabledSections: ['overview', 'skills', 'assets', 'wallet', 'mail', 'access-management'].map(
-      (sectionId) => ({
-        activationVersion: 1,
-        disclosureVersion: 1,
-        kind: sectionId === 'access-management' ? 'access-management' : 'sensitive-evidence',
-        moduleId: 'member-audit',
-        sectionId,
-      }),
-    ),
+    enabledSections: [
+      'overview',
+      'skills',
+      'assets',
+      'wallet',
+      'mail',
+      'current-observation',
+      'access-management',
+    ].map((sectionId) => ({
+      activationVersion: 1,
+      disclosureVersion: 1,
+      kind: sectionId === 'access-management' ? 'access-management' : 'sensitive-evidence',
+      moduleId: 'member-audit',
+      sectionId,
+    })),
     shellNavigationOrder: { character: [], dashboard: [] },
   })),
 }))
@@ -48,6 +55,10 @@ vi.mock('../../src/middleware/organization-session.js', () => ({
     context.set('organization', organizationSession)
     await next()
   },
+  loadOrganizationSessionContext: vi.fn(async () => organizationSession),
+}))
+vi.mock('../../src/core-data/public-character-profile-adapter.js', () => ({
+  loadPublicCharacterProfileProduct: mocks.publicProfileRead,
 }))
 vi.mock('../../src/organization/module-authorization.js', () => ({
   authorizeOrganizationContribution: vi.fn(),
@@ -204,6 +215,14 @@ describe('full-root Member Audit routes', () => {
       status: 'current',
     }))
     mocks.evidenceRead.mockResolvedValue({ records: [] })
+    mocks.publicProfileRead.mockResolvedValue({
+      id: characterId,
+      name: 'Target Pilot',
+      cachedUntil: '2026-09-19T12:00:00.000Z',
+      validatedAt: '2026-09-18T12:00:00.000Z',
+      stale: false,
+      bio: { plainText: 'Safe biography', runs: [{ start: 0, text: 'Safe biography' }] },
+    })
     mocks.createEvidence.mockReturnValue({ read: mocks.evidenceRead })
     mocks.assignOrdinaryGroup.mockResolvedValue({
       assignmentId,
@@ -235,6 +254,165 @@ describe('full-root Member Audit routes', () => {
     })
   })
 
+  test('serves a read-only exact-character profile through the declared product', async () => {
+    const response = await app.request(
+      `/api/modules/member-audit/accounts/${targetUserId}/characters/${characterId}/overview`,
+      { headers: sessionHeaders },
+    )
+
+    expect(response.status).toBe(200)
+    expectPrivate(response)
+    await expect(response.json()).resolves.toMatchObject({
+      account: targetBase.account,
+      character: { characterId, subjectLifecycleId: targetBase.characters[0]!.subjectLifecycleId },
+      profile: { id: characterId, bio: { plainText: 'Safe biography' } },
+    })
+    expect(mocks.publicProfileRead).toHaveBeenCalledWith({
+      characterId,
+      signal: expect.any(AbortSignal),
+    })
+    expect(mocks.evidenceRead).not.toHaveBeenCalled()
+  })
+
+  test('refuses an out-of-scope character before profile access', async () => {
+    mocks.resolveTarget.mockResolvedValueOnce(null)
+    const response = await app.request(
+      `/api/modules/member-audit/accounts/${targetUserId}/characters/${characterId}/overview`,
+      { headers: sessionHeaders },
+    )
+    expect(response.status).toBe(404)
+    expect(mocks.publicProfileRead).not.toHaveBeenCalled()
+  })
+
+  test('reports profile unavailability without leaking source errors', async () => {
+    mocks.publicProfileRead.mockRejectedValueOnce(new Error('private transport metadata'))
+    const response = await app.request(
+      `/api/modules/member-audit/accounts/${targetUserId}/characters/${characterId}/overview`,
+      { headers: sessionHeaders },
+    )
+    expect(response.status).toBe(503)
+    expectPrivate(response)
+    await expect(response.json()).resolves.toStrictEqual({
+      code: 'PROFILE_UNAVAILABLE',
+      message: 'Public profile is unavailable.',
+    })
+  })
+
+  test('returns ship and location as independently admitted audited evidence', async () => {
+    const currentShip = {
+      status: {
+        status: 'current',
+        validatedAt: '2026-09-18T12:00:00Z',
+        cachedUntil: '2026-09-18T12:00:05Z',
+      },
+      evidence: { snapshot: { kind: 'current-ship', typeId: 34, name: 'Vessel' } },
+    }
+    const currentLocation = {
+      status: { status: 'unavailable', validatedAt: null, cachedUntil: null },
+      evidence: null,
+    }
+    mocks.evidenceRead.mockResolvedValueOnce({
+      'current-ship': currentShip,
+      'current-location': currentLocation,
+    })
+    const response = await app.request(
+      `/api/modules/member-audit/accounts/${targetUserId}/characters/${characterId}/current-observation`,
+      { headers: sessionHeaders },
+    )
+    expect(response.status).toBe(200)
+    expectPrivate(response)
+    await expect(response.json()).resolves.toStrictEqual({ currentShip, currentLocation })
+    expect(mocks.recordSensitiveAccess).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sectionId: 'current-observation',
+        decision: 'allowed',
+        targetCharacterId: characterId,
+      }),
+    )
+    expect(mocks.evidenceRead).toHaveBeenCalledOnce()
+  })
+
+  test('discards a profile when the exact target changes while it is loading', async () => {
+    const initial: PlatformReviewerTargetContext = {
+      ...targetBase,
+      selection: {
+        kind: 'character',
+        characterId,
+        subjectLifecycleId: targetBase.characters[0]!.subjectLifecycleId,
+      },
+    }
+    mocks.resolveTarget.mockResolvedValueOnce(initial).mockResolvedValueOnce(null)
+
+    const response = await app.request(
+      `/api/modules/member-audit/accounts/${targetUserId}/characters/${characterId}/overview`,
+      { headers: sessionHeaders },
+    )
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toStrictEqual({
+      code: 'REVIEW_TARGET_NOT_FOUND',
+      message: 'Review target not found.',
+    })
+    expect(mocks.publicProfileRead).toHaveBeenCalledOnce()
+  })
+
+  test('discards a completed profile when reviewer permission or section admission changes', async () => {
+    mocks.publicProfileRead.mockImplementationOnce(async () => {
+      mocks.enabled = false
+      return { id: characterId, name: 'Target Pilot' }
+    })
+    const response = await app.request(
+      `/api/modules/member-audit/accounts/${targetUserId}/characters/${characterId}/overview`,
+      { headers: sessionHeaders },
+    )
+    expect(response.status).toBe(404)
+    expect(mocks.evidenceRead).not.toHaveBeenCalled()
+  })
+
+  test('discards a profile after the reviewer loses summary permission', async () => {
+    mocks.authorizeReviewer
+      .mockResolvedValueOnce({
+        authorized: true,
+        context: {
+          audience: 'hr',
+          entitlementScope: 'all',
+          organizationVersion: 7,
+          requiredPermission: 'member-audit.summary.read',
+        },
+      })
+      .mockResolvedValueOnce({ authorized: false, reason: 'permission' })
+
+    const response = await app.request(
+      `/api/modules/member-audit/accounts/${targetUserId}/characters/${characterId}/overview`,
+      { headers: sessionHeaders },
+    )
+    expect(response.status).toBe(404)
+    expectPrivate(response)
+    expect(mocks.publicProfileRead).toHaveBeenCalledOnce()
+  })
+
+  test('discards an old authorization generation after the profile read', async () => {
+    const initial: PlatformReviewerTargetContext = {
+      ...targetBase,
+      selection: {
+        kind: 'character',
+        characterId,
+        subjectLifecycleId: targetBase.characters[0]!.subjectLifecycleId,
+      },
+    }
+    mocks.resolveTarget.mockResolvedValueOnce(initial).mockResolvedValueOnce({
+      ...initial,
+      characters: [{ ...targetBase.characters[0]!, authorizationGeneration: 4 }],
+    })
+
+    const response = await app.request(
+      `/api/modules/member-audit/accounts/${targetUserId}/characters/${characterId}/overview`,
+      { headers: sessionHeaders },
+    )
+    expect(response.status).toBe(404)
+    expect(mocks.publicProfileRead).toHaveBeenCalledOnce()
+  })
+
   test('mounts bounded search, summary, and independently authorized detail routes', async () => {
     const search = await app.request('/api/organization/review/members?limit=25', {
       headers: sessionHeaders,
@@ -261,6 +439,7 @@ describe('full-root Member Audit routes', () => {
       ['assets', 'member-audit.assets.read'],
       ['wallet', 'member-audit.wallet.read'],
       ['mail', 'member-audit.mail.read'],
+      ['current-observation', 'member-audit.current-observation.read'],
     ] as const
     for (const [section, permission] of sections) {
       const response = await app.request(
@@ -275,7 +454,7 @@ describe('full-root Member Audit routes', () => {
         expect.objectContaining({ requiredPermission: permission }),
       )
     }
-    expect(mocks.recordSensitiveAccess).toHaveBeenCalledTimes(4)
+    expect(mocks.recordSensitiveAccess).toHaveBeenCalledTimes(5)
     expect(mocks.recordSensitiveAccess).toHaveBeenCalledWith(
       expect.objectContaining({
         actorUserId: reviewerUserId,
@@ -319,15 +498,28 @@ describe('full-root Member Audit routes', () => {
     })
 
     const blocked = await app.request(`/api/modules/member-audit/accounts/${targetUserId}/block`, {
-      body: JSON.stringify({ reason: 'Immediate review hold.' }),
+      body: JSON.stringify({
+        reason: 'Immediate review hold.',
+        expectedOrganizationVersion: 7,
+        expectedManagedMemberLifecycleId: targetBase.managedMemberLifecycleId,
+      }),
       headers: jsonHeaders,
       method: 'POST',
     })
     expect(blocked.status).toBe(201)
+    expect(mocks.blockMember).toHaveBeenCalledWith({
+      reason: 'Immediate review hold.',
+      expectedOrganizationVersion: 7,
+      expectedManagedMemberLifecycleId: targetBase.managedMemberLifecycleId,
+    })
     const unblocked = await app.request(
       `/api/modules/member-audit/accounts/${targetUserId}/block`,
       {
-        body: JSON.stringify({ reason: 'Reevaluate current access.' }),
+        body: JSON.stringify({
+          reason: 'Reevaluate current access.',
+          expectedOrganizationVersion: 7,
+          expectedManagedMemberLifecycleId: targetBase.managedMemberLifecycleId,
+        }),
         headers: jsonHeaders,
         method: 'DELETE',
       },
@@ -394,6 +586,56 @@ describe('full-root Member Audit routes', () => {
     expect(mocks.recordSensitiveAccess).toHaveBeenCalledWith(
       expect.objectContaining({ decision: 'denied', reason: 'target-not-authorized' }),
     )
+  })
+
+  test('records content-free current-observation decisions and fails closed when audit append fails', async () => {
+    mocks.evidenceRead.mockResolvedValue({
+      'current-ship': { status: { status: 'current' }, evidence: { snapshot: { name: 'Vessel' } } },
+      'current-location': { status: { status: 'unavailable' }, evidence: null },
+    })
+    const path = `/api/modules/member-audit/accounts/${targetUserId}/characters/${characterId}/current-observation`
+    const allowed = await app.request(path, { headers: sessionHeaders })
+    expect(allowed.status).toBe(200)
+    expect(JSON.stringify(mocks.recordSensitiveAccess.mock.calls)).not.toContain('Vessel')
+    expect(JSON.stringify(mocks.recordSensitiveAccess.mock.calls)).not.toContain('snapshot')
+
+    mocks.evidenceRead.mockClear()
+    mocks.recordSensitiveAccess.mockRejectedValueOnce(new Error('audit unavailable'))
+    const unavailable = await app.request(path, { headers: sessionHeaders })
+    expect(unavailable.status).toBe(503)
+    expectPrivate(unavailable)
+    expect(mocks.evidenceRead).not.toHaveBeenCalled()
+  })
+
+  test('denies current observations before evidence for permission, section, or target loss', async () => {
+    const path = `/api/modules/member-audit/accounts/${targetUserId}/characters/${characterId}/current-observation`
+    mocks.authorizeReviewer.mockResolvedValueOnce({ authorized: false, reason: 'permission' })
+    const permission = await app.request(path, { headers: sessionHeaders })
+    expect(permission.status).toBe(403)
+    expect(mocks.evidenceRead).not.toHaveBeenCalled()
+    expect(mocks.recordSensitiveAccess).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sectionId: 'current-observation',
+        decision: 'denied',
+      }),
+    )
+
+    vi.clearAllMocks()
+    mocks.enabled = false
+    const disabled = await app.request(path, { headers: sessionHeaders })
+    expect(disabled.status).toBe(404)
+    expect(mocks.evidenceRead).not.toHaveBeenCalled()
+
+    mocks.enabled = true
+    mocks.findSession.mockResolvedValue({ userId: reviewerUserId })
+    mocks.authorizeReviewer.mockResolvedValue({
+      authorized: true,
+      context: { organizationVersion: 7 },
+    })
+    mocks.resolveTarget.mockResolvedValueOnce(null)
+    const stale = await app.request(path, { headers: sessionHeaders })
+    expect(stale.status).toBe(404)
+    expect(mocks.evidenceRead).not.toHaveBeenCalled()
   })
 })
 

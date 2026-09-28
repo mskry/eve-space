@@ -11,18 +11,29 @@ const moduleRoot = join(root, 'features/member-audit')
 
 describe('Member Audit reviewer adoption', () => {
   test('publishes the exact permission, profile, and contribution catalog', async () => {
+    // SAFETY: The committed manifest is the fixture under inspection in this catalog test.
     const manifest = JSON.parse(
       await readFile(join(moduleRoot, 'manifest/manifest.json'), 'utf8'),
     ) as {
       permissions: { audiences: string[]; key: string }[]
       permissionProfiles: { id: string; permissions: string[] }[]
       reviewerContributions: { directoryPermission?: string; id: string; routeId: string }[]
-      server: { routes: { id: string; target?: string }[] }
+      sections: {
+        defaultEnabled: boolean
+        disclosureRevision?: number
+        id: string
+        kind: string
+      }[]
+      server: {
+        resources: { operationId: string; sectionId: string }[]
+        routes: { id: string; target?: string }[]
+      }
       nuxt: { navigation: unknown[]; pages: unknown[] }
     }
 
     expect(manifest.permissions.map(({ key }) => key)).toStrictEqual([
       'member-audit.assets.read',
+      'member-audit.current-observation.read',
       'member-audit.groups.manage',
       'member-audit.mail.read',
       'member-audit.members.block',
@@ -38,8 +49,30 @@ describe('Member Audit reviewer adoption', () => {
       'evidence-review',
       'member-review',
     ])
+    expect(
+      manifest.permissionProfiles.every(
+        ({ permissions }) => !permissions.includes('member-audit.current-observation.read'),
+      ),
+    ).toBe(true)
+    expect(manifest.sections.find(({ id }) => id === 'current-observation')).toStrictEqual({
+      defaultEnabled: false,
+      disclosureRevision: 1,
+      id: 'current-observation',
+      kind: 'sensitive-evidence',
+    })
+    expect(manifest.sections.find(({ id }) => id === 'skills')?.disclosureRevision).toBe(2)
+    expect(
+      manifest.server.resources.every(({ operationId }) => operationId !== 'skill-queue'),
+    ).toBe(true)
+    expect(
+      manifest.server.resources
+        .filter(({ sectionId }) => sectionId === 'current-observation')
+        .map(({ operationId }) => operationId),
+    ).toStrictEqual(['ship', 'location'])
     expect(manifest.reviewerContributions.map(({ id }) => id)).toStrictEqual([
       'overview',
+      'character-landing-profile',
+      'current-observation',
       'trained-skills',
       'assets',
       'wallet',
@@ -93,8 +126,8 @@ describe('Member Audit reviewer adoption', () => {
     ) as { exports: Record<string, unknown> }
     const exports = Object.keys(packageJson.exports)
 
-    expect(exports).toHaveLength(8)
-    expect(exports.filter((entry) => entry.startsWith('./reviewer/'))).toHaveLength(7)
+    expect(exports).toHaveLength(10)
+    expect(exports.filter((entry) => entry.startsWith('./reviewer/'))).toHaveLength(9)
     expect(exports.some((entry) => entry.includes('model'))).toBe(false)
     expect(exports.some((entry) => entry.includes('directory'))).toBe(false)
   })

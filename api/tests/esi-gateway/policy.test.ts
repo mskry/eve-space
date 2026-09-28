@@ -210,7 +210,7 @@ describe('ESI operation policies', () => {
       explorerUrl: 'https://developers.eveonline.com/api-explorer',
       requestedCompatibilityDate: '2026-08-23',
       resolvedCompatibilityDate: '2026-08-18',
-      reviewedAt: '2026-09-03',
+      reviewedAt: '2026-09-27',
     })
     expect(
       Object.keys(coreEsiOperationCatalog).toSorted((left, right) => left.localeCompare(right)),
@@ -401,13 +401,16 @@ describe('ESI operation policies', () => {
   test('records representative character route-group contracts', () => {
     expect([esiOperationMetadata.location, esiOperationMetadata.ship]).toStrictEqual([
       expect.objectContaining({
-        cache: { kind: 'relative', seconds: 5 },
+        cache: { kind: 'runtime-only' },
       }),
       expect.objectContaining({
         cache: { kind: 'relative', seconds: 5 },
       }),
     ])
     for (const operation of ['location', 'ship'] as const) {
+      expect(getEsiOperationContract(operation).cache).toMatchObject({
+        stale: { kind: 'none' },
+      })
       expect(getGeneratedEsiOperationFacts(operation).rateLimit).toStrictEqual({
         group: 'char-location',
         kind: 'declared',

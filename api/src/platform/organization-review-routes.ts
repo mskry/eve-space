@@ -1,5 +1,6 @@
 import type { PlatformInstalledReviewerContributionDescriptor } from '@eve-space/platform-module-contract/installed'
 import {
+  platformReviewerCharacterDirectorySortFields,
   platformReviewerDirectoryAuditStates,
   platformReviewerDirectoryComplianceStates,
   platformReviewerDirectorySortDirections,
@@ -29,6 +30,11 @@ import {
   searchManagedOrganizationDirectory,
 } from '../organization/reviewer-account-search.js'
 import { resolveOrganizationReviewerTarget } from '../organization/reviewer-target.js'
+import { searchManagedOrganizationCharacters } from '../organization/reviewer-character-directory.js'
+import {
+  characterDirectoryCursorSchema,
+  ReviewerCharacterDirectoryInputError,
+} from '../organization/reviewer-character-cursor.js'
 import { listAvailableReviewerContributions } from './reviewer-contributions.js'
 
 const reviewerDirectorySummaryPermission = 'member-audit.summary.read'
@@ -48,6 +54,17 @@ const reviewerDirectoryQuery = z.object({
   sort: z.enum(platformReviewerDirectorySortFields).optional(),
 })
 const reviewerTargetParams = z.object({ userId: z.uuid() })
+const reviewerCharacterTargetParams = reviewerTargetParams.extend({
+  characterId: z
+    .string()
+    .regex(/^[1-9]\d*$/)
+    .transform(Number)
+    .pipe(z.number().int().positive().max(Number.MAX_SAFE_INTEGER)),
+})
+const reviewerCharacterDirectoryQuery = reviewerDirectoryQuery.extend({
+  cursor: characterDirectoryCursorSchema.optional(),
+  sort: z.enum(platformReviewerCharacterDirectorySortFields).optional(),
+})
 
 type OrganizationReviewerEntryEnv = {
   Variables: OrganizationSessionEnv['Variables'] & {
@@ -85,6 +102,30 @@ export const organizationReviewerPlatformRoutes = new Hono<OrganizationReviewerE
       )
     }
   })
+  .get(
+    '/characters',
+    requireReviewerDirectoryPermission(),
+    zValidator('query', reviewerCharacterDirectoryQuery),
+    async (context) => {
+      try {
+        return context.json(
+          await searchManagedOrganizationCharacters({
+            ...context.req.valid('query'),
+            organizationVersion: context.var.organization!.organizationVersion,
+          }),
+        )
+      } catch (error) {
+        if (!(error instanceof ReviewerCharacterDirectoryInputError)) throw error
+        return context.json(
+          {
+            code: 'INVALID_REVIEWER_DIRECTORY_INPUT',
+            message: 'Invalid reviewer directory input.',
+          },
+          400,
+        )
+      }
+    },
+  )
   .get('/members/:userId', zValidator('param', reviewerTargetParams), async (context) => {
     const target = await resolveOrganizationReviewerTarget({
       organizationVersion: context.var.organization!.organizationVersion,
@@ -113,6 +154,54 @@ export const organizationReviewerPlatformRoutes = new Hono<OrganizationReviewerE
       organizationVersion: target.organizationVersion,
     })
   })
+  .get(
+    '/members/:userId/characters/:characterId',
+    requireReviewerDirectoryPermission(),
+    zValidator('param', reviewerCharacterTargetParams),
+    async (context) => {
+      const { userId, characterId } = context.req.valid('param')
+      const target = await resolveOrganizationReviewerTarget({
+        organizationVersion: context.var.organization!.organizationVersion,
+        targetUserId: userId,
+        characterId,
+      })
+      const character = target?.characters.find(
+        (candidate) => candidate.characterId === characterId,
+      )
+      if (!target || !character || target.selection.kind !== 'character') {
+        return context.json(routeNotFoundBody, 404)
+      }
+      return context.json({
+        member: {
+          account: target.account,
+          block: target.block,
+          character,
+          compliance: target.compliance,
+          managedMemberLifecycleId: target.managedMemberLifecycleId,
+        },
+        organizationVersion: target.organizationVersion,
+      })
+    },
+  )
+
+function requireReviewerDirectoryPermission() {
+  return createMiddleware<OrganizationReviewerEntryEnv>(async (context, next) => {
+    if (
+      !context.var.availableReviewerContributions.some(
+        ({ directoryPermission }) => directoryPermission,
+      )
+    ) {
+      return context.json(
+        {
+          code: 'ORGANIZATION_REVIEWER_REQUIRED',
+          message: 'Organization reviewer authority and contribution permission are required.',
+        },
+        403,
+      )
+    }
+    await next()
+  })
+}
 
 function createOrganizationReviewerEntryGate() {
   return createMiddleware<OrganizationReviewerEntryEnv>(async (context, next) => {
@@ -205,6 +294,8 @@ function projectContribution(contribution: PlatformInstalledReviewerContribution
     label: contribution.label,
     moduleId: contribution.moduleId,
     order: contribution.order,
+    ...(contribution.placement && { placement: contribution.placement }),
+    ...(contribution.directoryAction && { directoryAction: contribution.directoryAction }),
     routeId: contribution.routeId,
     routePath: contribution.routePath,
     sectionId: contribution.sectionId,

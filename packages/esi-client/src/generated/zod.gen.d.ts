@@ -571,11 +571,6 @@ export declare const zCharactersCharacterIdKillmailsRecentGet: z.ZodArray<z.ZodO
     killmail_hash: z.ZodString;
     killmail_id: z.ZodInt;
 }, z.core.$loose>>;
-export declare const zCharactersCharacterIdLocationGet: z.ZodObject<{
-    solar_system_id: z.ZodInt;
-    station_id: z.ZodOptional<z.ZodInt>;
-    structure_id: z.ZodOptional<z.ZodInt>;
-}, z.core.$loose>;
 export declare const zCharactersCharacterIdLoyaltyPointsGet: z.ZodArray<z.ZodObject<{
     corporation_id: z.ZodInt;
     loyalty_points: z.ZodInt;
@@ -956,12 +951,6 @@ export declare const zCharactersCharacterIdNotificationsGet: z.ZodArray<z.ZodObj
         WarSurrenderOfferMsg: "WarSurrenderOfferMsg";
     }>;
 }, z.core.$loose>>;
-export declare const zCharactersCharacterIdOnlineGet: z.ZodObject<{
-    last_login: z.ZodOptional<z.ZodISODateTime>;
-    last_logout: z.ZodOptional<z.ZodISODateTime>;
-    logins: z.ZodOptional<z.ZodInt>;
-    online: z.ZodBoolean;
-}, z.core.$loose>;
 export declare const zCharactersCharacterIdOrdersGet: z.ZodArray<z.ZodObject<{
     duration: z.ZodInt;
     escrow: z.ZodOptional<z.ZodNumber>;
@@ -1330,11 +1319,6 @@ export declare const zCharactersCharacterIdSearchGet: z.ZodObject<{
     station: z.ZodOptional<z.ZodArray<z.ZodInt>>;
     structure: z.ZodOptional<z.ZodArray<z.ZodInt>>;
 }, z.core.$loose>;
-export declare const zCharactersCharacterIdShipGet: z.ZodObject<{
-    ship_item_id: z.ZodInt;
-    ship_name: z.ZodString;
-    ship_type_id: z.ZodInt;
-}, z.core.$loose>;
 export declare const zCharactersCharacterIdStandingsGet: z.ZodArray<z.ZodObject<{
     from_id: z.ZodInt;
     from_type: z.ZodEnum<{
@@ -1608,6 +1592,12 @@ export declare const zCharactersFreelanceJobsParticipation: z.ZodObject<{
         Resigned: "Resigned";
         Unspecified: "Unspecified";
     }>;
+}, z.core.$loose>;
+export declare const zCharactersOnline: z.ZodObject<{
+    last_login: z.ZodOptional<z.ZodISODateTime>;
+    last_logout: z.ZodOptional<z.ZodISODateTime>;
+    logins: z.ZodOptional<z.ZodInt>;
+    online: z.ZodBoolean;
 }, z.core.$loose>;
 export declare const zCharactersSkillsSkill: z.ZodObject<{
     active_skill_level: z.ZodInt;
@@ -4304,7 +4294,7 @@ export declare const zError: z.ZodObject<{
     status: z.ZodOptional<z.ZodInt>;
 }, z.core.$loose>;
 export declare const zFactionId: z.ZodInt;
-export declare const zAllianceDetail: z.ZodObject<{
+export declare const zAlliancesDetail: z.ZodObject<{
     creator_corporation_id: z.ZodInt;
     creator_id: z.ZodInt;
     date_founded: z.ZodISODateTime;
@@ -4841,7 +4831,7 @@ export declare const zMetaName: z.ZodObject<{
         name: z.ZodString;
     }, z.core.$loose>>;
 }, z.core.$loose>;
-export declare const zMetaStatusRoutestatus: z.ZodObject<{
+export declare const zMetaStatusRoute: z.ZodObject<{
     method: z.ZodEnum<{
         DELETE: "DELETE";
         GET: "GET";
@@ -5219,6 +5209,11 @@ export declare const zSovereigntySystems: z.ZodObject<{
     }, z.core.$loose>>;
 }, z.core.$loose>;
 export declare const zStationId: z.ZodInt;
+export declare const zCharactersLocation: z.ZodObject<{
+    solar_system_id: z.ZodInt;
+    station_id: z.ZodOptional<z.ZodInt>;
+    structure_id: z.ZodOptional<z.ZodInt>;
+}, z.core.$loose>;
 export declare const zCorporationsDetail: z.ZodObject<{
     alliance_id: z.ZodOptional<z.ZodInt>;
     ceo_id: z.ZodOptional<z.ZodInt>;
@@ -5262,6 +5257,11 @@ export declare const zStatus: z.ZodObject<{
     vip: z.ZodBoolean;
 }, z.core.$loose>;
 export declare const zTypeId: z.ZodInt;
+export declare const zCharactersShip: z.ZodObject<{
+    ship_item_id: z.ZodInt;
+    ship_name: z.ZodString;
+    ship_type_id: z.ZodInt;
+}, z.core.$loose>;
 export declare const zCharactersSkillqueueSkill: z.ZodObject<{
     finish_date: z.ZodOptional<z.ZodISODateTime>;
     finished_level: z.ZodInt;

@@ -90,6 +90,7 @@ export function createPlatformReviewerEvidenceSummaryReads(
                       resourceId,
                       status: status.status,
                       validatedAt: status.validatedAt,
+                      ...(status.cachedUntil !== undefined && { cachedUntil: status.cachedUntil }),
                     }
                   }),
                 ),

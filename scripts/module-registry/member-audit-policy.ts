@@ -9,6 +9,7 @@ const EXPECTED_SECTIONS = new Map<string, PlatformModuleSectionContribution['kin
   ['assets', 'sensitive-evidence'],
   ['wallet', 'sensitive-evidence'],
   ['mail', 'sensitive-evidence'],
+  ['current-observation', 'sensitive-evidence'],
   ['access-management', 'access-management'],
 ])
 
@@ -17,6 +18,7 @@ const SECTION_OPERATIONS = new Map<string, ReadonlySet<string>>([
   ['assets', new Set(['character-assets-page', 'character-asset-names', 'universe-resolve-names'])],
   ['wallet', new Set(['wallet-balance', 'wallet-journal', 'wallet-transactions'])],
   ['mail', new Set(['mail-headers', 'mail-message', 'mail-lists', 'universe-resolve-names'])],
+  ['current-observation', new Set(['ship', 'location'])],
 ])
 
 const ORGANIZATION_COMMAND_PERMISSIONS = new Map([
@@ -94,12 +96,16 @@ function validateRoute(route: PlatformRouteContribution, issues: string[]) {
   }
   if (
     route.target !== 'managed-organization-account-search' &&
-    route.target !== 'managed-organization-account'
+    route.target !== 'managed-organization-account' &&
+    route.target !== 'managed-organization-character'
   ) {
-    issues.push(`Member Audit overview route ${identity} must target search or one account`)
+    issues.push(
+      `Member Audit overview route ${identity} must target search or one account/character`,
+    )
   }
   if (
-    route.target === 'managed-organization-account' &&
+    (route.target === 'managed-organization-account' ||
+      route.target === 'managed-organization-character') &&
     route.requiredPermission !== 'member-audit.summary.read'
   ) {
     issues.push(

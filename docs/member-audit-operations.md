@@ -36,16 +36,17 @@ as evidence that another is present.
    non-secret reason and an expiry when access is temporary.
 6. Confirm the effective permissions before enabling a section. Use the smallest applicable set:
 
-| Capability               | Required permission          |
-| ------------------------ | ---------------------------- |
-| Search managed accounts  | `member-audit.search`        |
-| View account summary     | `member-audit.summary.read`  |
-| View trained skills      | `member-audit.skills.read`   |
-| View assets              | `member-audit.assets.read`   |
-| View wallet              | `member-audit.wallet.read`   |
-| View mail                | `member-audit.mail.read`     |
-| Manage ordinary groups   | `member-audit.groups.manage` |
-| Block or unblock members | `member-audit.members.block` |
+| Capability                 | Required permission                     |
+| -------------------------- | --------------------------------------- |
+| Search managed accounts    | `member-audit.search`                   |
+| View account summary       | `member-audit.summary.read`             |
+| View trained skills        | `member-audit.skills.read`              |
+| View assets                | `member-audit.assets.read`              |
+| View wallet                | `member-audit.wallet.read`              |
+| View mail                  | `member-audit.mail.read`                |
+| View current ship/location | `member-audit.current-observation.read` |
+| Manage ordinary groups     | `member-audit.groups.manage`            |
+| Block or unblock members   | `member-audit.members.block`            |
 
 Do not put Member Audit permissions in automatically managed compliance groups. Rule-managed
 groups can include deliberately selected restricted reviewer bundles only when the owner has
@@ -70,6 +71,9 @@ The reviewer representations are limited to:
 - Wallet: current balance and bounded journal and transaction fields required for review.
 - Mail: bounded header identity, source timestamp, labels, resolved parties, subject, and sanitized
   plain-text body. Raw markup is never retained.
+- Current observations: separate latest complete ship type/name and system/location-kind snapshots
+  with permitted public labels and independent validation times; no ship instance ID, coordinates,
+  online state, or movement history.
 
 Every authenticated detailed skills, assets, wallet, or mail attempt appends exactly one immutable,
 content-free allow or deny decision before returning evidence or a controlled refusal. The record is
@@ -93,23 +97,26 @@ current organization compliance, `member-audit.search`, and `member-audit.summar
 loads any enriched row. Deployment-administrator or organization-owner authority alone is not
 sufficient.
 
-The directory exposes one canonical bounded row. Column visibility does not change the response or
-act as a data-access control.
+`GET /api/organization/review/characters` returns one bounded row per eligible current disclosed
+character, including an approved external character only while its account has a fresh managed
+affiliation. It pages the global character relation before account-group enrichment. The older
+`/members` account endpoint and account-only target links remain separate. Column visibility does
+not change the response or act as a data-access control.
 
-| Field                | Operational meaning                                                                                        |
-| -------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Member               | Permitted main-character identity and portrait, falling back to the current managed-affiliation character  |
-| Corporation          | Current managed-affiliation corporation ID; serving the row performs no live ESI name lookup               |
-| Managed since        | Start of the current managed-member lifecycle; an earlier ended lifecycle is not continuous tenure         |
-| Audit data           | Aggregate state and safe counts derived from core collection metadata, never raw Member Audit evidence     |
-| Groups               | Deterministically ordered current visible core assignments only                                            |
-| Access status        | Current compliance state with an active member block taking precedence                                     |
-| Disclosed characters | Count of current attached in-scope character lifecycles; it does not imply undisclosed-character discovery |
-| Affiliation checked  | Time at which the current managed affiliation was validated                                                |
-| Site registered      | Creation time of the EVE Space user record, not corporation tenure or site activity                        |
-| Review deadline      | Current compliance review deadline, or no recorded value                                                   |
-| Access valid until   | Current compliance access boundary, or no recorded value                                                   |
-| Blocked since        | Start of the current active block, or no recorded value                                                    |
+| Field                | Operational meaning                                                                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Character            | The row character's own name, portrait identity, lifecycle and managed/approved-external affiliation; the eligible account main character is secondary context |
+| Corporation          | The row character's observed corporation ID, including approved external affiliation; no live ESI name lookup                                                  |
+| Managed since        | Start of the account's current managed-member lifecycle; an earlier ended lifecycle is not continuous tenure                                                   |
+| Audit data           | The row character's aggregate state, safe counts, and oldest complete validation, never a sibling's timestamp or raw evidence                                  |
+| Groups               | Deterministically ordered current visible **account** assignments only                                                                                         |
+| Access status        | Current **account** compliance state with an active account block taking precedence                                                                            |
+| Disclosed characters | Count of the account's currently eligible disclosed characters; it does not imply undisclosed-character discovery                                              |
+| Affiliation checked  | Time at which the **row character's** current affiliation was validated, with freshness and external status distinguished                                      |
+| Site registered      | Creation time of the EVE Space user record, not corporation tenure or site activity                                                                            |
+| Review deadline      | Current compliance review deadline, or no recorded value                                                                                                       |
+| Access valid until   | Current compliance access boundary, or no recorded value                                                                                                       |
+| Blocked since        | Start of the current active block, or no recorded value                                                                                                        |
 
 Aggregate audit state is conservative across every expected enabled Member Audit resource:
 
@@ -121,9 +128,19 @@ Aggregate audit state is conservative across every expected enabled Member Audit
 5. `stale` means every resource has succeeded but at least one validation is stale.
 6. `current` means every expected resource is current.
 
-The aggregate `asOf` value is present only when every expected resource has succeeded. It is the
-oldest validation in that complete set, not the newest resource timestamp. Resource identities,
+The per-character aggregate `asOf` value is present only when every expected resource for that
+character has succeeded. It is the oldest validation in that complete set, not the newest resource
+timestamp or a sibling character's time. Resource identities,
 failure details, and evidence remain behind explicit target and contribution selection.
+
+Character name or exact character-ID search selects matching rows; exact account-ID search selects
+that account's eligible rows. Corporation filtering uses the row affiliation, while group,
+compliance, and block filters use account facts; audit-state filtering uses the row's aggregate.
+Sorting applies to the whole authorized result set before a maximum 50-character page, with nulls
+last and stable character/lifecycle ties. The encrypted character cursor binds the organization
+version, normalized query, every filter, sort field and direction, page size, and last ordering
+tuple. It cannot be replayed as an account cursor. Eligibility changes between pages require
+current re-evaluation rather than granting a historical snapshot.
 
 Browser preferences contain only a schema version and ordered stable field IDs. They do not contain
 members, identifiers, names, groups, status or date values, search/filter/sort inputs, cursors, or
@@ -134,21 +151,78 @@ This directory has no CSV endpoint or download control. It does not store, infer
 last site activity, last site login, EVE last-login/logout, online state, or login counts. Those
 fields require separate source, scope, disclosure, permission, freshness, and retention decisions.
 
+## Current Observation DTOs
+
+Ship and location are separate `current-observation` resources. Each snapshot retains the exact
+character/organization authority binding in storage, one complete intentional payload, the original
+gateway `validatedAt`, and upstream `cachedUntil`. The read operation returns independently nullable
+envelopes, for example a current ship with location unavailable:
+
+```json
+{
+  "currentShip": {
+    "dtoRevision": 1,
+    "observationId": "00000000-0000-4000-8000-000000000001",
+    "snapshot": {
+      "kind": "current-ship",
+      "typeId": 34,
+      "typeName": "Merlin",
+      "groupId": 25,
+      "groupName": "Frigate",
+      "name": "Review Vessel"
+    },
+    "validatedAt": "2026-09-18T12:00:00Z",
+    "cachedUntil": "2026-09-18T12:00:05Z"
+  },
+  "currentLocation": null
+}
+```
+
+An independently admitted structure observation can retain its identifier without a private
+structure-name lookup:
+
+```json
+{
+  "currentShip": null,
+  "currentLocation": {
+    "dtoRevision": 1,
+    "observationId": "00000000-0000-4000-8000-000000000002",
+    "snapshot": {
+      "kind": "current-location",
+      "solarSystemId": 30000001,
+      "solarSystemName": "Unknown solar system",
+      "solarSystemSecurityStatus": null,
+      "locationType": "structure",
+      "structureId": 1000000001
+    },
+    "validatedAt": "2026-09-18T12:00:00Z",
+    "cachedUntil": "2026-09-18T12:00:05Z"
+  }
+}
+```
+
+The status for each resource is independently `current`, `stale`, `authorization-required`,
+`never-collected`, or `unavailable`. Under the present zero-stale policy, `stale` cannot release
+evidence. Ship may be current while location is authorization-required or unavailable, and vice
+versa. In those latter states the affected envelope is null. No ship instance ID, coordinates,
+movement series, online status, or private structure details are retained.
+
 ## Directory Rollout And Rollback
 
 Deploy the API and Nuxt directory from the same release. The canonical row shape, filter and sort
 inputs, and opaque cursor version are one contract; do not intentionally operate mismatched server
-and Nuxt versions. This release requires no data migration or backfill. Its maximum-size query plan
-uses the existing schema, and directory preferences remain browser-local presentation state.
+and Nuxt versions. The directory relation requires no backfill; this change's separate OAuth and
+observation migrations remain forward-only. Its maximum-size query plan uses the existing core
+schema, and directory preferences remain browser-local presentation state.
 
-In-flight cursors are ephemeral and memory-only. A server change may reject an older cursor with the
-typed invalid-directory-input response, after which the workspace returns to the first page and
-announces the reset. Do not translate or persist old cursors. Saved column layouts carry their own
+In-flight cursors are ephemeral and memory-only. Old account-directory cursors are never translated
+into character cursors. A rejected cursor returns the typed invalid-directory-input response, after
+which the workspace returns to the first page and announces the reset. Saved column layouts carry their own
 schema version; an old version, unknown or duplicate field, missing locked field, corrupt value, or
 storage failure falls back to or repairs against the current field catalogue without member data.
 
-For rollback, restore the prior API and Nuxt pair together. Do not reverse a database migration,
-because this directory adds none. The newer browser preference key may remain: the prior client
+For rollback, restore the prior API and Nuxt pair together without reversing applied migrations.
+The newer browser preference key may remain: the prior client
 ignores it, and a later compatible client validates its version before use. Existing session,
 organization-version, compliance, block, reviewer-role, exact-permission, module, and section gates
 remain authoritative across rollout and rollback. Authorization loss, logout, organization changes,
@@ -159,18 +233,29 @@ another directory or contribution request runs.
 
 Member Audit stores intentional reviewer DTOs, not raw ESI responses.
 
-| Evidence                                              | Retention and collection objective                                                                        |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Trained skills                                        | Latest complete current-authority snapshot only; refresh interval 60 minutes                              |
-| Skill queue                                           | Not collected                                                                                             |
-| Assets and eligible custom names                      | Latest complete current-authority snapshot only; refresh interval 60 minutes                              |
-| Wallet balance                                        | Latest complete current-authority snapshot only; refresh interval 15 minutes                              |
-| Wallet journal and transactions                       | Source-timestamp retention of at most 90 days; refresh interval 15 minutes                                |
-| Mail headers and sanitized plain text                 | Source-timestamp retention of at most 90 days; refresh interval 15 minutes; raw markup is never persisted |
-| Incomplete continuation, staging, and promotion state | At most 24 hours                                                                                          |
+| Evidence                                              | Retention and collection objective                                                                                                                                                                       |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trained skills                                        | Latest complete current-authority snapshot only; refresh interval 60 minutes                                                                                                                             |
+| Skill queue                                           | Not collected                                                                                                                                                                                            |
+| Assets and eligible custom names                      | Latest complete current-authority snapshot only; refresh interval 60 minutes                                                                                                                             |
+| Wallet balance                                        | Latest complete current-authority snapshot only; refresh interval 15 minutes                                                                                                                             |
+| Wallet journal and transactions                       | Source-timestamp retention of at most 90 days; refresh interval 15 minutes                                                                                                                               |
+| Mail headers and sanitized plain text                 | Source-timestamp retention of at most 90 days; refresh interval 15 minutes; raw markup is never persisted                                                                                                |
+| Current ship and current location                     | Separate latest complete snapshots; proposed collection interval 300 seconds per resource; readable for at most 24 hours after its own last successful validation and only until earlier upstream expiry |
+| Incomplete continuation, staging, and promotion state | At most 24 hours                                                                                                                                                                                         |
 
 Rows at or before the exclusive 90-day cutoff are not promoted or returned. Re-observation cannot
 extend retention because expiry derives from the immutable source timestamp.
+
+The 300-second observation cadence is a planning limit, not a guarantee of live ESI freshness.
+Runtime `Expires` or `Cache-Control` determines the upstream boundary; a gateway cache hit does not
+advance the original validation time. Both existing `ship` and `location` gateway contracts permit
+**no stale evidence**, which is stricter than the 24-hour readable ceiling. At upstream expiry the
+snapshot becomes unreadable immediately; the current policy does not release a `stale` payload.
+The `stale` DTO state is reserved for a separately reviewed future gateway allowance. Retry,
+cooldown, and delayed scheduling never extend the readable deadline. Expired private content is
+purged within 24 hours after expiry; authority-invalid content is unreadable immediately and
+purged within 24 hours of invalidation. Neither purge lag is a period of authorized reading.
 
 An authoritative authorization, disclosure, character lifecycle, managed-member lifecycle,
 organization-version, module, or section invalidation must make affected evidence unreadable
@@ -185,11 +270,11 @@ has been inferred from unit or fixture tests.
 
 ## Section Rollout
 
-Member Audit and all six sections default disabled. Use deployment-administrator sessions with:
+Member Audit and all seven sections default disabled. Use deployment-administrator sessions with:
 
 - `PUT /api/admin/modules/member-audit` and `{ "enabled": true }` for the module.
 - `PUT /api/admin/modules/member-audit/sections/:sectionId` and `{ "enabled": true|false }` for
-  `overview`, `skills`, `assets`, `wallet`, `mail`, or `access-management`.
+  `overview`, `skills`, `assets`, `wallet`, `mail`, `current-observation`, or `access-management`.
 
 API and worker replicas normally converge within `MODULE_RUNTIME_CACHE_TTL_MS`, which defaults to
 five seconds. Browser module discovery uses a 30-second freshness window and refreshes before entry.
@@ -207,6 +292,11 @@ Roll out one section at a time:
    permission, and the 90-day boundary. Treat this as the highest-sensitivity rollout.
 6. Enable `access-management`; verify ordinary-group and block confirmations, required reasons,
    immutable audit, and restricted/compliance-group refusal.
+7. Keep `current-observation` disabled until a measured representative ship/location call budget,
+   queue lag, database-write rate, and purge throughput are accepted. Then verify exact-character
+   disclosure and independently admitted states in a controlled development organization.
+   Production enablement requires separate privacy acceptance; code delivery or development
+   verification does not grant it.
 
 For every step, inspect worker health, queue wait and backlog age, ESI cooldown and error-budget
 telemetry, resource status, access-audit decisions, row growth, and purge throughput. Do not enable
@@ -248,9 +338,20 @@ For lifecycle, transfer, detachment, or account-deletion cleanup:
    repeat until the operation reports no remaining batch.
 3. Verify the purge-work backlog drains and collection state no longer exposes the invalid authority.
 4. Verify snapshots, wallet/mail rows, continuation state, staging, and promotion markers for the
-   invalid authority are absent using counts only. Do not select evidence payloads.
+   invalid authority are absent using counts only, including `current_observation_snapshots` for
+   both `current-ship` and `current-location`. Do not select evidence payloads.
 5. If cleanup cannot complete within 24 hours, keep the section or module disabled and follow the
    incident procedure below.
+
+Observation maintenance invokes the attested `purge-current-observation` operation independently
+for each resource. `retention` removes a snapshot after its upstream expiry or 24-hour readable
+ceiling; `authority`, `account`, and `organization` modes match the full invalidated binding or
+bounded removal scope. Each invocation deletes at most 1,000 rows and repeats until no rows remain.
+For rollback, disable `current-observation` first, verify reads and collection stop, then complete
+both resource purges within 24 hours; leave the forward-only migrations and content-free audit
+history in place. Re-enablement advances disclosure acceptance and activation, never revives a
+prior snapshot. Controlled PostgreSQL tests exercise expired and invalid-authority purges and a
+multi-batch organization-version purge; deployment measurements remain a separate acceptance gate.
 
 For an explicit organization-version privacy purge or permanent removal:
 

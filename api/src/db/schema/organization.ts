@@ -988,7 +988,13 @@ export const organizationAuditEventTypes = [
   'sensitive-access.decided',
 ] as const
 
-export const organizationSensitiveAccessSections = ['skills', 'assets', 'wallet', 'mail'] as const
+export const organizationSensitiveAccessSections = [
+  'skills',
+  'assets',
+  'wallet',
+  'mail',
+  'current-observation',
+] as const
 export const organizationSensitiveAccessReasons = [
   'authorized',
   'reviewer-blocked',
@@ -1187,7 +1193,7 @@ export const organizationAuditEvents = pgTable(
           and actor_type = 'user'
           and outcome in ('granted', 'denied')
           and section_id is not null
-          and section_id in ('skills', 'assets', 'wallet', 'mail')
+           and section_id in ('skills', 'assets', 'wallet', 'mail', 'current-observation')
           and disclosure_version is not null
           and disclosure_version > 0
           and (

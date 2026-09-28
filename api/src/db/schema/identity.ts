@@ -105,6 +105,7 @@ export const oauthStates = pgTable(
     characterId: bigint('character_id', { mode: 'number' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+    expectedSubjectLifecycleId: uuid('expected_subject_lifecycle_id'),
     intent: text().$type<AuthorizationIntent>().default('login').notNull(),
     organizationDeploymentId: smallint('organization_deployment_id'),
     organizationId: bigint('organization_id', { mode: 'number' }),
@@ -235,6 +236,10 @@ export const oauthStates = pgTable(
     check(
       'oauth_states_return_path_context_check',
       sql`return_path is null or intent in ('login', 'reauthorize')`,
+    ),
+    check(
+      'oauth_states_expected_lifecycle_context_check',
+      sql`(intent in ('reauthorize', 'claim-organization-owner')) = (expected_subject_lifecycle_id is not null)`,
     ),
     check(
       'oauth_states_reviewer_use_disclosures_check',

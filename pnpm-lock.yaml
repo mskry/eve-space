@@ -589,6 +589,10 @@ importers:
         version: 4.1.11(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(happy-dom@20.11.2)(msw@2.15.0(@types/node@24.13.3)(typescript@7.0.2))(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0))
 
   packages/core-data-contract:
+    dependencies:
+      '@eve-space/core-eve-projections':
+        specifier: workspace:*
+        version: link:../core-eve-projections
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -746,6 +750,9 @@ importers:
 
   packages/platform-module-nuxt:
     dependencies:
+      '@eve-space/core-data-contract':
+        specifier: workspace:*
+        version: link:../core-data-contract
       '@eve-space/platform-module-contract':
         specifier: workspace:*
         version: link:../platform-module-contract

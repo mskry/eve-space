@@ -26,6 +26,8 @@ test('registers only independent audit evidence resources with managed-member ga
     'wallet-transactions',
     'mail-headers',
     'mail-details',
+    'current-ship',
+    'current-location',
   ])
   expect(
     resources.every(({ eligibility }) => eligibility.kind === 'current-managed-member-character'),
@@ -35,4 +37,12 @@ test('registers only independent audit evidence resources with managed-member ga
       ['skill-queue', 'affiliation', 'compliance', 'groups', 'blocks'].includes(resourceId),
     ),
   ).toBe(false)
+  for (const resourceId of ['current-ship', 'current-location'] as const) {
+    const materialization = installedModulePersistenceCapabilityFactories.resourceMaterializations[
+      `member-audit/${resourceId}`
+    ](vi.fn())
+    expect(
+      Object.keys(materialization).toSorted((left, right) => left.localeCompare(right)),
+    ).toStrictEqual(['purgeCurrentObservation', 'writeCurrentObservation'])
+  }
 })

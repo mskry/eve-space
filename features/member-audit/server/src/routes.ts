@@ -7,6 +7,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import {
   readAssetEvidenceOperation,
+  readCurrentObservationOperation,
   readMailEvidenceOperation,
   readTrainedSkillsEvidenceOperation,
   readWalletEvidenceOperation,
@@ -22,11 +23,22 @@ const assignGroupBody = z
   })
   .strict()
 const actionReasonBody = z.object({ reason: actionReason }).strict()
+const blockActionBody = z
+  .object({
+    reason: actionReason,
+    expectedOrganizationVersion: z.number().int().positive(),
+    expectedManagedMemberLifecycleId: z.uuid(),
+  })
+  .strict()
 const evidencePreviewLimit = 500
 
 type GroupCommandIds = readonly ['assign-ordinary-group', 'revoke-ordinary-group']
 type BlockCommandIds = readonly ['block-member', 'unblock-member']
 type MemberAuditRouteCapabilities = Pick<PlatformModuleRouteCapabilities, 'coreData' | 'logger'>
+type CharacterOverviewCapabilities = Pick<
+  PlatformModuleRouteCapabilities<object, readonly ['public-character-profile']>,
+  'coreData' | 'logger'
+>
 type OperationResult<Operation extends { readonly outputSchema: z.ZodType }> = z.output<
   Operation['outputSchema']
 >
@@ -42,6 +54,10 @@ type WalletResources = {
 type MailResources = {
   'mail-headers': OperationResult<typeof readMailEvidenceOperation>['headers']
   'mail-details': OperationResult<typeof readMailEvidenceOperation>['contents']
+}
+type ObservationResources = {
+  'current-ship': OperationResult<typeof readCurrentObservationOperation>['currentShip']
+  'current-location': OperationResult<typeof readCurrentObservationOperation>['currentLocation']
 }
 type EvidenceRouteBinding<Operation, Resources extends readonly unknown[]> = {
   readonly operation: Operation
@@ -66,6 +82,69 @@ export function memberSummaryRoutes(_capabilities: MemberAuditRouteCapabilities)
     )
   })
 }
+
+export const memberCharacterOverviewRoutes = (capabilities: CharacterOverviewCapabilities) =>
+  new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
+    const target = context.var.platform.reviewerTarget
+    const selection = target.selection
+    const character =
+      selection.kind === 'character'
+        ? target.characters.find(({ characterId }) => characterId === selection.characterId)
+        : undefined
+    if (
+      !character ||
+      selection.kind !== 'character' ||
+      character.subjectLifecycleId !== selection.subjectLifecycleId
+    ) {
+      return context.json(
+        { code: 'REVIEW_TARGET_NOT_FOUND', message: 'Review target not found.' },
+        404,
+      )
+    }
+    try {
+      const profile = await capabilities.coreData.publicCharacterProfile({
+        characterId: character.characterId,
+        signal: context.req.raw.signal,
+      })
+      return context.json(
+        {
+          account: target.account,
+          character,
+          managedMemberLifecycleId: target.managedMemberLifecycleId,
+          organizationVersion: target.organizationVersion,
+          profile,
+        },
+        200,
+      )
+    } catch (error) {
+      if (context.req.raw.signal.aborted) throw error
+      return context.json(
+        { code: 'PROFILE_UNAVAILABLE', message: 'Public profile is unavailable.' },
+        503,
+      )
+    }
+  })
+
+export const memberCurrentObservationRoutes = (
+  _capabilities: MemberAuditRouteCapabilities,
+  _binding: EvidenceRouteBinding<
+    typeof readCurrentObservationOperation,
+    readonly [
+      { readonly resourceId: 'current-ship'; readonly field: 'currentShip' },
+      { readonly resourceId: 'current-location'; readonly field: 'currentLocation' },
+    ]
+  >,
+) =>
+  new Hono<PlatformReviewerTargetRouteEnv<[], ObservationResources>>().get('/', async (context) => {
+    const resources = await readReviewerEvidence(context.var.platform)
+    return context.json(
+      {
+        currentShip: resources['current-ship'],
+        currentLocation: resources['current-location'],
+      },
+      200,
+    )
+  })
 
 export const memberSkillsRoutes = (
   _capabilities: MemberAuditRouteCapabilities,
@@ -199,13 +278,13 @@ export function memberGroupRoutes(_capabilities: MemberAuditRouteCapabilities) {
 export function memberBlockRoutes(_capabilities: MemberAuditRouteCapabilities) {
   return new Hono<PlatformReviewerTargetRouteEnv<BlockCommandIds>>()
     .get('/', (context) => context.json({ block: context.var.platform.reviewerTarget.block }, 200))
-    .post('/', zValidator('json', actionReasonBody), async (context) =>
+    .post('/', zValidator('json', blockActionBody), async (context) =>
       context.json(
         await context.var.platform.organizationCommands.blockMember(context.req.valid('json')),
         201,
       ),
     )
-    .delete('/', zValidator('json', actionReasonBody), async (context) =>
+    .delete('/', zValidator('json', blockActionBody), async (context) =>
       context.json(
         await context.var.platform.organizationCommands.unblockMember(context.req.valid('json')),
         200,

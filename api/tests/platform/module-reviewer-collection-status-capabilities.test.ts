@@ -240,6 +240,45 @@ describe('platform reviewer collection-status capabilities', () => {
       validatedAt: '2026-09-16T11:55:00.000Z',
     })
   })
+
+  test('uses upstream expiry instead of scheduling due time for current observations', async () => {
+    const observationResource = {
+      ...resources[0]!,
+      resourceId: 'current-ship',
+      operationId: 'ship',
+      sectionId: 'current-observation',
+    } satisfies PlatformInstalledResourceDescriptor
+    const base = eligible(true)
+    if (base.status !== 'eligible' || !base.managedAuthority) {
+      throw new Error('Expected managed eligibility fixture')
+    }
+    const reads = createPlatformReviewerCollectionStatusReads(
+      { moduleId: 'member-audit', sectionId: 'current-observation', target },
+      { now: () => now, resources: [observationResource], resolveEligibility },
+    )
+    resolveEligibility.mockResolvedValueOnce({
+      ...base,
+      managedAuthority: { ...base.managedAuthority, sectionId: 'current-observation' },
+      observationState: 'current',
+      cachedUntil: new Date('2026-09-16T12:00:05.000Z'),
+    })
+    await expect(reads.read('current-ship', characterId)).resolves.toMatchObject({
+      status: 'current',
+      cachedUntil: '2026-09-16T12:00:05.000Z',
+      validatedAt: '2026-09-16T11:55:00.000Z',
+    })
+    resolveEligibility.mockResolvedValueOnce({
+      ...base,
+      managedAuthority: { ...base.managedAuthority, sectionId: 'current-observation' },
+      observationState: 'unavailable',
+      cachedUntil: new Date('2026-09-16T12:00:05.000Z'),
+    })
+    await expect(reads.read('current-ship', characterId)).resolves.toMatchObject({
+      status: 'unavailable',
+      cachedUntil: '2026-09-16T12:00:05.000Z',
+      validatedAt: '2026-09-16T11:55:00.000Z',
+    })
+  })
 })
 
 function createReads() {

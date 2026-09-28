@@ -9,8 +9,8 @@ const sha256Pattern = /^[0-9a-f]{64}$/
 const initialManifestLength = 1
 const initialTailSequence = 1
 const initialManifestSha256 = '8ea247ed3f0f99633c9778959dd56b38b219adb6bb2f7f2be0876ce01d6d73b1'
-const acceptedManifestLength = 15
-const acceptedManifestSha256 = 'f45d53fed578072892f439b6fec4fb82697ff3da9fa55799ad7c18af55f9bc4c'
+const acceptedManifestLength = 18
+const acceptedManifestSha256 = '9b192f0b562b2d2c27016ec501d3314980b71af21d6bc9bc2b8d69a1c46d2897'
 
 export interface CoreMigrationIdentity {
   readonly name: string
@@ -37,6 +37,9 @@ export const activeCoreMigrationManifest = defineManifest(`
 013_rule_audit_permission_identities.sql c7c687a0a4933a0a03aa8aca0610e5cc19e567b04cc320190683ee565c86aba6
 014_sensitive_access_audit_context.sql f60cde47ed13e3ebd2a7d6fff659cb5215bdffc928503776db35de66ca8c28f8
 015_pending_character_tokens.sql df92f674381efdcaff2b4e1f2c28a174aa24fb2741951ead0dabc1de89f625b3
+016_oauth_lifecycle_intents.sql f6c04435a1508e7a88ef0c6fe1cb92d8acef171f46d29afddb2fbb8e0302b10b
+017_platform_resource_expiry.sql 022cb1bcc8e2766aa57f478fabd2b0304e7f7273ee7ce7fa302a20ef894ff8fc
+018_current_observation_audit.sql 663750bf4eda2e226e12afaf6671ba80f0aeeb5cafa2ef0f67c0cf39ad8d89af
 `)
 
 export const latestCoreMigrationName = activeCoreMigrationManifest.at(-1)!.name

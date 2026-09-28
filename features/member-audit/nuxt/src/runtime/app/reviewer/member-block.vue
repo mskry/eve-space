@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { readPlatformApiResponse } from '@eve-space/platform-module-nuxt/runtime'
+import { computed, ref, watch } from 'vue'
+import {
+  readPlatformApiResponse,
+  usePlatformReviewerActionInvalidation,
+} from '@eve-space/platform-module-nuxt/runtime'
 import type { PlatformReviewerPanelProps } from '@eve-space/platform-module-nuxt/runtime/reviewer-panel'
 import MemberAuditPanelFrame from './MemberAuditPanelFrame.vue'
 import { useMemberAuditManagementAction } from './useMemberAuditManagementAction'
@@ -12,6 +15,7 @@ import {
 
 const props = defineProps<PlatformReviewerPanelProps>()
 const api = usePlatformApi()
+const invalidateReviewerAccess = usePlatformReviewerActionInvalidation()
 const block = withMemberAuditReviewerQueryState(
   props,
   usePlatformProtectedQuery(() => ({
@@ -32,6 +36,22 @@ const block = withMemberAuditReviewerQueryState(
 )
 const reason = ref('')
 const confirmed = ref(false)
+const confirmedContext = ref<{
+  readonly organizationVersion: number
+  readonly lifecycleId: string
+}>()
+watch(
+  confirmed,
+  (value) => {
+    confirmedContext.value = value
+      ? {
+          organizationVersion: props.organizationVersion,
+          lifecycleId: props.target.managedMemberLifecycleId,
+        }
+      : undefined
+  },
+  { flush: 'sync' },
+)
 const action = useMemberAuditManagementAction(
   props,
   async () => {
@@ -41,10 +61,13 @@ const action = useMemberAuditManagementAction(
     reason.value = ''
     confirmed.value = false
   },
+  invalidateReviewerAccess,
 )
 const canSubmit = computed(
   () =>
     Boolean(reason.value.trim() && confirmed.value) &&
+    confirmedContext.value?.organizationVersion === props.organizationVersion &&
+    confirmedContext.value?.lifecycleId === props.target.managedMemberLifecycleId &&
     !action.pending.value &&
     action.authorized.value,
 )
@@ -53,16 +76,25 @@ const changeBlock = async () => {
   if (!canSubmit.value || !block.data.value) {
     return
   }
+  const expected = confirmedContext.value!
   const currentlyBlocked = block.data.value.block.blocked
   await action.run(
     async () => {
       const response = currentlyBlocked
         ? await api.api.modules['member-audit'].accounts[':userId'].block.$delete({
-            json: { reason: reason.value.trim() },
+            json: {
+              reason: reason.value.trim(),
+              expectedOrganizationVersion: expected.organizationVersion,
+              expectedManagedMemberLifecycleId: expected.lifecycleId,
+            },
             param: { userId: props.target.userId },
           })
         : await api.api.modules['member-audit'].accounts[':userId'].block.$post({
-            json: { reason: reason.value.trim() },
+            json: {
+              reason: reason.value.trim(),
+              expectedOrganizationVersion: expected.organizationVersion,
+              expectedManagedMemberLifecycleId: expected.lifecycleId,
+            },
             param: { userId: props.target.userId },
           })
       await readPlatformApiResponse(
@@ -83,10 +115,10 @@ const changeBlock = async () => {
 <template>
   <MemberAuditPanelFrame
     classification="Organization access data"
-    description="Apply or remove the immediate core deny for the selected managed member."
+    description="Apply or remove the account-wide core deny for the selected managed account."
     permission="member-audit.members.block"
     :target="targetLabel(props)"
-    title="Member block"
+    title="Account block"
   >
     <PlatformResourceBoundary
       :state="block.requestState.value"
@@ -103,19 +135,19 @@ const changeBlock = async () => {
     </PlatformResourceBoundary>
 
     <p class="member-audit-block__notice">
-      Blocking immediately denies protected organization access while preserving underlying group
-      assignments for audit. Unblocking triggers a fresh core evaluation; it does not guarantee
-      restored access.
+      Blocking this account immediately denies protected organization access for all its characters
+      while preserving underlying group assignments for audit. Unblocking triggers a fresh core
+      evaluation; it does not guarantee restored access.
     </p>
     <form class="member-audit-block__form" @submit.prevent="changeBlock">
       <label for="member-audit-block-reason">Audit reason</label>
       <textarea id="member-audit-block-reason" v-model.trim="reason" maxlength="2000" required />
       <label class="member-audit-block__confirmation">
         <input v-model="confirmed" type="checkbox" />
-        I confirm the consequences for the selected managed member.
+        I confirm the account-wide consequences for the selected managed account.
       </label>
       <button type="submit" :disabled="!canSubmit || !block.data.value">
-        {{ block.data.value?.block.blocked ? 'Unblock member' : 'Block member' }}
+        {{ block.data.value?.block.blocked ? 'Unblock account' : 'Block account' }}
       </button>
     </form>
     <output v-if="action.message.value" class="member-audit-block__result">{{

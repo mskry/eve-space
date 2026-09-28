@@ -5,6 +5,7 @@ import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 
 const modulesByTier = {
   adapter: [
+    'public-character-profile-adapter',
     'published-skill-catalogue-adapter',
     'published-type-details-adapter',
     'published-type-groups-adapter',
@@ -51,6 +52,9 @@ const allowedPackages: Record<CoreDataTier, ReadonlySet<string>> = {
 }
 
 const allowedAdapterSources = new Set(['api/src/db/client', 'api/src/universe/database-read'])
+const allowedCanonicalSourceByAdapter = new Map([
+  ['public-character-profile-adapter', 'api/src/characters/profile'],
+])
 
 const allowedConsumers = new Map<string, ReadonlySet<string>>([
   ['api/src/server', new Set(['product-catalog', 'coverage-validation'])],
@@ -107,9 +111,22 @@ function nonLiteralDynamicImportViolations(source: CoreDataBoundarySource) {
 }
 
 function contractViolations(source: CoreDataBoundarySource) {
-  const violations = typescriptModuleSpecifiers(source.path, source.source).map(
-    (specifier) => `${source.path}: pure core-data contract cannot import ${specifier}`,
-  )
+  const allowedSpecifier = '@eve-space/core-eve-projections/eve-formatted-text'
+  const sourceFile = ts.createSourceFile(source.path, source.source, ts.ScriptTarget.Latest, true)
+  let typeOnlyCount = sourceFile.statements.filter(
+    (statement) =>
+      ts.isImportDeclaration(statement) &&
+      statement.importClause?.isTypeOnly &&
+      ts.isStringLiteral(statement.moduleSpecifier) &&
+      statement.moduleSpecifier.text === allowedSpecifier,
+  ).length
+  const violations = typescriptModuleSpecifiers(source.path, source.source).flatMap((specifier) => {
+    if (specifier === allowedSpecifier && typeOnlyCount > 0) {
+      typeOnlyCount -= 1
+      return []
+    }
+    return [`${source.path}: pure core-data contract cannot import ${specifier}`]
+  })
   return [...violations, ...genericDispatcherViolations(source)]
 }
 
@@ -140,7 +157,8 @@ function implementationViolations(source: CoreDataBoundarySource) {
     if (importedPath) {
       if (
         (sourceTier === 'adapter' || sourceTier === 'adapter-support') &&
-        allowedAdapterSources.has(stripExtension(importedPath))
+        (allowedAdapterSources.has(stripExtension(importedPath)) ||
+          allowedCanonicalSourceByAdapter.get(module) === stripExtension(importedPath))
       ) {
         return []
       }

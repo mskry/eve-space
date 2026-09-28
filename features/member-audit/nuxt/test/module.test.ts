@@ -25,6 +25,14 @@ const reviewerPanels = [
   ['ordinary-groups', 'member-audit.groups.manage'],
   ['member-block', 'member-audit.members.block'],
 ] as const
+const landingPanels = [
+  ['character-overview', 'MemberAuditCharacterOverviewPanel.vue', 'member-audit.summary.read'],
+  [
+    'current-observation',
+    'MemberAuditCurrentObservationPanel.vue',
+    'member-audit.current-observation.read',
+  ],
+] as const
 
 const reviewerQuery = async () => ({ value: true })
 
@@ -44,7 +52,7 @@ test('ships an accessible disabled-state runtime surface without registering a p
   expect(source).toContain('must enable the module and its evidence sections')
 })
 
-test('exports seven lazy reviewer panels and no feature-owned page', async () => {
+test('exports nine lazy reviewer panels and no feature-owned page', async () => {
   const packageJson = JSON.parse(
     await readFile(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'),
   ) as { exports: Record<string, string | object> }
@@ -52,9 +60,11 @@ test('exports seven lazy reviewer panels and no feature-owned page', async () =>
   expect(
     Object.keys(packageJson.exports).toSorted((left, right) => left.localeCompare(right)),
   ).toStrictEqual(
-    ['.', ...reviewerPanels.map(([id]) => `./reviewer/${id}`)].toSorted((left, right) =>
-      left.localeCompare(right),
-    ),
+    [
+      '.',
+      ...reviewerPanels.map(([id]) => `./reviewer/${id}`),
+      ...landingPanels.map(([id]) => `./reviewer/${id}`),
+    ].toSorted((left, right) => left.localeCompare(right)),
   )
   for (const [id, permission] of reviewerPanels) {
     const source = await readFile(
@@ -64,6 +74,17 @@ test('exports seven lazy reviewer panels and no feature-owned page', async () =>
     expect(source).toContain(permission)
     expect(source).toContain('PlatformReviewerPanelProps')
     expect(source).not.toContain('prefetch')
+  }
+  for (const [, file, permission] of landingPanels) {
+    const source = await readFile(
+      fileURLToPath(new URL(`../src/runtime/app/reviewer/${file}`, import.meta.url)),
+      'utf8',
+    )
+    expect(source).toContain(permission)
+    expect(source).toContain('PlatformReviewerPanelProps')
+    expect(source).toContain("esiPersistence: { kind: 'none' }")
+    expect(source).not.toContain('localStorage')
+    expect(source).not.toContain('/api/me/characters')
   }
 })
 

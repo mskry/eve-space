@@ -1,3 +1,4 @@
+import type { PlatformReviewerDirectoryAction } from '@eve-space/platform-module-contract/nuxt'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { useQueryCache } from '@pinia/colada'
 import { flushPromises } from '@vue/test-utils'
@@ -113,7 +114,7 @@ beforeEach(() => {
         organizationVersion: organizationVersion.value,
       }),
     ),
-    http.get('*/api/organization/review/members', ({ request }) => {
+    http.get('*/api/organization/review/characters', ({ request }) => {
       const query = new URL(request.url).searchParams.get('query')
       return HttpResponse.json({
         groupFacets: [
@@ -122,8 +123,8 @@ beforeEach(() => {
         ],
         items:
           query === secondaryMember().account.userId || query === '90000002'
-            ? [secondaryMember()]
-            : [member()],
+            ? [characterRow(secondaryMember())]
+            : [characterRow(member())],
         nextCursor: null,
         organizationVersion: organizationVersion.value,
         status: 'available',
@@ -134,6 +135,17 @@ beforeEach(() => {
         params.userId === secondaryMember().account.userId ? secondaryMember() : member()
       return HttpResponse.json({
         member: targetMember(selected),
+        organizationVersion: organizationVersion.value,
+      })
+    }),
+    http.get('*/api/organization/review/members/:userId/characters/:characterId', ({ params }) => {
+      const selected =
+        params.userId === secondaryMember().account.userId ? secondaryMember() : member()
+      if (Number(params.characterId) !== selected.managedAffiliation.characterId) {
+        return HttpResponse.json({ code: 'NOT_FOUND', message: 'Not found.' }, { status: 404 })
+      }
+      return HttpResponse.json({
+        member: exactTargetMember(selected),
         organizationVersion: organizationVersion.value,
       })
     }),
@@ -150,6 +162,194 @@ afterEach(async () => {
 })
 
 describe('useOrganizationReviewWorkspace', () => {
+  it.each(['overview', 'current-observation'])(
+    'keeps an alt selected and opens the admitted %s landing on Review',
+    async (sectionId) => {
+      const profile = {
+        ...panel('beta', 'profile', 'managed-organization-character'),
+        placement: 'character-landing' as const,
+        sectionId,
+      }
+      const permittedProfile = {
+        ...authorizedContribution('beta', 'profile', 'managed-organization-character'),
+        placement: 'character-landing' as const,
+        sectionId,
+      }
+      authorized.value = [permittedProfile]
+      mocks.usePlatformReviewerPanels.mockReturnValue({ contributions: [profile] })
+      enabledSectionKeys.value = new Set([`beta/${sectionId}`])
+      const runtime = mocks.usePlatformModuleRuntime()
+      runtime.runtimeQuery.data.value.enabledSections = [
+        { moduleId: 'beta', sectionId, activationVersion: 3, disclosureVersion: 1 },
+      ]
+      const alt = {
+        ...characterRow(member()),
+        character: {
+          ...characterRow(member()).character,
+          characterId: 90_000_002,
+          name: 'Review Alt',
+          subjectLifecycleId: 'character-lifecycle-alt',
+          isMain: false,
+        },
+      }
+      queryServer.use(
+        http.get('*/api/organization/review/characters', () =>
+          HttpResponse.json({
+            groupFacets: [],
+            items: [alt],
+            nextCursor: null,
+            organizationVersion: organizationVersion.value,
+            status: 'available',
+          }),
+        ),
+        http.get(
+          '*/api/organization/review/members/:userId/characters/:characterId',
+          ({ params }) =>
+            Number(params.characterId) === alt.character.characterId
+              ? HttpResponse.json({
+                  member: { ...exactTargetMember(member()), character: alt.character },
+                  organizationVersion: organizationVersion.value,
+                })
+              : HttpResponse.json({ code: 'NOT_FOUND', message: 'Not found.' }, { status: 404 }),
+        ),
+      )
+      let workspace!: ReturnType<typeof useOrganizationReviewWorkspace>
+      const Host = defineComponent({
+        setup() {
+          workspace = useOrganizationReviewWorkspace({ route: routeState, router: testRouter })
+          return () => h('span')
+        },
+      })
+      const wrapper = await mountSuspended(Host, { route: '/organization/review' })
+      mountedWrappers.push(wrapper)
+      await vi.waitFor(() => expect(workspace.members.value).toHaveLength(1))
+
+      await workspace.selectMember(alt)
+      expect(routeState.query).toStrictEqual({
+        targetUserId: member().account.userId,
+        targetCharacterId: '90000002',
+      })
+      expect(workspace.landingPanels.value).toStrictEqual([])
+      expect(profile.load).not.toHaveBeenCalled()
+
+      await workspace.reviewCharacter(alt)
+      await vi.waitFor(() =>
+        expect(workspace.selectedTarget.value).toMatchObject({
+          characterId: 90_000_002,
+          characterLifecycleId: 'character-lifecycle-alt',
+        }),
+      )
+      expect(routeState.query.contribution).toBe('beta/profile')
+      expect(
+        workspace.landingPanels.value.map(({ panel: entry }) => entry.contributionId),
+      ).toStrictEqual(['profile'])
+      expect(profile.load).not.toHaveBeenCalled()
+
+      let reloaded!: ReturnType<typeof useOrganizationReviewWorkspace>
+      const ReloadedHost = defineComponent({
+        setup() {
+          reloaded = useOrganizationReviewWorkspace({ route: routeState, router: testRouter })
+          return () => h('span')
+        },
+      })
+      mountedWrappers.push(await mountSuspended(ReloadedHost, { route: '/organization/review' }))
+      await vi.waitFor(() =>
+        expect(reloaded.selectedTarget.value).toMatchObject({ characterId: 90_000_002 }),
+      )
+      testRouter.back()
+      await vi.waitFor(() => expect(reloaded.selectedContribution.value).toBeUndefined())
+      expect(reloaded.selectedCharacterId.value).toBe(90_000_002)
+      testRouter.forward()
+      await vi.waitFor(() =>
+        expect(reloaded.selectedTarget.value).toMatchObject({ characterId: 90_000_002 }),
+      )
+    },
+  )
+
+  it.each([
+    { sections: ['beta/details'], expected: 'beta/details' },
+    { sections: [], expected: 'alpha/summary' },
+  ])('opens $expected when no landing section is available', async ({ sections, expected }) => {
+    enabledSectionKeys.value = new Set(sections)
+    let workspace!: ReturnType<typeof useOrganizationReviewWorkspace>
+    const Host = defineComponent({
+      setup() {
+        workspace = useOrganizationReviewWorkspace({ route: routeState, router: testRouter })
+        return () => h('span')
+      },
+    })
+    mountedWrappers.push(await mountSuspended(Host, { route: '/organization/review' }))
+    await vi.waitFor(() => expect(workspace.members.value).toHaveLength(1))
+
+    await workspace.reviewCharacter(workspace.members.value[0]!)
+
+    await vi.waitFor(() => expect(workspace.selectedTarget.value).toBeDefined())
+    expect(routeState.query).toStrictEqual({
+      contribution: expected,
+      targetUserId: member().account.userId,
+      targetCharacterId: '90000001',
+    })
+    expect(workspace.panelFocusRequest.value).toBe(1)
+  })
+
+  it('opens the account command contribution only with current block permission and section', async () => {
+    const blockPanel = {
+      ...panel('gamma', 'restrict', 'managed-organization-account'),
+      requiredPermission: 'gamma.accounts.manage',
+      directoryAction: 'manage-account' as const,
+      sectionId: 'controls',
+    }
+    const blockAdmission = {
+      ...authorizedContribution('gamma', 'restrict', 'managed-organization-account'),
+      requiredPermission: 'gamma.accounts.manage',
+      directoryAction: 'manage-account' as const,
+      sectionId: 'controls',
+    }
+    mocks.usePlatformReviewerPanels.mockReturnValue({ contributions: [blockPanel] })
+    authorized.value = [blockAdmission]
+    enabledModuleIds.value = new Set(['gamma'])
+    enabledSectionKeys.value = new Set(['gamma/controls'])
+    const runtime = mocks.usePlatformModuleRuntime()
+    runtime.runtimeQuery.data.value.enabledSections = [
+      {
+        moduleId: 'gamma',
+        sectionId: 'controls',
+        activationVersion: 2,
+        disclosureVersion: 1,
+      },
+    ]
+    let workspace!: ReturnType<typeof useOrganizationReviewWorkspace>
+    const Host = defineComponent({
+      setup() {
+        workspace = useOrganizationReviewWorkspace({ route: routeState, router: testRouter })
+        return () => h('span')
+      },
+    })
+    mountedWrappers.push(await mountSuspended(Host, { route: '/organization/review' }))
+    await vi.waitFor(() => expect(workspace.members.value).toHaveLength(1))
+    expect(workspace.accountActionAvailable.value).toBe(true)
+    expect(blockPanel.load).not.toHaveBeenCalled()
+
+    await workspace.manageAccount(characterRow(member()))
+    await vi.waitFor(() =>
+      expect(workspace.selectedTarget.value).toMatchObject({
+        kind: 'managed-organization-account',
+        userId: member().account.userId,
+      }),
+    )
+    expect(routeState.query).toStrictEqual({
+      contribution: 'gamma/restrict',
+      targetCharacterId: '90000001',
+      targetUserId: member().account.userId,
+    })
+
+    authorized.value = []
+    await workspace.entryQuery.refetch()
+    expect(workspace.accountActionAvailable.value).toBe(false)
+    await workspace.manageAccount(characterRow(member()))
+    expect(testRouter.push).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps the contribution unset when a reviewer selects only a member', async () => {
     let workspace!: ReturnType<typeof useOrganizationReviewWorkspace>
     const catalog = mocks.usePlatformReviewerPanels()
@@ -167,10 +367,10 @@ describe('useOrganizationReviewWorkspace', () => {
       { groupId: 'group-remote', name: 'Remote reviewers' },
     ])
 
-    await workspace.selectMember(member())
+    await workspace.selectMember(characterRow(member()))
 
     expect(testRouter.push).toHaveBeenCalledWith({
-      query: { targetUserId: member().account.userId },
+      query: { targetUserId: member().account.userId, targetCharacterId: '90000001' },
     })
     expect(workspace.selectedContribution.value).toBeUndefined()
     expect(workspace.selectedTarget.value).toBeUndefined()
@@ -341,20 +541,28 @@ describe('useOrganizationReviewWorkspace', () => {
       targetUserId: secondaryMember().account.userId,
     },
   ])(
-    'clears an unresolved target after $name settles',
+    'keeps an unavailable target visible without choosing another after $name settles',
     async ({ contribution, items, targetCharacterId, targetUserId }) => {
       const exactLookup = vi.fn()
       queryServer.use(
-        http.get('*/api/organization/review/members/:userId', ({ params }) => {
-          exactLookup(params.userId)
-          if (items.length === 0) {
-            return HttpResponse.json({ code: 'NOT_FOUND', message: 'Not found.' }, { status: 404 })
-          }
-          return HttpResponse.json({
-            member: targetMember(items[0]!),
-            organizationVersion: organizationVersion.value,
-          })
-        }),
+        http.get(
+          targetCharacterId
+            ? '*/api/organization/review/members/:userId/characters/:characterId'
+            : '*/api/organization/review/members/:userId',
+          ({ params }) => {
+            exactLookup(params.userId)
+            if (items.length === 0) {
+              return HttpResponse.json(
+                { code: 'NOT_FOUND', message: 'Not found.' },
+                { status: 404 },
+              )
+            }
+            return HttpResponse.json({
+              member: targetCharacterId ? exactTargetMember(items[0]!) : targetMember(items[0]!),
+              organizationVersion: organizationVersion.value,
+            })
+          },
+        ),
       )
       let workspace!: ReturnType<typeof useOrganizationReviewWorkspace>
       const Host = defineComponent({
@@ -376,7 +584,14 @@ describe('useOrganizationReviewWorkspace', () => {
       })
 
       await vi.waitFor(() => expect(exactLookup).toHaveBeenCalledWith(targetUserId))
-      await vi.waitFor(() => expect(routeState.query).toStrictEqual({ contribution }))
+      await vi.waitFor(() =>
+        expect(workspace.targetQuery.error.value || workspace.targetQuery.data.value).toBeTruthy(),
+      )
+      expect(routeState.query).toStrictEqual({
+        targetUserId,
+        ...(targetCharacterId && { targetCharacterId }),
+        contribution,
+      })
       expect(workspace.selectedMember.value).toBeUndefined()
     },
   )
@@ -399,6 +614,7 @@ describe('useOrganizationReviewWorkspace', () => {
     await testRouter.push({
       query: {
         contribution: 'alpha/summary',
+        targetCharacterId: '90000001',
         targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
       },
     })
@@ -440,7 +656,8 @@ describe('useOrganizationReviewWorkspace', () => {
     ])
 
     await workspace.selectContribution('alpha/summary')
-    await workspace.selectMember(member())
+    await workspace.selectMember(characterRow(member()))
+    await workspace.selectContribution('alpha/summary')
     await vi.waitFor(() => expect(workspace.selectedTarget.value).toBeDefined())
     const lifecycleKey = [
       ...platformReviewerContributionTargetQueryKey({
@@ -574,6 +791,7 @@ describe('useOrganizationReviewWorkspace', () => {
     await testRouter.push({
       query: {
         contribution: 'beta/details',
+        targetCharacterId: '90000001',
         targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
       },
     })
@@ -587,6 +805,7 @@ describe('useOrganizationReviewWorkspace', () => {
     ])
     expect(workspace.selectedContribution.value).toBeUndefined()
     expect(routeState.query).toStrictEqual({
+      targetCharacterId: '90000001',
       targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
     })
 
@@ -594,6 +813,7 @@ describe('useOrganizationReviewWorkspace', () => {
     await testRouter.push({
       query: {
         contribution: 'beta/details',
+        targetCharacterId: '90000001',
         targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
       },
     })
@@ -674,12 +894,12 @@ describe('useOrganizationReviewWorkspace', () => {
   ])('resets the cursor before a changed $name request', async ({ change, expected }) => {
     const requests: URL[] = []
     queryServer.use(
-      http.get('*/api/organization/review/members', ({ request }) => {
+      http.get('*/api/organization/review/characters', ({ request }) => {
         const url = new URL(request.url)
         requests.push(url)
         return HttpResponse.json({
           groupFacets: [],
-          items: [member()],
+          items: [characterRow(member())],
           nextCursor: url.searchParams.has('cursor') ? null : 'opaque-next-cursor',
           organizationVersion: organizationVersion.value,
           status: 'available',
@@ -717,7 +937,7 @@ describe('useOrganizationReviewWorkspace', () => {
   it('returns to the first page when an opaque cursor is rejected', async () => {
     const requests: URL[] = []
     queryServer.use(
-      http.get('*/api/organization/review/members', ({ request }) => {
+      http.get('*/api/organization/review/characters', ({ request }) => {
         const url = new URL(request.url)
         requests.push(url)
         if (url.searchParams.has('cursor')) {
@@ -731,7 +951,7 @@ describe('useOrganizationReviewWorkspace', () => {
         }
         return HttpResponse.json({
           groupFacets: [],
-          items: [member()],
+          items: [characterRow(member())],
           nextCursor: 'opaque-next-cursor',
           organizationVersion: organizationVersion.value,
           status: 'available',
@@ -827,10 +1047,12 @@ function panel(
   moduleId: string,
   contributionId: string,
   target: 'managed-organization-account' | 'managed-organization-character',
+  directoryAction: PlatformReviewerDirectoryAction = 'review',
 ) {
   return {
     moduleId,
     contributionId,
+    directoryAction,
     routeId: `${moduleId}-${contributionId}`,
     routePath: `/api/modules/${moduleId}/${contributionId}`,
     audience: 'hr' as const,
@@ -850,9 +1072,11 @@ function authorizedContribution(
   moduleId: string,
   contributionId: string,
   target: 'managed-organization-account' | 'managed-organization-character',
+  directoryAction: PlatformReviewerDirectoryAction = 'review',
 ) {
   return {
     contributionId,
+    directoryAction,
     description: `Review ${moduleId}.`,
     icon: 'overview' as const,
     label: `${moduleId} ${contributionId}`,
@@ -918,6 +1142,44 @@ function targetMember(selected: ReturnType<typeof member>) {
         subjectLifecycleId: `character-lifecycle-${selected.managedAffiliation.characterId}`,
       },
     ],
+  }
+}
+
+function characterRow(selected: ReturnType<typeof member>) {
+  return {
+    account: selected.account,
+    character: targetMember(selected).characters[0]!,
+    managedMemberLifecycleId: selected.managedMemberLifecycleId,
+    managedSince: '2026-01-01T00:00:00.000Z',
+    siteRegisteredAt: '2025-12-01T00:00:00.000Z',
+    disclosedCharacterCount: 1,
+    auditData: {
+      state: 'current' as const,
+      expected: 1,
+      covered: 1,
+      asOf: '2026-09-18T00:00:00.000Z',
+    },
+    groups: [],
+    block: { blocked: false as const },
+    compliance: {
+      state: 'compliant' as const,
+      evidenceFreshness: 'fresh' as const,
+      evidenceAt: null,
+      evaluatedAt: null,
+      reviewDeadline: null,
+      accessValidUntil: null,
+    },
+  }
+}
+
+function exactTargetMember(selected: ReturnType<typeof member>) {
+  const row = characterRow(selected)
+  return {
+    account: row.account,
+    character: row.character,
+    managedMemberLifecycleId: row.managedMemberLifecycleId,
+    block: row.block,
+    compliance: row.compliance,
   }
 }
 

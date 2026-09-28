@@ -22,6 +22,12 @@ const selectedContributionIdentity = computed(
     workspace.selectedContribution.value &&
     reviewerContributionIdentity(workspace.selectedContribution.value),
 )
+const targetUnavailable = computed(
+  () =>
+    workspace.targetQuery.data.value?.member === null ||
+    (workspace.targetQuery.error.value instanceof ApiQueryError &&
+      [403, 404].includes(workspace.targetQuery.error.value.status)),
+)
 </script>
 
 <template>
@@ -31,7 +37,7 @@ const selectedContributionIdentity = computed(
         <p class="ui-eyebrow">ORGANIZATION OPERATIONS</p>
         <h1>Organization review</h1>
       </div>
-      <p>Select a managed member, then open only the review capabilities granted to you.</p>
+      <p>Select a managed character, then open only the review capabilities granted to you.</p>
     </header>
 
     <UiStatePanel v-if="workspace.authLoading.value" compact role="status">
@@ -118,6 +124,7 @@ const selectedContributionIdentity = computed(
 
     <template v-else-if="workspace.entryQuery.data.value">
       <OrganizationReviewDirectory
+        :account-action-available="workspace.accountActionAvailable.value"
         v-model:audit-state="workspace.auditState.value"
         v-model:blocked="workspace.blocked.value"
         v-model:compliance-state="workspace.complianceState.value"
@@ -132,19 +139,21 @@ const selectedContributionIdentity = computed(
         :loading="workspace.directoryQuery.asyncStatus.value === 'loading'"
         :members="workspace.members.value"
         :page="workspace.cursorHistory.value.length + 1"
-        :selected-user-id="workspace.selectedMember.value?.account.userId"
+        :selected-character-id="workspace.selectedCharacterId.value"
         :sort="workspace.sort.value"
         @change-sort="workspace.changeDirectorySort"
         @next="workspace.nextDirectoryPage"
         @previous="workspace.previousDirectoryPage"
         @search="workspace.submitSearch"
         @select="workspace.selectMember"
+        @review="workspace.reviewCharacter"
+        @manage-account="workspace.manageAccount"
       />
 
       <UiStatePanel
         v-if="workspace.directoryQuery.status.value === 'error'"
         code="DIRECTORY UNAVAILABLE"
-        title="Managed members could not be loaded"
+        title="Managed characters could not be loaded"
         role="alert"
       >
         <button class="ui-action-secondary" type="button" @click="workspace.retryDirectory">
@@ -158,8 +167,20 @@ const selectedContributionIdentity = computed(
         :contributions="workspace.availableContributions.value"
         @update:model-value="workspace.selectContribution"
       >
+        <template v-if="workspace.selectedContribution.value?.placement === 'character-landing'">
+          <OrganizationReviewPanelHost
+            v-for="entry in workspace.landingPanels.value"
+            :key="`${entry.panel.moduleId}/${entry.panel.contributionId}/${JSON.stringify(entry.props.target)}`"
+            :contribution="entry.panel"
+            :focus-request="workspace.panelFocusRequest.value"
+            :organization-version="entry.props.organizationVersion"
+            :query-access="entry.props.queryAccess"
+            :target="entry.props.target"
+          />
+        </template>
         <OrganizationReviewPanelHost
-          v-if="workspace.selectedContribution.value && workspace.selectedTarget.value"
+          v-else-if="workspace.selectedContribution.value && workspace.selectedTarget.value"
+          :key="`${selectedContributionIdentity}/${JSON.stringify(workspace.selectedTarget.value)}`"
           :contribution="workspace.selectedContribution.value"
           :focus-request="workspace.panelFocusRequest.value"
           :organization-version="workspace.organizationVersion.value"
@@ -167,8 +188,16 @@ const selectedContributionIdentity = computed(
           :target="workspace.selectedTarget.value"
         />
       </OrganizationReviewContributionNavigation>
-      <UiStatePanel v-else compact code="SELECT A MEMBER" title="Choose a managed member">
-        <p>Private panels remain unloaded until you select a member and a review capability.</p>
+      <UiStatePanel
+        v-else-if="targetUnavailable"
+        compact
+        code="TARGET UNAVAILABLE"
+        title="Selected character is unavailable"
+      >
+        <p>Choose another character from the current directory.</p>
+      </UiStatePanel>
+      <UiStatePanel v-else compact code="SELECT A CHARACTER" title="Choose a managed character">
+        <p>Private panels remain unloaded until you select a character and a review capability.</p>
       </UiStatePanel>
     </template>
   </div>

@@ -72,6 +72,20 @@ test('seeds one guarded production-shaped organization fixture', async () => {
   expect(signIn.headers.get('set-cookie')).toContain('eve_space_session=')
   expect(signIn.headers.get('set-cookie')).toContain('HttpOnly')
 
+  const { adminRoutes } = await import('../../../src/admin/routes.js')
+  const { localOrganizationFixture } =
+    await import('../../../src/commands/local-organization-fixture.js')
+  const adminSignIn = await adminRoutes.request('/login', {
+    body: JSON.stringify({
+      email: localOrganizationFixture.adminEmail,
+      password: localOrganizationFixture.adminPassword,
+    }),
+    headers: { 'content-type': 'application/json', Origin: 'http://localhost:3000' },
+    method: 'POST',
+  })
+  expect(adminSignIn.status).toBe(200)
+  expect(adminSignIn.headers.get('set-cookie')).toContain('eve_space_admin_session=')
+
   const [advisoryLocks] = await connection<{ count: number }[]>`
     select count(*)::integer as count from pg_locks where locktype = 'advisory'
   `

@@ -167,6 +167,72 @@ const walletBalanceEnvelopeSchema = z.strictObject({
   snapshot: walletBalanceSnapshotSchema,
   validatedAt: instantSchema,
 })
+const currentShipSnapshotSchema = z.strictObject({
+  kind: z.literal('current-ship'),
+  typeId: z.number().int().positive(),
+  typeName: z.string().min(1).max(500),
+  groupId: z.number().int().positive().nullable(),
+  groupName: z.string().min(1).max(500),
+  name: z.string().max(500),
+})
+const currentLocationSnapshotSchema = z.strictObject({
+  kind: z.literal('current-location'),
+  solarSystemId: z.number().int().positive(),
+  solarSystemName: z.string().min(1).max(500),
+  solarSystemSecurityStatus: z.number().nullable(),
+  locationType: z.enum(['space', 'station', 'structure']),
+  stationId: z.number().int().positive().optional(),
+  stationName: z.string().min(1).max(500).optional(),
+  structureId: z.number().int().positive().optional(),
+})
+const writeCurrentObservationInputSchema = z.discriminatedUnion('resourceId', [
+  z.strictObject({
+    authorizationGeneration: reviewerAuthorityFields.authorizationGeneration,
+    characterId: reviewerAuthorityFields.characterId,
+    characterLifecycleId: reviewerAuthorityFields.characterLifecycleId,
+    disclosureVersion: reviewerAuthorityFields.disclosureVersion,
+    managedMemberLifecycleId: reviewerAuthorityFields.managedMemberLifecycleId,
+    organizationVersion: reviewerAuthorityFields.organizationVersion,
+    sectionActivationVersion: reviewerAuthorityFields.sectionActivationVersion,
+    targetUserId: reviewerAuthorityFields.targetUserId,
+    dtoRevision: z.literal(1),
+    observationId: z.uuid(),
+    validatedAt: instantSchema,
+    cachedUntil: instantSchema,
+    resourceId: z.literal('current-ship'),
+    snapshot: currentShipSnapshotSchema,
+  }),
+  z.strictObject({
+    authorizationGeneration: reviewerAuthorityFields.authorizationGeneration,
+    characterId: reviewerAuthorityFields.characterId,
+    characterLifecycleId: reviewerAuthorityFields.characterLifecycleId,
+    disclosureVersion: reviewerAuthorityFields.disclosureVersion,
+    managedMemberLifecycleId: reviewerAuthorityFields.managedMemberLifecycleId,
+    organizationVersion: reviewerAuthorityFields.organizationVersion,
+    sectionActivationVersion: reviewerAuthorityFields.sectionActivationVersion,
+    targetUserId: reviewerAuthorityFields.targetUserId,
+    dtoRevision: z.literal(1),
+    observationId: z.uuid(),
+    validatedAt: instantSchema,
+    cachedUntil: instantSchema,
+    resourceId: z.literal('current-location'),
+    snapshot: currentLocationSnapshotSchema,
+  }),
+])
+const currentShipEnvelopeSchema = z.strictObject({
+  dtoRevision: z.literal(1),
+  observationId: z.uuid(),
+  snapshot: currentShipSnapshotSchema,
+  validatedAt: instantSchema,
+  cachedUntil: instantSchema,
+})
+const currentLocationEnvelopeSchema = z.strictObject({
+  dtoRevision: z.literal(1),
+  observationId: z.uuid(),
+  snapshot: currentLocationSnapshotSchema,
+  validatedAt: instantSchema,
+  cachedUntil: instantSchema,
+})
 const readTrainedSkillsEvidenceOutputSchema = z.strictObject({
   trainedSkills: z.nullable(trainedSkillsEnvelopeSchema),
 })
@@ -374,6 +440,31 @@ export const materializeCurrentSnapshotOperation = definePlatformPersistenceOper
   revision: 1,
 })
 
+export const writeCurrentObservationOperation = definePlatformPersistenceOperation({
+  id: 'write-current-observation',
+  inputSchema: writeCurrentObservationInputSchema,
+  maximumInputBytes: 16_384,
+  maximumOutputBytes: 256,
+  method: 'writeCurrentObservation',
+  mode: 'write',
+  outputSchema: operationOutcomeSchema,
+  revision: 1,
+})
+
+export const readCurrentObservationOperation = definePlatformPersistenceOperation({
+  id: 'read-current-observation',
+  inputSchema: authoritySchema,
+  maximumInputBytes: 4096,
+  maximumOutputBytes: 32_768,
+  method: 'readCurrentObservation',
+  mode: 'read',
+  outputSchema: z.strictObject({
+    currentShip: z.nullable(currentShipEnvelopeSchema),
+    currentLocation: z.nullable(currentLocationEnvelopeSchema),
+  }),
+  revision: 1,
+})
+
 export const readEvidenceContinuationOperation = definePlatformPersistenceOperation({
   id: 'read-evidence-continuation',
   inputSchema: readEvidenceContinuationInputSchema,
@@ -478,23 +569,77 @@ export const purgeEvidenceOperation = definePlatformPersistenceOperation({
   revision: 1,
 })
 
+const currentObservationStoreSchema = z.enum(['current-ship', 'current-location'])
+const currentObservationPurgeInputSchema = z.union([
+  z.strictObject({
+    mode: z.literal('retention'),
+    store: currentObservationStoreSchema,
+    cutoff: instantSchema,
+    limit: purgeLimitSchema,
+  }),
+  z.intersection(
+    z.strictObject({
+      mode: z.literal('authority'),
+      store: currentObservationStoreSchema,
+      limit: purgeLimitSchema,
+    }),
+    authoritySchema,
+  ),
+  z.strictObject({
+    mode: z.literal('account'),
+    store: currentObservationStoreSchema,
+    targetUserId: z.uuid(),
+    limit: purgeLimitSchema,
+  }),
+  z.strictObject({
+    mode: z.literal('organization'),
+    store: currentObservationStoreSchema,
+    organizationVersion: z.number().int().positive(),
+    limit: purgeLimitSchema,
+  }),
+])
+
+export const purgeCurrentObservationOperation = definePlatformPersistenceOperation({
+  id: 'purge-current-observation',
+  inputSchema: currentObservationPurgeInputSchema,
+  maximumInputBytes: 4096,
+  maximumOutputBytes: 256,
+  method: 'purgeCurrentObservation',
+  mode: 'write',
+  outputSchema: purgeEvidenceOutputSchema,
+  revision: 1,
+})
+
 const memberAuditPersistenceOperations = {
   'materialize-current-snapshot': materializeCurrentSnapshotOperation,
   'promote-evidence-observation': promoteEvidenceObservationOperation,
+  'purge-current-observation': purgeCurrentObservationOperation,
   'purge-evidence': purgeEvidenceOperation,
   'read-active-evidence-continuation': readActiveEvidenceContinuationOperation,
+  'read-current-observation': readCurrentObservationOperation,
   'read-asset-evidence': readAssetEvidenceOperation,
   'read-evidence-continuation': readEvidenceContinuationOperation,
   'read-mail-evidence': readMailEvidenceOperation,
   'read-trained-skills-evidence': readTrainedSkillsEvidenceOperation,
   'read-wallet-evidence': readWalletEvidenceOperation,
   'write-evidence-continuation': writeEvidenceContinuationOperation,
+  'write-current-observation': writeCurrentObservationOperation,
   'write-skill-snapshot': writeSkillSnapshotOperation,
 } as const
 
 export type CurrentSnapshotPersistence = PlatformPersistenceMethodsFor<
   typeof memberAuditPersistenceOperations,
   readonly ['materialize-current-snapshot']
+>
+
+export type CurrentObservationPersistence = PlatformPersistenceMethodsFor<
+  typeof memberAuditPersistenceOperations,
+  readonly ['write-current-observation']
+>
+
+export type CurrentObservationMaintenancePersistence = PlatformPersistenceMethodsFor<
+  typeof memberAuditPersistenceOperations,
+  readonly ['purge-current-observation']
 >
 
 export type EvidenceCollectionPersistence = PlatformPersistenceMethodsFor<

@@ -4,8 +4,11 @@ import { afterEach, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   invalidatePrivateQueryScope: vi.fn(),
   providePlatformIdentity: vi.fn(),
+  providePlatformCharacterProfile: vi.fn(),
+  providePlatformReviewerActionInvalidation: vi.fn(),
   providePlatformQueryPersistence: vi.fn(),
   readQueryPersistenceState: vi.fn(() => ({ value: { kind: 'fresh' } })),
+  transitionOrganizationQueries: vi.fn().mockResolvedValue(true),
   useHead: vi.fn(),
   usePlatformModulePersistenceLifecycle: vi.fn(),
 }))
@@ -13,12 +16,15 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@eve-space/platform-module-nuxt/runtime', async (importOriginal) => ({
   ...(await importOriginal()),
   providePlatformIdentity: mocks.providePlatformIdentity,
+  providePlatformCharacterProfile: mocks.providePlatformCharacterProfile,
+  providePlatformReviewerActionInvalidation: mocks.providePlatformReviewerActionInvalidation,
   providePlatformQueryPersistence: mocks.providePlatformQueryPersistence,
 }))
 vi.mock('../../app/query-persistence/runtime', async (importOriginal) => ({
   ...(await importOriginal()),
   invalidatePrivateQueryScope: mocks.invalidatePrivateQueryScope,
   readQueryPersistenceState: mocks.readQueryPersistenceState,
+  transitionOrganizationQueries: mocks.transitionOrganizationQueries,
 }))
 vi.mock('@pinia/colada-devtools', () => ({ PiniaColadaDevtools: { template: '<div />' } }))
 mockNuxtImport(
@@ -54,6 +60,8 @@ test('registers platform identity and query persistence host seams', async () =>
   wrappers.push(wrapper)
 
   expect(mocks.providePlatformIdentity).toHaveBeenCalledWith(usePlatformHostIdentity)
+  expect(mocks.providePlatformCharacterProfile).toHaveBeenCalledOnce()
+  expect(mocks.providePlatformReviewerActionInvalidation).toHaveBeenCalledOnce()
   expect(mocks.providePlatformQueryPersistence).toHaveBeenCalledOnce()
   expect(mocks.usePlatformModulePersistenceLifecycle).toHaveBeenCalledOnce()
 
@@ -67,6 +75,8 @@ test('registers platform identity and query persistence host seams', async () =>
     admissionScope: 'organization:v1:organization-activity:member:organization-activity.view',
     kind: 'organization',
   })
+  await mocks.providePlatformReviewerActionInvalidation.mock.calls[0]?.[0]()
+  expect(mocks.transitionOrganizationQueries).toHaveBeenCalledWith(expect.anything())
 })
 
 test('preconnects to the configured API origin and EVE image host', async () => {

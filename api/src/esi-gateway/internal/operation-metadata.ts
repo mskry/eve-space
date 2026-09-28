@@ -5,7 +5,7 @@ export const esiMetadataReview = defineMetadataReview({
   explorerUrl: 'https://developers.eveonline.com/api-explorer',
   requestedCompatibilityDate: '2026-08-23',
   resolvedCompatibilityDate: '2026-08-18',
-  reviewedAt: '2026-09-03',
+  reviewedAt: '2026-09-27',
 })
 
 export const esiOperationMetadata = defineOperationMetadata({
@@ -95,7 +95,7 @@ export const esiOperationMetadata = defineOperationMetadata({
     minimumCompatibilityDate: '2020-01-01',
   },
   location: {
-    cache: { kind: 'relative', seconds: 5 },
+    cache: { kind: 'runtime-only' },
     esiOperationId: 'GetCharactersCharacterIdLocation',
     minimumCompatibilityDate: '2020-01-01',
   },

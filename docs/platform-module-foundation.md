@@ -76,6 +76,41 @@ after the reviewer explicitly selects it and the platform rechecks its module, s
 permission, organization-version, and target gates. Registry and Member Audit adoption tests preserve
 these constraints alongside the general unknown-manifest-key checks.
 
+Reviewer contributions may declare the single optional placement `character-landing` only for an
+exact `managed-organization-character` target and a section-bound route. Omitted placement retains
+explicit tab selection. The platform resolves a flat list in stable order; each entry gets its own
+authorized route, section activation/disclosure version, exact character lifecycle, and query access.
+One unavailable or removed module panel cannot suppress an independently admitted sibling. The
+landing never implicitly loads skills, assets, wallet, mail, or management contributions.
+
+Reviewer contributions may declare `directoryAction: review` or `directoryAction: manage-account`.
+The host resolves only currently admitted and enabled contributions. Review prefers landing panels,
+then exact-character panels, then account panels, using the declared order and stable identity for
+ties. Account management requires an account target. Permission and section names remain
+feature-owned; omitting the action leaves the contribution available through explicit selection.
+
+Resources may declare `freshness: representation-expiry` to forbid stale presentation after the
+upstream representation expires, with the existing 24-hour maximum readable age. Collection status
+and directory classification select this policy from installed resource metadata rather than module,
+resource, or section names. Omitted freshness retains the materialization-interval policy. The
+declaration changes neither collection scheduling nor feature-owned retention and authorization checks.
+
+The host supplies the narrow `PlatformCharacterProfile` presenter through
+`providePlatformCharacterProfile`; feature panels obtain it through `usePlatformCharacterProfile`.
+It accepts only the intentional public profile DTO and loading/availability state. The root adapter
+reuses the existing biography and profile display components without owner action slots; standalone
+fixtures provide their own adapter. Module browser code calls only its declared module route and
+must not import root display components, owner composables, other feature modules, or the core
+profile HTTP route. Profile and current-observation queries remain independent, browser-only,
+memory-only protected queries.
+
+Account-changing reviewer commands use `usePlatformReviewerActionInvalidation` after success. The
+host supplies this callback with `providePlatformReviewerActionInvalidation` and transitions the
+organization query/admission lifecycle, removing stale sibling directory rows and target results
+before current admission is reacquired. A feature panel does not import the root persistence
+runtime or make a second block request through a core route. The command itself still validates
+the confirmed organization version and managed-member lifecycle against the current core target.
+
 ## Core EVE Data Products
 
 The core-data coverage manifest records ownership and implementation state; it is not an access
@@ -85,9 +120,15 @@ coverage entry, or an implemented internal entry grants no module product, ESI s
 schedule, or storage authority.
 
 An installed contribution receives only the product methods declared on that route, resource, or
-activity provider. `published-type-groups` is the initial public product. It provides bounded local
-SDE enrichment with committed revision metadata and is available only in its declared route and
-resource-projection contexts. Feature code may persist an intentional feature-owned materialization
+activity provider. The published catalogue and static-location products provide bounded local SDE
+enrichment with committed revision metadata; they remain network-free in resource projections.
+`public-character-profile` is a separate route-only DTO v1 for the Member Audit exact-character
+overview. It accepts one validated character ID selected by the platform's current reviewer target,
+reuses the canonical public character projection and gateway expiry/validation metadata, and permits
+no feature-selected credential, raw ESI response, or resource-projection invocation. The platform
+rechecks target lifecycle, authorization generation, section enablement, and reviewer permission
+after a slow profile read before releasing its response. Browser modules call only their admitted
+module route, not the core profile route. Feature code may persist an intentional feature-owned materialization
 through its restricted persistence capability, but it must not import product implementations, read
 SDE datasets or core databases, execute ESI directly, or establish another source adapter or cache
 for the canonical product.
@@ -111,8 +152,9 @@ Coverage status alone never satisfies these requirements.
 
 Rollback is a code deployment: restore the prior platform capability contract and generated
 registries, then remove the product catalog and pure contract package after callers have migrated
-back. Core-data products add no SDE ingest, ESI compatibility or cache, OAuth scope, module schema,
-or persisted application-data migration, so rollback must not change or erase any of those states.
+back. The public profile product reuses the existing canonical gateway representation without a new
+ESI compatibility date, credential scope, cache store, or feature-owned profile persistence. Rollback
+must not change or erase those canonical states.
 
 ## Module Persistence Operations
 

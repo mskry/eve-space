@@ -25,7 +25,7 @@ import { toPlatformResourceSubject } from '../platform/resource-subject.js'
 import { platformResources } from '../platform/resources.js'
 
 export const localOrganizationFixture = {
-  adminEmail: 'fixture-admin@localhost',
+  adminEmail: 'fixture-admin@example.test',
   adminPassword: 'eve-space-fixture',
   corporationId: 98_000_001,
   corporationName: 'EVE Space Fixture Corporation',

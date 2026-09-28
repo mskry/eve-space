@@ -184,6 +184,7 @@ export const platformCollectionState = pgTable(
   'platform_collection_state',
   {
     authorizationGeneration: integer('authorization_generation'),
+    cachedUntil: timestamp('cached_until', { withTimezone: true, mode: 'date' }),
     disclosureVersion: integer('disclosure_version'),
     failureStartedAt: timestamp('failure_started_at', { withTimezone: true, mode: 'date' }),
     lastFailureClass: text('last_failure_class').$type<PlatformCollectionFailureClass>(),
@@ -277,6 +278,10 @@ export const platformCollectionState = pgTable(
     check(
       'platform_collection_state_authorization_generation_check',
       sql`authorization_generation is null or authorization_generation >= 0`,
+    ),
+    check(
+      'platform_collection_state_cached_until_check',
+      sql`cached_until is null or (validated_at is not null and cached_until >= validated_at)`,
     ),
     check(
       'platform_collection_state_managed_authority_check',

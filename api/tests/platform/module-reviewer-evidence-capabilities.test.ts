@@ -89,6 +89,16 @@ const mailBinding = {
   routeId: 'mail-detail',
   target,
 } as const
+const observationBinding = {
+  moduleId: 'member-audit',
+  operationId: 'read-current-observation',
+  resources: [
+    { resourceId: 'current-ship', field: 'currentShip' },
+    { resourceId: 'current-location', field: 'currentLocation' },
+  ],
+  routeId: 'current-observation-detail',
+  target,
+} as const
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -167,6 +177,102 @@ describe('platform reviewer evidence capabilities', () => {
       },
     })
     expect(mocks.invoke).not.toHaveBeenCalled()
+  })
+
+  test.each(['unavailable', 'never-collected', 'authorization-required'] as const)(
+    'releases a current ship without %s location evidence',
+    async (locationStatus) => {
+      readStatus.mockImplementation(async (resourceId: string) => ({
+        ...currentStatus,
+        resourceId,
+        sectionId: 'current-observation',
+        cachedUntil: resourceId === 'current-ship' ? '2026-09-17T12:00:05Z' : null,
+        status: resourceId === 'current-location' ? locationStatus : 'current',
+      }))
+      mocks.invoke.mockResolvedValue({
+        currentShip: { snapshot: { kind: 'current-ship', typeId: 34 } },
+        currentLocation: { snapshot: { kind: 'current-location', solarSystemId: 30_000_001 } },
+      })
+      const result = await createPlatformReviewerEvidenceReads(
+        observationBinding,
+        collectionStatus,
+      ).read()
+      expect(result).toMatchObject({
+        'current-ship': { evidence: { snapshot: { typeId: 34 } }, status: { status: 'current' } },
+        'current-location': { evidence: null, status: { status: locationStatus } },
+      })
+      expect(mocks.invoke).toHaveBeenCalledOnce()
+    },
+  )
+
+  test.each([
+    ['authorization generation', { authorizationGeneration: 4 }],
+    ['character lifecycle', { characterLifecycleId: '00000000-0000-4000-8000-000000000099' }],
+    ['managed lifecycle', { managedMemberLifecycleId: '00000000-0000-4000-8000-000000000099' }],
+    ['disclosure version', { disclosureVersion: 5 }],
+    ['section activation', { sectionActivationVersion: 6 }],
+  ] as const)(
+    'rejects a %s change after current-observation persistence reads',
+    async (_label, change) => {
+      let calls = 0
+      readStatus.mockImplementation(async (resourceId: string) => ({
+        ...currentStatus,
+        ...(calls++ >= 2 && change),
+        resourceId,
+        sectionId: 'current-observation',
+        cachedUntil: '2026-09-17T12:00:05Z',
+      }))
+      mocks.invoke.mockResolvedValue({
+        currentShip: { snapshot: { kind: 'current-ship', typeId: 34 } },
+        currentLocation: { snapshot: { kind: 'current-location', solarSystemId: 30_000_001 } },
+      })
+      await expect(
+        createPlatformReviewerEvidenceReads(observationBinding, collectionStatus).read(),
+      ).rejects.toThrow('Reviewer evidence authority changed')
+      expect(mocks.invoke).toHaveBeenCalledOnce()
+    },
+  )
+
+  test.each(['authorization-required', 'never-collected', 'unavailable'] as const)(
+    'never loads prior-generation observation evidence while %s',
+    async (status) => {
+      readStatus.mockImplementation(async (resourceId: string) => ({
+        ...currentStatus,
+        resourceId,
+        sectionId: 'current-observation',
+        status,
+        validatedAt: null,
+      }))
+      mocks.invoke.mockResolvedValue({
+        currentShip: { snapshot: { kind: 'current-ship', typeId: 34 } },
+        currentLocation: { snapshot: { kind: 'current-location', solarSystemId: 30_000_001 } },
+      })
+      await expect(
+        createPlatformReviewerEvidenceReads(observationBinding, collectionStatus).read(),
+      ).resolves.toMatchObject({
+        'current-ship': { evidence: null, status: { status } },
+        'current-location': { evidence: null, status: { status } },
+      })
+      expect(mocks.invoke).not.toHaveBeenCalled()
+    },
+  )
+
+  test('does not promote a prior-generation snapshot through a future stale presentation', async () => {
+    let calls = 0
+    readStatus.mockImplementation(async (resourceId: string) => ({
+      ...currentStatus,
+      authorizationGeneration: calls++ < 2 ? 3 : 4,
+      resourceId,
+      sectionId: 'current-observation',
+      status: 'stale',
+    }))
+    mocks.invoke.mockResolvedValue({
+      currentShip: { snapshot: { typeId: 34 } },
+      currentLocation: null,
+    })
+    await expect(
+      createPlatformReviewerEvidenceReads(observationBinding, collectionStatus).read(),
+    ).rejects.toThrow('Reviewer evidence authority changed')
   })
 
   test.each(['never-collected', 'unavailable'] as const)(

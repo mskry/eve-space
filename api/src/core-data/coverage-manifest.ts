@@ -33,6 +33,23 @@ export interface CoreDataCoverageEntry {
 export const coreDataCoverageManifest = [
   entry(
     'characters',
+    'public-profile',
+    'core-data',
+    'esi-gateway',
+    'implemented',
+    'module-product',
+    'Canonical public character profile for the admitted reviewer landing route.',
+    'public-character-profile',
+    [
+      'public-character',
+      'public-corporation',
+      'public-alliance',
+      'universe-races',
+      'universe-bloodlines',
+    ],
+  ),
+  entry(
+    'characters',
     'assets',
     'characters',
     'esi-gateway',

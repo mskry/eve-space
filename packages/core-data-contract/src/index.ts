@@ -1,3 +1,5 @@
+import type { EveFormattedText } from '@eve-space/core-eve-projections/eve-formatted-text'
+
 export const CORE_DATA_CONTRIBUTION_CONTEXTS = [
   'route',
   'resource-projection',
@@ -5,6 +7,7 @@ export const CORE_DATA_CONTRIBUTION_CONTEXTS = [
 ] as const
 
 export const CORE_DATA_PRODUCT_IDS = [
+  'public-character-profile',
   'published-type-groups',
   'published-skill-catalogue',
   'published-type-details',
@@ -97,7 +100,44 @@ export interface StaticLocationLabelsResult {
   complete: true
 }
 
+export interface PublicCharacterProfileRequest {
+  readonly characterId: number
+  readonly signal?: AbortSignal
+}
+
+export interface PublicCharacterProfileResult {
+  readonly id: number
+  readonly name: string
+  readonly birthday: string
+  readonly gender: string
+  readonly race: string
+  readonly raceFactionId: number | null
+  readonly bloodline: string
+  readonly securityStatus: number
+  readonly achievementScore: number
+  readonly corporationTitle?: string
+  readonly bio?: EveFormattedText
+  readonly factionId: number | null
+  readonly corporation: {
+    readonly id: number
+    readonly name: string
+    readonly ticker: string
+    readonly memberCount: number
+  }
+  readonly alliance: {
+    readonly id: number
+    readonly name: string
+    readonly ticker: string
+  } | null
+  readonly validatedAt: string
+  readonly cachedUntil: string
+  readonly stale: boolean
+  readonly retryAt?: string
+  readonly refreshFailureClass?: 'esi-cooldown' | 'esi-unavailable' | 'response-invalid' | 'unknown'
+}
+
 export interface CoreDataProductRequestMap {
+  'public-character-profile': PublicCharacterProfileRequest
   'published-type-groups': PublishedTypeGroupsRequest
   'published-skill-catalogue': Record<never, never>
   'published-type-details': PublishedTypeDetailsRequest
@@ -105,6 +145,7 @@ export interface CoreDataProductRequestMap {
 }
 
 export interface CoreDataProductResultMap {
+  'public-character-profile': PublicCharacterProfileResult
   'published-type-groups': PublishedTypeGroupsResult
   'published-skill-catalogue': PublishedSkillCatalogueResult
   'published-type-details': PublishedTypeDetailsResult
@@ -112,6 +153,7 @@ export interface CoreDataProductResultMap {
 }
 
 export interface CoreDataProductMethodNameMap {
+  'public-character-profile': 'publicCharacterProfile'
   'published-type-groups': 'publishedTypeGroups'
   'published-skill-catalogue': 'publishedSkillCatalogue'
   'published-type-details': 'publishedTypeDetails'
@@ -119,6 +161,9 @@ export interface CoreDataProductMethodNameMap {
 }
 
 export interface CoreDataMethods {
+  publicCharacterProfile(
+    request: PublicCharacterProfileRequest,
+  ): Promise<PublicCharacterProfileResult>
   publishedTypeGroups(request: PublishedTypeGroupsRequest): Promise<PublishedTypeGroupsResult>
   publishedSkillCatalogue(request?: Record<never, never>): Promise<PublishedSkillCatalogueResult>
   publishedTypeDetails(request: PublishedTypeDetailsRequest): Promise<PublishedTypeDetailsResult>
@@ -141,6 +186,15 @@ export interface CoreDataProductContract<ProductId extends CoreDataProductId = C
 }
 
 export const CORE_DATA_PRODUCT_CONTRACTS = {
+  'public-character-profile': {
+    audience: 'installed-module',
+    dtoVersion: 1,
+    id: 'public-character-profile',
+    method: 'publicCharacterProfile',
+    permittedContexts: ['route'],
+    requestBound: 1,
+    sensitivity: 'public',
+  },
   'published-skill-catalogue': {
     audience: 'installed-module',
     dtoVersion: 1,

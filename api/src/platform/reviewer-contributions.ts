@@ -65,6 +65,8 @@ function sameReviewerContribution(
     left.label === right.label &&
     left.description === right.description &&
     left.icon === right.icon &&
-    left.order === right.order
+    left.order === right.order &&
+    left.placement === right.placement &&
+    left.directoryAction === right.directoryAction
   )
 }

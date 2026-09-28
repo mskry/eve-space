@@ -160,7 +160,6 @@ export function createPublicEsiRead<
 }
 
 export { combineEsiResultMetadata }
-export type { EsiResultMetadata } from './internal/types.js'
 
 export function toEsiReadResultMetadata(result: EsiReadResult<unknown>): EsiReadResultMetadata {
   return {

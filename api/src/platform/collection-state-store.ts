@@ -46,6 +46,15 @@ export async function upsertPlatformCollectionState(
     .onConflictDoUpdate({
       set: {
         authorizationGeneration: parsed.authorizationGeneration,
+        cachedUntil:
+          parsed.cachedUntil === undefined
+            ? sql`case when ${platformCollectionState.authorizationGeneration} is not distinct from excluded.authorization_generation
+              and ${platformCollectionState.organizationVersion} is not distinct from excluded.organization_version
+              and ${platformCollectionState.managedMemberLifecycleId} is not distinct from excluded.managed_member_lifecycle_id
+              and ${platformCollectionState.disclosureVersion} is not distinct from excluded.disclosure_version
+              and ${platformCollectionState.sectionActivationVersion} is not distinct from excluded.section_activation_version
+              then ${platformCollectionState.cachedUntil} else null end`
+            : parsed.cachedUntil,
         disclosureVersion: parsed.disclosureVersion ?? null,
         failureStartedAt:
           parsed.lastFailureClass === null
@@ -94,6 +103,7 @@ export async function upsertPlatformCollectionStateInTransaction(
       subject_id,
       next_eligible_at,
       authorization_generation,
+      cached_until,
       organization_deployment_id,
       organization_version,
       target_user_id,
@@ -112,6 +122,7 @@ export async function upsertPlatformCollectionStateInTransaction(
       ${parsed.subjectId},
       ${parsed.nextEligibleAt?.toISOString() ?? null},
       ${parsed.authorizationGeneration},
+      ${parsed.cachedUntil?.toISOString() ?? null},
       ${parsed.organizationDeploymentId ?? null},
       ${parsed.organizationVersion ?? null},
       ${parsed.targetUserId ?? null},
@@ -127,6 +138,16 @@ export async function upsertPlatformCollectionStateInTransaction(
     do update set
       next_eligible_at = excluded.next_eligible_at,
       authorization_generation = excluded.authorization_generation,
+      cached_until = case
+        when ${parsed.cachedUntil === undefined}
+          and platform_collection_state.authorization_generation is not distinct from excluded.authorization_generation
+          and platform_collection_state.organization_version is not distinct from excluded.organization_version
+          and platform_collection_state.managed_member_lifecycle_id is not distinct from excluded.managed_member_lifecycle_id
+          and platform_collection_state.disclosure_version is not distinct from excluded.disclosure_version
+          and platform_collection_state.section_activation_version is not distinct from excluded.section_activation_version
+          then platform_collection_state.cached_until
+        else excluded.cached_until
+      end,
       organization_deployment_id = excluded.organization_deployment_id,
       organization_version = excluded.organization_version,
       target_user_id = excluded.target_user_id,
@@ -150,6 +171,7 @@ export async function upsertPlatformCollectionStateInTransaction(
       subject_id as "subjectId",
       next_eligible_at as "nextEligibleAt",
       authorization_generation as "authorizationGeneration",
+      cached_until as "cachedUntil",
       organization_deployment_id as "organizationDeploymentId",
       organization_version as "organizationVersion",
       target_user_id as "targetUserId",

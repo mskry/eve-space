@@ -3,6 +3,7 @@ import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { runMigrations } from '../../../src/db/migration-runner.js'
+import { setInstalledModuleSectionEnabled } from '../../../src/platform/module-settings.js'
 import type { ReviewerUseDisclosure } from '../../../src/reviewer-use-disclosure.js'
 
 const ssoMocks = vi.hoisted(() => {
@@ -307,6 +308,33 @@ describe('transactional domain event producers', () => {
     await expectOwnerMismatchInvalidation(userId, mainCharacterId, scopes)
   })
 
+  test('rejects a stale exact-character disclosure intent after detachment and reattachment', async () => {
+    await saveLogin(authorizationInput(mainCharacterId, []), 'main-session')
+    const userId = await findCharacterUserId(mainCharacterId)
+    await characterLifecycle.attachCharacter({ ...authorizationInput(altCharacterId, []), userId })
+    const formerLifecycleId = await findSubjectLifecycleId(altCharacterId)
+
+    await expect(
+      characterLifecycle.deleteCharacter(userId, altCharacterId, formerLifecycleId),
+    ).resolves.toBe('deleted')
+    await characterLifecycle.attachCharacter({ ...authorizationInput(altCharacterId, []), userId })
+    const currentLifecycleId = await findSubjectLifecycleId(altCharacterId)
+    expect(currentLifecycleId).not.toBe(formerLifecycleId)
+    const before = await readTokenState(altCharacterId)
+
+    await expect(
+      characterLifecycle.reauthorizeCharacter({
+        ...authorizationInput(altCharacterId, ['esi-location.read_location.v1']),
+        expectedCharacterId: altCharacterId,
+        expectedSubjectLifecycleId: formerLifecycleId,
+        reviewerUseDisclosures: [reviewerUseDisclosure(1, 'current-observation')],
+        userId,
+      }),
+    ).rejects.toThrow('Character is not owned by this user')
+    await expect(readTokenState(altCharacterId)).resolves.toStrictEqual(before)
+    await expect(readDisclosureAcceptances(altCharacterId)).resolves.toStrictEqual([])
+  })
+
   test('main selection emits only an actual transition with its prior character', async () => {
     await saveLogin(authorizationInput(mainCharacterId, []), 'main-session')
     const userId = await findCharacterUserId(mainCharacterId)
@@ -595,6 +623,61 @@ describe('transactional domain event producers', () => {
     })
   })
 
+  test('requires fresh exact-character acceptance after current-observation reactivation', async () => {
+    const connection = postgres(databaseUrl)
+    try {
+      const sectionId = 'current-observation'
+      const scopes = ['esi-location.read_ship_type.v1', 'esi-location.read_location.v1']
+      await installEvidenceSection(1, sectionId)
+      await saveLogin(authorizationInput(mainCharacterId, scopes), 'main-session')
+      const userId = await findCharacterUserId(mainCharacterId)
+
+      await expect(resolveDisclosure(sectionId)).resolves.toMatchObject({
+        status: 'authorization-required',
+      })
+
+      await characterLifecycle.reauthorizeCharacter({
+        ...authorizationInput(mainCharacterId, scopes),
+        expectedCharacterId: mainCharacterId,
+        reviewerUseDisclosures: [reviewerUseDisclosure(1, sectionId)],
+        userId,
+      })
+      await expect(resolveDisclosure(sectionId)).resolves.toMatchObject({ status: 'eligible' })
+
+      await setInstalledModuleSectionEnabled('member-audit', sectionId, false, connection)
+      await expect(resolveDisclosure(sectionId)).resolves.toStrictEqual({ status: 'disabled' })
+      await setInstalledModuleSectionEnabled('member-audit', sectionId, true, connection)
+      await expect(resolveDisclosure(sectionId)).resolves.toMatchObject({
+        disclosureVersion: 2,
+        status: 'authorization-required',
+      })
+
+      await characterLifecycle.reauthorizeCharacter({
+        ...authorizationInput(mainCharacterId, scopes),
+        expectedCharacterId: mainCharacterId,
+        reviewerUseDisclosures: [reviewerUseDisclosure(1, sectionId)],
+        userId,
+      })
+      await expect(resolveDisclosure(sectionId)).resolves.toMatchObject({
+        disclosureVersion: 2,
+        status: 'authorization-required',
+      })
+
+      await characterLifecycle.reauthorizeCharacter({
+        ...authorizationInput(mainCharacterId, scopes),
+        expectedCharacterId: mainCharacterId,
+        reviewerUseDisclosures: [reviewerUseDisclosure(2, sectionId)],
+        userId,
+      })
+      await expect(resolveDisclosure(sectionId)).resolves.toMatchObject({
+        disclosureVersion: 2,
+        status: 'eligible',
+      })
+    } finally {
+      await connection.end()
+    }
+  })
+
   test('advances accepted disclosures only with a winning refresh generation and deletes them on revocation', async () => {
     const requiredScope = 'esi-wallet.read_character_wallet.v1'
     await installEvidenceSection(1)
@@ -668,11 +751,14 @@ function saveLogin(
   })
 }
 
-function reviewerUseDisclosure(disclosureVersion: number): ReviewerUseDisclosure {
-  return { disclosureVersion, moduleId: 'member-audit', sectionId: 'wallet' }
+function reviewerUseDisclosure(
+  disclosureVersion: number,
+  sectionId = 'wallet',
+): ReviewerUseDisclosure {
+  return { disclosureVersion, moduleId: 'member-audit', sectionId }
 }
 
-async function installEvidenceSection(disclosureVersion: number) {
+async function installEvidenceSection(disclosureVersion: number, sectionId = 'wallet') {
   await dbClient.sql`
     insert into deployment_modules (module_id, enabled)
     values ('member-audit', true)
@@ -683,7 +769,7 @@ async function installEvidenceSection(disclosureVersion: number) {
       module_id, section_id, kind, enabled, declaration_revision,
       disclosure_version, activation_version
     ) values (
-      'member-audit', 'wallet', 'sensitive-evidence', true, 1,
+      'member-audit', ${sectionId}, 'sensitive-evidence', true, 1,
       ${disclosureVersion}, 1
     )
     on conflict (module_id, section_id) do update set
@@ -703,11 +789,11 @@ function setEvidenceDisclosureVersion(disclosureVersion: number) {
   `
 }
 
-function resolveDisclosure() {
+function resolveDisclosure(sectionId = 'wallet') {
   return characterDisclosureStore.resolveCharacterReviewerDisclosureEligibility(
     mainCharacterId,
     'member-audit',
-    'wallet',
+    sectionId,
   )
 }
 

@@ -10,12 +10,14 @@ import {
   type PlatformPermissionDeclaration,
   type PlatformPermissionProfileDeclaration,
 } from './permissions.js'
-import type {
-  PlatformNavigationContribution,
-  PlatformNuxtExposedContributions,
-  PlatformPageContribution,
+import {
+  platformIconTokens,
+  platformReviewerPlacements,
+  platformReviewerDirectoryActions,
+  type PlatformNavigationContribution,
+  type PlatformNuxtExposedContributions,
+  type PlatformPageContribution,
 } from './nuxt.js'
-import { platformIconTokens } from './nuxt.js'
 import {
   platformPersistenceOperationModes,
   type PlatformPersistenceContributionReferences,
@@ -25,6 +27,7 @@ import {
 } from './persistence.js'
 import {
   platformResourceBatchModes,
+  platformResourceFreshnessPolicies,
   platformSubjectKinds,
   type PlatformResourceBatchContribution,
   type PlatformResourceContribution,
@@ -480,6 +483,8 @@ function parseReviewerContribution(
       'description',
       'icon',
       'order',
+      'placement',
+      'directoryAction',
     ],
     issues,
   )
@@ -515,6 +520,18 @@ function parseReviewerContribution(
   const description = readString(record.description, `${path}.description`, issues)
   const icon = readDeclaredMember(record.icon, platformIconTokens, `${path}.icon`, issues)
   const order = readNumber(record.order, `${path}.order`, issues)
+  const directoryAction = readOptionalMember(
+    record.directoryAction,
+    platformReviewerDirectoryActions,
+    `${path}.directoryAction`,
+    issues,
+  )
+  const placement = readOptionalMember(
+    record.placement,
+    platformReviewerPlacements,
+    `${path}.placement`,
+    issues,
+  )
   if (
     id === undefined ||
     routeId === undefined ||
@@ -537,6 +554,8 @@ function parseReviewerContribution(
     id,
     label,
     order,
+    ...(placement && { placement }),
+    ...(directoryAction && { directoryAction }),
     panelExport,
     requiredPermission,
     routeId,
@@ -764,6 +783,7 @@ function parseResource(
       'batch',
       'sectionId',
       'scheduled',
+      'freshness',
     ],
     issues,
   )
@@ -775,6 +795,12 @@ function parseResource(
   const materializationIntervalSeconds = readNumber(
     record.materializationIntervalSeconds,
     `${path}.materializationIntervalSeconds`,
+    issues,
+  )
+  const freshness = readOptionalMember(
+    record.freshness,
+    platformResourceFreshnessPolicies,
+    `${path}.freshness`,
     issues,
   )
   const exportName = readString(record.exportName, `${path}.exportName`, issues)
@@ -821,6 +847,7 @@ function parseResource(
     coreDataProducts,
     dependentOperationIds,
     exportName,
+    ...(freshness && { freshness }),
     id,
     materializationIntervalSeconds,
     operationId,

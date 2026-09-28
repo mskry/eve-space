@@ -4,6 +4,8 @@ import { useQueryCache } from '@pinia/colada'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import MemberAuditEvidencePanel from '../../features/member-audit/nuxt/src/runtime/app/reviewer/MemberAuditEvidencePanel.vue'
+import MemberAuditCharacterOverviewPanel from '../../features/member-audit/nuxt/src/runtime/app/reviewer/MemberAuditCharacterOverviewPanel.vue'
+import MemberAuditCurrentObservationPanel from '../../features/member-audit/nuxt/src/runtime/app/reviewer/MemberAuditCurrentObservationPanel.vue'
 import AssetsPanel from '../../features/member-audit/nuxt/src/runtime/app/reviewer/assets.vue'
 import MailPanel from '../../features/member-audit/nuxt/src/runtime/app/reviewer/mail.vue'
 import MemberBlockPanel from '../../features/member-audit/nuxt/src/runtime/app/reviewer/member-block.vue'
@@ -14,18 +16,25 @@ import WalletPanel from '../../features/member-audit/nuxt/src/runtime/app/review
 const mocks = vi.hoisted(() => ({
   assignGroup: vi.fn(),
   blockMember: vi.fn(),
-  queryData: {} as Record<string, unknown>,
+  invalidateReviewerAction: vi.fn().mockResolvedValue(undefined),
+  queryData: new Map<string, object>(),
+  queryErrors: new Map<string, Error>(),
   refetch: vi.fn(),
   revokeGroup: vi.fn(),
   unblockMember: vi.fn(),
+}))
+
+vi.mock('@eve-space/platform-module-nuxt/runtime', async (importOriginal) => ({
+  ...(await importOriginal()),
+  usePlatformReviewerActionInvalidation: () => mocks.invalidateReviewerAction,
 }))
 
 mockNuxtImport('usePlatformProtectedQuery', () => (options: unknown) => {
   const resolved = typeof options === 'function' ? options() : options
   const routeId = (resolved as { routeId: string }).routeId
   return {
-    data: ref(mocks.queryData[routeId]),
-    error: ref<unknown>(),
+    data: ref(mocks.queryData.get(routeId)),
+    error: ref<unknown>(mocks.queryErrors.get(routeId)),
     refetch: mocks.refetch,
     status: ref('success'),
   }
@@ -55,6 +64,10 @@ mockNuxtImport('usePlatformApi', () => () => ({
     },
   },
 }))
+mockNuxtImport('usePlatformCharacterProfile', () => () => ({
+  props: ['profile', 'state'],
+  template: '<div class="fixture-profile-presenter">{{ profile ? profile.name : state }}</div>',
+}))
 
 const wrappers: { unmount(): void }[] = []
 const currentStatus = (resourceId: string) => ({
@@ -64,27 +77,30 @@ const currentStatus = (resourceId: string) => ({
 })
 
 beforeEach(() => {
-  mocks.queryData = {
-    'block-actions': { block: { blocked: false } },
-    'group-actions': {
-      groups: [
-        {
-          assignmentId: '11111111-1111-4111-8111-111111111111',
-          groupId: '22222222-2222-4222-8222-222222222222',
-          managementMode: 'compliance',
-          name: 'Registration compliant',
-          readOnly: true,
-        },
-        {
-          assignmentId: '33333333-3333-4333-8333-333333333333',
-          groupId: '44444444-4444-4444-8444-444444444444',
-          managementMode: 'manual',
-          name: 'Fleet access',
-          readOnly: false,
-        },
-      ],
-    },
-  }
+  mocks.queryErrors.clear()
+  mocks.queryData = new Map(
+    Object.entries({
+      'block-actions': { block: { blocked: false } },
+      'group-actions': {
+        groups: [
+          {
+            assignmentId: '11111111-1111-4111-8111-111111111111',
+            groupId: '22222222-2222-4222-8222-222222222222',
+            managementMode: 'compliance',
+            name: 'Registration compliant',
+            readOnly: true,
+          },
+          {
+            assignmentId: '33333333-3333-4333-8333-333333333333',
+            groupId: '44444444-4444-4444-8444-444444444444',
+            managementMode: 'manual',
+            name: 'Fleet access',
+            readOnly: false,
+          },
+        ],
+      },
+    }),
+  )
   mocks.assignGroup.mockImplementation(successfulResponse)
   mocks.blockMember.mockImplementation(successfulResponse)
   mocks.refetch.mockResolvedValue(undefined)
@@ -100,6 +116,156 @@ afterEach(() => {
 })
 
 describe('Member Audit reviewer panels', () => {
+  it('renders exact-character public profile without owner controls', async () => {
+    mocks.queryData.set('character-overview', {
+      profile: { id: 90_000_001, name: 'Reviewed Character' },
+    })
+    const wrapper = await mountSuspended(MemberAuditCharacterOverviewPanel, {
+      attachTo: document.body,
+      props: {
+        ...characterProps('character-landing-profile', 'character-overview'),
+        sectionId: 'overview',
+      },
+      route: false,
+    })
+    wrappers.push(wrapper)
+    expect(wrapper.text()).toContain('Reviewed Character')
+    expect(wrapper.find('.platform-resource-retained').exists()).toBe(false)
+    expect(wrapper.text()).not.toMatch(/send mail|detach|transfer|set main/i)
+  })
+
+  it.each([
+    { refreshFailureClass: 'esi-cooldown', reason: 'ESI refresh is on cooldown.' },
+    { refreshFailureClass: 'esi-unavailable', reason: 'ESI is unavailable.' },
+    { refreshFailureClass: 'response-invalid', reason: 'ESI returned an invalid response.' },
+    { refreshFailureClass: undefined, reason: 'The latest refresh failed.' },
+  ])(
+    'discloses cached profile provenance for $refreshFailureClass',
+    async ({ refreshFailureClass, reason }) => {
+      const validatedAt = '2026-09-19T08:00:00Z'
+      const retryAt = '2026-09-19T09:00:00Z'
+      mocks.queryData.set('character-overview', {
+        profile: {
+          id: 90_000_001,
+          name: 'Reviewed Character',
+          stale: true,
+          validatedAt,
+          retryAt,
+          refreshFailureClass,
+        },
+      })
+      const wrapper = await mountSuspended(MemberAuditCharacterOverviewPanel, {
+        props: {
+          ...characterProps('character-landing-profile', 'character-overview'),
+          sectionId: 'overview',
+        },
+        route: false,
+      })
+      wrappers.push(wrapper)
+
+      expect(wrapper.get('.fixture-profile-presenter').text()).toBe('Reviewed Character')
+      const warning = wrapper.get('.platform-resource-retained')
+      expect(warning.text()).toContain('Showing a stale cached public profile.')
+      expect(warning.text()).toContain(reason)
+      expect(warning.text()).toContain(`Last validated at ${validatedAt}`)
+      expect(warning.get('time').attributes('datetime')).toBe(retryAt)
+      await warning.get('button').trigger('click')
+      expect(mocks.refetch).toHaveBeenCalledOnce()
+
+      await wrapper.setProps({
+        queryAccess: { authenticated: true, authorized: false, moduleEnabled: true },
+      })
+      expect(wrapper.text()).toContain('Your current organization authority does not permit')
+      expect(wrapper.text()).not.toContain('Showing a stale cached public profile.')
+    },
+  )
+
+  it('keeps a current ship usable when location authorization is required', async () => {
+    const validatedAt = new Date().toISOString()
+    const cachedUntil = new Date(Date.now() + 60_000).toISOString()
+    mocks.queryData.set('current-observation-detail', {
+      currentShip: {
+        status: { resourceId: 'current-ship', status: 'current', validatedAt, cachedUntil },
+        evidence: {
+          snapshot: {
+            kind: 'current-ship',
+            typeId: 34,
+            typeName: 'Merlin',
+            groupName: 'Frigate',
+            name: 'Review Vessel',
+          },
+        },
+      },
+      currentLocation: {
+        status: {
+          resourceId: 'current-location',
+          status: 'authorization-required',
+          validatedAt: null,
+          cachedUntil: null,
+          requiredScope: 'esi-location.read_location.v1',
+        },
+        evidence: null,
+      },
+    })
+    const wrapper = await mountSuspended(MemberAuditCurrentObservationPanel, {
+      attachTo: document.body,
+      props: {
+        ...characterProps('current-observation', 'current-observation-detail'),
+        sectionId: 'current-observation',
+      },
+      route: false,
+    })
+    wrappers.push(wrapper)
+    expect(wrapper.text()).toContain('Review Vessel')
+    expect(wrapper.text()).toContain('Merlin')
+    expect(wrapper.text()).toContain('Character authorization required')
+    expect(wrapper.text()).toContain('Upstream expiry')
+    expect(wrapper.text()).not.toContain('solarSystemId')
+  })
+
+  it('keeps current-location evidence when ship collection and public profile fail independently', async () => {
+    const validatedAt = new Date().toISOString()
+    const cachedUntil = new Date(Date.now() + 60_000).toISOString()
+    mocks.queryErrors.set('character-overview', new Error('Public profile is unavailable.'))
+    mocks.queryData.set('current-observation-detail', {
+      currentShip: {
+        status: {
+          resourceId: 'current-ship',
+          status: 'unavailable',
+          validatedAt: null,
+          cachedUntil: null,
+        },
+        evidence: null,
+      },
+      currentLocation: {
+        status: { resourceId: 'current-location', status: 'current', validatedAt, cachedUntil },
+        evidence: {
+          snapshot: { kind: 'current-location', solarSystemName: 'Amarr', locationType: 'space' },
+        },
+      },
+    })
+    const profile = await mountSuspended(MemberAuditCharacterOverviewPanel, {
+      attachTo: document.body,
+      props: {
+        ...characterProps('character-landing-profile', 'character-overview'),
+        sectionId: 'overview',
+      },
+      route: false,
+    })
+    wrappers.push(profile)
+    const observation = await mountSuspended(MemberAuditCurrentObservationPanel, {
+      attachTo: document.body,
+      props: {
+        ...characterProps('current-observation', 'current-observation-detail'),
+        sectionId: 'current-observation',
+      },
+      route: false,
+    })
+    wrappers.push(observation)
+    expect(profile.text()).toContain('Public profile is unavailable')
+    expect(observation.text()).toContain('Amarr')
+    expect(observation.text()).toContain('Evidence is unavailable')
+  })
   it('presents authorization and current-empty evidence as distinct accessible states', async () => {
     const wrapper = await mountSuspended(MemberAuditEvidencePanel, {
       attachTo: document.body,
@@ -177,7 +343,7 @@ describe('Member Audit reviewer panels', () => {
   })
 
   it('presents independent wallet records when balance collection is unavailable', async () => {
-    mocks.queryData['wallet-detail'] = {
+    mocks.queryData.set('wallet-detail', {
       previewLimit: 500,
       balance: {
         evidence: null,
@@ -202,7 +368,7 @@ describe('Member Audit reviewer panels', () => {
           validatedAt: '2026-09-19T08:00:00Z',
         },
       },
-    }
+    })
     const wrapper = await mountSuspended(WalletPanel, {
       props: characterProps('wallet', 'wallet-detail'),
       route: false,
@@ -219,7 +385,7 @@ describe('Member Audit reviewer panels', () => {
   })
 
   it('presents skill, asset, and sanitized mail evidence without JSON payloads', async () => {
-    mocks.queryData['skills-detail'] = {
+    mocks.queryData.set('skills-detail', {
       trainedSkills: {
         status: currentStatus('trained-skills'),
         evidence: {
@@ -246,8 +412,8 @@ describe('Member Audit reviewer panels', () => {
           },
         },
       },
-    }
-    mocks.queryData['assets-detail'] = {
+    })
+    mocks.queryData.set('assets-detail', {
       assets: {
         status: currentStatus('assets'),
         evidence: {
@@ -264,8 +430,8 @@ describe('Member Audit reviewer panels', () => {
           },
         },
       },
-    }
-    mocks.queryData['mail-detail'] = {
+    })
+    mocks.queryData.set('mail-detail', {
       previewLimit: 500,
       headers: {
         status: currentStatus('mail-headers'),
@@ -291,7 +457,7 @@ describe('Member Audit reviewer panels', () => {
           },
         ],
       },
-    }
+    })
     for (const [panel, contributionId, routeId] of [
       [TrainedSkillsPanel, 'trained-skills', 'skills-detail'],
       [AssetsPanel, 'assets', 'assets-detail'],
@@ -340,6 +506,42 @@ describe('Member Audit reviewer panels', () => {
     expect(mocks.refetch).not.toHaveBeenCalled()
   })
 
+  it.each([
+    {
+      name: 'reviewer permission',
+      props: { queryAccess: { authenticated: true, authorized: false, moduleEnabled: true } },
+    },
+    {
+      name: 'access-management enablement',
+      props: { queryAccess: { authenticated: true, authorized: true, moduleEnabled: false } },
+    },
+    { name: 'organization version', props: { organizationVersion: 8 } },
+    {
+      name: 'managed-member lifecycle',
+      props: {
+        target: {
+          ...reviewerProps('member-block', 'block-actions', 'access-management').target,
+          managedMemberLifecycleId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+        },
+      },
+    },
+  ])('discards a pending account confirmation on $name change', async ({ props }) => {
+    const wrapper = await mountSuspended(MemberBlockPanel, {
+      props: reviewerProps('member-block', 'block-actions', 'access-management'),
+      route: false,
+    })
+    wrappers.push(wrapper)
+    await wrapper.get('#member-audit-block-reason').setValue('Account-wide review hold.')
+    await wrapper.get('.member-audit-block__confirmation input').setValue(true)
+    await wrapper.setProps(props)
+    expect(wrapper.get<HTMLTextAreaElement>('#member-audit-block-reason').element.value).toBe('')
+    expect(
+      wrapper.get<HTMLInputElement>('.member-audit-block__confirmation input').element.checked,
+    ).toBe(false)
+    await wrapper.get('.member-audit-block__form').trigger('submit')
+    expect(mocks.blockMember).not.toHaveBeenCalled()
+  })
+
   it('requires confirmation before applying the immediate member block', async () => {
     const wrapper = await mountSuspended(MemberBlockPanel, {
       attachTo: document.body,
@@ -357,12 +559,17 @@ describe('Member Audit reviewer panels', () => {
     await flushPromises()
 
     expect(mocks.blockMember).toHaveBeenCalledWith({
-      json: { reason: 'Immediate access review required.' },
+      json: {
+        reason: 'Immediate access review required.',
+        expectedOrganizationVersion: 7,
+        expectedManagedMemberLifecycleId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      },
       param: { userId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
     })
     expect(wrapper.get('output.member-audit-block__result').text()).toContain(
       'Protected organization access is denied immediately',
     )
+    expect(mocks.invalidateReviewerAction).toHaveBeenCalledOnce()
   })
 })
 

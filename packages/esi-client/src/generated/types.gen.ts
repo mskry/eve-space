@@ -6,7 +6,34 @@ export type ClientOptions = {
 
 export type AccessListId = number;
 
-export type AllianceDetail = {
+export type AllianceId = number;
+
+export type AlliancesAllianceIdContactsGet = Array<{
+    contact_id: number;
+    contact_type: 'character' | 'corporation' | 'alliance' | 'faction';
+    label_ids?: Array<number>;
+    /**
+     * Standing of the contact
+     */
+    standing: number;
+    [key: string]: unknown;
+}>;
+
+export type AlliancesAllianceIdContactsLabelsGet = Array<{
+    label_id: number;
+    label_name: string;
+    [key: string]: unknown;
+}>;
+
+export type AlliancesAllianceIdCorporationsGet = Array<number>;
+
+export type AlliancesAllianceIdIconsGet = {
+    px128x128?: string;
+    px64x64?: string;
+    [key: string]: unknown;
+};
+
+export type AlliancesDetail = {
     /**
      * Alliance's creator corporation ID
      */
@@ -35,33 +62,6 @@ export type AllianceDetail = {
      * Alliance's ticker
      */
     ticker: string;
-    [key: string]: unknown;
-};
-
-export type AllianceId = number;
-
-export type AlliancesAllianceIdContactsGet = Array<{
-    contact_id: number;
-    contact_type: 'character' | 'corporation' | 'alliance' | 'faction';
-    label_ids?: Array<number>;
-    /**
-     * Standing of the contact
-     */
-    standing: number;
-    [key: string]: unknown;
-}>;
-
-export type AlliancesAllianceIdContactsLabelsGet = Array<{
-    label_id: number;
-    label_name: string;
-    [key: string]: unknown;
-}>;
-
-export type AlliancesAllianceIdCorporationsGet = Array<number>;
-
-export type AlliancesAllianceIdIconsGet = {
-    px128x128?: string;
-    px64x64?: string;
     [key: string]: unknown;
 };
 
@@ -737,13 +737,6 @@ export type CharactersCharacterIdKillmailsRecentGet = Array<{
     [key: string]: unknown;
 }>;
 
-export type CharactersCharacterIdLocationGet = {
-    solar_system_id: number;
-    station_id?: number;
-    structure_id?: number;
-    [key: string]: unknown;
-};
-
 export type CharactersCharacterIdLoyaltyPointsGet = Array<{
     corporation_id: number;
     loyalty_points: number;
@@ -893,26 +886,6 @@ export type CharactersCharacterIdNotificationsGet = Array<{
     type: 'AcceptedAlly' | 'AcceptedSurrender' | 'AgentRetiredTrigravian' | 'AllAnchoringMsg' | 'AllMaintenanceBillMsg' | 'AllStrucInvulnerableMsg' | 'AllStructVulnerableMsg' | 'AllWarCorpJoinedAllianceMsg' | 'AllWarDeclaredMsg' | 'AllWarInvalidatedMsg' | 'AllWarRetractedMsg' | 'AllWarSurrenderMsg' | 'AllianceCapitalChanged' | 'AllianceWarDeclaredV2' | 'AllyContractCancelled' | 'AllyJoinedWarAggressorMsg' | 'AllyJoinedWarAllyMsg' | 'AllyJoinedWarDefenderMsg' | 'BattlePunishFriendlyFire' | 'BillOutOfMoneyMsg' | 'BillPaidCorpAllMsg' | 'BountyClaimMsg' | 'BountyESSShared' | 'BountyESSTaken' | 'BountyPlacedAlliance' | 'BountyPlacedChar' | 'BountyPlacedCorp' | 'BountyYourBountyClaimed' | 'BuddyConnectContactAdd' | 'CharAppAcceptMsg' | 'CharAppRejectMsg' | 'CharAppWithdrawMsg' | 'CharLeftCorpMsg' | 'CharMedalMsg' | 'CharTerminationMsg' | 'CloneActivationMsg' | 'CloneActivationMsg2' | 'CloneMovedMsg' | 'CloneRevokedMsg1' | 'CloneRevokedMsg2' | 'CombatOperationFinished' | 'ContactAdd' | 'ContactEdit' | 'ContainerPasswordMsg' | 'ContractRegionChangedToPochven' | 'CorpAllBillMsg' | 'CorpAppAcceptMsg' | 'CorpAppInvitedMsg' | 'CorpAppNewMsg' | 'CorpAppRejectCustomMsg' | 'CorpAppRejectMsg' | 'CorpBecameWarEligible' | 'CorpDividendMsg' | 'CorpFriendlyFireDisableTimerCompleted' | 'CorpFriendlyFireDisableTimerStarted' | 'CorpFriendlyFireEnableTimerCompleted' | 'CorpFriendlyFireEnableTimerStarted' | 'CorpKicked' | 'CorpLiquidationMsg' | 'CorpNewCEOMsg' | 'CorpNewsMsg' | 'CorpNoLongerWarEligible' | 'CorpOfficeExpirationMsg' | 'CorpStructLostMsg' | 'CorpTaxChangeMsg' | 'CorpVoteCEORevokedMsg' | 'CorpVoteMsg' | 'CorpWarDeclaredMsg' | 'CorpWarDeclaredV2' | 'CorpWarFightingLegalMsg' | 'CorpWarInvalidatedMsg' | 'CorpWarRetractedMsg' | 'CorpWarSurrenderMsg' | 'CorporationGoalClosed' | 'CorporationGoalCompleted' | 'CorporationGoalCreated' | 'CorporationGoalExpired' | 'CorporationGoalLimitReached' | 'CorporationGoalNameChange' | 'CorporationLeft' | 'CustomsMsg' | 'DailyItemRewardAutoClaimed' | 'DeclareWar' | 'DistrictAttacked' | 'DustAppAcceptedMsg' | 'ESSMainBankLink' | 'EntosisCaptureStarted' | 'ExpertSystemExpired' | 'ExpertSystemExpiryImminent' | 'FWAllianceKickCeoIndividualStandingWarning' | 'FWAllianceKickMsg' | 'FWAllianceKickedCeoIndividualStanding' | 'FWAllianceWarningMsg' | 'FWCharKickMsg' | 'FWCharRankGainMsg' | 'FWCharRankLossMsg' | 'FWCharWarningMsg' | 'FWCharacterKickFromCorpIndividualStandingWarning' | 'FWCharacterKickedFromCorpIndividualStanding' | 'FWCorpJoinMsg' | 'FWCorpKickMsg' | 'FWCorpLeaveMsg' | 'FWCorpWarningMsg' | 'FWCorporationKickCeoIndividualStandingWarning' | 'FWCorporationKickedCeoIndividualStanding' | 'FacWarCorpJoinRequestMsg' | 'FacWarCorpJoinWithdrawMsg' | 'FacWarCorpLeaveRequestMsg' | 'FacWarCorpLeaveWithdrawMsg' | 'FacWarDirectEnlistmentRevoked' | 'FacWarLPDisqualifiedEvent' | 'FacWarLPDisqualifiedKill' | 'FacWarLPPayoutEvent' | 'FacWarLPPayoutKill' | 'FreelanceProjectACLDeleted' | 'FreelanceProjectClosed' | 'FreelanceProjectCompleted' | 'FreelanceProjectCreated' | 'FreelanceProjectExpired' | 'FreelanceProjectLimitReached' | 'FreelanceProjectParticipantKicked' | 'GameTimeAdded' | 'GameTimeReceived' | 'GameTimeSent' | 'GiftReceived' | 'IHubDestroyedByBillFailure' | 'IncursionCompletedMsg' | 'IndustryOperationFinished' | 'IndustryTeamAuctionLost' | 'IndustryTeamAuctionWon' | 'InfrastructureHubBillAboutToExpire' | 'InsuranceExpirationMsg' | 'InsuranceFirstShipMsg' | 'InsuranceInvalidatedMsg' | 'InsuranceIssuedMsg' | 'InsurancePayoutMsg' | 'InvasionCompletedMsg' | 'InvasionSystemLogin' | 'InvasionSystemStart' | 'JumpCloneDeletedMsg1' | 'JumpCloneDeletedMsg2' | 'KillReportFinalBlow' | 'KillReportVictim' | 'KillRightAvailable' | 'KillRightAvailableOpen' | 'KillRightEarned' | 'KillRightUnavailable' | 'KillRightUnavailableOpen' | 'KillRightUsed' | 'LPAutoRedeemed' | 'LocateCharMsg' | 'MadeWarMutual' | 'MercOfferRetractedMsg' | 'MercOfferedNegotiationMsg' | 'MercenaryDenAttacked' | 'MercenaryDenNewMTO' | 'MercenaryDenReinforced' | 'MissionCanceledTriglavian' | 'MissionOfferExpirationMsg' | 'MissionTimeoutMsg' | 'MoonminingAutomaticFracture' | 'MoonminingExtractionCancelled' | 'MoonminingExtractionFinished' | 'MoonminingExtractionStarted' | 'MoonminingLaserFired' | 'MutualWarExpired' | 'MutualWarInviteAccepted' | 'MutualWarInviteRejected' | 'MutualWarInviteSent' | 'NPCStandingsGained' | 'NPCStandingsLost' | 'OfferToAllyRetracted' | 'OfferedSurrender' | 'OfferedToAlly' | 'OfficeLeaseCanceledInsufficientStandings' | 'OldLscMessages' | 'OperationFinished' | 'OrbitalAttacked' | 'OrbitalReinforced' | 'OwnershipTransferred' | 'RaffleCreated' | 'RaffleExpired' | 'RaffleFinished' | 'ReimbursementMsg' | 'ResearchMissionAvailableMsg' | 'RetractsWar' | 'SPAutoRedeemed' | 'SeasonalChallengeCompleted' | 'SkinSequencingCompleted' | 'SkyhookDeployed' | 'SkyhookDestroyed' | 'SkyhookLostShields' | 'SkyhookOnline' | 'SkyhookUnderAttack' | 'SovAllClaimAquiredMsg' | 'SovAllClaimLostMsg' | 'SovCommandNodeEventStarted' | 'SovCorpBillLateMsg' | 'SovCorpClaimFailMsg' | 'SovDisruptorMsg' | 'SovStationEnteredFreeport' | 'SovStructureDestroyed' | 'SovStructureReinforced' | 'SovStructureSelfDestructCancel' | 'SovStructureSelfDestructFinished' | 'SovStructureSelfDestructRequested' | 'SovereigntyIHDamageMsg' | 'SovereigntySBUDamageMsg' | 'SovereigntyTCUDamageMsg' | 'StationAggressionMsg1' | 'StationAggressionMsg2' | 'StationConquerMsg' | 'StationServiceDisabled' | 'StationServiceEnabled' | 'StationStateChangeMsg' | 'StoryLineMissionAvailableMsg' | 'StructureAnchoring' | 'StructureCourierContractChanged' | 'StructureDestroyed' | 'StructureFuelAlert' | 'StructureImpendingAbandonmentAssetsAtRisk' | 'StructureItemsDelivered' | 'StructureItemsMovedToSafety' | 'StructureLostArmor' | 'StructureLostShields' | 'StructureLowReagentsAlert' | 'StructureNoReagentsAlert' | 'StructureOnline' | 'StructurePaintPurchased' | 'StructureServicesOffline' | 'StructureUnanchoring' | 'StructureUnderAttack' | 'StructureWentHighPower' | 'StructureWentLowPower' | 'StructuresJobsCancelled' | 'StructuresJobsPaused' | 'StructuresReinforcementChanged' | 'TowerAlertMsg' | 'TowerResourceAlertMsg' | 'TransactionReversalMsg' | 'TutorialMsg' | 'WarAdopted ' | 'WarAllyInherited' | 'WarAllyOfferDeclinedMsg' | 'WarConcordInvalidates' | 'WarDeclared' | 'WarEndedHqSecurityDrop' | 'WarHQRemovedFromSpace' | 'WarInherited' | 'WarInvalid' | 'WarRetracted' | 'WarRetractedByConcord' | 'WarSurrenderDeclinedMsg' | 'WarSurrenderOfferMsg';
     [key: string]: unknown;
 }>;
-
-export type CharactersCharacterIdOnlineGet = {
-    /**
-     * Timestamp of the last login
-     */
-    last_login?: string;
-    /**
-     * Timestamp of the last logout
-     */
-    last_logout?: string;
-    /**
-     * Total number of times the character has logged in
-     */
-    logins?: number;
-    /**
-     * If the character is online
-     */
-    online: boolean;
-    [key: string]: unknown;
-};
 
 export type CharactersCharacterIdOrdersGet = Array<{
     /**
@@ -1135,16 +1108,6 @@ export type CharactersCharacterIdSearchGet = {
     solar_system?: Array<number>;
     station?: Array<number>;
     structure?: Array<number>;
-    [key: string]: unknown;
-};
-
-export type CharactersCharacterIdShipGet = {
-    /**
-     * Item id's are unique to a ship and persist until it is repackaged. This value can be used to track repeated uses of a ship, or detect when a pilot changes into a different instance of the same ship type.
-     */
-    ship_item_id: number;
-    ship_name: string;
-    ship_type_id: number;
     [key: string]: unknown;
 };
 
@@ -1391,6 +1354,22 @@ export type CharactersFreelanceJobsParticipation = {
     [key: string]: unknown;
 };
 
+export type CharactersLocation = {
+    /**
+     * Solar system the character is in
+     */
+    solar_system_id: SolarSystemId;
+    /**
+     * Station the character is docked in
+     */
+    station_id?: StationId;
+    /**
+     * Structure the character is docked in
+     */
+    structure_id?: ItemId;
+    [key: string]: unknown;
+};
+
 export type CharactersMercenaryTacticalOperationsDetail = {
     /**
      * Operation's dungeon type ID
@@ -1492,6 +1471,26 @@ export type CharactersMilitaryCampaignsObjectivesParticipationCharacterobjective
     [key: string]: unknown;
 };
 
+export type CharactersOnline = {
+    /**
+     * When the character last logged in
+     */
+    last_login?: string;
+    /**
+     * When the character last logged out
+     */
+    last_logout?: string;
+    /**
+     * Total logins (all-time)
+     */
+    logins?: number;
+    /**
+     * Whether the character is online
+     */
+    online: boolean;
+    [key: string]: unknown;
+};
+
 export type CharactersParagonHubSkinr = {
     cursor?: Cursor;
     /**
@@ -1578,6 +1577,22 @@ export type CharactersParagonHubSkinrItem = {
         public?: boolean;
         [key: string]: unknown;
     };
+    [key: string]: unknown;
+};
+
+export type CharactersShip = {
+    /**
+     * Unique identifier for this ship
+     */
+    ship_item_id: ItemId;
+    /**
+     * Name of this ship
+     */
+    ship_name: string;
+    /**
+     * Type of the ship currently piloted
+     */
+    ship_type_id: TypeId;
     [key: string]: unknown;
 };
 
@@ -5876,11 +5891,11 @@ export type MetaStatus = {
     /**
      * List of all API routes and their health status
      */
-    routes: Array<MetaStatusRoutestatus>;
+    routes: Array<MetaStatusRoute>;
     [key: string]: unknown;
 };
 
-export type MetaStatusRoutestatus = {
+export type MetaStatusRoute = {
     /**
      * Route's HTTP method
      */
@@ -7047,7 +7062,7 @@ export type GetAlliancesAllianceIdResponses = {
     /**
      * OK
      */
-    200: AllianceDetail;
+    200: AlliancesDetail;
 };
 
 export type GetAlliancesAllianceIdResponse = GetAlliancesAllianceIdResponses[keyof GetAlliancesAllianceIdResponses];
@@ -9193,7 +9208,7 @@ export type GetCharactersCharacterIdLocationResponses = {
     /**
      * OK
      */
-    200: CharactersCharacterIdLocationGet;
+    200: CharactersLocation;
 };
 
 export type GetCharactersCharacterIdLocationResponse = GetCharactersCharacterIdLocationResponses[keyof GetCharactersCharacterIdLocationResponses];
@@ -10167,7 +10182,7 @@ export type GetCharactersCharacterIdOnlineResponses = {
     /**
      * OK
      */
-    200: CharactersCharacterIdOnlineGet;
+    200: CharactersOnline;
 };
 
 export type GetCharactersCharacterIdOnlineResponse = GetCharactersCharacterIdOnlineResponses[keyof GetCharactersCharacterIdOnlineResponses];
@@ -10628,7 +10643,7 @@ export type GetCharactersCharacterIdShipResponses = {
     /**
      * OK
      */
-    200: CharactersCharacterIdShipGet;
+    200: CharactersShip;
 };
 
 export type GetCharactersCharacterIdShipResponse = GetCharactersCharacterIdShipResponses[keyof GetCharactersCharacterIdShipResponses];

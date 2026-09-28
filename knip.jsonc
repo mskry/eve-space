@@ -79,6 +79,8 @@
         "src/runtime/app/components/MemberAuditModuleUnavailable.vue",
         // Resolved from generated reviewer contribution package exports and lazy-loaded by Nuxt.
         "src/runtime/app/reviewer/*.vue",
+        // Nuxt discovers this fixture root by convention; it imports the profile presenter.
+        "test/fixtures/basic/app.vue",
         "test/fixtures/basic/nuxt.config.ts",
       ],
     },

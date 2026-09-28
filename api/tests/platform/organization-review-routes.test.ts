@@ -18,11 +18,13 @@ const mocks = vi.hoisted(() => ({
   },
   resolveOrganizationReviewerTarget: vi.fn(),
   searchManagedOrganizationDirectory: vi.fn(),
+  searchManagedOrganizationCharacters: vi.fn(),
 }))
 
 vi.mock('../../src/env.js', () => ({
   env: {
     EVE_CALLBACK_URL: 'http://localhost:8788/auth/eve/callback',
+    TOKEN_ENCRYPTION_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
     WEB_ORIGIN: 'http://localhost:3000',
   },
 }))
@@ -50,12 +52,19 @@ vi.mock('../../src/organization/reviewer-account-search.js', async (importOrigin
 vi.mock('../../src/organization/reviewer-target.js', () => ({
   resolveOrganizationReviewerTarget: mocks.resolveOrganizationReviewerTarget,
 }))
+vi.mock('../../src/organization/reviewer-character-directory.js', () => ({
+  searchManagedOrganizationCharacters: mocks.searchManagedOrganizationCharacters,
+}))
 vi.mock('../../src/platform/reviewer-contributions.js', () => ({
   listAvailableReviewerContributions: mocks.listAvailableReviewerContributions,
 }))
 
 import { organizationReviewerPlatformRoutes } from '../../src/platform/organization-review-routes.js'
 import { ReviewerAccountSearchInputError } from '../../src/organization/reviewer-account-search.js'
+import {
+  encodeCharacterDirectoryCursor,
+  ReviewerCharacterDirectoryInputError,
+} from '../../src/organization/reviewer-character-cursor.js'
 
 const alpha = contribution('alpha', 'overview', 10)
 const beta = contribution('beta', 'details', 20)
@@ -138,6 +147,30 @@ describe('platform organization review routes', () => {
           : { authorized: false, reason: 'permission' },
     )
     mocks.searchManagedOrganizationDirectory.mockResolvedValue(directoryPage)
+    mocks.searchManagedOrganizationCharacters.mockResolvedValue({
+      ...directoryPage,
+      items: [
+        {
+          ...directoryPage.items[0],
+          portraitCharacter: undefined,
+          managedAffiliation: undefined,
+          character: {
+            characterId: 90_000_001,
+            name: 'Target Main',
+            subjectLifecycleId: 'character-lifecycle-1',
+            authorizationGeneration: 4,
+            isMain: true,
+            affiliation: {
+              corporationId: 98_000_001,
+              allianceId: null,
+              membership: 'managed',
+              freshness: 'fresh',
+              checkedAt: '2026-09-18T12:00:00.000Z',
+            },
+          },
+        },
+      ],
+    })
     mocks.resolveOrganizationReviewerTarget.mockResolvedValue({
       account: directoryPage.items[0]!.account,
       block: { blocked: false },
@@ -265,40 +298,177 @@ describe('platform organization review routes', () => {
     })
   })
 
-  test.each(['/members', '/members/00000000-0000-4000-8000-000000000002'])(
-    'requires summary permission before serving %s',
-    async (path) => {
-      mocks.authorizeOrganizationReviewerContribution.mockImplementation(
-        async (
-          _userId,
-          _organization,
-          descriptor: PlatformInstalledOrganizationContributionAuthorization,
-        ) => {
-          if (descriptor.additionalRequiredPermissions?.includes('member-audit.summary.read')) {
-            return { authorized: false, reason: 'permission' }
-          }
-          return {
-            authorized: true,
-            context: {
-              audience: 'hr',
-              entitlementScope: 'all',
-              organizationVersion: 7,
-              requiredPermission: descriptor.requiredPermission,
-            },
-          }
+  test('serves character rows through the validated private directory route', async () => {
+    const response = await request('/characters?query=Target&sort=character&limit=10')
+
+    expect(response.status).toBe(200)
+    expectPrivateResponsePolicy(response)
+    await expect(response.json()).resolves.toMatchObject({
+      items: [{ character: { characterId: 90_000_001 } }],
+      organizationVersion: 7,
+    })
+    expect(mocks.searchManagedOrganizationCharacters).toHaveBeenCalledWith({
+      query: 'Target',
+      sort: 'character',
+      limit: 10,
+      organizationVersion: 7,
+    })
+  })
+
+  test.each(['a'.repeat(40), 'a'.repeat(255), '界'.repeat(255), '\u0001'.repeat(255)])(
+    'accepts an encoded character cursor for supported name %#',
+    async (characterName) => {
+      const cursor = encodeCharacterDirectoryCursor(
+        {
+          value: characterName,
+          characterName,
+          characterId: 90_000_001,
+          userId: '00000000-0000-4000-8000-000000000002',
+          managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+          subjectLifecycleId: '00000000-0000-4000-8000-000000000030',
         },
+        7,
+        'f'.repeat(24),
       )
+      expect(cursor.length).toBeGreaterThan(512)
 
-      const response = await request(path)
+      const response = await request(`/characters?cursor=${cursor}`)
 
-      expect(response.status).toBe(403)
-      await expect(response.json()).resolves.toMatchObject({
-        code: 'ORGANIZATION_REVIEWER_REQUIRED',
+      expect(response.status).toBe(200)
+      expect(mocks.searchManagedOrganizationCharacters).toHaveBeenCalledWith({
+        cursor,
+        limit: 25,
+        organizationVersion: 7,
       })
-      expect(mocks.searchManagedOrganizationDirectory).not.toHaveBeenCalled()
-      expect(mocks.resolveOrganizationReviewerTarget).not.toHaveBeenCalled()
     },
   )
+
+  test.each(['a'.repeat(8193), 'invalid cursor', ''])(
+    'rejects malformed or oversized character cursors %# before searching',
+    async (cursor) => {
+      const response = await request(`/characters?cursor=${encodeURIComponent(cursor)}`)
+
+      expect(response.status).toBe(400)
+      expect(mocks.searchManagedOrganizationCharacters).not.toHaveBeenCalled()
+    },
+  )
+
+  test('rejects invalid character cursors without leaking directory facts', async () => {
+    mocks.searchManagedOrganizationCharacters.mockRejectedValueOnce(
+      new ReviewerCharacterDirectoryInputError(),
+    )
+    const response = await request('/characters?cursor=syntactically-valid-cursor')
+
+    expect(response.status).toBe(400)
+    expectPrivateResponsePolicy(response)
+    await expect(response.json()).resolves.toMatchObject({
+      code: 'INVALID_REVIEWER_DIRECTORY_INPUT',
+    })
+  })
+
+  test('resolves the exact alt target without returning sibling records', async () => {
+    mocks.resolveOrganizationReviewerTarget.mockResolvedValueOnce({
+      account: directoryPage.items[0]!.account,
+      characters: [
+        { characterId: 90_000_001, name: 'Target Main' },
+        { characterId: 90_000_002, name: 'Selected Alt', subjectLifecycleId: 'alt-lifecycle' },
+      ],
+      selection: {
+        kind: 'character',
+        characterId: 90_000_002,
+        subjectLifecycleId: 'alt-lifecycle',
+      },
+      managedMemberLifecycleId: directoryPage.items[0]!.managedMemberLifecycleId,
+      organizationVersion: 7,
+      compliance: { state: 'pending' },
+      block: { blocked: false },
+    })
+    const response = await request(
+      '/members/00000000-0000-4000-8000-000000000002/characters/90000002',
+    )
+
+    expect(response.status).toBe(200)
+    expectPrivateResponsePolicy(response)
+    const body = await response.json()
+    expect(body).toMatchObject({
+      member: { character: { characterId: 90_000_002, subjectLifecycleId: 'alt-lifecycle' } },
+      organizationVersion: 7,
+    })
+    expect(body.member).not.toHaveProperty('characters')
+    expect(mocks.resolveOrganizationReviewerTarget).toHaveBeenCalledWith({
+      organizationVersion: 7,
+      targetUserId: '00000000-0000-4000-8000-000000000002',
+      characterId: 90_000_002,
+    })
+  })
+
+  test.each([
+    '/members/00000000-0000-4000-8000-000000000002/characters/not-a-character',
+    '/members/00000000-0000-4000-8000-000000000002/characters/0',
+  ])('validates an exact target before projection: %s', async (path) => {
+    const response = await request(path)
+    expect(response.status).toBe(400)
+    expect(mocks.resolveOrganizationReviewerTarget).not.toHaveBeenCalled()
+  })
+
+  test('refuses an obsolete exact target without choosing its main character', async () => {
+    mocks.resolveOrganizationReviewerTarget.mockResolvedValueOnce(null)
+    const response = await request(
+      '/members/00000000-0000-4000-8000-000000000002/characters/90000002',
+    )
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toStrictEqual({ message: 'Route not found' })
+  })
+
+  test('does not accept an account selection as an exact-character target', async () => {
+    const response = await request(
+      '/members/00000000-0000-4000-8000-000000000002/characters/90000001',
+    )
+    expect(response.status).toBe(404)
+    expect(mocks.resolveOrganizationReviewerTarget).toHaveBeenCalledWith({
+      organizationVersion: 7,
+      targetUserId: '00000000-0000-4000-8000-000000000002',
+      characterId: 90_000_001,
+    })
+  })
+
+  test.each([
+    '/members',
+    '/members/00000000-0000-4000-8000-000000000002',
+    '/characters',
+    '/members/00000000-0000-4000-8000-000000000002/characters/90000001',
+  ])('requires summary permission before serving %s', async (path) => {
+    mocks.authorizeOrganizationReviewerContribution.mockImplementation(
+      async (
+        _userId,
+        _organization,
+        descriptor: PlatformInstalledOrganizationContributionAuthorization,
+      ) => {
+        if (descriptor.additionalRequiredPermissions?.includes('member-audit.summary.read')) {
+          return { authorized: false, reason: 'permission' }
+        }
+        return {
+          authorized: true,
+          context: {
+            audience: 'hr',
+            entitlementScope: 'all',
+            organizationVersion: 7,
+            requiredPermission: descriptor.requiredPermission,
+          },
+        }
+      },
+    )
+
+    const response = await request(path)
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toMatchObject({
+      code: 'ORGANIZATION_REVIEWER_REQUIRED',
+    })
+    expect(mocks.searchManagedOrganizationDirectory).not.toHaveBeenCalled()
+    expect(mocks.searchManagedOrganizationCharacters).not.toHaveBeenCalled()
+    expect(mocks.resolveOrganizationReviewerTarget).not.toHaveBeenCalled()
+  })
 
   test.each(['directory search', 'member-audit.summary.read'] as const)(
     'requires the exact %s permission before directory enrichment',
@@ -326,21 +496,23 @@ describe('platform organization review routes', () => {
               },
       )
 
-      const response = await request('/members')
+      const response = await request('/characters')
 
       expect(response.status).toBe(403)
       expect(mocks.searchManagedOrganizationDirectory).not.toHaveBeenCalled()
+      expect(mocks.searchManagedOrganizationCharacters).not.toHaveBeenCalled()
     },
   )
 
   test('does not accept a deployment administrator session as reviewer identity', async () => {
-    const response = await organizationReviewerPlatformRoutes.request('/', {
+    const response = await organizationReviewerPlatformRoutes.request('/characters', {
       headers: { cookie: 'eve_space_admin_session=administrator-token' },
     })
 
     expect(response.status).toBe(401)
     expectPrivateResponsePolicy(response)
     expect(mocks.authorizeOrganizationReviewerContribution).not.toHaveBeenCalled()
+    expect(mocks.searchManagedOrganizationCharacters).not.toHaveBeenCalled()
   })
 
   test('returns current disclosed target authority identities without evidence', async () => {
@@ -388,21 +560,23 @@ describe('platform organization review routes', () => {
       reason,
     })
 
-    const response = await request('/members')
-
-    expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toMatchObject({ code })
+    for (const path of ['/members', '/characters'] as const) {
+      const response = await request(path)
+      expect(response.status).toBe(403)
+      await expect(response.json()).resolves.toMatchObject({ code })
+    }
     expect(mocks.searchManagedOrganizationDirectory).not.toHaveBeenCalled()
+    expect(mocks.searchManagedOrganizationCharacters).not.toHaveBeenCalled()
   })
 
   test('hides the transport when every contribution is disabled', async () => {
     mocks.listAvailableReviewerContributions.mockResolvedValue([])
 
-    const response = await request('/')
-
+    const response = await request('/characters')
     expect(response.status).toBe(404)
     expectPrivateResponsePolicy(response)
     expect(mocks.authorizeOrganizationReviewerContribution).not.toHaveBeenCalled()
+    expect(mocks.searchManagedOrganizationCharacters).not.toHaveBeenCalled()
   })
 })
 

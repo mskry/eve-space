@@ -14,6 +14,7 @@ export interface MemberAuditCollectionStatus {
     | 'authorization-required'
     | 'unavailable'
   readonly validatedAt: string | null
+  readonly cachedUntil?: string | null
   readonly authorizationGeneration?: number | null
   readonly disclosureVersion?: number
   readonly lastFailureClass?: string | null

@@ -7,6 +7,16 @@ const resources = vi.hoisted(() => [
     resourceId: 'trained-skills',
   },
   {
+    implementation: { maintain: vi.fn() },
+    moduleId: 'member-audit',
+    resourceId: 'current-ship',
+  },
+  {
+    implementation: { maintain: vi.fn() },
+    moduleId: 'member-audit',
+    resourceId: 'current-location',
+  },
+  {
     implementation: {},
     moduleId: 'other-module',
     resourceId: 'unmaintained',
@@ -30,10 +40,10 @@ test('retains authority purge work before a lifecycle state can cascade', async 
     insert: vi.fn(() => ({ values })),
     select: vi.fn(() => ({
       from: vi.fn(() => ({
-        where: vi.fn().mockResolvedValue([
-          {
+        where: vi.fn().mockResolvedValue(
+          ['trained-skills', 'current-ship', 'current-location'].map((resourceId) => ({
             moduleId: 'member-audit',
-            resourceId: 'trained-skills',
+            resourceId,
             targetUserId: '11111111-1111-4111-8111-111111111111',
             organizationVersion: 3,
             managedMemberLifecycleId: '22222222-2222-4222-8222-222222222222',
@@ -42,8 +52,8 @@ test('retains authority purge work before a lifecycle state can cascade', async 
             authorizationGeneration: 4,
             disclosureVersion: 2,
             sectionActivationVersion: 5,
-          },
-        ]),
+          })),
+        ),
       })),
     })),
   }
@@ -53,14 +63,25 @@ test('retains authority purge work before a lifecycle state can cascade', async 
     '33333333-3333-4333-8333-333333333333',
   )
 
-  expect(values).toHaveBeenCalledWith([
-    expect.objectContaining({
-      characterId: 90_000_001,
-      mode: 'authority',
-      moduleId: 'member-audit',
-      resourceId: 'trained-skills',
-    }),
-  ])
+  expect(
+    values.mock.calls[0]?.[0].map(({ resourceId }: { resourceId: string }) => resourceId),
+  ).toStrictEqual(['trained-skills', 'current-ship', 'current-location'])
+  expect(values).toHaveBeenCalledWith(
+    expect.arrayContaining([
+      expect.objectContaining({
+        characterId: 90_000_001,
+        mode: 'authority',
+        moduleId: 'member-audit',
+        resourceId: 'current-ship',
+      }),
+      expect.objectContaining({
+        characterId: 90_000_001,
+        mode: 'authority',
+        moduleId: 'member-audit',
+        resourceId: 'current-location',
+      }),
+    ]),
+  )
 })
 
 test('retains account purge work for every installed maintainable resource', async () => {
@@ -79,12 +100,20 @@ test('retains account purge work for every installed maintainable resource', asy
     '11111111-1111-4111-8111-111111111111',
   )
 
-  expect(values).toHaveBeenCalledWith([
-    {
-      mode: 'account',
-      moduleId: 'member-audit',
-      resourceId: 'trained-skills',
-      targetUserId: '11111111-1111-4111-8111-111111111111',
-    },
-  ])
+  expect(values).toHaveBeenCalledWith(
+    expect.arrayContaining([
+      {
+        mode: 'account',
+        moduleId: 'member-audit',
+        resourceId: 'current-ship',
+        targetUserId: '11111111-1111-4111-8111-111111111111',
+      },
+      {
+        mode: 'account',
+        moduleId: 'member-audit',
+        resourceId: 'current-location',
+        targetUserId: '11111111-1111-4111-8111-111111111111',
+      },
+    ]),
+  )
 })

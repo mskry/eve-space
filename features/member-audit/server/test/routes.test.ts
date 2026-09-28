@@ -4,6 +4,8 @@ import { expect, test, vi } from 'vitest'
 import {
   memberAssetsRoutes,
   memberBlockRoutes,
+  memberCharacterOverviewRoutes,
+  memberCurrentObservationRoutes,
   memberGroupRoutes,
   memberMailRoutes,
   memberSkillsRoutes,
@@ -12,6 +14,7 @@ import {
 } from '../src/routes.js'
 import {
   readAssetEvidenceOperation,
+  readCurrentObservationOperation,
   readMailEvidenceOperation,
   readTrainedSkillsEvidenceOperation,
   readWalletEvidenceOperation,
@@ -45,6 +48,31 @@ const characterTarget = {
 const evidenceRouteCapabilities = {
   coreData: {},
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}
+
+const reviewedCharacter = {
+  characterId: 90_000_001,
+  subjectLifecycleId: '11111111-1111-4111-8111-111111111111',
+  name: 'Pilot',
+  authorizationGeneration: 8,
+  isMain: true,
+  affiliation: {
+    corporationId: 98_000_001,
+    allianceId: null,
+    membership: 'managed' as const,
+    freshness: 'fresh' as const,
+    checkedAt: '2026-09-17T10:00:00Z',
+  },
+}
+
+const reviewedTarget = {
+  ...characterTarget,
+  characters: [reviewedCharacter],
+  selection: {
+    kind: 'character' as const,
+    characterId: reviewedCharacter.characterId,
+    subjectLifecycleId: reviewedCharacter.subjectLifecycleId,
+  },
 }
 
 test('returns only the bounded reviewer target summary', async () => {
@@ -103,8 +131,113 @@ test('returns only the bounded reviewer target summary', async () => {
   })
 })
 
+test('returns a public profile only for the exact selected character lifecycle', async () => {
+  const profile = { characterId: reviewedCharacter.characterId, name: 'Pilot' }
+  const publicCharacterProfile = vi.fn().mockResolvedValue(profile)
+  const app = new Hono<PlatformReviewerTargetRouteEnv>()
+    .use('*', async (context, next) => {
+      // SAFETY: This route reads only the reviewer target; core-owned capabilities are not exercised.
+      context.set('platform', { reviewerTarget: reviewedTarget } as never)
+      await next()
+    })
+    .route(
+      '/',
+      memberCharacterOverviewRoutes({
+        ...evidenceRouteCapabilities,
+        coreData: { publicCharacterProfile },
+      }),
+    )
+
+  const response = await app.request('/')
+  expect(response.status).toBe(200)
+  expect(await response.json()).toStrictEqual({
+    account: reviewedTarget.account,
+    character: reviewedCharacter,
+    managedMemberLifecycleId: reviewedTarget.managedMemberLifecycleId,
+    organizationVersion: reviewedTarget.organizationVersion,
+    profile,
+  })
+  expect(publicCharacterProfile).toHaveBeenCalledWith({
+    characterId: reviewedCharacter.characterId,
+    signal: expect.any(AbortSignal),
+  })
+})
+
+test.each([
+  ['account selection', { kind: 'account' as const }],
+  [
+    'another character',
+    { ...reviewedTarget.selection, characterId: reviewedCharacter.characterId + 1 },
+  ],
+  [
+    'a replaced character lifecycle',
+    { ...reviewedTarget.selection, subjectLifecycleId: '99999999-9999-4999-8999-999999999999' },
+  ],
+])('does not fetch a profile for %s', async (_reason, selection) => {
+  const publicCharacterProfile = vi.fn()
+  const app = new Hono<PlatformReviewerTargetRouteEnv>()
+    .use('*', async (context, next) => {
+      // SAFETY: Invalid selection is checked before any other platform capability is read.
+      context.set('platform', {
+        reviewerTarget: { ...reviewedTarget, selection },
+      } as never)
+      await next()
+    })
+    .route(
+      '/',
+      memberCharacterOverviewRoutes({
+        ...evidenceRouteCapabilities,
+        coreData: { publicCharacterProfile },
+      }),
+    )
+
+  const response = await app.request('/')
+  expect(response.status).toBe(404)
+  expect(await response.json()).toStrictEqual({
+    code: 'REVIEW_TARGET_NOT_FOUND',
+    message: 'Review target not found.',
+  })
+  expect(publicCharacterProfile).not.toHaveBeenCalled()
+})
+
+test('returns a bounded unavailable response when the public profile fails', async () => {
+  const publicCharacterProfile = vi.fn().mockRejectedValue(new Error('Upstream detail'))
+  const app = new Hono<PlatformReviewerTargetRouteEnv>()
+    .use('*', async (context, next) => {
+      // SAFETY: This route reads only the reviewer target; core-owned capabilities are not exercised.
+      context.set('platform', { reviewerTarget: reviewedTarget } as never)
+      await next()
+    })
+    .route(
+      '/',
+      memberCharacterOverviewRoutes({
+        ...evidenceRouteCapabilities,
+        coreData: { publicCharacterProfile },
+      }),
+    )
+
+  const response = await app.request('/')
+  expect(response.status).toBe(503)
+  expect(await response.json()).toStrictEqual({
+    code: 'PROFILE_UNAVAILABLE',
+    message: 'Public profile is unavailable.',
+  })
+})
+
 test('returns collection status and persisted evidence for each character section', async () => {
   const cases = [
+    {
+      resourceIds: ['current-ship', 'current-location'],
+      evidenceInput: undefined,
+      previewLimit: undefined,
+      route: memberCurrentObservationRoutes(evidenceRouteCapabilities, {
+        operation: readCurrentObservationOperation,
+        resources: [
+          { resourceId: 'current-ship', field: 'currentShip' },
+          { resourceId: 'current-location', field: 'currentLocation' },
+        ],
+      }),
+    },
     {
       resourceIds: ['trained-skills'],
       evidenceInput: undefined,
@@ -325,18 +458,42 @@ test('validates and forwards bounded block and unblock commands', async () => {
   expect(await current.json()).toStrictEqual({ block: characterTarget.block })
 
   const blocked = await app.request('/block', {
-    body: JSON.stringify({ reason: 'Immediate protected-access removal.' }),
+    body: JSON.stringify({
+      reason: 'Immediate protected-access removal.',
+      expectedOrganizationVersion: 1,
+      expectedManagedMemberLifecycleId: characterTarget.managedMemberLifecycleId,
+    }),
     headers: { 'content-type': 'application/json' },
     method: 'POST',
   })
   expect(blocked.status).toBe(201)
-  expect(blockMember).toHaveBeenCalledWith({ reason: 'Immediate protected-access removal.' })
+  expect(blockMember).toHaveBeenCalledWith({
+    reason: 'Immediate protected-access removal.',
+    expectedOrganizationVersion: 1,
+    expectedManagedMemberLifecycleId: characterTarget.managedMemberLifecycleId,
+  })
 
   const unblocked = await app.request('/block', {
-    body: JSON.stringify({ reason: 'Current compliance may be reevaluated.' }),
+    body: JSON.stringify({
+      reason: 'Current compliance may be reevaluated.',
+      expectedOrganizationVersion: 1,
+      expectedManagedMemberLifecycleId: characterTarget.managedMemberLifecycleId,
+    }),
     headers: { 'content-type': 'application/json' },
     method: 'DELETE',
   })
   expect(unblocked.status).toBe(200)
-  expect(unblockMember).toHaveBeenCalledWith({ reason: 'Current compliance may be reevaluated.' })
+  expect(unblockMember).toHaveBeenCalledWith({
+    reason: 'Current compliance may be reevaluated.',
+    expectedOrganizationVersion: 1,
+    expectedManagedMemberLifecycleId: characterTarget.managedMemberLifecycleId,
+  })
+
+  const missingConfirmation = await app.request('/block', {
+    body: JSON.stringify({ reason: 'Old client.' }),
+    headers: { 'content-type': 'application/json' },
+    method: 'POST',
+  })
+  expect(missingConfirmation.status).toBe(400)
+  expect(blockMember).toHaveBeenCalledOnce()
 })

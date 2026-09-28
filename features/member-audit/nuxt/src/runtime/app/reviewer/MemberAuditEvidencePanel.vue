@@ -41,6 +41,9 @@ defineSlots<{ default(): VNode[] }>()
           </time>
           <template v-else>never</template>
         </span>
+        <span v-if="status.cachedUntil">
+          Upstream expiry: <time :datetime="status.cachedUntil">{{ status.cachedUntil }}</time>
+        </span>
       </li>
     </ul>
     <PlatformResourceBoundary
@@ -59,7 +62,7 @@ defineSlots<{ default(): VNode[] }>()
   </MemberAuditPanelFrame>
 </template>
 
-<style scoped>
+<style>
 .member-audit-evidence__statuses {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
@@ -71,6 +74,7 @@ defineSlots<{ default(): VNode[] }>()
 
 .member-audit-evidence__statuses li {
   display: grid;
+  align-content: start;
   min-width: 0;
   gap: 0.25rem;
   padding: 0.75rem;
@@ -88,11 +92,7 @@ defineSlots<{ default(): VNode[] }>()
   padding: 1rem;
 }
 
-.member-audit-evidence__statuses li {
-  align-content: start;
-}
-
-:slotted(.member-audit-evidence-list) {
+.member-audit-evidence-list {
   display: grid;
   gap: 0.75rem;
   margin: 0;

@@ -20,6 +20,7 @@ const nuxtRuntimePackages = new Set([
 ])
 const exactServerRuntimeImports = new Set([
   '@eve-space/core-eve-projections/assets',
+  '@eve-space/core-eve-projections/current-observation',
   '@eve-space/core-eve-projections/mail',
   '@eve-space/core-eve-projections/skill-queue',
   '@eve-space/core-eve-projections/trained-skills',

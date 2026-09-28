@@ -130,6 +130,18 @@ describe('character profile', () => {
       validatedAt: '2026-08-20T11:56:00.000Z',
     })
   })
+
+  test('forwards route cancellation through every canonical public enrichment', async () => {
+    const { getCharacterProfile } = await import('../../src/characters/profile.js')
+    const controller = new AbortController()
+
+    await getCharacterProfile(90_000_001, controller.signal)
+
+    expect(mocks.executeRepresentation).toHaveBeenCalledTimes(5)
+    expect(
+      mocks.executeRepresentation.mock.calls.map(([, , options]) => options?.signal),
+    ).toStrictEqual(Array(5).fill(controller.signal))
+  })
 })
 
 function result<Data>(data: Data) {

@@ -6,6 +6,7 @@ import type {
 } from '@eve-space/platform-module-contract/server'
 import { resolveInstalledResourceEligibility } from './resource-eligibility.js'
 import { platformResources } from './resources.js'
+import { currentObservationDisplayStatus } from './current-observation-status.js'
 
 interface ReviewerCollectionStatusBinding {
   readonly moduleId: string
@@ -75,27 +76,47 @@ export function createPlatformReviewerCollectionStatusReads(
         sectionId: binding.sectionId,
         targetUserId: binding.target.account.userId,
       }
-      if (eligibility.status === 'authorization-required') {
-        return {
-          ...correlation,
-          lastFailureClass: 'authorization-required',
-          requiredScope: eligibility.requiredScope,
-          status: 'authorization-required',
-          validatedAt: eligibility.validatedAt?.toISOString() ?? null,
-        }
-      }
-      if (eligibility.status === 'disabled') {
-        throw new Error('Reviewer collection resource is unavailable')
-      }
-      if (eligibility.status === 'suppressed') {
-        return projectStatus(correlation, eligibility, true)
-      }
-      if (eligibility.status !== 'eligible') {
-        throw new Error('Reviewer collection resource is unavailable')
-      }
-      return projectStatus(correlation, eligibility, eligibility.due)
+      return projectReviewerCollectionStatus(correlation, eligibility)
     },
   }
+}
+
+const projectReviewerCollectionStatus = (
+  correlation: Parameters<typeof projectStatus>[0],
+  eligibility: Awaited<ReturnType<typeof resolveInstalledResourceEligibility>>,
+): PlatformReviewerCollectionStatus => {
+  if (eligibility.status === 'authorization-required') {
+    return {
+      ...correlation,
+      lastFailureClass: 'authorization-required',
+      requiredScope: eligibility.requiredScope,
+      status: 'authorization-required',
+      validatedAt: eligibility.validatedAt?.toISOString() ?? null,
+      ...(eligibility.observationState && { cachedUntil: null }),
+    }
+  }
+  if (eligibility.status === 'disabled') {
+    throw new Error('Reviewer collection resource is unavailable')
+  }
+  if (eligibility.observationState && 'validatedAt' in eligibility) {
+    return {
+      ...correlation,
+      lastFailureClass: eligibility.lastFailureClass,
+      status: currentObservationDisplayStatus(
+        eligibility.observationState,
+        eligibility.lastFailureClass,
+      ),
+      validatedAt: eligibility.validatedAt?.toISOString() ?? null,
+      cachedUntil: eligibility.cachedUntil?.toISOString() ?? null,
+    }
+  }
+  if (eligibility.status === 'suppressed') {
+    return projectStatus(correlation, eligibility, true)
+  }
+  if (eligibility.status !== 'eligible') {
+    throw new Error('Reviewer collection resource is unavailable')
+  }
+  return projectStatus(correlation, eligibility, eligibility.due)
 }
 
 function requireReviewerCollectionAuthority(

@@ -17,6 +17,16 @@ describe('installed reviewer contributions', () => {
         beta,
       ]),
     ).toThrow('Reviewer contribution descriptor is not installed')
+    const landing = {
+      ...alpha,
+      target: 'managed-organization-character' as const,
+      placement: 'character-landing' as const,
+    }
+    expect(requireInstalledReviewerContribution(landing, [landing])).toBe(landing)
+    expect(() =>
+      requireInstalledReviewerContribution({ ...landing, placement: undefined }, [landing]),
+    ).toThrow('Reviewer contribution descriptor is not installed')
+    expect(alpha.placement).toBeUndefined()
   })
 
   test('keeps module and section availability independent', async () => {

@@ -51,6 +51,7 @@ const sameCollectionMetadata = (
     left.resourceId !== right.resourceId ||
     left.status !== right.status ||
     left.validatedAt !== right.validatedAt ||
+    left.cachedUntil !== right.cachedUntil ||
     left.lastFailureClass !== right.lastFailureClass
   ) {
     return false

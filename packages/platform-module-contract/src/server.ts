@@ -184,6 +184,7 @@ interface PlatformCollectionStatusBase {
   readonly authorizationGeneration: number | null
   readonly lastFailureClass: PlatformCollectionFailureClass | null
   readonly validatedAt: string | null
+  readonly cachedUntil?: string | null
 }
 
 export type PlatformCollectionStatus =
@@ -230,6 +231,7 @@ interface PlatformReviewerCollectionStatusBase {
   readonly disclosureVersion: number
   readonly sectionActivationVersion: number
   readonly validatedAt: string | null
+  readonly cachedUntil?: string | null
   readonly lastFailureClass: PlatformCollectionFailureClass | null
 }
 
@@ -251,6 +253,7 @@ export interface PlatformReviewerEvidenceResourceSummary {
   readonly resourceId: string
   readonly status: PlatformReviewerCollectionStatus['status']
   readonly validatedAt: string | null
+  readonly cachedUntil?: string | null
 }
 
 export interface PlatformReviewerEvidenceSectionSummary {
@@ -447,6 +450,8 @@ export type PlatformRevokeOrdinaryGroupMethod = (
 
 export interface PlatformBlockMemberInput {
   readonly reason: string
+  readonly expectedOrganizationVersion: number
+  readonly expectedManagedMemberLifecycleId: string
 }
 
 export interface PlatformBlockMemberResult {
@@ -459,9 +464,7 @@ export type PlatformBlockMemberMethod = (
   input: PlatformBlockMemberInput,
 ) => Promise<PlatformBlockMemberResult>
 
-export interface PlatformUnblockMemberInput {
-  readonly reason: string
-}
+export type PlatformUnblockMemberInput = PlatformBlockMemberInput
 
 export interface PlatformUnblockMemberResult {
   readonly decision: 'unblocked'

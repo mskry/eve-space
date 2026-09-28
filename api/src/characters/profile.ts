@@ -1,14 +1,11 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersDetailResponse } from '@evespace/esi-client/types'
+import type { PublicCharacterProfileResult } from '@eve-space/core-data-contract'
 import { z } from 'zod'
 import { getAlliancePublicResult } from '../alliances/public-data.js'
 import { getCorporationPublicResult } from '../corporations/public-data.js'
-import {
-  combineEsiResultMetadata,
-  createPublicEsiRead,
-  type EsiResultMetadata,
-} from '../esi-gateway/feature-execution.js'
-import { parseEveFormattedText, type EveFormattedText } from '../text/eve-formatted-text.js'
+import { combineEsiResultMetadata, createPublicEsiRead } from '../esi-gateway/feature-execution.js'
+import { parseEveFormattedText } from '../text/eve-formatted-text.js'
 
 // Only the four empire races are playable. These are faction IDs, which the EVE image server
 // serves as empire emblems under its corporations category.
@@ -95,42 +92,20 @@ const universeBloodlinesRead = createPublicEsiRead({
   operation: 'universe-bloodlines',
 })
 
-interface CharacterProfileData {
-  id: number
-  name: string
-  birthday: string
-  gender: string
-  race: string
-  raceFactionId: number | null
-  bloodline: string
-  securityStatus: number
-  achievementScore: number
-  corporationTitle?: string
-  bio?: EveFormattedText
-  factionId: number | null
-  corporation: {
-    id: number
-    name: string
-    ticker: string
-    memberCount: number
-  }
-  alliance: {
-    id: number
-    name: string
-    ticker: string
-  } | null
-}
-
-type CharacterProfile = CharacterProfileData & EsiResultMetadata
-
-export async function getCharacterProfile(characterId: number) {
-  const characterResult = await publicCharacterRead.execute({ characterId })
+export async function getCharacterProfile(
+  characterId: number,
+  signal?: AbortSignal,
+): Promise<PublicCharacterProfileResult> {
+  const cancellation = signal ? { signal } : {}
+  const characterResult = await publicCharacterRead.execute({ characterId, ...cancellation })
   const character = characterResult.data
   const [corporationResult, races, bloodlines, alliance] = await Promise.all([
-    getCorporationPublicResult(character.corporationId),
-    universeRacesRead.execute({}),
-    universeBloodlinesRead.execute({}),
-    character.allianceId ? getAlliancePublicResult(character.allianceId) : Promise.resolve(null),
+    getCorporationPublicResult(character.corporationId, signal),
+    universeRacesRead.execute(cancellation),
+    universeBloodlinesRead.execute(cancellation),
+    character.allianceId
+      ? getAlliancePublicResult(character.allianceId, signal)
+      : Promise.resolve(null),
   ])
 
   const corporation = corporationResult.data
@@ -143,7 +118,7 @@ export async function getCharacterProfile(characterId: number) {
     ...(alliance ? [alliance] : []),
   ])
 
-  const profile: CharacterProfile = {
+  const profile: PublicCharacterProfileResult = {
     id: characterId,
     name: character.name,
     birthday: character.birthday,

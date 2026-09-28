@@ -141,6 +141,69 @@ describe('local resource observations', () => {
     expect(materialize).not.toHaveBeenCalled()
     expect(mocks.recordSuccess).not.toHaveBeenCalled()
   })
+
+  test.each([
+    ['managed lifecycle', { managedMemberLifecycleId: '00000000-0000-4000-8000-000000000099' }],
+    ['organization version', { organizationVersion: 8 }],
+    ['disclosure version', { disclosureVersion: 2 }],
+    ['section activation', { sectionActivationVersion: 2 }],
+  ] as const)('discards a delayed current ship after %s changes', async (_label, change) => {
+    const materialize = vi.fn(async () => undefined)
+    const input = observation(materialize)
+    const currentAuthority = { ...managedAuthority, sectionId: 'current-observation' }
+    mocks.transaction.mockResolvedValue([{ version: 7 }])
+    mocks.resolveEligibility.mockResolvedValue({
+      authorizationGeneration: 4,
+      due: true,
+      managedAuthority: { ...currentAuthority, ...change },
+      nextEligibleAt: null,
+      status: 'eligible',
+    })
+    await applyInstalledResourceObservation({
+      ...input,
+      identity: { ...identity, resourceId: 'current-ship' },
+      resource: {
+        ...input.resource,
+        resourceId: 'current-ship',
+        operationId: 'ship',
+        sectionId: 'current-observation',
+        eligibility: { kind: 'current-managed-member-character' },
+      },
+      managedAuthority: currentAuthority,
+      organizationVersion: 7,
+      cachedUntil: '2026-08-26T14:58:05.000Z',
+      data: { kind: 'current-ship', typeId: 34 },
+      outcome: 'complete',
+    })
+    expect(materialize).not.toHaveBeenCalled()
+    expect(mocks.recordSuccess).not.toHaveBeenCalled()
+  })
+
+  test.each(['obsolete', 'disabled'] as const)(
+    'does not materialize a prior character lifecycle after %s admission',
+    async (status) => {
+      const materialize = vi.fn(async () => undefined)
+      const input = observation(materialize)
+      mocks.resolveEligibility.mockResolvedValue({ status })
+      await applyInstalledResourceObservation({
+        ...input,
+        identity: { ...identity, resourceId: 'current-location' },
+        resource: {
+          ...input.resource,
+          resourceId: 'current-location',
+          operationId: 'location',
+          sectionId: 'current-observation',
+          eligibility: { kind: 'current-managed-member-character' },
+        },
+        managedAuthority: { ...managedAuthority, sectionId: 'current-observation' },
+        organizationVersion: 7,
+        data: { kind: 'current-location', solarSystemId: 30_000_001 },
+        outcome: 'complete',
+      })
+      expect(materialize).not.toHaveBeenCalled()
+      expect(mocks.recordSuccess).not.toHaveBeenCalled()
+    },
+  )
 })
 
 describe('corporation resource authority', () => {

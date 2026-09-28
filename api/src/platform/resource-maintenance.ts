@@ -9,6 +9,8 @@ import { installedModuleResources } from '../generated/platform/installed-module
 import { createPlatformModuleLogger } from './module-logging.js'
 import { createPlatformResourceMaintenancePersistence } from './module-persistence-capabilities.js'
 
+const authorityPageSize = 1000
+
 interface ResourceMaintenanceOptions {
   readonly connection?: postgres.Sql
   readonly now?: Date
@@ -55,8 +57,10 @@ async function maintainResource(
   const resourcePurgeWork = purgeWork.filter(
     (work) => work.moduleId === resource.moduleId && work.resourceId === resource.resourceId,
   )
-  const invalidAuthorities = [
-    ...(await loadInvalidAuthorities(connection, resource, now)),
+  let offset = 0
+  let invalidAuthorities = await loadInvalidAuthorities(connection, resource, now, offset)
+  const initialAuthorities = [
+    ...invalidAuthorities,
     ...resourcePurgeWork.filter((work) => work.mode === 'authority'),
   ]
   const persistence = createPlatformResourceMaintenancePersistence(
@@ -73,7 +77,7 @@ async function maintainResource(
           .map((work) => work.targetUserId),
       ),
     ],
-    invalidAuthorities,
+    invalidAuthorities: initialAuthorities,
     purgeRetention: true,
     ...(signal && { signal }),
     capabilities: {
@@ -81,6 +85,23 @@ async function maintainResource(
       persistence,
     },
   })
+  while (invalidAuthorities.length === authorityPageSize) {
+    signal?.throwIfAborted()
+    offset += authorityPageSize
+    // oxlint-disable-next-line no-await-in-loop -- Each page is bounded and purged before loading the next.
+    invalidAuthorities = await loadInvalidAuthorities(connection, resource, now, offset)
+    if (invalidAuthorities.length > 0) {
+      // oxlint-disable-next-line no-await-in-loop -- Maintenance for the same resource must remain ordered.
+      await implementation.maintain?.({
+        now: now.toISOString(),
+        purgeAccountIds: [],
+        invalidAuthorities,
+        purgeRetention: false,
+        ...(signal && { signal }),
+        capabilities: { logger: createPlatformModuleLogger(resource.moduleId), persistence },
+      })
+    }
+  }
   await Promise.all(
     resourcePurgeWork.map(
       ({ purgeWorkId }) =>
@@ -114,6 +135,7 @@ async function loadInvalidAuthorities(
   connection: postgres.Sql,
   resource: PlatformInstalledResourceDescriptor,
   now: Date,
+  offset: number,
 ) {
   if (
     resource.subjectKind !== 'character' ||
@@ -178,6 +200,7 @@ async function loadInvalidAuthorities(
       )
       and state.updated_at <= ${now.toISOString()}::timestamptz
     order by state.updated_at, state.subject_lifecycle_id
-    limit 1000
+    limit ${authorityPageSize}
+    offset ${offset}
   `
 }

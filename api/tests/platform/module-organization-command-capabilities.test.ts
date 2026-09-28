@@ -48,6 +48,10 @@ const target = {
   organizationVersion: 7,
   selection: { kind: 'account' as const },
 }
+const confirmedContext = {
+  expectedOrganizationVersion: 7,
+  expectedManagedMemberLifecycleId: target.managedMemberLifecycleId,
+}
 
 describe('platform organization command capabilities', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -158,7 +162,7 @@ describe('platform organization command capabilities', () => {
       revokedAt: '2026-09-18T12:00:00.000Z',
     })
     await expect(
-      memberCommands.unblockMember({ reason: 'Review completed' }),
+      memberCommands.unblockMember({ reason: 'Review completed', ...confirmedContext }),
     ).resolves.toStrictEqual({
       blockId: 'block-1',
       decision: 'unblocked',
@@ -201,7 +205,7 @@ describe('platform organization command capabilities', () => {
     mutableTarget.account.userId = '00000000-0000-4000-8000-000000000099'
     mutableTarget.managedMemberLifecycleId = '00000000-0000-4000-8000-000000000099'
 
-    await commands.blockMember({ reason: 'Immediate deny' })
+    await commands.blockMember({ reason: 'Immediate deny', ...confirmedContext })
 
     expect(mocks.blockMember).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -236,7 +240,9 @@ describe('platform organization command capabilities', () => {
       binding('member-audit.members.block'),
     )
 
-    const error = await commands.blockMember({ reason: 'Immediate deny' }).catch((caught) => caught)
+    const error = await commands
+      .blockMember({ reason: 'Immediate deny', ...confirmedContext })
+      .catch((caught) => caught)
     expect(error).toBeInstanceOf(PlatformModuleHttpError)
     expect(error).toMatchObject({
       body: {
@@ -246,6 +252,26 @@ describe('platform organization command capabilities', () => {
       status: 403,
     })
     expect(JSON.stringify(error)).not.toContain(target.account.userId)
+  })
+
+  test('returns a typed conflict for a confirmation from a previous account lifecycle', async () => {
+    mocks.blockMember.mockRejectedValue(new OrganizationReviewerCommandError('stale-confirmation'))
+    const commands = createPlatformOrganizationCommandCapabilities(
+      ['block-member'] as const,
+      binding('member-audit.members.block'),
+    )
+    await expect(
+      commands.blockMember({ reason: 'Old confirmation', ...confirmedContext }),
+    ).rejects.toMatchObject({
+      status: 409,
+      body: { code: 'MEMBER_BLOCK_CONTEXT_CHANGED' },
+    })
+    expect(mocks.blockMember).toHaveBeenCalledWith(
+      expect.objectContaining({
+        expectedOrganizationVersion: 7,
+        expectedManagedMemberLifecycleId: target.managedMemberLifecycleId,
+      }),
+    )
   })
 
   test.each([
@@ -298,7 +324,9 @@ describe('platform organization command capabilities', () => {
       binding('member-audit.members.block'),
     )
 
-    await expect(commands.blockMember({ reason: 'Reviewed change' })).rejects.toMatchObject({
+    await expect(
+      commands.blockMember({ reason: 'Reviewed change', ...confirmedContext }),
+    ).rejects.toMatchObject({
       body: { code: publicCode },
       status,
     })
@@ -312,7 +340,9 @@ describe('platform organization command capabilities', () => {
       binding('member-audit.members.block'),
     )
 
-    await expect(commands.blockMember({ reason: 'Reviewed change' })).rejects.toBe(failure)
+    await expect(
+      commands.blockMember({ reason: 'Reviewed change', ...confirmedContext }),
+    ).rejects.toBe(failure)
   })
 
   test('binds an external module command to its exact route permission', async () => {
@@ -327,7 +357,7 @@ describe('platform organization command capabilities', () => {
       publisherPackage: '@example/alpha-manifest',
     })
 
-    await commands.unblockMember({ reason: 'External review completed' })
+    await commands.unblockMember({ reason: 'External review completed', ...confirmedContext })
 
     expect(mocks.unblockMember).toHaveBeenCalledWith(
       expect.objectContaining({

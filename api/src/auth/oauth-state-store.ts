@@ -12,11 +12,18 @@ const oauthStateTtlMs = 10 * 60 * 1000
 export type OAuthStateIntentContext =
   | { intent: 'login'; returnPath?: string }
   | { intent: 'attach'; userId: string }
-  | { intent: 'reauthorize'; userId: string; characterId: number; returnPath?: string }
+  | {
+      intent: 'reauthorize'
+      userId: string
+      characterId: number
+      expectedSubjectLifecycleId: string
+      returnPath?: string
+    }
   | {
       intent: 'claim-organization-owner'
       userId: string
       characterId: number
+      expectedSubjectLifecycleId: string
       organizationId: number
       organizationVersion: number
     }
@@ -44,6 +51,10 @@ export async function storeOAuthState(state: string, context: OAuthStateContext)
         ? context.characterId
         : null,
     expiresAt: new Date(Date.now() + oauthStateTtlMs),
+    expectedSubjectLifecycleId:
+      context.intent === 'reauthorize' || context.intent === 'claim-organization-owner'
+        ? context.expectedSubjectLifecycleId
+        : null,
     intent: context.intent,
     organizationDeploymentId: context.intent === 'claim-organization-owner' ? 1 : null,
     organizationId: context.intent === 'claim-organization-owner' ? context.organizationId : null,
@@ -69,6 +80,7 @@ export async function consumeOAuthState(state: string): Promise<OAuthStateContex
     .where(and(eq(oauthStates.stateHash, hashToken(state)), gt(oauthStates.expiresAt, new Date())))
     .returning({
       characterId: oauthStates.characterId,
+      expectedSubjectLifecycleId: oauthStates.expectedSubjectLifecycleId,
       intent: oauthStates.intent,
       organizationId: oauthStates.organizationId,
       organizationVersion: oauthStates.organizationVersion,
@@ -87,6 +99,7 @@ export async function findOAuthState(state: string): Promise<OAuthStateContext |
   const [record] = await db
     .select({
       characterId: oauthStates.characterId,
+      expectedSubjectLifecycleId: oauthStates.expectedSubjectLifecycleId,
       intent: oauthStates.intent,
       organizationId: oauthStates.organizationId,
       organizationVersion: oauthStates.organizationVersion,
@@ -120,9 +133,15 @@ function parseOAuthStateRecord(
   if (record.intent === 'attach' && record.userId) {
     return { intent: 'attach', reviewerUseDisclosures, userId: record.userId }
   }
-  if (record.intent === 'reauthorize' && record.userId && record.characterId) {
+  if (
+    record.intent === 'reauthorize' &&
+    record.userId &&
+    record.characterId &&
+    record.expectedSubjectLifecycleId
+  ) {
     return {
       characterId: record.characterId,
+      expectedSubjectLifecycleId: record.expectedSubjectLifecycleId,
       intent: 'reauthorize',
       reviewerUseDisclosures,
       userId: record.userId,
@@ -145,6 +164,7 @@ function parseOwnerClaimState(
   if (
     !record.userId ||
     !record.characterId ||
+    !record.expectedSubjectLifecycleId ||
     !record.organizationId ||
     !record.organizationVersion
   ) {
@@ -152,6 +172,7 @@ function parseOwnerClaimState(
   }
   return {
     characterId: record.characterId,
+    expectedSubjectLifecycleId: record.expectedSubjectLifecycleId,
     intent: 'claim-organization-owner',
     organizationId: record.organizationId,
     organizationVersion: record.organizationVersion,
@@ -188,6 +209,7 @@ interface StoredOAuthStateRecord {
   readonly intent: string
   readonly userId: string | null
   readonly characterId: number | null
+  readonly expectedSubjectLifecycleId: string | null
   readonly returnPath: string | null
   readonly organizationId: number | null
   readonly organizationVersion: number | null

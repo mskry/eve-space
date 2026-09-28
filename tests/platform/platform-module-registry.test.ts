@@ -65,6 +65,33 @@ function generateRegistryFiles(
     : renderRegistryFiles(compiled, input.persistenceRoutines)
 }
 
+it('carries declared freshness and directory actions into installed metadata', () => {
+  const declaration = authoringManifest('alpha')
+  declaration.server.resources[0]!.freshness = 'representation-expiry'
+  declaration.reviewerContributions![0]!.directoryAction = 'manage-account'
+  const files = generateRegistryFiles([declaration])
+  expect(
+    files.get('api/src/generated/platform/installed-module-resource-declarations.ts'),
+  ).toContain("freshness: 'representation-expiry'")
+  expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
+    "freshness: 'representation-expiry'",
+  )
+  expect(files.get('api/src/generated/platform/installed-reviewer-contributions.ts')).toContain(
+    '"directoryAction": "manage-account"',
+  )
+  expect(files.get('generated/platform/installed-nuxt-contributions.ts')).toContain(
+    '"directoryAction": "manage-account"',
+  )
+
+  // SAFETY: Deliberately invalid authoring input verifies rejection beyond the typed contract.
+  declaration.server.resources[0]!.freshness = 'unknown' as never
+  expect(validationErrorMessage(declaration)).toContain('freshness')
+  declaration.server.resources[0]!.freshness = 'representation-expiry'
+  // SAFETY: Deliberately invalid authoring input verifies rejection beyond the typed contract.
+  declaration.reviewerContributions![0]!.directoryAction = 'unknown' as never
+  expect(validationErrorMessage(declaration)).toContain('directory action')
+})
+
 it('rejects repeated or empty-field reviewer evidence resources', () => {
   const invalid = manifest('alpha', { persistenceOperation: {} })
   invalid.sections = [
@@ -310,6 +337,72 @@ describe('platform module declarations', () => {
     )
   })
 
+  it('allows only the flat character landing placement on exact character targets', () => {
+    const account = authoringManifest('alpha')
+    account.reviewerContributions![0]!.placement = 'character-landing'
+    expect(() =>
+      compilePlatformModules(
+        [{ declaration: account, expectedModuleId: 'alpha' }],
+        coreModuleValidationAuthorities,
+      ),
+    ).toThrowError(
+      expect.objectContaining({
+        issues: expect.arrayContaining([
+          'reviewer contribution alpha/overview placement requires an exact managed-organization character target',
+        ]),
+      }),
+    )
+
+    const character = authoringManifest('alpha')
+    character.reviewerContributions![0]!.target = 'managed-organization-character'
+    character.server.routes[0]!.target = 'managed-organization-character'
+    character.server.routes[0]!.namespace =
+      '/alpha/accounts/:userId/characters/:characterId/overview'
+    character.server.routes[0]!.sectionId = 'overview'
+    character.sections = [
+      { defaultEnabled: false, id: 'overview', kind: 'workspace' },
+      { defaultEnabled: false, disclosureRevision: 1, id: 'evidence', kind: 'sensitive-evidence' },
+    ]
+    character.server.resources = []
+    character.server.activityProviders[0]!.sectionId = 'overview'
+    character.nuxt.pages[0]!.sectionId = 'overview'
+    character.nuxt.navigation[0]!.sectionId = 'overview'
+    character.reviewerContributions![0]!.placement = 'character-landing'
+    character.reviewerContributions![0]!.directoryAction = 'review'
+    const [compiled] = readCompiledPlatformModules(
+      compilePlatformModules(
+        [{ declaration: character, expectedModuleId: 'alpha' }],
+        coreModuleValidationAuthorities,
+      ),
+    )
+    expect(compiled?.reviewerContributions?.[0]?.placement).toBe('character-landing')
+    expect(compiled?.reviewerContributions?.[0]?.directoryAction).toBe('review')
+
+    character.reviewerContributions![0]!.directoryAction = 'manage-account'
+    expect(validationErrorMessage(character)).toContain(
+      'directory action requires target managed-organization-account',
+    )
+    character.reviewerContributions![0]!.directoryAction = 'review'
+
+    // SAFETY: The unsupported placement deliberately bypasses the authored union to test validation.
+    character.reviewerContributions![0]!.placement = 'recursive-landing' as never
+    expect(() =>
+      compilePlatformModules(
+        [{ declaration: character, expectedModuleId: 'alpha' }],
+        coreModuleValidationAuthorities,
+      ),
+    ).toThrow('invalid placement')
+    const omitted = authoringManifest('alpha')
+    const [unchanged] = readCompiledPlatformModules(
+      compilePlatformModules(
+        [{ declaration: omitted, expectedModuleId: 'alpha' }],
+        coreModuleValidationAuthorities,
+      ),
+    )
+    expect(unchanged?.reviewerContributions?.[0]).not.toHaveProperty('placement')
+    expect(unchanged?.reviewerContributions?.[0]).not.toHaveProperty('directoryAction')
+  })
+
   it('normalizes publisher inventories and emits canonical JSON', () => {
     const declaration = authoringManifest('alpha')
     declaration.permissions = declaration.permissions!.toReversed()
@@ -335,8 +428,14 @@ describe('platform module declarations', () => {
 
   it('publishes the versioned core ESI reuse catalog and rejects unknown operations', () => {
     expect(platformCoreEsiOperationCatalog).toMatchObject({
-      operationIds: expect.arrayContaining(['skills', 'wallet-balance', 'mail-headers']),
-      version: 1,
+      operationIds: expect.arrayContaining([
+        'skills',
+        'wallet-balance',
+        'mail-headers',
+        'ship',
+        'location',
+      ]),
+      version: 2,
     })
 
     const declaration = actionManifest('member-audit')
@@ -1094,7 +1193,7 @@ describe('platform module declarations', () => {
     )
   })
 
-  it('requires exactly the six reviewed Member Audit sections', () => {
+  it('requires exactly the seven reviewed Member Audit sections', () => {
     const valid = actionManifest('member-audit')
     expect(valid.sections?.map(({ id }) => id)).toStrictEqual([
       'overview',
@@ -1102,6 +1201,7 @@ describe('platform module declarations', () => {
       'assets',
       'wallet',
       'mail',
+      'current-observation',
       'access-management',
     ])
     expect(valid.sections?.every(({ defaultEnabled }) => defaultEnabled === false)).toBe(true)
@@ -2676,6 +2776,12 @@ function actionManifest(id: string) {
             defaultEnabled: false,
             disclosureRevision: 1,
             id: 'mail',
+            kind: 'sensitive-evidence',
+          },
+          {
+            defaultEnabled: false,
+            disclosureRevision: 1,
+            id: 'current-observation',
             kind: 'sensitive-evidence',
           },
           { defaultEnabled: false, id: 'access-management', kind: 'access-management' },

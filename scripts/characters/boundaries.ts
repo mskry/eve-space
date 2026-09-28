@@ -72,6 +72,7 @@ const allowedPackagesByTier: Record<CharacterTier, ReadonlySet<string>> = {
   'pure-leaf': new Set(['zod']),
   'read-projection': new Set([
     '@eve-space/core-eve-projections/assets',
+    '@eve-space/core-eve-projections/current-observation',
     '@eve-space/core-eve-projections/skill-queue',
     '@eve-space/core-eve-projections/trained-skills',
     '@eve-space/core-eve-projections/wallet',
@@ -171,6 +172,7 @@ const allowedCrossSubsystemImportsByModule = new Map(
     market: ['api/src/esi-gateway/feature-execution'],
     overview: ['api/src/esi-gateway/feature-execution', 'api/src/universe/locations'],
     profile: [
+      '@eve-space/core-data-contract',
       'api/src/alliances/public-data',
       'api/src/corporations/public-data',
       'api/src/esi-gateway/feature-execution',

@@ -431,7 +431,7 @@ describe('reviewer account search', () => {
         now,
         organizationVersion: 7,
       }),
-    ).rejects.toThrow('Reviewer account search is unavailable.')
+    ).rejects.toThrow('Reviewer directory is unavailable.')
   })
 })
 

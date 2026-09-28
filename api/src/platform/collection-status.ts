@@ -5,6 +5,7 @@ import { platformResources } from './resources.js'
 import { findInstalledResource } from './resource-identity.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import { upsertPlatformCollectionState } from './collection-state-store.js'
+import { currentObservationDisplayStatus } from './current-observation-status.js'
 import {
   resolveInstalledResourceEligibility,
   type PlatformManagedCollectionAuthority,
@@ -36,7 +37,8 @@ export async function getInstalledResourceCollectionStatus(
 
 export async function recordInstalledResourceCollectionSuccess(
   identity: PlatformCollectionStateIdentity,
-  result: Pick<PlatformEsiExecution<unknown>, 'validatedAt'>,
+  result: Pick<PlatformEsiExecution<unknown>, 'validatedAt'> &
+    Partial<Pick<PlatformEsiExecution<unknown>, 'cachedUntil'>>,
   authorizationGeneration: number | null,
   options: CollectionSuccessOptions = {},
 ) {
@@ -51,6 +53,11 @@ export async function recordInstalledResourceCollectionSuccess(
   const nextEligibleAt = new Date(
     validatedAt.getTime() + resource.materializationIntervalSeconds * 1000,
   )
+  const observation = resource.freshness === 'representation-expiry'
+  const cachedUntil = observation && result.cachedUntil ? new Date(result.cachedUntil) : null
+  if (cachedUntil && (!Number.isFinite(cachedUntil.getTime()) || cachedUntil < validatedAt)) {
+    throw new TypeError('ESI representation expiry is invalid')
+  }
 
   return (options.upsertState ?? upsertPlatformCollectionState)({
     ...identity,
@@ -58,19 +65,25 @@ export async function recordInstalledResourceCollectionSuccess(
     authorizationGeneration,
     ...options.managedAuthority,
     validatedAt,
+    ...(observation && { cachedUntil }),
     lastFailureClass: null,
   })
 }
+
+const collectionStatusMetadata = (eligibility: PlatformResourceEligibility) => ({
+  validatedAt:
+    'validatedAt' in eligibility ? (eligibility.validatedAt?.toISOString() ?? null) : null,
+  lastFailureClass: 'lastFailureClass' in eligibility ? eligibility.lastFailureClass : null,
+  authorizationGeneration:
+    'authorizationGeneration' in eligibility ? eligibility.authorizationGeneration : null,
+})
 
 function projectCollectionStatus(
   identity: PlatformCollectionStateIdentity,
   eligibility: PlatformResourceEligibility,
 ): PlatformCollectionStatus {
-  const validatedAt =
-    'validatedAt' in eligibility ? (eligibility.validatedAt?.toISOString() ?? null) : null
-  const lastFailureClass = 'lastFailureClass' in eligibility ? eligibility.lastFailureClass : null
-  const authorizationGeneration =
-    'authorizationGeneration' in eligibility ? eligibility.authorizationGeneration : null
+  const { validatedAt, lastFailureClass, authorizationGeneration } =
+    collectionStatusMetadata(eligibility)
   if (eligibility.status === 'authorization-required') {
     const authorizationReason = eligibility.authorizationReason ?? 'scope-missing'
     return {
@@ -86,6 +99,15 @@ function projectCollectionStatus(
       requiredScope: eligibility.requiredScope,
       status: 'authorization-required',
       validatedAt,
+    }
+  }
+  if (eligibility.observationState && 'validatedAt' in eligibility) {
+    return {
+      authorizationGeneration,
+      lastFailureClass,
+      status: currentObservationDisplayStatus(eligibility.observationState, lastFailureClass),
+      validatedAt,
+      cachedUntil: eligibility.cachedUntil?.toISOString() ?? null,
     }
   }
   if (eligibility.status !== 'eligible') {

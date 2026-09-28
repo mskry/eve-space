@@ -94,7 +94,7 @@ const corporationAllianceHistoryCacheSchema = z.array(
 const publicCorporationRead = createPublicEsiRead({
   cacheSchema: corporationLookupCacheSchema,
   descriptor: operationRegistry.GetCorporationsCorporationId.transport,
-  encodeRequest: (input: { corporationId: number }) => ({
+  encodeRequest: (input: { corporationId: number; signal?: AbortSignal }) => ({
     path: { corporation_id: input.corporationId },
   }),
   map: async (response): Promise<CorporationLookup> => ({
@@ -135,8 +135,11 @@ export async function getCorporationPublic(corporationId: number): Promise<Corpo
 
 export async function getCorporationPublicResult(
   corporationId: number,
+  signal?: AbortSignal,
 ): Promise<EsiReadResult<CorporationPublic>> {
-  const result = await publicCorporationRead.execute({ corporationId })
+  const result = await publicCorporationRead.execute(
+    signal ? { corporationId, signal } : { corporationId },
+  )
   if (!result.data.found) {
     throw Object.assign(new Error('Corporation not found'), { status: 404 })
   }

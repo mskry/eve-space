@@ -18,7 +18,7 @@ export const installedModuleSectionDefinitions = [
     id: 'skills',
     kind: 'sensitive-evidence',
     defaultEnabled: false,
-    disclosureRevision: 1,
+    disclosureRevision: 2,
   },
   {
     moduleId: 'member-audit',
@@ -43,6 +43,13 @@ export const installedModuleSectionDefinitions = [
   },
   {
     moduleId: 'member-audit',
+    id: 'current-observation',
+    kind: 'sensitive-evidence',
+    defaultEnabled: false,
+    disclosureRevision: 1,
+  },
+  {
+    moduleId: 'member-audit',
     id: 'access-management',
     kind: 'access-management',
     defaultEnabled: false,
@@ -55,6 +62,13 @@ export const installedModuleOrganizationAdmissionScopes = [
     admissionScope: 'organization:v1:member-audit:hr:member-audit.assets.read',
     audience: 'hr',
     requiredPermission: 'member-audit.assets.read',
+  },
+  {
+    publisherPackage: '@eve-space/member-audit-manifest',
+    moduleId: 'member-audit',
+    admissionScope: 'organization:v1:member-audit:hr:member-audit.current-observation.read',
+    audience: 'hr',
+    requiredPermission: 'member-audit.current-observation.read',
   },
   {
     publisherPackage: '@eve-space/member-audit-manifest',
