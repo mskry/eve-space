@@ -2,7 +2,6 @@ import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import {
   ApiQueryError,
   readPlatformApiResponse,
-  selectEsiQueryPersistencePresentation,
   usePlatformIdentity,
   type PlatformResourceState,
 } from '@eve-space/platform-module-nuxt/runtime'
@@ -100,14 +99,6 @@ export function useActivityDetail(kind: MaybeRefOrGetter<'project' | 'job' | 'ca
     }
     return participation.data.value?.resource ?? detailData?.resource
   })
-  const activityPresentation = computed(() =>
-    detail.data.value?.activity
-      ? detail.persistencePresentation.value
-      : selectEsiQueryPersistencePresentation([
-          participation.persistencePresentation.value,
-          detail.persistencePresentation.value,
-        ]),
-  )
   const authorizationUrl = computed(() =>
     selectedCharacter.value
       ? api.auth.eve.reauthorize[':characterId']
@@ -240,7 +231,6 @@ export function useActivityDetail(kind: MaybeRefOrGetter<'project' | 'job' | 'ca
   }
   return {
     activity,
-    activityPresentation,
     activityResource,
     authorizationUrl,
     characterId,

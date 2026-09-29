@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type {
   AssetCollection,
   AssetFilterState,
@@ -33,7 +32,6 @@ const LOCATION_PAGE_SIZE = 50
 const props = defineProps<{
   collection: AssetCollection | null
   hierarchy?: readonly AssetLocationGroup[]
-  presentation?: EsiQueryPersistencePresentation
   routeJumpsBySystemId?: ReadonlyMap<number, number>
   routeRankBySystemId?: ReadonlyMap<number, number>
   state: AssetResourceState
@@ -362,12 +360,7 @@ function optionsByIdentity(assets: readonly AssetRecord[], kind: 'type' | 'group
 
 <template>
   <div class="assets-inventory">
-    <AssetsResourceState
-      :has-data="Boolean(collection)"
-      :presentation="presentation"
-      :state="state"
-      @retry="emit('retry')"
-    >
+    <AssetsResourceState :has-data="Boolean(collection)" :state="state" @retry="emit('retry')">
       <template v-if="collection">
         <AssetsSummary
           :asset-count="collection.assets.length"

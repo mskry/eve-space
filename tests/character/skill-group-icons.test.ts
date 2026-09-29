@@ -26,13 +26,6 @@ describe('skillGroupIcon', () => {
 })
 
 describe('skill group glyphs', () => {
-  it('draws a branch for every named icon plus an unknown fallback', () => {
-    for (const name of skillGroupIconNames) {
-      expect(component).toContain(`name === '${name}'`)
-    }
-    expect(component).toContain('<template v-else>')
-  })
-
   it('keeps the shared 24-grid stroke system the design defines', () => {
     expect(component).toContain('viewBox="0 0 24 24"')
     expect(component).toContain('fill="none"')

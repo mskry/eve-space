@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   readPlatformApiResponse,
-  type EsiQueryPersistencePresentation,
   type PlatformResourceState,
 } from '@eve-space/platform-module-nuxt/runtime'
 
@@ -28,19 +27,6 @@ const resourceQuery = usePlatformProtectedQuery(() => ({
   resource: ['record'],
   routeId: 'alpha-record',
   subject: { characterId: Number(route.params.characterId), kind: 'character' },
-}))
-const persistedSummaryQuery = usePlatformProtectedQuery(() => ({
-  access: {
-    authenticated: true,
-    authorized: true,
-    moduleEnabled: enabledModuleIds.value.has('alpha'),
-  },
-  esiPersistence: { kind: 'organization-esi' },
-  moduleId: 'alpha',
-  query: async () => ({ available: true }),
-  resource: ['summary'],
-  routeId: 'alpha-summary',
-  subject: { kind: 'organization', organizationVersion: 1 },
 }))
 const resourceState = computed<PlatformResourceState>(() => {
   if (route.query.state === 'authorization') {
@@ -72,27 +58,6 @@ const resourceState = computed<PlatformResourceState>(() => {
   }
   return { status: 'ready' }
 })
-const persistencePresentation = computed<EsiQueryPersistencePresentation>(() => {
-  if (route.query.presentation === 'restored') {
-    return { kind: 'restored', originalSuccessAt: '2026-09-15T01:00:00.000Z' }
-  }
-  if (route.query.presentation === 'refresh-failed') {
-    return {
-      kind: 'restored-refresh-failed',
-      originalSuccessAt: '2026-09-15T01:00:00.000Z',
-      refreshFailureStatus: 503,
-      retryAt: '2026-09-15T01:05:00.000Z',
-    }
-  }
-  if (route.query.presentation === 'server-stale') {
-    return {
-      kind: 'server-stale',
-      refreshFailureClass: 'esi-cooldown',
-      validatedAt: '2026-09-15T01:02:00.000Z',
-    }
-  }
-  return persistedSummaryQuery.persistencePresentation.value
-})
 const { openConfirmDialog } = usePlatformConfirmDialog()
 const { announceSuccess } = usePlatformMutationAnnouncement()
 
@@ -109,7 +74,6 @@ function confirmRecord() {
   <section data-testid="alpha-page">
     <PlatformResourceBoundary
       :has-data="route.query.retained === 'true'"
-      :presentation="persistencePresentation"
       :state="resourceState"
       @retry="resourceQuery.refresh()"
     >

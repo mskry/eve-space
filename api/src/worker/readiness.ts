@@ -36,19 +36,6 @@ const workerPersistenceRequirement: WorkerPersistenceRequirement = {
   operations: installedModulePersistenceOperations,
 }
 
-export class WorkerSchemaNotReadyError extends Error {
-  constructor(
-    requirement: WorkerMigrationRequirement = workerMigrationRequirements[0]!,
-    reason?: string,
-  ) {
-    super(
-      reason
-        ? `Worker schema not ready: ${reason}`
-        : `Worker requires migration ${formatMigration(requirement)}`,
-    )
-  }
-}
-
 export async function checkWorkerReadiness(
   connection = sql,
   requirements: readonly WorkerMigrationRequirement[] = workerMigrationRequirements,
@@ -127,16 +114,6 @@ export async function checkWorkerReadiness(
   }
 }
 
-export async function assertWorkerReadiness(connection = sql) {
-  const readiness = await checkWorkerReadiness(connection)
-  if (!readiness.healthy) {
-    throw new WorkerSchemaNotReadyError(
-      'missing' in readiness ? readiness.missing : undefined,
-      readiness.reason,
-    )
-  }
-}
-
 async function checkSchemaAndQueueReachability(
   connection: typeof sql,
   queueProbe: typeof probeQueueStatus,
@@ -201,16 +178,6 @@ export async function assertWorkerStartupDependencies(
   queueProbe: typeof probeQueueStatus = probeQueueStatus,
 ) {
   const readiness = await checkWorkerStartupDependencies(connection, queueProbe)
-  if (!readiness.healthy) {
-    throw new Error(`Worker dependency unavailable: ${readiness.reason}`)
-  }
-}
-
-export async function assertWorkerDependencies(
-  livenessProbe: () => Promise<ScopedWorkerLiveness>,
-  connection = sql,
-) {
-  const readiness = await checkWorkerDependencies(livenessProbe, connection)
   if (!readiness.healthy) {
     throw new Error(`Worker dependency unavailable: ${readiness.reason}`)
   }

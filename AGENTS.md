@@ -279,7 +279,7 @@ These rules apply to every source directory. Keep a directory flat by default, w
 ```text
 tests/
   character/
-    clone-state.test.ts
+    clone-resource-state.test.ts
   dashboard/
     dashboard-sections.test.ts
   e2e/

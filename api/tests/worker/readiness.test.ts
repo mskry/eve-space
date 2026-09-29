@@ -1,14 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { ModulePersistenceAttestationError } from '../../src/db/module-persistence-attestation.js'
 import {
-  assertWorkerDependencies,
-  assertWorkerReadiness,
   assertWorkerStartupDependencies,
   checkWorkerDependencies,
   checkWorkerReadiness,
   checkWorkerStartupDependencies,
   expectedWorkerMigration,
-  WorkerSchemaNotReadyError,
 } from '../../src/worker/readiness.js'
 
 import {
@@ -56,18 +53,7 @@ describe('worker readiness', () => {
     })
   })
 
-  test('rejects startup when the expected migration is absent', async () => {
-    const connection = vi
-      .fn()
-      .mockResolvedValueOnce([{ exists: true, qualified: true }])
-      .mockResolvedValueOnce([])
-
-    await expect(assertWorkerReadiness(connection as never)).rejects.toBeInstanceOf(
-      WorkerSchemaNotReadyError,
-    )
-  })
-
-  test('keeps worker health green while fresh-heartbeat backlog telemetry is degraded', async () => {
+  test('accepts applied migrations and a fresh replica heartbeat', async () => {
     const connection = vi
       .fn()
       .mockResolvedValueOnce([{ exists: true, qualified: true }])
@@ -106,29 +92,6 @@ describe('worker readiness', () => {
     })
   })
 
-  test('accepts an applied migration and operational queue', async () => {
-    const connection = vi
-      .fn()
-      .mockResolvedValueOnce([{ exists: true, qualified: true }])
-      .mockResolvedValueOnce(appliedMigrations)
-      .mockResolvedValueOnce(provisionedModules)
-    const queueProbe = vi.fn().mockResolvedValue({
-      heartbeatAt: new Date().toISOString(),
-      status: 'operational',
-    })
-
-    await expect(assertWorkerReadiness(connection as never)).resolves.toBeUndefined()
-
-    const secondConnection = vi
-      .fn()
-      .mockResolvedValueOnce([{ exists: true, qualified: true }])
-      .mockResolvedValueOnce(appliedMigrations)
-      .mockResolvedValueOnce(provisionedModules)
-    await expect(
-      assertWorkerDependencies(queueProbe, secondConnection as never),
-    ).resolves.toBeUndefined()
-  })
-
   test('distinguishes an unavailable queue from degraded worker health', async () => {
     const connection = vi
       .fn()
@@ -154,12 +117,22 @@ describe('worker readiness', () => {
     expect(JSON.stringify(result)).not.toContain('private-host')
   })
 
-  test('rejects dependency readiness failures', async () => {
+  test('rejects an unready schema before probing replica liveness', async () => {
     const connection = vi.fn().mockResolvedValueOnce([{ exists: false, qualified: false }])
+    const livenessProbe = vi.fn().mockResolvedValue({
+      heartbeatAt: '2026-09-29T09:00:00.000Z',
+      status: 'operational',
+    })
 
-    await expect(assertWorkerDependencies(vi.fn(), connection as never)).rejects.toThrow(
-      `Worker dependency unavailable: Missing migration ${expectedWorkerIdentity}`,
-    )
+    // SAFETY: The SQL mock implements every tagged query reached before schema admission fails.
+    await expect(
+      checkWorkerDependencies(livenessProbe, connection as never),
+    ).resolves.toStrictEqual({
+      healthy: false,
+      missing: { module: 'core', name: expectedWorkerMigration },
+      reason: `Missing migration ${expectedWorkerIdentity}`,
+    })
+    expect(livenessProbe).not.toHaveBeenCalled()
   })
 
   test('admits a cold start whose queue reports no worker heartbeat yet', async () => {
@@ -202,22 +175,17 @@ describe('worker readiness', () => {
     ).resolves.toStrictEqual({ healthy: false, reason: 'Queue Redis unavailable' })
   })
 
-  test('refuses to start before the required migration is applied', async () => {
-    const connection = vi.fn().mockResolvedValueOnce([{ exists: false, qualified: false }])
-    const queueProbe = vi.fn()
+  test.each([
+    { exists: false, qualified: false },
+    { exists: true, qualified: true },
+  ])('refuses to start before the required migration is applied with ledger %j', async (ledger) => {
+    const connection = vi.fn().mockResolvedValueOnce([ledger]).mockResolvedValueOnce([])
+    const queueProbe = vi.fn().mockResolvedValue({ status: 'operational' })
 
     await expect(assertWorkerStartupDependencies(connection as never, queueProbe)).rejects.toThrow(
       `Worker dependency unavailable: Missing migration ${expectedWorkerIdentity}`,
     )
     expect(queueProbe).not.toHaveBeenCalled()
-  })
-
-  test('fails an already-running worker when its scoped heartbeat is stale', async () => {
-    const queueProbe = vi.fn().mockResolvedValue({ heartbeatAt: null, status: 'stale' })
-
-    await expect(
-      checkWorkerDependencies(queueProbe, appliedMigrationConnection() as never),
-    ).resolves.toStrictEqual({ healthy: false, reason: 'Worker heartbeat stale' })
   })
 
   test('names a missing installed-module migration without running it', async () => {

@@ -96,8 +96,10 @@ describe('AppUpstreamNotice', () => {
   })
 
   it('omits the contact line when the upstream was never reached', async () => {
-    const wrapper = await mountNotice({ checkedAt: undefined, status: 'unavailable' })
+    const reached = await mountNotice({ status: 'degraded' })
+    expect(reached.get('.upstream-notice-contact').text()).toContain('LAST CONTACT')
 
-    expect(wrapper.find('.upstream-notice-contact').exists()).toBe(false)
+    const neverReached = await mountNotice({ checkedAt: undefined, status: 'degraded' })
+    expect(neverReached.find('.upstream-notice-contact').exists()).toBe(false)
   })
 })

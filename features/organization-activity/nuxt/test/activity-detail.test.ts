@@ -155,33 +155,6 @@ test('character-only jobs use owned-route details and their freshness', () => {
   expect(state.participationState.value.status).toBe('ready')
 })
 
-test('keeps detail and participation persistence presentation distinct', () => {
-  const state = useActivityDetail('job')
-  queries[0]!.data.value = {
-    activity: { id, title: 'Organization detail' },
-    resource: { status: 'current' },
-  }
-  queries[0]!.persistencePresentation.value = {
-    kind: 'server-stale',
-    validatedAt: '2026-09-15T01:00:00.000Z',
-  }
-  queries[1]!.persistencePresentation.value = {
-    kind: 'restored-refresh-failed',
-    originalSuccessAt: '2026-09-15T00:00:00.000Z',
-  }
-
-  expect(state.activityPresentation.value.kind).toBe('server-stale')
-  expect(state.participation.persistencePresentation.value.kind).toBe('restored-refresh-failed')
-
-  queries[0]!.data.value.activity = null
-  queries[1]!.data.value = {
-    activity: { id, title: 'Character detail' },
-    participation: [],
-    resource: { status: 'current' },
-  }
-  expect(state.activityPresentation.value.kind).toBe('restored-refresh-failed')
-})
-
 test('maps participation authorization, failure, loading and empty states', () => {
   const state = useActivityDetail('job')
   queries[1]!.data.value = {

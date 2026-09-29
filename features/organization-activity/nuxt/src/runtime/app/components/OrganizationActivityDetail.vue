@@ -12,7 +12,6 @@ const {
   selectedCharacter,
   characterId,
   activity,
-  activityPresentation,
   activityResource,
   participationState,
   state,
@@ -31,7 +30,6 @@ function selectCharacter(event: Event) {
     <PlatformResourceBoundary
       :state="state"
       :has-data="identity.organizationAuthorized.value && Boolean(activity)"
-      :presentation="activityPresentation"
       @retry="detail.refresh()"
     >
       <p v-if="activity?.description">{{ activity.description }}</p>
@@ -72,7 +70,6 @@ function selectCharacter(event: Event) {
       v-if="selectedCharacter"
       :state="participationState"
       :has-data="identity.organizationAuthorized.value && Boolean(participation.data.value)"
-      :presentation="participation.persistencePresentation.value"
       @retry="participation.refresh()"
     >
       <output

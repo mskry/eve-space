@@ -1,29 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CloneResourceState } from '../../app/types/clones'
 import { toCloneEsiResourceState } from '../../app/utils/clone-resource-state'
-import { inferCloneState } from '../../app/utils/clone-state'
-
-describe('clone state inference', () => {
-  it('infers alpha when a trained skill level is inactive', () => {
-    expect(
-      inferCloneState({
-        groups: [{ skills: [{ activeLevel: 4, trainedLevel: 5 }] }],
-      }),
-    ).toBe('alpha')
-  })
-
-  it('does not infer omega from equal active and trained levels', () => {
-    expect(
-      inferCloneState({
-        groups: [{ skills: [{ activeLevel: 5, trainedLevel: 5 }] }],
-      }),
-    ).toBeUndefined()
-  })
-
-  it('returns no status for an empty archive', () => {
-    expect(inferCloneState({ groups: [] })).toBeUndefined()
-  })
-})
 
 describe('clone ESI resource state', () => {
   const copy = {

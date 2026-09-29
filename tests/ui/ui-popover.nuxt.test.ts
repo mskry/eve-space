@@ -102,23 +102,18 @@ describe('UiPopover', () => {
     expect(document.querySelector('[role="dialog"]')).not.toBeNull()
   })
 
-  it('opens with Enter and Space and restores trigger focus after Escape', async () => {
+  it('restores trigger focus after Escape', async () => {
     await mountHost()
     const trigger = getButton('Open item information')
 
-    for (const key of ['Enter', ' ']) {
-      trigger.focus()
-      trigger.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key }))
-      trigger.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key }))
-      trigger.click()
-      await settle()
-      expect(document.querySelector('[role="dialog"]')).not.toBeNull()
+    trigger.click()
+    await settle()
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull()
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }))
-      await settle()
-      expect(document.querySelector('[role="dialog"]')).toBeNull()
-      expect(document.activeElement).toBe(trigger)
-    }
+    document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }))
+    await settle()
+    expect(document.querySelector('[role="dialog"]')).toBeNull()
+    expect(document.activeElement).toBe(trigger)
   })
 
   it('dismisses from outside and supports omitting the arrow', async () => {

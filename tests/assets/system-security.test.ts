@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   formatSystemSecurityStatus,
   getSystemSecurityBand,
-  getSystemSecurityClass,
   roundSystemSecurityStatus,
 } from '../../app/utils/system-security'
 
@@ -28,16 +27,6 @@ describe('system security', () => {
     expect(formatSystemSecurityStatus(0.049)).toBe('0.1')
     expect(formatSystemSecurityStatus(0)).toBe('0.0')
     expect(formatSystemSecurityStatus(-0.06)).toBe('-0.1')
-  })
-
-  it.each([
-    [0.45, 'high-sec'],
-    [0.449, 'low-sec'],
-    [Number.MIN_VALUE, 'low-sec'],
-    [0, 'null-sec'],
-    [-0.1, 'null-sec'],
-  ] as const)('classifies %s as %s', (value, expected) => {
-    expect(getSystemSecurityClass(value)).toBe(expected)
   })
 
   it.each([

@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import type { VNode } from 'vue'
-import type { EsiQueryPersistencePresentation } from '../../query-persistence-presentation.js'
 import type { PlatformResourceState } from '../../resource-state.js'
 
 withDefaults(
   defineProps<{
     hasData?: boolean
-    presentation?: EsiQueryPersistencePresentation
     state: PlatformResourceState
   }>(),
-  { hasData: false, presentation: () => ({ kind: 'fresh' }) },
+  { hasData: false },
 )
 
 const emit = defineEmits<{

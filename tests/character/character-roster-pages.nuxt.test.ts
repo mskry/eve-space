@@ -1,5 +1,5 @@
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
-import { RouterLinkStub } from '@vue/test-utils'
+import { flushPromises, RouterLinkStub } from '@vue/test-utils'
 import { computed, nextTick, ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import CharacterPage from '../../app/pages/characters/[characterId].vue'
@@ -60,6 +60,7 @@ const rosterStatus = ref<'idle' | 'loading' | 'error' | 'unavailable'>('unavaila
 const mountedWrappers: { unmount: () => void }[] = []
 
 beforeEach(() => {
+  Object.assign(currentRoute, { fullPath: '/characters/7', query: {} })
   admissionOwnership.value = false
   vi.mocked(readQueryCharacterOwnership).mockReturnValue(computed(() => admissionOwnership.value))
   authLoading.value = false
@@ -144,6 +145,49 @@ describe('character roster page states', () => {
 
     expect(wrapper.get('[role="alert"] h2').text()).toBe('Character list not loaded')
     expect(wrapper.text()).not.toContain('Loading characters')
+  })
+
+  it('refreshes the roster after a successful attach even when the session refresh fails', async () => {
+    const initializeAuth = vi.fn().mockRejectedValue(new Error('session refresh failed'))
+    useAuthSession.mockReturnValue({ ...useAuthSession(), initializeAuth })
+    Object.assign(currentRoute, {
+      fullPath: '/characters?attach=success',
+      query: { attach: 'success' },
+    })
+    const wrapper = await mountSuspended(CharactersPage, {
+      global: { stubs: { NuxtLink: RouterLinkStub } },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+    await flushPromises()
+
+    expect(initializeAuth).toHaveBeenCalledWith(true)
+    expect(refetchCharacterRoster).toHaveBeenCalledOnce()
+    expect(loadCharacterRoster).not.toHaveBeenCalled()
+    const feedback = wrapper.get('.roster-feedback')
+    expect(feedback.attributes('role')).toBe('status')
+    expect(feedback.text()).toBe('Character authorization completed.')
+  })
+
+  it('announces a failed attach as an alert without refreshing the session', async () => {
+    const initializeAuth = vi.fn()
+    useAuthSession.mockReturnValue({ ...useAuthSession(), initializeAuth })
+    Object.assign(currentRoute, {
+      fullPath: '/characters?attach=approval-unusable',
+      query: { attach: 'approval-unusable' },
+    })
+    const wrapper = await mountSuspended(CharactersPage, {
+      global: { stubs: { NuxtLink: RouterLinkStub } },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+    await flushPromises()
+
+    expect(initializeAuth).not.toHaveBeenCalled()
+    expect(refetchCharacterRoster).not.toHaveBeenCalled()
+    const feedback = wrapper.get('.roster-feedback')
+    expect(feedback.attributes('role')).toBe('alert')
+    expect(feedback.text()).toContain('can no longer be used')
   })
 
   it('keeps an unavailable roster out of the character-not-found branch', async () => {

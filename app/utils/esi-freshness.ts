@@ -1,20 +1,8 @@
-export interface StaleEsiResult {
-  stale: true
-  validatedAt: string
-  retryAt?: string
-  refreshFailureClass?: string
-}
-
 export interface StaleEsiMetadata {
   readonly stale: true
   readonly validatedAt?: string
   readonly retryAt?: string
   readonly refreshFailureClass?: string
-}
-
-export function getStaleEsiResult(value: unknown): StaleEsiResult | undefined {
-  const metadata = getStaleEsiMetadata(value)
-  return metadata?.validatedAt ? { ...metadata, validatedAt: metadata.validatedAt } : undefined
 }
 
 export function getStaleEsiMetadata(value: unknown): StaleEsiMetadata | undefined {

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type {
   FinanceContract,
   FinanceContractBids,
@@ -19,13 +18,11 @@ import {
 
 const props = defineProps<{
   bidPrivacyNote: string
-  bidPresentation?: EsiQueryPersistencePresentation
   bidState: FinanceResourceState
   bids: FinanceContractBids | null
   contract: FinanceContract | null
   description: string
   itemState: FinanceResourceState
-  itemPresentation?: EsiQueryPersistencePresentation
   items: FinanceContractItems | null
   now: number
   open: boolean
@@ -146,7 +143,6 @@ const bidResourceState = computed(() => {
           <EsiResourceBoundary
             :state="itemResourceState"
             :has-data="Boolean(items)"
-            :presentation="itemPresentation"
             @retry="emit('retry-items')"
           >
             <p v-if="items && items.items.length === 0" class="finance-drawer-empty">
@@ -177,7 +173,6 @@ const bidResourceState = computed(() => {
           <EsiResourceBoundary
             :state="bidResourceState"
             :has-data="Boolean(bids)"
-            :presentation="bidPresentation"
             @retry="emit('retry-bids')"
           >
             <p v-if="bids && bids.bids.length === 0" class="finance-drawer-empty">

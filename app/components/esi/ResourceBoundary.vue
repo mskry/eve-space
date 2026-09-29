@@ -1,19 +1,16 @@
 <script setup lang="ts">
 import type { VNode } from 'vue'
-import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type { EsiResourceState } from '../../types/esi-resource'
 
 withDefaults(
   defineProps<{
     compact?: boolean
     hasData?: boolean
-    presentation?: EsiQueryPersistencePresentation
     state: EsiResourceState
   }>(),
   {
     compact: true,
     hasData: false,
-    presentation: () => ({ kind: 'fresh' }),
   },
 )
 

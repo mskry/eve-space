@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type {
   FinanceOrder,
   FinanceOrderFilter,
@@ -29,7 +28,6 @@ const props = defineProps<{
   now: number
   orderRows: readonly FinanceOrder[]
   orders: FinanceOrders | FinanceOrderHistory | null
-  presentation?: EsiQueryPersistencePresentation
   scopeNote: string
   state: FinanceResourceState
 }>()
@@ -78,7 +76,6 @@ const countLabel = computed(() =>
   <div class="finance-service-body">
     <FinanceServicePanel
       :has-data="Boolean(orders)"
-      :presentation="presentation"
       :state="state"
       title="Market orders"
       :validated-at="orders?.validatedAt"

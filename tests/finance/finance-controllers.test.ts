@@ -93,6 +93,9 @@ describe('character Finance controllers', () => {
     ledger.selectService('orders')
     await waitForRequest('/api/me/characters/7/market/orders')
     expect(requestCount('/api/me/characters/7/market/orders/history')).toBe(0)
+    ledger.selectOrderMode('open')
+    await settle()
+    expect(requestCount('/api/me/characters/7/market/orders/history')).toBe(0)
     ledger.orderFilter.value = 'Buy'
     ledger.selectOrderMode('history')
     await waitForRequest('/api/me/characters/7/market/orders/history')

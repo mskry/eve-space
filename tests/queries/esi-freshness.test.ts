@@ -1,14 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import {
-  getStaleEsiMetadata,
-  getStaleEsiResult,
-  hasUnavailableOverviewSection,
-} from '../../app/utils/esi-freshness'
+import { getStaleEsiMetadata, hasUnavailableOverviewSection } from '../../app/utils/esi-freshness'
 
 describe('ESI freshness metadata', () => {
   it('reads stale metadata from the response root', () => {
     expect(
-      getStaleEsiResult({
+      getStaleEsiMetadata({
         refreshFailureClass: 'esi-unavailable',
         retryAt: '2026-09-01T11:01:00.000Z',
         stale: true,
@@ -41,9 +37,9 @@ describe('ESI freshness metadata', () => {
     })
   })
 
-  it('ignores fresh results and malformed contact timestamps', () => {
+  it('ignores results without a root stale marker', () => {
     expect(
-      getStaleEsiResult({
+      getStaleEsiMetadata({
         fresh: { stale: false, validatedAt: '2026-09-01T11:00:00.000Z' },
         malformed: { stale: true, validatedAt: 'unknown' },
       }),
@@ -52,7 +48,7 @@ describe('ESI freshness metadata', () => {
 
   it('does not traverse a fresh response payload', () => {
     expect(
-      getStaleEsiResult({
+      getStaleEsiMetadata({
         nested: { stale: true, validatedAt: '2026-09-01T10:58:00.000Z' },
         stale: false,
         validatedAt: '2026-09-01T11:00:00.000Z',

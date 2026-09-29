@@ -1,5 +1,5 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref, type Component } from 'vue'
 import UiDialog from '../../layers/ui/app/components/ui/UiDialog.vue'
 import UiProvider from '../../layers/ui/app/components/ui/UiProvider.vue'
@@ -124,6 +124,45 @@ describe('UiDialog', () => {
     expect(document.querySelector('[role="dialog"]')).toBeNull()
     expect(wrapper.get('[data-open-state]').text()).toBe('closed')
     expect(document.activeElement).toBe(trigger)
+  })
+
+  it('runs the confirmed action from a provider-hosted confirmation and closes it', async () => {
+    const confirmed = vi.fn()
+    const Requester = defineComponent({
+      setup() {
+        const { openConfirmDialog } = useConfirmDialog()
+
+        return () =>
+          h(
+            'button',
+            {
+              onClick: () =>
+                openConfirmDialog({
+                  confirmLabel: 'Discard',
+                  description: 'The draft will be discarded.',
+                  onConfirm: confirmed,
+                  title: 'Discard draft?',
+                }),
+              type: 'button',
+            },
+            'Request discard',
+          )
+      },
+    })
+    const Host = defineComponent({
+      setup: () => () => h(UiProvider, null, { default: () => h(Requester) }),
+    })
+
+    await mountHost(Host)
+    getButton('Request discard').click()
+    await settle()
+    expect(document.querySelector('[role="alertdialog"]')).not.toBeNull()
+
+    getButton('Discard').click()
+    await settle()
+
+    expect(confirmed).toHaveBeenCalledOnce()
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull()
   })
 
   it('keeps the composition open while a provider-hosted confirmation is active', async () => {

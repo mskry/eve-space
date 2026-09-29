@@ -37,7 +37,6 @@
     "api/tests/platform/organization-review-routes.test.ts:complexity(complexity):3618d7ec3232021dcbb23629f690230ae2cfa2fe90c911a2bba990614cf6c0fa": 1,
     "api/tests/platform/resource-eligibility.test.ts:complexity(complexity):941038e206708f0e74f4b337e987342148aeaf13712667d34aeeaf5458f5b040": 1,
     "api/tests/text/eve-formatted-text.test.ts:complexity(complexity):ff792324eae4e9ad4b95aa08d458424b339134d7e63c962a58c42109a2c43f08": 1,
-    "api/tests/worker/readiness.test.ts:complexity(complexity):11c3a0b35329b5c1728205ebb767cfce368bf67afb5a274e47707b99ad5e6213": 1,
     "app/components/assets/ResourceState.vue:complexity(complexity):30bbb5848e8013cbdf6211ca0c70e7424d9dd23c13afd379d6f33508dc6b60b8": 1,
     "app/components/settings/SettingsOrganizationAccess.vue:complexity(complexity):4312b9fcc4eff74ea833027bb0b09306fca3af303ac4af133fadca0b19dbd407": 1,
     "app/composables/mail-composition-draft.ts:complexity(complexity):928fa4361e14636d6745e026d164f886ac83a0dfcd89e60f8eccd1930bad782e": 1,

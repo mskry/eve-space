@@ -6,14 +6,6 @@ interface CharacterNavigationSource {
   readonly to: string
 }
 
-export const CORE_CHARACTER_DATA_PREFETCH_IDS = [
-  'core-character-skills',
-  'core-character-clones',
-  'core-character-finance',
-  'core-character-history',
-  'core-character-mail',
-] as const
-
 export function resolveCharacterNavigation(
   entries: readonly CharacterNavigationSource[],
   characterId: number | undefined,
@@ -43,8 +35,4 @@ export function findActiveCharacterNavigationEntry(
         : currentPath === targetPath || currentPath.startsWith(`${targetPath}/`)
     })
     .toSorted((left, right) => right.to.length - left.to.length)[0]
-}
-
-export function hasCoreCharacterDataPrefetch(navigationId: string) {
-  return (CORE_CHARACTER_DATA_PREFETCH_IDS as readonly string[]).includes(navigationId)
 }

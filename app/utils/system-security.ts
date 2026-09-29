@@ -1,4 +1,3 @@
-export type SystemSecurityClass = 'high-sec' | 'low-sec' | 'null-sec'
 export type SystemSecurityBand = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
 
 export function roundSystemSecurityStatus(value: number) {
@@ -12,16 +11,6 @@ export function roundSystemSecurityStatus(value: number) {
 
 export function formatSystemSecurityStatus(value: number) {
   return roundSystemSecurityStatus(value).toFixed(1)
-}
-
-export function getSystemSecurityClass(value: number): SystemSecurityClass {
-  if (value >= 0.45) {
-    return 'high-sec'
-  }
-  if (value > 0) {
-    return 'low-sec'
-  }
-  return 'null-sec'
 }
 
 export function getSystemSecurityBand(value: number): SystemSecurityBand {

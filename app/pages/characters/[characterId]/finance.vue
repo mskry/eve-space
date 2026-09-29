@@ -2,7 +2,6 @@
 import { useCharacterFinanceContractDetail } from '../../../composables/useCharacterFinanceContractDetail'
 import { useCharacterFinanceServices } from '../../../composables/useCharacterFinanceServices'
 import { useFinanceLedger } from '../../../composables/useFinanceLedger'
-import { PRIVATE_QUERY_KEYS } from '../../../queries/query-keys'
 import type {
   FinanceContractFilter,
   FinanceFilterOption,
@@ -111,44 +110,6 @@ const {
   selectedContract,
   selectedContractId,
 } = contractDetail
-const balancePersistencePresentation = useQueryPersistencePresentation(() =>
-  PRIVATE_QUERY_KEYS.characterFinanceBalance(characterId.value ?? 0),
-)
-const journalPersistencePresentation = useQueryPersistencePresentation(() =>
-  PRIVATE_QUERY_KEYS.characterFinanceJournal(characterId.value ?? 0, services.journalPage.value),
-)
-const transactionPersistencePresentation = useQueryPersistencePresentation(() =>
-  PRIVATE_QUERY_KEYS.characterFinanceTransactions(
-    characterId.value ?? 0,
-    services.transactionFromId.value,
-  ),
-)
-const ordersPersistencePresentation = useQueryPersistencePresentation(() =>
-  orderMode.value === 'open'
-    ? PRIVATE_QUERY_KEYS.characterFinanceOpenOrders(characterId.value ?? 0)
-    : PRIVATE_QUERY_KEYS.characterFinanceOrderHistory(
-        characterId.value ?? 0,
-        services.orderHistoryPage.value,
-      ),
-)
-const contractsPersistencePresentation = useQueryPersistencePresentation(() =>
-  PRIVATE_QUERY_KEYS.characterFinanceContractPage(
-    characterId.value ?? 0,
-    services.contractPage.value,
-  ),
-)
-const contractItemsPersistencePresentation = useQueryPersistencePresentation(() =>
-  PRIVATE_QUERY_KEYS.characterFinanceContractItems(
-    characterId.value ?? 0,
-    selectedContractId.value ?? 0,
-  ),
-)
-const contractBidsPersistencePresentation = useQueryPersistencePresentation(() =>
-  PRIVATE_QUERY_KEYS.characterFinanceContractBids(
-    characterId.value ?? 0,
-    selectedContractId.value ?? 0,
-  ),
-)
 
 const serviceBadges = computed(() => ({
   contracts: summary.value.awaitingContractCount,
@@ -224,7 +185,6 @@ useCharacterReauthorization(characterId, refreshRequestedFinance)
       balance-label="AUTHORIZED BALANCE / COMPLETE VALUE"
       eyebrow="CHARACTER WALLET"
       :metrics="summaryMetrics"
-      :presentation="balancePersistencePresentation"
       :state="balanceState"
       @refresh="refreshBalance"
       @review-awaiting-contracts="reviewAwaitingContracts"
@@ -247,7 +207,6 @@ useCharacterReauthorization(characterId, refreshRequestedFinance)
           :filter="journalGroupFilter"
           :journal="journal ?? null"
           :now="currentTime"
-          :presentation="journalPersistencePresentation"
           scope-note=""
           :state="journalState"
           @change-filter="changeJournalFilter"
@@ -262,7 +221,6 @@ useCharacterReauthorization(characterId, refreshRequestedFinance)
           :filter="transactionSideFilter"
           :now="currentTime"
           :range-index="transactionRangeIndex"
-          :presentation="transactionPersistencePresentation"
           :search-query="transactionSearchQuery"
           :state="transactionsState"
           :transaction-rows="filteredTransactions"
@@ -283,7 +241,6 @@ useCharacterReauthorization(characterId, refreshRequestedFinance)
           :mode="orderMode"
           :now="currentTime"
           :order-rows="filteredOrders"
-          :presentation="ordersPersistencePresentation"
           :orders="displayedOrders ?? null"
           scope-note="Personal orders only · corporation orders excluded"
           :state="activeOrdersState"
@@ -302,7 +259,6 @@ useCharacterReauthorization(characterId, refreshRequestedFinance)
           :filter="contractFilter"
           :filter-options="contractFilterOptions"
           :now="currentTime"
-          :presentation="contractsPersistencePresentation"
           scope-note="Issued by or assigned to this character"
           :selected-contract-id="selectedContractId"
           :state="contractsState"
@@ -318,12 +274,10 @@ useCharacterReauthorization(characterId, refreshRequestedFinance)
     <FinanceContractDrawer
       bid-privacy-note="Bidder identities are not shown — only your own character's financial position is exposed here."
       :bid-state="contractBidsState"
-      :bid-presentation="contractBidsPersistencePresentation"
       :bids="contractBids ?? null"
       :contract="selectedContract ?? null"
       description="Review the selected character contract terms, items, and bids"
       :item-state="contractItemsState"
-      :item-presentation="contractItemsPersistencePresentation"
       :items="contractItems ?? null"
       :now="currentTime"
       :open="contractDrawerOpen"

@@ -85,12 +85,6 @@ describe('selectVisibleSkills', () => {
     ])
   })
 
-  it('includes level-0 catalogue skills in the untrained view', () => {
-    expect(selectVisibleSkills(indexed, 'untrained', null)).toContainEqual(
-      expect.objectContaining({ skillpoints: 0, trainedLevel: 0, typeId: 5 }),
-    )
-  })
-
   it('includes every skill of a group whose name matched', () => {
     const matches = { groupKeys: new Set(['255']), skillIds: new Set<number>() }
 

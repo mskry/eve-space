@@ -285,6 +285,7 @@ describe('explicit character transfer production journeys', async () => {
     await destinationPage.goto(`${webOrigin}/characters?attach=conflict`)
     await destinationPage.getByText(/Start a new character authorization and try again/).waitFor()
     expect(await destinationPage.content()).not.toContain('already added to another account')
+    expect(await destinationPage.content()).not.toContain('another EVE Space account')
 
     await openTransferLink(destinationPage, transferLink)
     await destinationPage.getByRole('button', { name: 'CONTINUE TO EVE ONLINE' }).click()

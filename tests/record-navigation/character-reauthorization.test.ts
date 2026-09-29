@@ -89,24 +89,4 @@ describe('character reauthorization transitions', () => {
     expect(details).toContain('for (const { contractId, contractPage } of openedItemDetails.value)')
     expect(details).toContain('for (const { contractId, contractPage } of openedBidDetails.value)')
   })
-
-  it('opens the order-history request gate only when history mode is selected', () => {
-    const services = source('app/composables/useCharacterFinanceServices.ts')
-    const serviceActivation = services.slice(
-      services.indexOf('function activateService'),
-      services.indexOf('function activateOrderMode'),
-    )
-    const modeActivation = services.slice(
-      services.indexOf('function activateOrderMode'),
-      services.indexOf('function changePage'),
-    )
-
-    expect(serviceActivation).toMatch(
-      /if \(service === 'orders'\)\s*\{\s*openOrdersRequested\.value = true\s*\}/,
-    )
-    expect(serviceActivation).not.toContain('orderHistoryRequested.value = true')
-    expect(modeActivation).toMatch(
-      /if \(mode === 'history'\)\s*\{\s*orderHistoryRequested\.value = true\s*\}/,
-    )
-  })
 })

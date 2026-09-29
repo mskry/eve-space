@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { platformCoreNavigation } from '@eve-space/platform-module-contract/nuxt'
 import {
-  CORE_CHARACTER_DATA_PREFETCH_IDS,
   findActiveCharacterNavigationEntry,
-  hasCoreCharacterDataPrefetch,
   resolveCharacterNavigation,
 } from '../../app/utils/character-navigation'
 
@@ -129,21 +127,5 @@ describe('character record navigation coordination', () => {
       'module-intel',
     )
     expect(resolveCharacterNavigation(registryEntries, undefined)).toStrictEqual([])
-  })
-
-  it('limits data-prefetch intent to the existing core query owners', () => {
-    expect(CORE_CHARACTER_DATA_PREFETCH_IDS).toStrictEqual([
-      'core-character-skills',
-      'core-character-clones',
-      'core-character-finance',
-      'core-character-history',
-      'core-character-mail',
-    ])
-    expect(hasCoreCharacterDataPrefetch('core-character-skills')).toBe(true)
-    expect(hasCoreCharacterDataPrefetch('core-character-clones')).toBe(true)
-    expect(hasCoreCharacterDataPrefetch('core-character-assets')).toBe(false)
-    expect(hasCoreCharacterDataPrefetch('core-character-overview')).toBe(false)
-    expect(hasCoreCharacterDataPrefetch('core-character-mail')).toBe(true)
-    expect(hasCoreCharacterDataPrefetch('module-intel')).toBe(false)
   })
 })

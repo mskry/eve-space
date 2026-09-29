@@ -27,7 +27,6 @@ describe('worker entrypoint', () => {
   test('gates startup on schema and queue reachability, not on worker liveness', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {})
     const assertWorkerStartupDependencies = vi.fn().mockResolvedValue(undefined)
-    const assertWorkerDependencies = vi.fn().mockResolvedValue(undefined)
     const { close, forceClose, stopped, stopRunLoop } = pendingPlatform()
     const startWorkerPlatform = vi.fn().mockResolvedValue({ close, forceClose, stopped })
     vi.doMock('../../src/db/client.js', () => ({
@@ -35,7 +34,6 @@ describe('worker entrypoint', () => {
     }))
     vi.doMock('../../src/queue/platform.js', () => ({ startWorkerPlatform }))
     vi.doMock('../../src/worker/readiness.js', () => ({
-      assertWorkerDependencies,
       assertWorkerStartupDependencies,
     }))
 
@@ -43,8 +41,9 @@ describe('worker entrypoint', () => {
 
     await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce(), { timeout: 10_000 })
     expect(assertWorkerStartupDependencies).toHaveBeenCalledOnce()
-    // The heartbeat-aware check belongs to the healthcheck command, not to startup.
-    expect(assertWorkerDependencies).not.toHaveBeenCalled()
+    expect(assertWorkerStartupDependencies.mock.invocationCallOrder[0]).toBeLessThan(
+      startWorkerPlatform.mock.invocationCallOrder[0]!,
+    )
     stopRunLoop()
     await workerEntry
   }, 15_000)
@@ -61,7 +60,6 @@ describe('worker entrypoint', () => {
     }))
     vi.doMock('../../src/queue/platform.js', () => ({ startWorkerPlatform }))
     vi.doMock('../../src/worker/readiness.js', () => ({
-      assertWorkerDependencies: vi.fn().mockResolvedValue(undefined),
       assertWorkerStartupDependencies: vi.fn().mockResolvedValue(undefined),
     }))
 
@@ -142,7 +140,6 @@ describe('worker entrypoint', () => {
     vi.doMock('../../src/db/client.js', () => ({ sql: { end } }))
     vi.doMock('../../src/queue/platform.js', () => ({ startWorkerPlatform }))
     vi.doMock('../../src/worker/readiness.js', () => ({
-      assertWorkerDependencies: vi.fn().mockResolvedValue(undefined),
       assertWorkerStartupDependencies: vi.fn().mockResolvedValue(undefined),
     }))
 

@@ -4,7 +4,6 @@ import CharacterOverviewBioCard from '../../../components/character/CharacterOve
 import CharacterOverviewDetails from '../../../components/character/CharacterOverviewDetails.vue'
 import { characterOverviewQuery } from '../../../queries/characters'
 import { canRunProtectedCharacterQuery } from '../../../queries/protected-character-query-access'
-import { PRIVATE_QUERY_KEYS } from '../../../queries/query-keys'
 import type { EsiResourceState } from '../../../types/esi-resource'
 import { ApiQueryError } from '../../../utils/query-error'
 import { parseRouteId } from '../../../utils/route-id'
@@ -28,9 +27,6 @@ const overviewQuery = useQuery(() => ({
   ...characterOverviewQuery({ apiClient, characterId: characterId.value ?? 0 }),
   enabled: canRunProtectedCharacterQuery(access.value, characterId.value ?? 0),
 }))
-const overviewPersistencePresentation = useQueryPersistencePresentation(() =>
-  PRIVATE_QUERY_KEYS.characterOverview(characterId.value ?? 0),
-)
 const overview = overviewQuery.data
 const overviewMessage = computed(() =>
   overviewQuery.error.value instanceof Error ? overviewQuery.error.value.message : '',
@@ -130,7 +126,6 @@ const sectionAuthorizationState = computed<EsiResourceState>(() => {
       :state="overviewResourceState"
       :has-data="Boolean(character)"
       :compact="false"
-      :presentation="overviewPersistencePresentation"
       @retry="loadCharacterOverview(true)"
     >
       <article v-if="character" class="dossier">

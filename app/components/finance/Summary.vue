@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type { VNode } from 'vue'
 import type {
   FinanceBalance,
@@ -13,7 +12,6 @@ const props = defineProps<{
   balanceLabel: string
   eyebrow: string
   metrics: readonly FinanceSummaryMetric[]
-  presentation?: EsiQueryPersistencePresentation
   state: FinanceResourceState
 }>()
 
@@ -40,12 +38,7 @@ const resourceState = computed(() => {
 </script>
 
 <template>
-  <EsiResourceBoundary
-    :state="resourceState"
-    has-data
-    :presentation="presentation"
-    @retry="$emit('refresh')"
-  >
+  <EsiResourceBoundary :state="resourceState" has-data @retry="$emit('refresh')">
     <AppSummaryCard>
       <template #icon><slot name="icon" /></template>
       <template #eyebrow>{{ eyebrow }}</template>

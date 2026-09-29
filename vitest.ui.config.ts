@@ -24,6 +24,7 @@ export default defineVitestConfig({
       'tests/auth/**/*.nuxt.test.ts',
       'tests/character/**/*.nuxt.test.ts',
       'tests/finance/**/*.nuxt.test.ts',
+      'tests/mail/**/*.nuxt.test.ts',
       'tests/organization/**/*.nuxt.test.ts',
       'tests/ui/**/*.nuxt.test.ts',
     ],

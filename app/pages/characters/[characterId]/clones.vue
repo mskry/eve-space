@@ -3,7 +3,6 @@ import { useQuery } from '@pinia/colada'
 import { characterSkillsQuery } from '../../../queries/characters'
 import { characterClonesQuery, characterImplantsQuery } from '../../../queries/clones'
 import { canRunProtectedCharacterQuery } from '../../../queries/protected-character-query-access'
-import { PRIVATE_QUERY_KEYS } from '../../../queries/query-keys'
 import type { CloneResourceState } from '../../../types/clones'
 import { ApiQueryError } from '../../../utils/query-error'
 import { parseRouteId } from '../../../utils/route-id'
@@ -49,12 +48,6 @@ const skillsQuery = useQuery(() => ({
 const clones = clonesQuery.data
 const implants = implantsQuery.data
 const skills = skillsQuery.data
-const clonesPersistencePresentation = useQueryPersistencePresentation(() =>
-  PRIVATE_QUERY_KEYS.characterClones(characterId.value ?? 0),
-)
-const implantsPersistencePresentation = useQueryPersistencePresentation(() =>
-  PRIVATE_QUERY_KEYS.characterImplants(characterId.value ?? 0),
-)
 const cloneState = computed(() =>
   resourceState(clonesQuery.data.value, clonesQuery.error.value, clonesQuery.status.value),
 )
@@ -97,10 +90,8 @@ function resourceState(data: unknown, error: unknown, status: string): CloneReso
       :key="characterId"
       :clones="clones"
       :clone-state="cloneState"
-      :clones-presentation="clonesPersistencePresentation"
       :implants="implants"
       :implant-state="implantState"
-      :implants-presentation="implantsPersistencePresentation"
       :skills="skills"
       @retry-clones="clonesQuery.refetch()"
       @retry-implants="implantsQuery.refetch()"

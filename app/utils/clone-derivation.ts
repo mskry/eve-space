@@ -145,14 +145,14 @@ const attributeAbbreviations: Record<ImplantBonusAttribute, string> = {
   willpower: 'WIL',
 }
 
-export function attributeAbbreviation(attribute: string) {
+function attributeAbbreviation(attribute: string) {
   return (
     attributeAbbreviations[attribute as ImplantBonusAttribute] ??
     attribute.slice(0, 3).toUpperCase()
   )
 }
 
-export function formatAttributeBonus(bonus: { attribute: string; value: number }) {
+function formatAttributeBonus(bonus: { attribute: string; value: number }) {
   return `${bonus.value > 0 ? '+' : ''}${bonus.value} ${attributeAbbreviation(bonus.attribute)}`
 }
 

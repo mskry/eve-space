@@ -80,4 +80,24 @@ describe('UI themes', () => {
     expect(document.querySelector('[aria-label="Interface theme"]')).not.toBeNull()
     expect(document.body.textContent).not.toContain('INTERFACE THEME')
   })
+
+  it('applies and persists a theme chosen from the switcher menu', async () => {
+    const wrapper = await mountSuspended(UiThemeSwitcher, {
+      attachTo: document.body,
+      route: false,
+    })
+    const trigger = wrapper.get('.ui-theme-trigger')
+    expect(trigger.attributes('aria-label')).toBe('Change theme. Current theme: Gallente Green')
+
+    await trigger.trigger('click')
+    await nextTick()
+    const caldari = [...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')].find(
+      (item) => item.textContent?.includes('Caldari Steel'),
+    )
+    caldari?.click()
+    await nextTick()
+
+    expect(trigger.attributes('aria-label')).toBe('Change theme. Current theme: Caldari Steel')
+    expect(document.cookie).toContain('eve-space-theme=caldari')
+  })
 })

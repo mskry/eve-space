@@ -1,5 +1,4 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import { afterEach, describe, expect, it } from 'vitest'
 import EsiResourceBoundary from '../../app/components/esi/ResourceBoundary.vue'
 
@@ -90,24 +89,6 @@ describe('EsiResourceBoundary', () => {
     expect(wrapper.get('[role="alert"]').text()).toContain('Refresh authorization required')
   })
 
-  it.each(['fresh', 'restored', 'restored-refresh-failed', 'server-stale'] as const)(
-    'keeps %s data visible without a per-resource persistence notice',
-    async (kind) => {
-      const wrapper = await mountSuspended(EsiResourceBoundary, {
-        props: {
-          hasData: true,
-          presentation: persistencePresentation(kind),
-          state: { status: 'ready' },
-        },
-        slots: { default: '<p data-retained>Retained resource</p>' },
-      })
-      mountedWrappers.push(wrapper)
-
-      expect(wrapper.get('[data-retained]').text()).toBe('Retained resource')
-      expect(wrapper.find('.platform-query-persistence').exists()).toBe(false)
-    },
-  )
-
   it('allows feature-owned loading and error presentation', async () => {
     const wrapper = await mountSuspended(EsiResourceBoundary, {
       props: {
@@ -128,26 +109,3 @@ describe('EsiResourceBoundary', () => {
     expect(wrapper.get('[data-error]').text()).toBe('Feature error')
   })
 })
-
-function persistencePresentation(
-  kind: EsiQueryPersistencePresentation['kind'],
-): EsiQueryPersistencePresentation {
-  if (kind === 'restored-refresh-failed') {
-    return {
-      kind,
-      originalSuccessAt: '2026-09-15T01:00:00.000Z',
-      refreshFailureCode: 'ESI_UNAVAILABLE',
-    }
-  }
-  if (kind === 'server-stale') {
-    return {
-      kind,
-      refreshFailureClass: 'esi-cooldown',
-      validatedAt: '2026-09-15T00:45:00.000Z',
-    }
-  }
-  if (kind === 'restored') {
-    return { kind, originalSuccessAt: '2026-09-15T01:00:00.000Z' }
-  }
-  return { kind }
-}

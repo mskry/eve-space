@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type { CharacterClones } from '../../../queries/clones'
 import type {
   CloneImplantCollection,
@@ -11,10 +10,8 @@ import { deriveJumpCloneCapacity } from '../../../utils/clone-derivation'
 const props = defineProps<{
   clones?: CharacterClones
   cloneState: CloneResourceState
-  clonesPresentation?: EsiQueryPersistencePresentation
   implants?: CloneImplantCollection
   implantState: CloneResourceState
-  implantsPresentation?: EsiQueryPersistencePresentation
   skills?: CloneSkillArchive
 }>()
 
@@ -33,14 +30,12 @@ const capacity = computed(() =>
     <CharacterClonesActiveClone
       :clones="clones"
       :capacity="capacity"
-      :presentation="clonesPresentation"
       :state="cloneState"
       @retry="$emit('retryClones')"
     />
     <CharacterClonesImplantRack
       :implants="implants"
       :state="implantState"
-      :presentation="implantsPresentation"
       @retry="$emit('retryImplants')"
     />
     <CharacterClonesStoredClones v-if="clones" :jump-clones="clones.jumpClones" />

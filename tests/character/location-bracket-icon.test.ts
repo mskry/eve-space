@@ -3,35 +3,42 @@ import { locationBracketIconSource } from '../../app/utils/location-bracket-icon
 
 describe('locationBracketIconSource', () => {
   it.each([
-    ['station.png', { locationType: 'station', stationId: undefined, structureId: undefined }],
-    ['structure.png', { locationType: 'structure', stationId: undefined, structureId: undefined }],
-    ['solarSystem.png', { locationType: 'space', stationId: undefined, structureId: undefined }],
-    ['station.png', { locationType: undefined, stationId: 60_003_768, structureId: undefined }],
     [
+      'station category',
+      'station.png',
+      { locationType: 'station', stationId: undefined, structureId: undefined },
+    ],
+    [
+      'structure category',
+      'structure.png',
+      { locationType: 'structure', stationId: undefined, structureId: undefined },
+    ],
+    [
+      'space category with no ids',
+      'solarSystem.png',
+      { locationType: 'space', stationId: undefined, structureId: undefined },
+    ],
+    [
+      'bare station ID',
+      'station.png',
+      { locationType: undefined, stationId: 60_003_768, structureId: undefined },
+    ],
+    [
+      'bare structure ID',
       'structure.png',
       { locationType: undefined, stationId: undefined, structureId: 1_035_466_617_946 },
     ],
-  ] as const)('maps a location identity to %s', (filename, identity) => {
+    [
+      'stale space category with a station ID',
+      'station.png',
+      { locationType: 'space', stationId: 60_003_768, structureId: undefined },
+    ],
+    [
+      'no location details',
+      'solarSystem.png',
+      { locationType: undefined, stationId: undefined, structureId: undefined },
+    ],
+  ] as const)('maps %s to %s', (_label, filename, identity) => {
     expect(locationBracketIconSource(identity)).toBe(`/images/eve-brackets/${filename}`)
-  })
-
-  it('uses the concrete station identifier when the category is stale', () => {
-    expect(
-      locationBracketIconSource({
-        locationType: 'space',
-        stationId: 60_003_768,
-        structureId: undefined,
-      }),
-    ).toBe('/images/eve-brackets/station.png')
-  })
-
-  it('uses the solar-system bracket without location details', () => {
-    expect(
-      locationBracketIconSource({
-        locationType: undefined,
-        stationId: undefined,
-        structureId: undefined,
-      }),
-    ).toBe('/images/eve-brackets/solarSystem.png')
   })
 })
