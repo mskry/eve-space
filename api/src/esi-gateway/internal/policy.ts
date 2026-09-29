@@ -6,7 +6,7 @@
 
 /** Applied when a 429 or an exhausted error budget arrives without a usable reset hint. */
 export const esiCooldownFallbackSeconds = 60
-export const esiMaximumErrorResetSeconds = 3600
+const esiMaximumErrorResetSeconds = 3600
 
 export const getLegacyErrorCooldownSeconds = (reset: number | undefined) =>
   reset !== undefined && Number.isFinite(reset) && reset > 0 && reset <= esiMaximumErrorResetSeconds

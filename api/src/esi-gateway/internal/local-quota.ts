@@ -66,7 +66,7 @@ const getWindowMilliseconds = (window: string): number => {
   return Number(window.slice(0, -1)) * multipliers[unit]
 }
 
-export const pacingIdentity = (group: string, principal: string) => `${group}:${principal}`
+const pacingIdentity = (group: string, principal: string) => `${group}:${principal}`
 
 export const getLocalEsiPacing = (
   group: string,
