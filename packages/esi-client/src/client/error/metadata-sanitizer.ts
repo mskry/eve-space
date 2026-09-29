@@ -197,6 +197,9 @@ function normalizeRouteRateLimit(
   if (isNonnegativeFiniteNumber(input.limit)) {
     result.limit = input.limit;
   }
+  if (input.window !== undefined) {
+    result.window = sanitizeString(input.window, redactor, MAX_METADATA_STRING_CHARACTERS, '');
+  }
   if (isNonnegativeFiniteNumber(input.used)) {
     result.used = input.used;
   }

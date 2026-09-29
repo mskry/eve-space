@@ -8,7 +8,7 @@ import {
 } from '@evespace/esi-client'
 import { TokenRefreshUnavailableError } from '../../auth/token-errors.js'
 import type { EsiOperationContract } from './contract-types.js'
-import { esiCooldownFallbackSeconds } from './policy.js'
+import { esiCooldownFallbackSeconds, getLegacyErrorCooldownSeconds } from './policy.js'
 import { EsiQuotaError } from './quota-error.js'
 import type { EsiCachedResult } from './types.js'
 
@@ -29,6 +29,14 @@ interface CompletedEsiOperationErrors {
   isErrorCompleted(error: unknown): boolean
 }
 
+const getEmbeddedEsiQuotaError = (error: Error | undefined): EsiQuotaError | undefined => {
+  if (error instanceof EsiQuotaError) return error
+  if (error instanceof EsiTransportError && error.cause instanceof EsiQuotaError) {
+    return error.cause
+  }
+  return undefined
+}
+
 export function shouldRetryEsiError(error: unknown, completedErrors: CompletedEsiOperationErrors) {
   return (
     !completedErrors.isErrorCompleted(error) &&
@@ -37,11 +45,12 @@ export function shouldRetryEsiError(error: unknown, completedErrors: CompletedEs
 }
 
 export function classifyEsiOperationFailure(error: unknown): EsiFailure {
-  if (error instanceof EsiQuotaError) {
+  const quotaError = getEmbeddedEsiQuotaError(error instanceof Error ? error : undefined)
+  if (quotaError) {
     return {
       kind: 'quota',
-      retryAfterSeconds: error.retryAfterSeconds,
-      retryAt: error.retryAt.toISOString(),
+      retryAfterSeconds: quotaError.retryAfterSeconds,
+      retryAt: quotaError.retryAt.toISOString(),
     }
   }
 
@@ -57,12 +66,12 @@ export function classifyEsiOperationFailure(error: unknown): EsiFailure {
   if (sdkFailure === 'invalid-response') {
     return invalidResponseFailure(status)
   }
-  if (isTransientUnavailableFailure(error, sdkFailure, status)) {
-    return unavailableFailure(status)
-  }
   const quotaFailure = getQuotaFailure(error, status)
   if (quotaFailure) {
     return quotaFailure
+  }
+  if (isTransientUnavailableFailure(error, sdkFailure, status)) {
+    return unavailableFailure(status)
   }
   if (status !== undefined) {
     return { kind: 'http', status }
@@ -105,7 +114,10 @@ export function isEsiAuthorizationFailure(error: unknown) {
 }
 
 export function isEsiMutationOutcomeUnknown(error: unknown) {
-  return error instanceof EsiTransportError || classifySdkEsiFailure(error) === 'invalid-response'
+  return (
+    (error instanceof EsiTransportError && !getEmbeddedEsiQuotaError(error)) ||
+    classifySdkEsiFailure(error) === 'invalid-response'
+  )
 }
 
 export function isStaleUsableForFailure(
@@ -125,8 +137,9 @@ export function isStaleUsableForFailure(
 }
 
 export function toEsiQuotaError(error: unknown, now = Date.now()) {
-  if (error instanceof EsiQuotaError) {
-    return error
+  const embedded = getEmbeddedEsiQuotaError(error instanceof Error ? error : undefined)
+  if (embedded) {
+    return embedded
   }
   const failure = classifyEsiOperationFailure(error)
   return failure.kind === 'quota' ? new EsiQuotaError(failure.retryAfterSeconds, now) : error
@@ -165,14 +178,16 @@ function isTransientUnavailableFailure(
 }
 
 function getQuotaFailure(error: unknown, status: number | undefined): EsiFailure | undefined {
-  if (status !== 429) {
+  if (status !== 429 && status !== 420) {
     return undefined
   }
-  const retryAfter = error instanceof EsiHttpError ? error.metadata.retryAfterSeconds : undefined
-  const retryAfterSeconds =
-    retryAfter !== undefined && retryAfter > 0
-      ? Math.max(1, Math.ceil(retryAfter))
-      : esiCooldownFallbackSeconds
+  const metadata = error instanceof EsiHttpError ? error.metadata : undefined
+  let retryAfterSeconds = esiCooldownFallbackSeconds
+  if (status === 420) {
+    retryAfterSeconds = getLegacyErrorCooldownSeconds(metadata?.errorLimit?.reset)
+  } else if (metadata?.retryAfterSeconds !== undefined && metadata.retryAfterSeconds > 0) {
+    retryAfterSeconds = Math.max(1, Math.ceil(metadata.retryAfterSeconds))
+  }
   return {
     kind: 'quota',
     retryAfterSeconds,

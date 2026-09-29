@@ -1,5 +1,4 @@
 import { randomInt } from 'node:crypto'
-import type { EsiResponseMetadata } from '@evespace/esi-client'
 import {
   getCharacterAuthorizationForLifecycle,
   getCharacterCacheAuthorizationForLifecycle,
@@ -114,6 +113,49 @@ export function closeOwnedProductionEsiExecutionRuntime() {
   return productionRuntimeOwner.close()
 }
 
+const createProductionCoordinationPorts = (
+  coordination: ReturnType<typeof getCoordinationConnection>,
+  config: EsiExecutionRuntimeConfig,
+  timing: RuntimeTimingPort,
+): EsiExecutionRuntimePorts['coordination'] => ({
+  acquireRequestLease: (identity) => acquireEsiRequestLease(coordination, identity),
+  acquireRequestPermit: (options) =>
+    acquireEsiRequestPermit({
+      connection: coordination,
+      ...options,
+      queueTimeoutMs: config.operationQueueTimeoutMs,
+      timing,
+    }),
+  commitFence: (identity, lease) => commitEsiFence(coordination, identity, lease),
+  getCommittedFence: (identity) => getCommittedEsiFence(coordination, identity),
+  getRequestCooldowns: ({ requests, localState }) =>
+    getEsiRequestCooldowns({
+      connection: coordination,
+      requests,
+      maximumRequests: env.QUEUE_RESOURCE_PLANNER_PAGE_SIZE,
+      concurrency: config.operationConcurrency,
+      localState,
+    }),
+  getRequestLeaseTtl: (identity) => getEsiRequestLeaseTtl(coordination, identity),
+  getResourceRevision: (namespace, principal) =>
+    getEsiResourceRevision(coordination, namespace, principal),
+  incrementResourceRevision: (namespace, principal) =>
+    incrementEsiResourceRevision(coordination, namespace, principal),
+  initializeCacheNamespace: () => initializeCacheNamespace(coordination),
+  recordResponse: (operation, principal, metadata, localState) =>
+    recordEsiResponse({
+      connection: coordination,
+      operation,
+      principal,
+      metadata,
+      localState,
+      concurrency: config.operationConcurrency,
+      now: timing.now(),
+    }),
+  releaseRequestLease: (lease) => releaseEsiRequestLease(coordination, lease),
+  renewRequestLease: (lease) => renewEsiRequestLease(coordination, lease),
+})
+
 function createProductionRuntimePorts(config: EsiExecutionRuntimeConfig): EsiExecutionRuntimePorts {
   const cache = getSharedCacheRedisConnection()
   const coordination = getCoordinationConnection()
@@ -163,47 +205,7 @@ function createProductionRuntimePorts(config: EsiExecutionRuntimeConfig): EsiExe
         }
       },
     },
-    coordination: {
-      acquireRequestLease: (identity) => acquireEsiRequestLease(coordination, identity),
-      acquireRequestPermit: (options) =>
-        acquireEsiRequestPermit({
-          connection: coordination,
-          ...options,
-          queueTimeoutMs: config.operationQueueTimeoutMs,
-          timing,
-        }),
-      commitFence: (identity, lease) => commitEsiFence(coordination, identity, lease),
-      getCommittedFence: (identity) => getCommittedEsiFence(coordination, identity),
-      getRequestCooldowns: ({ requests, localState }) =>
-        getEsiRequestCooldowns({
-          connection: coordination,
-          requests,
-          maximumRequests: env.QUEUE_RESOURCE_PLANNER_PAGE_SIZE,
-          localState,
-        }),
-      getRequestLeaseTtl: (identity) => getEsiRequestLeaseTtl(coordination, identity),
-      getResourceRevision: (namespace, principal) =>
-        getEsiResourceRevision(coordination, namespace, principal),
-      incrementResourceRevision: (namespace, principal) =>
-        incrementEsiResourceRevision(coordination, namespace, principal),
-      initializeCacheNamespace: () => initializeCacheNamespace(coordination),
-      recordResponse: (
-        operation: Parameters<EsiExecutionRuntimePorts['coordination']['recordResponse']>[0],
-        principal: string | undefined,
-        metadata: EsiResponseMetadata,
-        localState,
-      ) =>
-        recordEsiResponse({
-          connection: coordination,
-          operation,
-          principal,
-          metadata,
-          localState,
-          now: timing.now(),
-        }),
-      releaseRequestLease: (lease) => releaseEsiRequestLease(coordination, lease),
-      renewRequestLease: (lease) => renewEsiRequestLease(coordination, lease),
-    },
+    coordination: createProductionCoordinationPorts(coordination, config, timing),
     timing,
     transport: {
       create: (options) =>

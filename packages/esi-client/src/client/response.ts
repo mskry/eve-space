@@ -29,6 +29,7 @@ export interface EsiErrorLimitMetadata {
 export interface EsiRouteRateLimitMetadata {
   readonly group?: string;
   readonly limit?: number;
+  readonly window?: string;
   readonly used?: number;
   readonly remaining?: number;
 }
@@ -227,9 +228,12 @@ function extractRouteRateLimit(
   if (group !== undefined) {
     rateLimit.group = group;
   }
-  const limit = parseNonnegativeInteger(headers['x-ratelimit-limit']);
-  if (limit !== undefined) {
-    rateLimit.limit = limit;
+  const parsedLimit = parseRouteLimit(headers['x-ratelimit-limit']);
+  if (parsedLimit !== undefined) {
+    rateLimit.limit = parsedLimit.limit;
+    if (parsedLimit.window !== undefined) {
+      rateLimit.window = parsedLimit.window;
+    }
   }
   const used = parseNonnegativeInteger(headers['x-ratelimit-used']);
   if (used !== undefined) {
@@ -241,6 +245,32 @@ function extractRouteRateLimit(
   }
   return Object.keys(rateLimit).length === 0 ? undefined : Object.freeze(rateLimit);
 }
+
+const parseRouteLimit = (
+  value: string | undefined,
+): { limit: number; window?: string } | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+  const separator = value.indexOf('/');
+  if (separator < 0) {
+    const limit = parsePositiveInteger(value);
+    return limit === undefined ? undefined : { limit };
+  }
+  const limit = parsePositiveInteger(value.slice(0, separator));
+  const window = value.slice(separator + 1);
+  const unit = window.at(-1);
+  const duration = parsePositiveInteger(window.slice(0, -1));
+  if (limit === undefined || duration === undefined || (unit !== 'm' && unit !== 'h')) {
+    return undefined;
+  }
+  return { limit, window };
+};
+
+const parsePositiveInteger = (value: string): number | undefined => {
+  const parsed = parseNonnegativeInteger(value);
+  return parsed !== undefined && parsed > 0 ? parsed : undefined;
+};
 
 function parseCacheControlMaxAge(value: string): number | undefined {
   let maxAge: number | undefined;

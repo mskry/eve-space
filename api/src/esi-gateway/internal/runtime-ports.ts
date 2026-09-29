@@ -106,6 +106,8 @@ export interface RuntimeTimingPort {
 export interface RuntimeLocalQuotaStatePort {
   readonly operationCooldowns: Map<string, number>
   readonly groupCooldowns: Map<string, number>
+  readonly pacing: Map<string, { nextAt: number; expiresAt: number; intervalMs: number }>
+  pacingOverflowUntil: number
   readonly inFlight: Map<string, number>
   globalCooldownUntil: number
 }

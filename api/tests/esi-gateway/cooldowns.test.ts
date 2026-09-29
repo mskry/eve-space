@@ -31,6 +31,63 @@ describe('ESI shared cooldowns', () => {
     ).rejects.toBeInstanceOf(EsiQuotaError)
   })
 
+  test('does not pace from absent, malformed, or mismatched remaining headers', async () => {
+    const redis = memoryRedis()
+    const { recordEsiResponse } = await import('../../src/esi-gateway/internal/cooldowns.js')
+    for (const routeRateLimit of [
+      undefined,
+      { group: 'char-wallet', remaining: Number.NaN },
+      { group: 'different-wallet', remaining: 0 },
+      { group: 'char-wallet', remaining: 21 },
+    ]) {
+      // SAFETY: The in-memory fixture implements the Redis commands exercised by response recording.
+      await recordEsiResponse({
+        connection: redis as never,
+        metadata: { headers: {}, routeRateLimit, status: 200 },
+        operation: 'wallet-balance',
+        principal: 'character-90000001',
+        concurrency: 4,
+      })
+    }
+    expect([...redis.values.keys()]).not.toContainEqual(expect.stringContaining(':pacing:'))
+  })
+
+  test.each([
+    [{ remaining: 100, reset: 18 }, 18],
+    [undefined, 60],
+    [{ reset: 0 }, 60],
+    [{ reset: 100_000 }, 60],
+  ] as const)(
+    'applies global 420 cooldown with reset %j',
+    async (errorLimit, retryAfterSeconds) => {
+      vi.useFakeTimers()
+      const now = Date.parse('2026-09-01T11:00:00.000Z')
+      vi.setSystemTime(now)
+      const redis = memoryRedis()
+      const { recordEsiResponse, getEsiRequestCooldown, esiPacingKey } =
+        await import('../../src/esi-gateway/internal/cooldowns.js')
+      // SAFETY: The in-memory fixture implements the Redis commands exercised by response recording.
+      await recordEsiResponse({
+        connection: redis as never,
+        metadata: {
+          headers: {},
+          errorLimit,
+          routeRateLimit: { group: 'status', remaining: 3 },
+          status: 420,
+        },
+        operation: 'status',
+        now,
+      })
+      await expect(
+        getEsiRequestCooldown({ connection: redis, operation: 'wallet-balance', now }),
+      ).resolves.toMatchObject({
+        active: true,
+        retryAfterSeconds,
+      })
+      expect(redis.values.has(esiPacingKey('status', 'public'))).toBe(false)
+    },
+  )
+
   test('bounds queued operation concurrency and releases its owner lease atomically', async () => {
     const redis = memoryRedis()
     const [{ EsiQuotaError }, { acquireEsiRequestPermit }] = await Promise.all([
@@ -155,7 +212,12 @@ describe('ESI shared cooldowns', () => {
     const { recordEsiResponse } = await import('../../src/esi-gateway/internal/cooldowns.js')
     await recordEsiResponse({
       connection: redis as never,
-      metadata: { headers: {}, retryAfterSeconds: 12, status: 429 },
+      metadata: {
+        headers: {},
+        retryAfterSeconds: 12,
+        routeRateLimit: { group: 'char-wallet', remaining: 3 },
+        status: 429,
+      },
       operation: 'wallet-balance',
       principal: 'character-90000001',
     })
@@ -306,6 +368,46 @@ describe('ESI shared cooldowns', () => {
   })
 })
 
+const evaluateAtomicPermit = (
+  values: Map<string, string>,
+  sortedSets: Map<string, Map<string, number>>,
+  key: string,
+  args: Array<string | number>,
+) => {
+  const [globalKey, scopedKey, pacingKey, limit, ttl, owner] = args
+  const now = Date.now()
+  const retryAt = Math.max(
+    Number(values.get(String(globalKey)) ?? 0),
+    Number(values.get(String(scopedKey)) ?? 0),
+  )
+  if (retryAt > now) return [2, retryAt - now]
+  const pacing = values.get(String(pacingKey))?.split(':').map(Number)
+  if (pacing && pacing[0]! > now) return [3, pacing[0]! - now]
+  const members = sortedSets.get(key) ?? new Map<string, number>()
+  for (const [member, expiresAt] of members) {
+    if (expiresAt <= now) members.delete(member)
+  }
+  if (members.size >= Number(limit)) return [0, 0]
+  members.set(String(owner), now + Number(ttl))
+  sortedSets.set(key, members)
+  if (pacing) {
+    values.set(String(pacingKey), `${now + pacing[2]!}:${pacing[1]}:${pacing[2]}`)
+  }
+  return [1, 0]
+}
+
+const recordMemoryPacing = (
+  values: Map<string, string>,
+  key: string,
+  args: Array<string | number>,
+) => {
+  const [interval, window] = args.map(Number)
+  const now = Date.now()
+  const previous = Number(values.get(key)?.split(':')[0] ?? 0)
+  values.set(key, `${Math.max(previous, now + interval!)}:${now + window!}:${interval}`)
+  return Math.max(previous, now + interval!) - now
+}
+
 function memoryRedis() {
   const values = new Map<string, string>()
   const sortedSets = new Map<string, Map<string, number>>()
@@ -316,22 +418,11 @@ function memoryRedis() {
       key: string,
       ...arguments_: Array<string | number>
     ) {
-      if (script.includes("redis.call('zremrangebyscore'")) {
-        const now = Number(arguments_[0])
-        const limit = Number(arguments_[1])
-        const ttl = Number(arguments_[2])
-        const members = sortedSets.get(key) ?? new Map<string, number>()
-        for (const [member, expiresAt] of members) {
-          if (expiresAt <= now) {
-            members.delete(member)
-          }
-        }
-        if (members.size >= limit) {
-          return 0
-        }
-        members.set(String(arguments_[3]), now + ttl)
-        sortedSets.set(key, members)
-        return 1
+      if (script.includes('return {1, 0}')) {
+        return evaluateAtomicPermit(values, sortedSets, key, arguments_)
+      }
+      if (script.includes("local time = redis.call('time')")) {
+        return recordMemoryPacing(values, key, arguments_)
       }
       if (script.includes("redis.call('zscore'")) {
         const [now, owner, ttl] = arguments_
@@ -345,15 +436,6 @@ function memoryRedis() {
       }
       if (script.includes("redis.call('zrem'")) {
         sortedSets.get(key)?.delete(String(arguments_[0]))
-        return 1
-      }
-      if (script.includes("redis.call('decr'")) {
-        const current = Number(values.get(key) ?? 0)
-        if (current <= 1) {
-          values.delete(key)
-        } else {
-          values.set(key, String(current - 1))
-        }
         return 1
       }
       if (script.includes('candidate <= current')) {

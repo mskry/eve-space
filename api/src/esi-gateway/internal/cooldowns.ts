@@ -2,12 +2,31 @@ import type { EsiResponseMetadata } from '@evespace/esi-client'
 import type { Redis } from 'ioredis'
 import { getDeclaredEsiRateLimit } from './catalog-access.js'
 import { esiOperationCatalog, esiOperations, type EsiOperation } from './catalog.js'
-import { getLocalEsiCooldownUntil, recordLocalEsiCooldowns } from './local-quota.js'
+import {
+  getEsiPacingPolicy,
+  getLocalEsiCooldownUntil,
+  getLocalEsiPacing,
+  recordLocalEsiCooldowns,
+  recordLocalEsiPacing,
+} from './local-quota.js'
+import type { EsiPacingPolicy } from './local-quota.js'
 import { parseFiniteNumber } from './numeric.js'
-import { esiCooldownFallbackSeconds, esiErrorBudgetFloor } from './policy.js'
+import {
+  esiCooldownFallbackSeconds,
+  esiErrorBudgetFloor,
+  getLegacyErrorCooldownSeconds,
+} from './policy.js'
 import type { RuntimeLocalQuotaStatePort } from './runtime-ports.js'
 
 export const esiQuotaCoordinationPrefix = 'eve-space:v1:esi-resilience'
+
+export const esiPacingKey = (group: string, principal: string) =>
+  `${esiQuotaCoordinationPrefix}:pacing:group:${group}:${principal}`
+
+const parsePacing = (value: string | null | undefined): number => {
+  const nextAt = Number(value?.split(':', 1)[0] ?? 0)
+  return Number.isSafeInteger(nextAt) ? nextAt : 0
+}
 
 export interface EsiCooldownStatus {
   status: 'inactive' | 'active' | 'unavailable'
@@ -35,6 +54,7 @@ export async function getEsiRequestCooldowns(options: {
   connection: EsiCooldownBatchConnection
   requests: readonly EsiCooldownRequest[]
   maximumRequests: number
+  concurrency?: number
   now?: number
   localState?: RuntimeLocalQuotaStatePort
 }): Promise<readonly EsiRequestCooldown[]> {
@@ -54,18 +74,46 @@ export async function getEsiRequestCooldowns(options: {
       principal: normalizedPrincipal,
     }
   })
-  const keys = [globalKey, ...new Set(requestKeys.map(({ key }) => key))]
+  const pacingKeys = requestKeys.map(({ operation, principal }) => {
+    const policy = getEsiPacingPolicy(operation, options.concurrency ?? 1)
+    return policy ? esiPacingKey(policy.group, principal) : undefined
+  })
+  const keys = [
+    globalKey,
+    ...new Set([
+      ...requestKeys.map(({ key }) => key),
+      ...pacingKeys.filter((key) => key !== undefined),
+    ]),
+  ]
   try {
     const values = await options.connection.mget(...keys)
     const retryAtByKey = new Map(keys.map((key, index) => [key, Number(values[index] ?? 0)]))
     const globalRetryAt = retryAtByKey.get(globalKey) ?? 0
-    return requestKeys.map(({ key }) =>
-      toCooldown(Math.max(globalRetryAt, retryAtByKey.get(key) ?? 0), now, true),
-    )
+    return requestKeys.map(({ key, operation, principal }, index) => {
+      const localGroup = getEsiPacingPolicy(operation, options.concurrency ?? 1)?.group
+      const localNext = localGroup
+        ? (getLocalEsiPacing(localGroup, principal, now, options.localState)?.nextAt ?? 0)
+        : 0
+      const sharedNext = parsePacing(values[keys.indexOf(pacingKeys[index] ?? '')])
+      return toCooldown(
+        Math.max(globalRetryAt, retryAtByKey.get(key) ?? 0, localNext, sharedNext),
+        now,
+        true,
+      )
+    })
   } catch {
     return requestKeys.map(({ operation, principal }) =>
       toCooldown(
-        getLocalEsiCooldownUntil(operation, principal, now, options.localState),
+        Math.max(
+          getLocalEsiCooldownUntil(operation, principal, now, options.localState),
+          getLocalPacingNext(
+            operation,
+            principal,
+            now,
+            options.concurrency ?? 1,
+            options.localState,
+          ),
+        ),
         now,
         false,
       ),
@@ -79,22 +127,104 @@ export async function getEsiRequestCooldown(options: {
   principal?: string
   now?: number
   localState?: RuntimeLocalQuotaStatePort
+  concurrency?: number
 }): Promise<EsiRequestCooldown> {
   const principal = normalizeEsiPrincipal(options.principal)
   const now = options.now ?? Date.now()
   let retryAt: number
   let coordinationAvailable = true
   try {
-    const [globalCooldown, operationCooldown] = await Promise.all([
+    const policy = getEsiPacingPolicy(options.operation, options.concurrency ?? 1)
+    const [globalCooldown, operationCooldown, pacing] = await Promise.all([
       options.connection.get(`${esiQuotaCoordinationPrefix}:cooldown:global`),
       options.connection.get(cooldownKey(options.operation, principal)),
+      policy
+        ? options.connection.get(esiPacingKey(policy.group, principal))
+        : Promise.resolve(null),
     ])
-    retryAt = Math.max(Number(globalCooldown ?? 0), Number(operationCooldown ?? 0))
+    retryAt = Math.max(
+      Number(globalCooldown ?? 0),
+      Number(operationCooldown ?? 0),
+      parsePacing(pacing),
+      getLocalPacingNext(
+        options.operation,
+        principal,
+        now,
+        options.concurrency ?? 1,
+        options.localState,
+      ),
+    )
   } catch {
     coordinationAvailable = false
-    retryAt = getLocalEsiCooldownUntil(options.operation, principal, now, options.localState)
+    retryAt = Math.max(
+      getLocalEsiCooldownUntil(options.operation, principal, now, options.localState),
+      getLocalPacingNext(
+        options.operation,
+        principal,
+        now,
+        options.concurrency ?? 1,
+        options.localState,
+      ),
+    )
   }
   return toCooldown(retryAt, now, coordinationAvailable)
+}
+
+const getPacingObservation = (
+  operation: EsiOperation,
+  metadata: EsiResponseMetadata,
+  concurrency: number,
+): { policy: EsiPacingPolicy; remaining: number } | undefined => {
+  if (metadata.status === 429 || metadata.status === 420) return undefined
+  const policy = getEsiPacingPolicy(operation, concurrency)
+  const remaining = metadata.routeRateLimit?.remaining
+  if (!policy || remaining === undefined || !Number.isSafeInteger(remaining) || remaining < 0) {
+    return undefined
+  }
+  const observedGroup = metadata.routeRateLimit?.group
+  if (observedGroup !== undefined && observedGroup !== policy.group) return undefined
+  return remaining <= policy.margin ? { policy, remaining } : undefined
+}
+
+const getResponseCooldownDeadlines = (metadata: EsiResponseMetadata, now: number) => {
+  const remaining = metadata.errorLimit?.remaining
+  const globalRetryAt =
+    metadata.status === 420 || (remaining !== undefined && remaining <= esiErrorBudgetFloor)
+      ? now + getLegacyErrorCooldownSeconds(metadata.errorLimit?.reset) * 1000
+      : undefined
+  const operationRetryAt =
+    metadata.status === 429
+      ? now + (metadata.retryAfterSeconds ?? esiCooldownFallbackSeconds) * 1000
+      : undefined
+  return { globalRetryAt, operationRetryAt }
+}
+
+const getLocalPacingNext = (
+  operation: EsiOperation,
+  principal: string,
+  now: number,
+  concurrency: number,
+  state?: RuntimeLocalQuotaStatePort,
+) => {
+  if (!state) return 0
+  const group = getEsiPacingPolicy(operation, concurrency)?.group
+  return group ? (getLocalEsiPacing(group, principal, now, state)?.nextAt ?? 0) : 0
+}
+
+const recordSharedPacing = async (
+  connection: Redis,
+  policy: NonNullable<ReturnType<typeof getEsiPacingPolicy>>,
+  principal: string,
+  remaining: number,
+) => {
+  const intervalMs = remaining < 5 ? 60_000 : policy.intervalMs
+  await connection.eval(
+    "local time = redis.call('time'); local now = time[1] * 1000 + math.floor(time[2] / 1000); local current = redis.call('get', KEYS[1]); local nextAt = now + tonumber(ARGV[1]); local interval = tonumber(ARGV[1]); if current then local previousNext, _, previousInterval = string.match(current, '^(%d+):(%d+):(%d+)$'); if previousNext then nextAt = math.max(nextAt, tonumber(previousNext)); interval = math.max(interval, tonumber(previousInterval)) end end; redis.call('set', KEYS[1], nextAt .. ':' .. (now + tonumber(ARGV[2])) .. ':' .. interval, 'PX', ARGV[2]); return nextAt - now",
+    1,
+    esiPacingKey(policy.group, principal),
+    Math.ceil(intervalMs),
+    policy.windowMs,
+  )
 }
 
 export async function recordEsiResponse(options: {
@@ -104,20 +234,25 @@ export async function recordEsiResponse(options: {
   metadata: EsiResponseMetadata
   localState?: RuntimeLocalQuotaStatePort
   now?: number
+  concurrency?: number
 }): Promise<void> {
-  const errorRemaining = options.metadata.errorLimit?.remaining
-  const errorResetSeconds = options.metadata.errorLimit?.reset
-  const retryAfterSeconds = options.metadata.retryAfterSeconds
   const principal = normalizeEsiPrincipal(options.principal)
   const now = options.now ?? Date.now()
-  const globalRetryAt =
-    errorRemaining !== undefined && errorRemaining <= esiErrorBudgetFloor
-      ? now + (errorResetSeconds ?? esiCooldownFallbackSeconds) * 1000
-      : undefined
-  const operationRetryAt =
-    options.metadata.status === 429
-      ? now + (retryAfterSeconds ?? esiCooldownFallbackSeconds) * 1000
-      : undefined
+  const observation = getPacingObservation(
+    options.operation,
+    options.metadata,
+    options.concurrency ?? 1,
+  )
+  if (observation) {
+    recordLocalEsiPacing(
+      observation.policy,
+      principal,
+      observation.remaining,
+      now,
+      options.localState,
+    )
+  }
+  const { globalRetryAt, operationRetryAt } = getResponseCooldownDeadlines(options.metadata, now)
   const cooldowns: Array<[string, number]> = []
   if (globalRetryAt !== undefined) {
     cooldowns.push([`${esiQuotaCoordinationPrefix}:cooldown:global`, globalRetryAt])
@@ -134,9 +269,19 @@ export async function recordEsiResponse(options: {
     state: options.localState,
   })
   try {
-    await Promise.all(
-      cooldowns.map(([key, value]) => setCooldownAtLeast(options.connection, key, value, now)),
-    )
+    await Promise.all([
+      ...cooldowns.map(([key, value]) => setCooldownAtLeast(options.connection, key, value, now)),
+      ...(observation
+        ? [
+            recordSharedPacing(
+              options.connection,
+              observation.policy,
+              principal,
+              observation.remaining,
+            ),
+          ]
+        : []),
+    ])
   } catch {
     // The local values are intentionally tighter and only used while coordination is unreachable.
   }

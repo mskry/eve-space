@@ -120,6 +120,9 @@ export async function getMarketPricesWithMetadata() {
     requestId: response.meta.requestId,
     cache: response.meta.cache,
     errorLimit: response.meta.errorLimit,
+    routeLimit: response.meta.routeRateLimit?.limit,
+    routeWindow: response.meta.routeRateLimit?.window,
+    rawRouteLimit: response.meta.headers['x-ratelimit-limit'],
   };
 }`,
     title: 'Response metadata',

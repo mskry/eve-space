@@ -232,20 +232,8 @@ class EsiExecutionRuntimeImplementation {
 
   async isOperationQuotaLimited(operation: EsiOperation) {
     this.#assertOpen()
-    try {
-      const permit = await this.ports.coordination.acquireRequestPermit({
-        concurrency: this.config.operationConcurrency,
-        localState: this.state.localQuota,
-        operation,
-      })
-      await permit.release()
-      return false
-    } catch (error) {
-      if (error instanceof EsiQuotaError) {
-        return true
-      }
-      throw error
-    }
+    const [status] = await this.getQuotaStatuses([{ operation }])
+    return status?.active ?? false
   }
 
   async executeRepresentation<

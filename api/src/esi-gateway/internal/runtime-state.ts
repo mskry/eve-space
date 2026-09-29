@@ -15,6 +15,8 @@ class EsiExecutionRuntimeState {
   readonly localQuota: RuntimeLocalQuotaStatePort = {
     globalCooldownUntil: 0,
     groupCooldowns: new Map(),
+    pacing: new Map(),
+    pacingOverflowUntil: 0,
     inFlight: new Map(),
     operationCooldowns: new Map(),
   }
@@ -44,6 +46,8 @@ class EsiExecutionRuntimeState {
     this.namespaceInitialization = undefined
     this.localQuota.operationCooldowns.clear()
     this.localQuota.groupCooldowns.clear()
+    this.localQuota.pacing.clear()
+    this.localQuota.pacingOverflowUntil = 0
     this.localQuota.inFlight.clear()
     this.localQuota.globalCooldownUntil = 0
     this.unrepairedResourceRevisions.clear()

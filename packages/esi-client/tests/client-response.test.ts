@@ -106,6 +106,55 @@ describe('ESI response metadata', () => {
   });
 
   it.each([
+    ['150/15m', { limit: 150, window: '15m' }],
+    ['300/1h', { limit: 300, window: '1h' }],
+    ['150', { limit: 150 }],
+  ])('extracts route limit %s without changing the numeric maximum', (raw, expected) => {
+    const metadata = extractEsiResponseMetadata(
+      200,
+      new Headers({
+        'X-Ratelimit-Group': 'char-wallet',
+        'X-Ratelimit-Limit': raw,
+        'X-Ratelimit-Remaining': '3',
+        'X-Ratelimit-Used': '7',
+      }),
+    );
+    expect(metadata.routeRateLimit).toStrictEqual({
+      group: 'char-wallet',
+      remaining: 3,
+      used: 7,
+      ...expected,
+    });
+    expect(metadata.headers['x-ratelimit-limit']).toBe(raw);
+  });
+
+  it.each([
+    '0/15m',
+    '150/0m',
+    '150/15s',
+    '150/15M',
+    '150/15m/1h',
+    '150/15m' + 'x'.repeat(10_000),
+    '150/' + '9'.repeat(10_000) + 'm',
+    '150/9007199254740992m',
+    '9007199254740992/15m',
+    '150/01m',
+    '150 /15m',
+  ])('retains malformed route limit raw while preserving other fields: %s', (raw) => {
+    const metadata = extractEsiResponseMetadata(
+      200,
+      new Headers({
+        'X-Ratelimit-Limit': raw,
+        'X-Ratelimit-Group': 'char-wallet',
+        'X-Ratelimit-Remaining': '4',
+      }),
+    );
+    expect(metadata.routeRateLimit).toStrictEqual({ group: 'char-wallet', remaining: 4 });
+    expect(metadata.headers['x-ratelimit-limit']).toBeDefined();
+    expect(metadata.headers['x-ratelimit-limit']?.length).toBeLessThanOrEqual(1024);
+  });
+
+  it.each([
     ['quoted', 'public, max-age="30"'],
     ['negative', 'max-age=-1'],
     ['fractional', 'max-age=1.5'],
@@ -203,6 +252,31 @@ describe('ESI response metadata', () => {
     expect(thrown).toMatchObject({ metadata: expected });
     expect(JSON.parse(JSON.stringify(thrown))).toMatchObject({ metadata: expected });
   });
+
+  it.each([true, false])(
+    'exposes 420 metadata without scheduling a retry (reset: %s)',
+    async (reset) => {
+      const headers = new Headers({ 'X-Ratelimit-Limit': '150/15m' });
+      if (reset) {
+        headers.set('X-Esi-Error-Limit-Reset', '23');
+      }
+      const fetch = vi.fn<typeof globalThis.fetch>(async () =>
+        Response.json({ error: 'error limit reached' }, { headers, status: 420 }),
+      );
+      let thrown: EsiHttpError | undefined;
+      try {
+        await executeOperation(new EsiClientConfiguration({ fetch }), operation(), {});
+      } catch (error) {
+        if (error instanceof EsiHttpError) thrown = error;
+      }
+      expect(thrown).toMatchObject({
+        metadata: { routeRateLimit: { limit: 150, window: '15m' }, status: 420 },
+        status: 420,
+      });
+      expect(thrown?.metadata.errorLimit).toStrictEqual(reset ? { reset: 23 } : undefined);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    },
+  );
 });
 
 const passthroughSchema: OperationSchema = {

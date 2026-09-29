@@ -17,11 +17,13 @@ import {
 } from '../../../src/esi-gateway/internal/coordination.js'
 import {
   esiQuotaCoordinationPrefix,
+  esiPacingKey,
   getEsiRequestCooldowns,
   recordEsiResponse,
 } from '../../../src/esi-gateway/internal/cooldowns.js'
 import { EsiQuotaError } from '../../../src/esi-gateway/failures.js'
 import { acquireEsiRequestPermit } from '../../../src/esi-gateway/internal/permits.js'
+import { createEsiExecutionRuntimeState } from '../../../src/esi-gateway/internal/runtime-state.js'
 import { executeEsiRequestAttempt } from '../../../src/esi-gateway/internal/request-lifecycle.js'
 import { createRawEsiTransport } from '../../../src/esi-gateway/internal/transport.js'
 import { composeEnvelopeRepresentationVersion } from '../../../src/esi-gateway/internal/envelope.js'
@@ -50,6 +52,7 @@ const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const replacementSubjectLifecycleId = '22222222-2222-4222-8222-222222222222'
 let currentSubjectLifecycleId = subjectLifecycleId
 const lifecycleInvalidated = new Error('character lifecycle is no longer current')
+const offsetClock = (offset: number) => ({ now: () => Date.now() + offset, wait: async () => {} })
 
 vi.mock('../../../src/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => cache,
@@ -980,6 +983,358 @@ describe('ESI resilience Redis coordination', () => {
     })
     expect(transportSignal?.aborted).toBe(true)
     await expect(coordination.zcard(key)).resolves.toBe(0)
+  })
+})
+
+describe('legacy 420 admission', () => {
+  test.each([
+    [{ reset: 22 }, 22],
+    [undefined, 60],
+  ] as const)('shares a global cooldown with reset %j', async (errorLimit, retryAfterSeconds) => {
+    const reporter = createClient(coordinationContainer)
+    const follower = createClient(coordinationContainer)
+    try {
+      await recordEsiResponse({
+        connection: reporter,
+        metadata: { headers: {}, errorLimit, status: 420 },
+        operation: 'status',
+      })
+      await expect(
+        acquireEsiRequestPermit({
+          concurrency: 2,
+          connection: follower,
+          operation: 'wallet-balance',
+          principal: 'character-90000001',
+          queueTimeoutMs: 100,
+        }),
+      ).rejects.toMatchObject({ name: 'EsiQuotaError', retryAfterSeconds })
+    } finally {
+      reporter.disconnect()
+      follower.disconnect()
+    }
+  })
+
+  test('returns typed quota for an originating 420 and suppresses another registered operation', async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(
+        Response.json(
+          { error: 'error budget exhausted' },
+          { status: 420, headers: { 'X-Esi-Error-Limit-Reset': '24' } },
+        ),
+      )
+    vi.stubGlobal('fetch', fetch)
+    const statusRead = await statusRepresentation()
+    await expect(statusRead.execute({})).rejects.toMatchObject({
+      name: 'EsiQuotaError',
+      retryAfterSeconds: 24,
+    })
+    const walletRead = await walletRepresentation()
+    await expect(
+      walletRead.execute({ characterId: 90000001, subjectLifecycleId }),
+    ).rejects.toMatchObject({ name: 'EsiQuotaError', retryAfterSeconds: 24 })
+    expect(fetch).toHaveBeenCalledOnce()
+    const { getProductionEsiExecutionRuntime } =
+      await import('../../../src/esi-gateway/internal/production-runtime.js')
+    await (await getProductionEsiExecutionRuntime()).close()
+  })
+})
+
+describe('paced ESI admission', () => {
+  test('admits after a short grouped 429 Retry-After despite low reported remaining', async () => {
+    const reporter = createClient(coordinationContainer)
+    const follower = createClient(coordinationContainer)
+    const principal = 'character-90000001'
+    try {
+      await recordEsiResponse({
+        connection: reporter,
+        operation: 'wallet-balance',
+        principal,
+        metadata: {
+          headers: {},
+          retryAfterSeconds: 1,
+          routeRateLimit: { group: 'char-wallet', remaining: 3 },
+          status: 429,
+        },
+      })
+      await expect(reporter.get(esiPacingKey('char-wallet', principal))).resolves.toBeNull()
+      await expect(
+        acquireEsiRequestPermit({
+          connection: follower,
+          operation: 'wallet-transactions',
+          principal,
+          concurrency: 2,
+          queueTimeoutMs: 100,
+        }),
+      ).rejects.toMatchObject({ name: 'EsiQuotaError', retryAfterSeconds: 1 })
+
+      await wait(1100)
+      const permit = await acquireEsiRequestPermit({
+        connection: follower,
+        operation: 'wallet-transactions',
+        principal,
+        concurrency: 2,
+        queueTimeoutMs: 100,
+      })
+      await permit.release()
+      await expect(reporter.get(esiPacingKey('char-wallet', principal))).resolves.toBeNull()
+    } finally {
+      reporter.disconnect()
+      follower.disconnect()
+    }
+  })
+
+  test('coordinates slots across skewed clients without spending one on full concurrency or cooldown', async () => {
+    const reporter = createClient(coordinationContainer)
+    const follower = createClient(coordinationContainer)
+    const principal = 'character-90000001'
+    const key = esiPacingKey('char-wallet', principal)
+    const reporterState = createEsiExecutionRuntimeState(1).localQuota
+    const followerState = createEsiExecutionRuntimeState(1).localQuota
+    try {
+      const first = await acquireEsiRequestPermit({
+        concurrency: 1,
+        connection: reporter,
+        operation: 'wallet-balance',
+        principal,
+        queueTimeoutMs: 100,
+        localState: reporterState,
+      })
+      await recordEsiResponse({
+        connection: reporter,
+        operation: 'wallet-balance',
+        principal,
+        concurrency: 1,
+        localState: reporterState,
+        metadata: {
+          headers: {},
+          routeRateLimit: { group: 'char-wallet', remaining: 10 },
+          status: 200,
+        },
+      })
+      const [next, expires, interval] = (await reporter.get(key))!.split(':').map(Number)
+      const availableAt = Date.now() - 1
+      await reporter.set(key, `${availableAt}:${expires}:${interval}`, 'KEEPTTL')
+      await expect(
+        acquireEsiRequestPermit({
+          concurrency: 1,
+          connection: follower,
+          operation: 'wallet-balance',
+          principal,
+          queueTimeoutMs: 1,
+          localState: followerState,
+        }),
+      ).rejects.toMatchObject({ name: 'EsiQuotaError' })
+      expect((await reporter.get(key))?.split(':')[0]).toBe(String(availableAt))
+      await first.release()
+      await recordEsiResponse({
+        connection: reporter,
+        operation: 'wallet-balance',
+        principal,
+        concurrency: 1,
+        localState: reporterState,
+        metadata: { headers: {}, retryAfterSeconds: 30, status: 429 },
+      })
+      await expect(
+        acquireEsiRequestPermit({
+          concurrency: 1,
+          connection: follower,
+          operation: 'wallet-transactions',
+          principal,
+          queueTimeoutMs: 100,
+          localState: followerState,
+        }),
+      ).rejects.toMatchObject({ name: 'EsiQuotaError', retryAfterSeconds: 30 })
+      expect(Number((await reporter.get(key))?.split(':')[0])).toBeLessThan(next!)
+      await reporter.del(`${esiQuotaCoordinationPrefix}:cooldown:group:char-wallet:${principal}`)
+      const request = (connection: Redis, state: typeof followerState, offset: number) =>
+        acquireEsiRequestPermit({
+          concurrency: 2,
+          connection,
+          operation: 'wallet-transactions',
+          principal,
+          queueTimeoutMs: 100,
+          localState: state,
+          timing: offsetClock(offset),
+        })
+      const results = await Promise.allSettled([
+        request(reporter, createEsiExecutionRuntimeState(1).localQuota, 60_000),
+        request(follower, followerState, -60_000),
+      ])
+      expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1)
+      expect(results.filter((result) => result.status === 'rejected')).toMatchObject([
+        { reason: { name: 'EsiQuotaError' } },
+      ])
+      for (const result of results) {
+        if (result.status === 'fulfilled') await result.value.release()
+      }
+    } finally {
+      reporter.disconnect()
+      follower.disconnect()
+    }
+  })
+
+  test('records public and character response pacing through registered execution', async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json(
+          { players: 10, server_version: 'test', start_time: '2026-09-11T00:00:00Z', vip: false },
+          {
+            headers: {
+              'X-Ratelimit-Group': 'status',
+              'X-Ratelimit-Remaining': '8',
+              'X-Ratelimit-Limit': '600/15m',
+            },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        Response.json(100, {
+          headers: {
+            'X-Ratelimit-Group': 'char-wallet',
+            'X-Ratelimit-Remaining': '3',
+            'X-Ratelimit-Limit': '150/15m',
+          },
+        }),
+      )
+    vi.stubGlobal('fetch', fetch)
+    const statusRead = await statusRepresentation()
+    await expect(statusRead.execute({})).resolves.toMatchObject({ source: 'esi' })
+    expect(fetch).toHaveBeenCalledOnce()
+    const { getProductionEsiExecutionRuntime } =
+      await import('../../../src/esi-gateway/internal/production-runtime.js')
+    const runtime = await getProductionEsiExecutionRuntime()
+    await expect(runtime.getQuotaStatuses([{ operation: 'status' }])).resolves.toMatchObject([
+      { active: true, retryAfterSeconds: expect.any(Number) },
+    ])
+    const walletRead = await walletRepresentation()
+    await expect(
+      walletRead.execute({ characterId: 90000001, subjectLifecycleId }),
+    ).resolves.toMatchObject({
+      data: 100,
+      source: 'esi',
+    })
+    await expect(
+      runtime.getQuotaStatuses([{ operation: 'wallet-balance', principal: 'character-90000001' }]),
+    ).resolves.toMatchObject([{ active: true, retryAfterSeconds: expect.any(Number) }])
+    await runtime.close()
+  })
+
+  test('records observed-group drift without applying mismatched remaining to the declared bucket', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          Response.json(
+            { players: 10, server_version: 'test', start_time: '2026-09-11T00:00:00Z', vip: false },
+            { headers: { 'X-Ratelimit-Group': 'other-status', 'X-Ratelimit-Remaining': '0' } },
+          ),
+        ),
+    )
+    const statusRead = await statusRepresentation()
+    await expect(statusRead.execute({})).resolves.toMatchObject({ source: 'esi' })
+    const { getProductionEsiExecutionRuntime } =
+      await import('../../../src/esi-gateway/internal/production-runtime.js')
+    const runtime = await getProductionEsiExecutionRuntime()
+    await expect(runtime.getQuotaStatuses([{ operation: 'status' }])).resolves.toMatchObject([
+      { active: false },
+    ])
+    await vi.waitFor(async () => {
+      const counters = await cache.hgetall('eve-space:v1:esi-resilience:telemetry:upstream:status')
+      expect(counters.rateGroupMismatches).toBe('1')
+    })
+    await runtime.close()
+  })
+
+  test('retains interface-recorded local pacing after a failed shared write recovers', async () => {
+    const originalEval = coordination.eval.bind(coordination)
+    const failedWrite = vi
+      .spyOn(coordination, 'eval')
+      .mockImplementation((...args: Parameters<Redis['eval']>) => {
+        if (String(args[0]).includes("local current = redis.call('get', KEYS[1]); local nextAt")) {
+          throw new Error('pacing write unavailable')
+        }
+        return originalEval(...args)
+      })
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          Response.json(
+            { players: 10, server_version: 'test', start_time: '2026-09-11T00:00:00Z', vip: false },
+            { headers: { 'X-Ratelimit-Group': 'status', 'X-Ratelimit-Remaining': '4' } },
+          ),
+        ),
+    )
+    const statusRead = await statusRepresentation()
+    await expect(statusRead.execute({})).resolves.toMatchObject({ source: 'esi' })
+    await expect(coordination.get(esiPacingKey('status', 'public'))).resolves.toBeNull()
+    failedWrite.mockRestore()
+    const { getProductionEsiExecutionRuntime } =
+      await import('../../../src/esi-gateway/internal/production-runtime.js')
+    const runtime = await getProductionEsiExecutionRuntime()
+    await expect(runtime.getQuotaStatuses([{ operation: 'status' }])).resolves.toMatchObject([
+      { active: true, retryAfterSeconds: expect.any(Number) },
+    ])
+    await runtime.close()
+  })
+
+  test('repeated quota and planner probes leave the next paced admission unchanged', async () => {
+    const key = esiPacingKey('status', 'public')
+    await recordEsiResponse({
+      connection: coordination,
+      operation: 'status',
+      concurrency: 2,
+      metadata: { headers: {}, routeRateLimit: { group: 'status', remaining: 20 }, status: 200 },
+    })
+    const before = await coordination.get(key)
+    const { getResourcePlanningCooldowns } =
+      await import('../../../src/platform/resource-planning.js')
+    for (let index = 0; index < 3; index += 1) {
+      await expect(getResourcePlanningCooldowns([{ operation: 'status' }])).resolves.toMatchObject([
+        { active: true, retryAfterSeconds: expect.any(Number) },
+      ])
+      await expect(
+        getEsiRequestCooldowns({
+          connection: coordination,
+          maximumRequests: 100,
+          concurrency: 2,
+          requests: [{ operation: 'status' }],
+        }),
+      ).resolves.toMatchObject([{ active: true }])
+    }
+    expect(await coordination.get(key)).toBe(before)
+    await expect(
+      acquireEsiRequestPermit({
+        connection: coordination,
+        operation: 'status',
+        concurrency: 2,
+        queueTimeoutMs: 100,
+      }),
+    ).rejects.toBeInstanceOf(EsiQuotaError)
+    expect(await coordination.get(key)).toBe(before)
+    const [, expires, interval] = before!.split(':').map(Number)
+    await coordination.set(key, `${Date.now() - 1}:${expires}:${interval}`, 'KEEPTTL')
+    const ready = await getEsiRequestCooldowns({
+      connection: coordination,
+      maximumRequests: 100,
+      concurrency: 2,
+      requests: [{ operation: 'status' }],
+      localState: createEsiExecutionRuntimeState(1).localQuota,
+    })
+    expect(ready[0]?.active).toBe(false)
+    const admitted = await acquireEsiRequestPermit({
+      connection: coordination,
+      operation: 'status',
+      concurrency: 2,
+      queueTimeoutMs: 100,
+      localState: createEsiExecutionRuntimeState(1).localQuota,
+    })
+    expect(Number((await coordination.get(key))?.split(':')[0])).toBeGreaterThan(Date.now())
+    await admitted.release()
   })
 })
 

@@ -226,6 +226,8 @@ Use \`classifyEsiFailure(error)\` for policy-neutral failure facts: \`transient\
 The package is ESM-only and requires Node.js 24.20 or newer. Import \`EsiClient\` from the package root, or use a documented domain, \`types\`, \`zod\`, or \`operations\` subpath for a narrower dependency surface.`,
     'metadata-pagination': `Normal domain methods return validated bare data. Call \`client.<domain>.withMetadata().<method>(...)\` for an \`EsiResponse<T>\` envelope containing status, bounded original response headers, request ID, pagination, cache validators and an unambiguous \`maxAgeSeconds\`, legacy ESI error-limit metadata, route-group rate-limit metadata, and a delta-seconds \`retryAfterSeconds\`. Generic execution always returns this envelope.
 
+\`meta.routeRateLimit?.limit\` is the numeric token maximum. A documented header such as \`X-Ratelimit-Limit: 150/15m\` also yields \`meta.routeRateLimit.window === '15m'\`; a valid bare numeric maximum has no window. The bounded original header remains available at \`meta.headers['x-ratelimit-limit']\`. The SDK reports these facts on successful and failed attempts without choosing a quota policy.
+
 Generic execution performs exactly one request. For offset pagination, pass the documented page parameter and inspect \`meta.pagination.pages\`. For cursor pagination, pass the documented cursor and inspect the cursor metadata or response headers. The SDK does not automatically traverse pages.`,
     'mutation-safety': `Named typed mutation methods are explicit caller intent and execute after normal validation and authentication checks.
 

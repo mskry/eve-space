@@ -1,12 +1,57 @@
 import { describe, expect, test, vi } from 'vitest'
 import {
   acquireLocalEsiRequestPermit,
+  getEsiPacingPolicy,
+  getLocalEsiPacing,
   getLocalEsiCooldownUntil,
   recordLocalEsiCooldowns,
+  recordLocalEsiPacing,
 } from '../../src/esi-gateway/internal/local-quota.js'
 import type { RuntimeLocalQuotaStatePort } from '../../src/esi-gateway/internal/runtime-ports.js'
 
 describe('process-local ESI quota fallback', () => {
+  test('paces only low observed remaining and keeps a stricter out-of-order deadline', async () => {
+    const state = localQuotaState()
+    const policy = getEsiPacingPolicy('wallet-balance', 4)!
+    const now = 1000
+    expect(policy).toMatchObject({ group: 'char-wallet', maximumTokens: 150, margin: 20 })
+    recordLocalEsiPacing(policy, 'character-1', 21, now, state)
+    expect(state.pacing.size).toBe(0)
+    recordLocalEsiPacing(policy, 'character-1', 4, now, state)
+    const nextAt = getLocalEsiPacing('char-wallet', 'character-1', now, state)?.nextAt
+    expect(nextAt).toBe(now + 60_000)
+    recordLocalEsiPacing(policy, 'character-1', 20, now + 100, state)
+    expect(getLocalEsiPacing('char-wallet', 'character-1', now + 100, state)?.nextAt).toBe(nextAt)
+    expect(getLocalEsiPacing('char-wallet', 'character-2', now, state)).toBeUndefined()
+    const result = await acquireLocalEsiRequestPermit({
+      deadline: now + 1000,
+      operation: 'wallet-transactions',
+      principal: 'character-1',
+      sharedConcurrency: 4,
+      state,
+      timing: { now: () => now, wait: vi.fn() },
+    })
+    expect(result).toStrictEqual({ kind: 'cooldown', retryAfterSeconds: 60 })
+    expect(
+      getLocalEsiPacing('char-wallet', 'character-1', now + policy.windowMs + 101, state),
+    ).toBeUndefined()
+  })
+
+  test('bounds local pacing identities and defers unknown buckets after overflow', () => {
+    const state = localQuotaState()
+    const policy = getEsiPacingPolicy('wallet-balance', 2)!
+    for (let index = 0; index <= 1000; index += 1) {
+      recordLocalEsiPacing(policy, `character-${index}`, 3, 1000, state)
+    }
+    expect(state.pacing.size).toBe(1000)
+    expect(getLocalEsiPacing(policy.group, 'character-new', 1000, state)?.nextAt).toBe(
+      1000 + policy.windowMs,
+    )
+    expect(
+      getLocalEsiPacing(policy.group, 'character-new', 1001 + policy.windowMs, state),
+    ).toBeUndefined()
+  })
+
   test('records the strongest global, operation, and declared-group cooldowns', () => {
     const state = localQuotaState()
     recordLocalEsiCooldowns({
@@ -126,6 +171,8 @@ function localQuotaState(): RuntimeLocalQuotaStatePort {
   return {
     globalCooldownUntil: 0,
     groupCooldowns: new Map(),
+    pacing: new Map(),
+    pacingOverflowUntil: 0,
     inFlight: new Map(),
     operationCooldowns: new Map(),
   }

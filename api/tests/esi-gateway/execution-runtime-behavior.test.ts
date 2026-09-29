@@ -91,9 +91,7 @@ const deleteMail = createCharacterEsiMutation({
 describe('ESI execution runtime behavior', () => {
   test('shares local quota state between execution and planner probes', async () => {
     let cooldownState: RuntimeLocalQuotaStatePort | undefined
-    let permitState: RuntimeLocalQuotaStatePort | undefined
-    const acquireRequestPermit = vi.fn(async ({ localState }) => {
-      permitState = localState
+    const acquireRequestPermit = vi.fn(async () => {
       throw new EsiQuotaError(30)
     })
     const ports = createRuntimeTestPorts({
@@ -120,8 +118,7 @@ describe('ESI execution runtime behavior', () => {
     ])
     await expect(runtime.isOperationQuotaLimited('status')).resolves.toBe(true)
     expect(cooldownState).toBeDefined()
-    expect(permitState).toBe(cooldownState)
-    expect(acquireRequestPermit).toHaveBeenCalledWith(expect.objectContaining({ concurrency: 2 }))
+    expect(acquireRequestPermit).not.toHaveBeenCalled()
   })
 
   test('initializes the namespace and publishes an owner result to L2', async () => {

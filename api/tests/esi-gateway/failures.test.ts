@@ -15,6 +15,7 @@ import {
 } from '../../src/esi-gateway/failures.js'
 import {
   shouldAdvanceRevisionAfterMutationError,
+  isEsiMutationOutcomeUnknown,
   shouldRetryEsiError,
   toEsiQuotaError,
 } from '../../src/esi-gateway/internal/failure-policy.js'
@@ -124,6 +125,56 @@ describe('application ESI failure compatibility', () => {
 
     expect(converted).toBeInstanceOf(EsiQuotaError)
     expect(converted).toMatchObject({ retryAfterSeconds: 12 })
+  })
+
+  test.each([
+    [420, { errorLimit: { reset: 22 } }, 22],
+    [420, {}, 60],
+    [429, { retryAfterSeconds: 12 }, 12],
+  ] as const)(
+    'classifies upstream %s as a typed quota outcome',
+    (status, metadata, retryAfterSeconds) => {
+      const error = new EsiHttpError({
+        operationId,
+        status,
+        metadata: { headers: {}, ...metadata },
+      })
+      const failure = classifyEsiOperationFailure(error)
+      expect(failure).toMatchObject({
+        kind: 'quota',
+        retryAfterSeconds,
+        retryAt: expect.any(String),
+      })
+      expect(shouldRetryEsiError(error, incompleteErrors)).toBe(false)
+      expect(classifyEsiRefreshFailure(error)).toBe('esi-cooldown')
+      expect(toEsiQuotaError(error)).toMatchObject({ name: 'EsiQuotaError', retryAfterSeconds })
+    },
+  )
+
+  test('keeps low error-budget server failures distinct from the originating 420', () => {
+    const error = new EsiHttpError({
+      operationId,
+      status: 503,
+      metadata: { headers: {}, errorLimit: { remaining: 3, reset: 15 } },
+    })
+    expect(classifyEsiOperationFailure(error)).toMatchObject({ kind: 'unavailable', status: 503 })
+  })
+
+  test('unwraps a pre-egress quota denial from the SDK transport without treating it as a sent mutation', () => {
+    const quota = new EsiQuotaError(24)
+    const error = new EsiTransportError({
+      operationId,
+      phase: 'request',
+      reason: 'network',
+      cause: quota,
+    })
+    expect(classifyEsiOperationFailure(error)).toMatchObject({
+      kind: 'quota',
+      retryAfterSeconds: 24,
+    })
+    expect(toEsiQuotaError(error)).toBe(quota)
+    expect(shouldRetryEsiError(error, incompleteErrors)).toBe(false)
+    expect(isEsiMutationOutcomeUnknown(error)).toBe(false)
   })
 
   test('treats typed transport and invalid-response failures as mutation-ambiguous', () => {
