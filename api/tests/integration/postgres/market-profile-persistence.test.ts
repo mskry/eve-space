@@ -71,7 +71,7 @@ beforeAll(async () => {
   )
   await runMigrations(connection)
   const migrations = await Promise.all(
-    ['market-001-initial.sql'].map(async (name) => ({
+    ['market-001-initial.sql', 'market-002-collected-publication.sql'].map(async (name) => ({
       name,
       sql: await readFile(
         new URL(`../../../../features/market/server/migrations/${name}`, import.meta.url),
@@ -331,7 +331,7 @@ test('keeps a previous complete book when a replacement page is missing or repea
   expect(await begin(initial)).toStrictEqual({ outcome: 'started' })
   expect(await stage(initial, 1, 11)).toStrictEqual({ outcome: 'staged' })
   expect(
-    await observations.publishCurrentMarketObservation({
+    await observations.publishCollectedMarketObservation({
       observationId: initial,
     }),
   ).toStrictEqual({
@@ -339,7 +339,7 @@ test('keeps a previous complete book when a replacement page is missing or repea
   })
   expect(await stage(initial, 2, 12)).toStrictEqual({ outcome: 'staged' })
   expect(
-    await observations.publishCurrentMarketObservation({
+    await observations.publishCollectedMarketObservation({
       observationId: initial,
     }),
   ).toStrictEqual({
@@ -351,7 +351,7 @@ test('keeps a previous complete book when a replacement page is missing or repea
   expect(await stage(replacement, 1, 21)).toStrictEqual({ outcome: 'staged' })
   expect(await stage(replacement, 2, 21)).toStrictEqual({ outcome: 'staged' })
   expect(
-    await observations.publishCurrentMarketObservation({
+    await observations.publishCollectedMarketObservation({
       observationId: replacement,
     }),
   ).toStrictEqual({
@@ -402,7 +402,7 @@ test('keeps a previous complete book when a replacement page is missing or repea
     orders: [order(31)],
   })
   expect(
-    await observations.publishCurrentMarketObservation({
+    await observations.publishCollectedMarketObservation({
       observationId: recovered,
     }),
   ).toEqual({
@@ -481,7 +481,7 @@ test('reads only the identified complete book with bounded price-time pages and 
       orders,
     }),
   ).toStrictEqual({ outcome: 'staged' })
-  expect(await observations.publishCurrentMarketObservation({ observationId })).toStrictEqual({
+  expect(await observations.publishCollectedMarketObservation({ observationId })).toStrictEqual({
     outcome: 'published',
   })
   expect(
@@ -675,7 +675,7 @@ test('rejects page-count drift, incoherent validation times, and obsolete profil
       }),
     ).toStrictEqual({ outcome: 'staged' })
   }
-  expect(await observations.publishCurrentMarketObservation({ observationId })).toStrictEqual({
+  expect(await observations.publishCollectedMarketObservation({ observationId })).toStrictEqual({
     outcome: 'incomplete',
   })
   const [pointer] = await connection<{ observation_id: string }[]>`
@@ -704,7 +704,7 @@ test('rejects page-count drift, incoherent validation times, and obsolete profil
       orders: [],
     }),
   ).toStrictEqual({ outcome: 'obsolete' })
-  expect(await observations.publishCurrentMarketObservation({ observationId })).toStrictEqual({
+  expect(await observations.publishCollectedMarketObservation({ observationId })).toStrictEqual({
     outcome: 'incomplete',
   })
 })
@@ -797,14 +797,14 @@ test('a delayed complete generation cannot replace a newer current pointer', asy
     ).toStrictEqual({ outcome: 'staged' })
   }
   expect(
-    await observations.publishCurrentMarketObservation({
+    await observations.publishCollectedMarketObservation({
       observationId: newer,
     }),
   ).toStrictEqual({
     outcome: 'published',
   })
   expect(
-    await observations.publishCurrentMarketObservation({
+    await observations.publishCollectedMarketObservation({
       observationId: older,
     }),
   ).toStrictEqual({
@@ -855,7 +855,7 @@ test.each([{ typeIds: [34, 35] }, { typeIds: [35, 34] }])(
         freshUntil: typeId === 34 ? earlyExpiry : lateExpiry,
         orders: [],
       })
-      expect(await observations.publishCurrentMarketObservation({ observationId })).toEqual({
+      expect(await observations.publishCollectedMarketObservation({ observationId })).toEqual({
         outcome: 'published',
       })
       dueAfterPublications.push(
@@ -890,7 +890,7 @@ test.each([{ typeIds: [34, 35] }, { typeIds: [35, 34] }])(
       orders: [],
     })
     expect(
-      await observations.publishCurrentMarketObservation({
+      await observations.publishCollectedMarketObservation({
         observationId: refreshed,
       }),
     ).toEqual({
@@ -937,7 +937,7 @@ test('accepts a still-fresh cached book without replacing its current observatio
       freshUntil,
       orders: [],
     })
-    expect(await observations.publishCurrentMarketObservation({ observationId })).toEqual({
+    expect(await observations.publishCollectedMarketObservation({ observationId })).toEqual({
       outcome: observationId === initial ? 'published' : 'unchanged',
     })
   }
@@ -951,6 +951,84 @@ test('accepts a still-fresh cached book without replacing its current observatio
   const [profile] = await profiles.listMarketProfiles({ enabledOnly: true })
   expect(profile?.lastFailureClass).toBeNull()
   expect(Date.parse(profile!.nextDueAt!)).toBe(Date.parse(freshUntil))
+})
+
+test('publishes complete expired public books without extending source freshness or stopping refresh', async () => {
+  const profileId = randomUUID()
+  const now = Date.now()
+  const validatedAt = new Date(now - 30_000).toISOString()
+  const freshUntil = new Date(now - 5_000).toISOString()
+  await profiles.saveMarketProfile({
+    profileId,
+    regionId: 10000002,
+    mode: 'region',
+    stationIds: [],
+    watchedTypeIds: [],
+    enabled: true,
+    expectedRevision: 0,
+    requestId: randomUUID(),
+  })
+  const initial = randomUUID()
+  const cached = randomUUID()
+  const outcomes = []
+  for (const observationId of [initial, cached]) {
+    await observations.beginMarketObservation({
+      observationId,
+      profileId,
+      profileRevision: 1,
+      marketKey: `${profileId}:all`,
+      typeId: null,
+      expectedPages: 2,
+      startedAt: validatedAt,
+    })
+    for (const page of [1, 2]) {
+      await observations.stageMarketPage({
+        observationId,
+        page,
+        expectedPages: 2,
+        validatedAt,
+        freshUntil,
+        orders: [
+          {
+            orderId: page,
+            typeId: 34,
+            locationId: 60003760,
+            solarSystemId: 30000142,
+            side: 'sell',
+            price: '6.42',
+            volumeRemain: 10,
+            issuedAt: validatedAt,
+            durationDays: 90,
+            minimumVolume: 1,
+            range: 'station',
+          },
+        ],
+      })
+      outcomes.push(await observations.publishCollectedMarketObservation({ observationId }))
+    }
+  }
+  expect(outcomes).toEqual([
+    { outcome: 'incomplete' },
+    { outcome: 'published' },
+    { outcome: 'incomplete' },
+    { outcome: 'unchanged' },
+  ])
+  const stored = await bookReads.readMarketObservation({
+    profileId,
+    typeId: 34,
+    observationId: null,
+  })
+  expect(stored).toMatchObject({
+    observationId: initial,
+    totalBookOrders: 2,
+  })
+  expect(Date.parse(stored!.freshUntil)).toBe(Date.parse(freshUntil))
+  const [profile] = await profiles.listMarketProfiles({ enabledOnly: true })
+  expect(profile?.lastFailureClass).toBeNull()
+  expect(Date.parse(profile!.nextDueAt!)).toBe(Date.parse(freshUntil))
+  expect(await profiles.listDueMarketProfiles({ now: new Date(now).toISOString() })).toMatchObject([
+    { profileId, revision: 1 },
+  ])
 })
 
 test('records a classified retry deadline and refuses an obsolete failure', async () => {

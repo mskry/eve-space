@@ -19,10 +19,10 @@ SDK/gateway/database import bans across feature source and release artifacts.
 
 ## Initial release schema
 
-Market is unreleased. `migrations/market-001-initial.sql` is its fresh-install baseline,
-including final table definitions and active persistence routines. Draft migrations and
-superseded routines are not release contracts. After release, add new ordered migrations
-and preserve applied routine identities.
+`migrations/market-001-initial.sql` is the fresh-install baseline. Installed databases
+advance through subsequent ordered migrations. Never rewrite an applied migration;
+preserve its declared routine identities and add new routines for changed publication
+contracts. Draft migrations preceding the baseline are not release contracts.
 
 Local databases that already applied the draft migration chain require separate,
 data-preserving re-baselining of Market migration and attestation state. Do not run the

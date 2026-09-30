@@ -63,3 +63,15 @@ test('rejects a mixed location, duplicate order, and oversized structure book', 
     }),
   ).rejects.toThrow('page bound')
 })
+
+test('rejects a private structure book that expires during collection', async () => {
+  await expect(
+    collectStructureOrderBook({
+      structureId,
+      loadPage: async ({ page: number }) => {
+        if (number === 2) vi.setSystemTime(new Date('2026-09-28T12:06:00Z'))
+        return page(number)
+      },
+    }),
+  ).rejects.toThrow('no longer fresh')
+})

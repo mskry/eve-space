@@ -16,6 +16,7 @@ export {
   beginMarketObservationOperation,
   stageMarketPageOperation,
   publishCurrentMarketObservationOperation,
+  publishCollectedMarketObservationOperation,
   recordMarketFailureOperation,
   recordMarketTypeFailureOperation,
   readMarketReplacementStatusOperation,

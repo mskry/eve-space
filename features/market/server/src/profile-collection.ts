@@ -88,7 +88,7 @@ const completeType = async (
   }
   context.signal.throwIfAborted()
   if (!(await context.assertCurrent())) return 'obsolete'
-  const published = await context.capabilities.persistence.publishCurrentMarketObservation({
+  const published = await context.capabilities.persistence.publishCollectedMarketObservation({
     observationId,
   })
   if (published.outcome === 'unchanged') return 'completed'

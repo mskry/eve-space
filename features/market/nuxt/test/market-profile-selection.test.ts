@@ -9,11 +9,12 @@ const profiles = [
   { profileId: 'global-plex', marketScope: 'global-plex' as const, watchedTypeIds: [44992] },
 ]
 
-test('defaults PLEX to the actual global market but preserves an explicit regional choice', () => {
+test('restricts PLEX to its global market even when a regional profile is requested', () => {
   const plex = eligibleMarketProfiles(profiles, 44992)
-  expect(plex.map(({ profileId }) => profileId)).toEqual(['forge', 'global-plex'])
+  expect(plex.map(({ profileId }) => profileId)).toEqual(['global-plex'])
   expect(selectMarketProfile(plex, '')?.profileId).toBe('global-plex')
-  expect(selectMarketProfile(plex, 'forge')?.profileId).toBe('forge')
+  expect(selectMarketProfile(plex, 'forge')?.profileId).toBe('global-plex')
+  expect(selectMarketProfile(eligibleMarketProfiles([profiles[0]!], 44992), 'forge')).toBeNull()
 })
 
 test('excludes the PLEX-only profile when another item is selected', () => {

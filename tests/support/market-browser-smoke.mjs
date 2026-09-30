@@ -218,7 +218,9 @@ try {
     if (request.url().includes('/types/44992/observation'))
       plexHydrationRequests.push(request.url())
   })
-  await plex.goto(`${origin}/market?typeId=44992`, { waitUntil: 'networkidle' })
+  await plex.goto(`${origin}/market?typeId=44992&profileId=${profileId}`, {
+    waitUntil: 'networkidle',
+  })
   await plex.getByRole('heading', { name: 'PLEX' }).waitFor()
   await plex.waitForURL((url) => url.searchParams.get('profileId') === plexProfileId)
   assert.equal(
@@ -226,22 +228,39 @@ try {
     0,
     'SSR global PLEX book was fetched again on hydration',
   )
-  assert.equal(await plex.getByLabel('Supported market').inputValue(), plexProfileId)
-  await plex.getByRole('region', { name: 'Sellers' }).getByText('4,921,000.00 ISK').waitFor()
+  assert.equal(await plex.getByLabel('Supported market').count(), 0)
+  assert.equal(await plex.locator('.market-catalogue-page__market-choice').count(), 0)
+  await plex
+    .getByRole('region', { name: 'Sellers' })
+    .getByRole('button', { name: 'Copy price 4,921,000.00 ISK', exact: true })
+    .waitFor()
   await plex.getByRole('tab', { name: 'Price History' }).click()
   await plex.getByText(/Region 19000001 · Daily Average/).waitFor()
   await plex.getByRole('tab', { name: 'Order book' }).click()
-  await plex.getByLabel('Supported market').selectOption(profileId)
-  await plex.getByText('No orders in this ESI regional observation.').waitFor()
-  await plex.getByText('PLEX orders use the Global PLEX Market.').waitFor()
-  await plex.getByLabel('Supported market').selectOption(plexProfileId)
-  await plex.getByRole('region', { name: 'Sellers' }).getByText('4,921,000.00 ISK').waitFor()
+  assert.equal(
+    await plex.evaluate(() => localStorage.getItem('eve-space-market-last-item-v1')),
+    '44992',
+  )
+  await plex.goto(`${origin}/market`, { waitUntil: 'networkidle' })
+  await plex.getByRole('heading', { name: 'PLEX' }).waitFor()
+  await plex.waitForURL((url) => url.searchParams.get('typeId') === '44992')
+  await plex
+    .getByRole('region', { name: 'Sellers' })
+    .getByRole('button', { name: 'Copy price 4,921,000.00 ISK', exact: true })
+    .waitFor()
   await plex.locator('#market-item-search').fill('Rift')
   await plex.getByRole('button', { name: 'Rifter', exact: true }).click()
   await plex.waitForURL(/typeId=587/)
-  await plex.getByRole('region', { name: 'Sellers' }).getByText('2.00 ISK').waitFor()
+  await plex
+    .getByRole('region', { name: 'Sellers' })
+    .getByRole('button', { name: 'Copy price 2.00 ISK', exact: true })
+    .waitFor()
   assert.equal(await plex.getByLabel('Supported market').inputValue(), profileId)
   assert.equal(await plex.locator('#market-public-profile option').count(), 2)
+  assert.equal(
+    await plex.evaluate(() => localStorage.getItem('eve-space-market-last-item-v1')),
+    '587',
+  )
   await plex.close()
   await page.getByRole('tab', { name: 'Price History' }).click()
   await page.getByRole('table', { name: /Daily regional price history/ }).waitFor()

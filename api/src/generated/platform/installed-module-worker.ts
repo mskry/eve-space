@@ -50,7 +50,7 @@ export const installedModuleResources = [
       materialization: [
         { operationId: 'begin-market-observation' },
         { operationId: 'stage-market-page' },
-        { operationId: 'publish-current-market-observation' },
+        { operationId: 'publish-collected-market-observation' },
         { operationId: 'record-market-failure' },
         { operationId: 'record-market-type-failure' },
         { operationId: 'cleanup-market-observations' },

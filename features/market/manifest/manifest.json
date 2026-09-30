@@ -108,7 +108,10 @@
         ]
       }
     ],
-    "migrations": [{ "name": "market-001-initial.sql" }],
+    "migrations": [
+      { "name": "market-001-initial.sql" },
+      { "name": "market-002-collected-publication.sql" }
+    ],
     "persistenceOperations": [
       {
         "id": "list-market-profiles",
@@ -157,6 +160,14 @@
         "mode": "write",
         "exportName": "publishCurrentMarketObservationOperation",
         "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "publish-collected-market-observation",
+        "method": "publishCollectedMarketObservation",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "publishCollectedMarketObservationOperation",
+        "migration": "market-002-collected-publication.sql"
       },
       {
         "id": "record-market-failure",
@@ -403,7 +414,7 @@
           "materialization": [
             { "operationId": "begin-market-observation" },
             { "operationId": "stage-market-page" },
-            { "operationId": "publish-current-market-observation" },
+            { "operationId": "publish-collected-market-observation" },
             { "operationId": "record-market-failure" },
             { "operationId": "record-market-type-failure" },
             { "operationId": "cleanup-market-observations" },

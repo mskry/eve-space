@@ -70,7 +70,6 @@ export const collectMarketPages = async <Data>(input: {
   }
   if (latest - earliest > 60_000)
     throw new Error('Market pages exceed the coherent observation window')
-  if (freshness <= Date.now()) throw new Error('Market pages are no longer fresh')
   return {
     pages,
     expectedPages,

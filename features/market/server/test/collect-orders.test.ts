@@ -77,7 +77,7 @@ test('rejects missing pages, duplicate order identities and incompatible paginat
   ).rejects.toThrow('changed pagination')
 })
 
-test('refuses oversized or no-longer-fresh observations', async () => {
+test('refuses oversized observations', async () => {
   await expect(
     collectRegionalOrderBook({
       regionId: 10000002,
@@ -85,16 +85,23 @@ test('refuses oversized or no-longer-fresh observations', async () => {
       loadPage: async () => pageResult(1, 513),
     }),
   ).rejects.toThrow('page bound')
-  await expect(
-    collectRegionalOrderBook({
-      regionId: 10000002,
-      stationIds: [],
-      loadPage: async () => ({
-        ...pageResult(1, 1),
-        freshUntil: '2026-09-28T12:00:10Z',
-      }),
-    }),
-  ).rejects.toThrow('no longer fresh')
+})
+
+test('retains a complete regional book and its source expiry when collection outlasts freshness', async () => {
+  const book = await collectRegionalOrderBook({
+    regionId: 10000002,
+    stationIds: [],
+    loadPage: async ({ page: number }) => {
+      if (number === 3) vi.setSystemTime(new Date('2026-09-28T12:06:00Z'))
+      return page(number)
+    },
+  })
+  expect(book).toMatchObject({
+    pages: 3,
+    orders: [{ orderId: 1 }, { orderId: 2 }, { orderId: 3 }],
+    freshUntil: '2026-09-28T12:05:00.000Z',
+    validatedAt: '2026-09-28T12:00:03.000Z',
+  })
 })
 
 const pageResult = page

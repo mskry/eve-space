@@ -4,6 +4,7 @@ import { readPlatformApiResponse } from '@eve-space/platform-module-nuxt/runtime
 import { useMarketSearch } from '../useMarketSearch'
 import { useMarketQuickbar } from '../useMarketQuickbar'
 import { useMarketOverview } from '../useMarketOverview'
+import { useMarketLastViewedItem } from '../useMarketLastViewedItem'
 import { useMarketTypeImage } from '../useMarketTypeImage'
 import MarketCatalogueTree from '../components/MarketCatalogueTree.vue'
 import MarketQuickbarPanel from '../components/MarketQuickbarPanel.vue'
@@ -13,6 +14,7 @@ import MarketPriceHistory from '../components/MarketPriceHistory.vue'
 import MarketQuickbarPinIcon from '../components/MarketQuickbarPinIcon.vue'
 import { marketBreadcrumbs } from '../market-breadcrumbs'
 import { marketBookState } from '../market-book-state'
+import { isGlobalPlexItem } from '../market-profile-selection'
 import { maxMarketQuickbarItems } from '../market-quickbar'
 import type { MarketGroup, MarketType } from '../market-catalogue-types'
 import type { QuickbarOutcome } from '../useMarketQuickbar'
@@ -71,12 +73,7 @@ const marketRegionNames = new Map([
   [10000043, 'Domain'],
   [10000058, 'Heimatar'],
 ])
-const marketProfileLabel = (
-  regionId: number,
-  mode: 'region' | 'watched-types',
-  marketScope: 'region' | 'global-plex',
-) => {
-  if (marketScope === 'global-plex') return 'Global PLEX Market'
+const marketProfileLabel = (regionId: number, mode: 'region' | 'watched-types') => {
   const region = marketRegionNames.get(regionId) ?? `Region ${regionId}`
   return mode === 'watched-types' ? `${region} · watched items` : region
 }
@@ -296,6 +293,11 @@ const selectedItem = computed(
     selectedType.value ??
     currentIndex.value?.types.find((item) => item.id === selectedId.value),
 )
+useMarketLastViewedItem({
+  itemId: computed(() => selectedItem.value?.id ?? null),
+  hasExplicitSelection: () => route.query.typeId !== undefined,
+  restore: selectType,
+})
 const pinSelectedItem = () => {
   if (selectedItem.value) pinQuickbarItem(selectedItem.value)
 }
@@ -303,14 +305,7 @@ const selectedGroup = computed(() =>
   groups.value.find((group) => group.id === selectedItem.value?.groupId),
 )
 const selectedPath = computed(() => marketBreadcrumbs(groups.value, selectedGroup.value?.id))
-const globalPlexProfile = computed(() =>
-  profiles.value.find(
-    (candidate) =>
-      candidate.marketScope === 'global-plex' &&
-      selectedId.value !== null &&
-      candidate.watchedTypeIds.includes(selectedId.value),
-  ),
-)
+const selectedIsGlobalPlex = computed(() => isGlobalPlexItem(selectedId.value))
 const selectedImage = useMarketTypeImage(selectedItem, groups)
 const bookState = computed(() => marketBookState(book.value, Boolean(bookQuery.error.value)))
 const selectProfile = (event: Event) => {
@@ -523,7 +518,10 @@ watch(
                 <h2>{{ selectedItem.name }}</h2>
               </div>
               <div class="market-catalogue-page__item-actions">
-                <div class="market-catalogue-page__market-choice">
+                <div
+                  v-if="!selectedIsGlobalPlex || !profile"
+                  class="market-catalogue-page__market-choice"
+                >
                   <label
                     v-if="eligibleProfiles.length"
                     class="market-catalogue-page__market-select"
@@ -540,7 +538,7 @@ watch(
                         :key="option.profileId"
                         :value="option.profileId"
                       >
-                        {{ marketProfileLabel(option.regionId, option.mode, option.marketScope) }}
+                        {{ marketProfileLabel(option.regionId, option.mode) }}
                       </option>
                     </select>
                   </label>
@@ -602,15 +600,6 @@ watch(
                     <output v-if="bookState.coverage === 'observed-empty'">
                       No orders in this ESI regional observation.
                     </output>
-                    <p
-                      v-if="
-                        bookState.coverage === 'observed-empty' &&
-                        globalPlexProfile &&
-                        profile?.marketScope !== 'global-plex'
-                      "
-                    >
-                      PLEX orders use the Global PLEX Market. Select it above to view that book.
-                    </p>
                     <MarketOrderTables :book="book" />
                   </template>
                 </template>

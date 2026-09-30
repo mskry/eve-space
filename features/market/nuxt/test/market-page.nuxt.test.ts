@@ -101,7 +101,36 @@ test('shows an index request failure and retries through loading to results', as
   expect(requests).toHaveBeenCalledTimes(failedAttempts + 1)
 })
 
-const mountDirectMarketPage = async () => {
+const lastViewedItemKey = 'eve-space-market-last-item-v1'
+const directItem = { id: 35912, groupId: 19, name: 'Standup Generator' }
+const publicProfiles = [
+  {
+    profileId: 'forge',
+    revision: 1,
+    regionId: 10000002,
+    marketScope: 'region' as const,
+    mode: 'region' as const,
+    stationIds: [],
+    watchedTypeIds: [],
+  },
+  {
+    profileId: 'global-plex',
+    revision: 1,
+    regionId: 19000001,
+    marketScope: 'global-plex' as const,
+    mode: 'watched-types' as const,
+    stationIds: [],
+    watchedTypeIds: [44992],
+  },
+]
+type DirectMarketPageOptions = {
+  readonly route?: string
+  readonly item?: typeof directItem
+  readonly profiles?: readonly (typeof publicProfiles)[number][]
+}
+
+const mountDirectMarketPage = async (options: DirectMarketPageOptions = {}) => {
+  const viewedItem = options.item ?? directItem
   useQueryCache().setQueryData(['market', 'catalogue', 'current-tree'], {
     key: 'revision-a',
     tree: {
@@ -113,7 +142,7 @@ const mountDirectMarketPage = async () => {
   })
   useQueryCache().setQueryData(['market', 'catalogue', 'revision-a', 'search-index'], {
     ...searchIndex('revision-a'),
-    types: [{ id: 35912, groupId: 19, name: 'Standup Generator' }],
+    types: [viewedItem],
   })
   let clipboardText = ''
   const clipboard = {
@@ -142,24 +171,36 @@ const mountDirectMarketPage = async () => {
         ),
       )
     }
-    if (url.includes('/market/catalogue/body/revision-a/types/35912')) {
+    if (url.includes(`/market/catalogue/body/revision-a/types/${viewedItem.id}`)) {
       return Promise.resolve(
         new Response(
           JSON.stringify({
             kind: 'type-by-id',
             complete: true,
-            item: { id: 35912, groupId: 19, name: 'Standup Generator' },
+            item: viewedItem,
             revision: { ...revision, ingestedAt: 'revision-a' },
           }),
           { headers: { 'Content-Type': 'application/json' } },
         ),
       )
     }
-    if (url.includes('/market/books/profiles')) {
+    if (url.endsWith('/market/books/profiles')) {
       return Promise.resolve(
-        new Response(JSON.stringify({ profiles: [] }), {
+        new Response(JSON.stringify({ profiles: options.profiles ?? [] }), {
           headers: { 'Content-Type': 'application/json' },
         }),
+      )
+    }
+    if (url.endsWith('/observation')) {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            status: 'uncollected',
+            collectionStatus: 'ready',
+            replacement: null,
+          }),
+          { headers: { 'Content-Type': 'application/json' } },
+        ),
       )
     }
     return originalFetch(input, init)
@@ -168,7 +209,7 @@ const mountDirectMarketPage = async () => {
     setup: () => () => h(UiProvider, null, { default: () => h(MarketPage) }),
   })
   const wrapper = await mountSuspended(Host, {
-    route: '/market?typeId=35912',
+    route: options.route ?? '/market?typeId=35912',
     global: { stubs: { MarketCatalogueTree: true } },
   })
   mountedWrappers.push(wrapper)
@@ -188,6 +229,66 @@ test('resolves a direct type link without loading the search index', async () =>
   expect(header.get('button').attributes('aria-label')).toBe('Add to Quickbar')
   await vi.waitFor(() => expect(wrapper.text()).toContain('No public market is configured'))
   expect(requests.some((url) => url.includes('/search-index'))).toBe(false)
+})
+
+test('opens PLEX only in its global market and hides the market selector', async () => {
+  const { wrapper, requests } = await mountDirectMarketPage({
+    item: { id: 44992, groupId: 19, name: 'PLEX' },
+    profiles: publicProfiles,
+    route: '/market?typeId=44992&profileId=forge',
+  })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('No complete order observation'))
+  expect(wrapper.find('select[aria-label="Supported market"]').exists()).toBe(false)
+  expect(wrapper.get('.market-catalogue-page__detail-heading').text()).not.toContain(
+    'Global PLEX Market',
+  )
+  await vi.waitFor(() =>
+    expect(
+      requests.some((url) => url.includes('/books/profiles/global-plex/types/44992/observation')),
+    ).toBe(true),
+  )
+  expect(requests.some((url) => url.includes('/books/profiles/forge/'))).toBe(false)
+})
+
+test('keeps the regional selector available for other items', async () => {
+  const { wrapper } = await mountDirectMarketPage({ profiles: publicProfiles })
+  await vi.waitFor(() =>
+    expect(wrapper.find('select[aria-label="Supported market"]').exists()).toBe(true),
+  )
+  expect(wrapper.get('select[aria-label="Supported market"]').text()).toBe('The Forge')
+})
+
+test('restores the last viewed item when opening Market without a type link', async () => {
+  localStorage.setItem(lastViewedItemKey, '35912')
+  const { wrapper, requests } = await mountDirectMarketPage({ route: '/market' })
+  await vi.waitFor(() => expect(wrapper.text()).toContain('Standup Generator'))
+  expect(requests.some((url) => url.includes('/search-index'))).toBe(false)
+})
+
+test('a direct item link takes precedence and becomes the last viewed item', async () => {
+  localStorage.setItem(lastViewedItemKey, '44992')
+  const { wrapper, requests } = await mountDirectMarketPage()
+  await vi.waitFor(() => expect(wrapper.text()).toContain('Standup Generator'))
+  await vi.waitFor(() => expect(localStorage.getItem(lastViewedItemKey)).toBe('35912'))
+  expect(requests.some((url) => url.includes('/types/44992'))).toBe(false)
+})
+
+test.each(['not-an-id', '0', '9007199254740992'])(
+  'ignores invalid stored item %s without requesting it',
+  async (stored) => {
+    localStorage.setItem(lastViewedItemKey, stored)
+    const { wrapper, requests } = await mountDirectMarketPage({ route: '/market' })
+    expect(wrapper.text()).toContain('Select an item')
+    expect(requests.some((url) => url.includes('/types/'))).toBe(false)
+  },
+)
+
+test('opens an explicit item when browser storage is blocked', async () => {
+  vi.spyOn(globalThis, 'localStorage', 'get').mockImplementation(() => {
+    throw new Error('Browser storage is blocked')
+  })
+  const { wrapper } = await mountDirectMarketPage()
+  await vi.waitFor(() => expect(wrapper.text()).toContain('Standup Generator'))
 })
 
 test('reports Quickbar pin and unpin through shared toasts', async () => {

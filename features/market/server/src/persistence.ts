@@ -136,6 +136,17 @@ export const publishCurrentMarketObservationOperation = definePlatformPersistenc
   maximumOutputBytes: 256,
 })
 
+export const publishCollectedMarketObservationOperation = definePlatformPersistenceOperation({
+  id: 'publish-collected-market-observation',
+  method: 'publishCollectedMarketObservation',
+  revision: 1,
+  mode: 'write',
+  inputSchema: publishCurrentMarketObservationOperation.inputSchema,
+  outputSchema: publishCurrentMarketObservationOperation.outputSchema,
+  maximumInputBytes: 256,
+  maximumOutputBytes: 256,
+})
+
 export const recordMarketFailureOperation = definePlatformPersistenceOperation({
   id: 'record-market-failure',
   method: 'recordMarketFailure',
@@ -795,6 +806,7 @@ const operations = {
   'begin-market-observation': beginMarketObservationOperation,
   'stage-market-page': stageMarketPageOperation,
   'publish-current-market-observation': publishCurrentMarketObservationOperation,
+  'publish-collected-market-observation': publishCollectedMarketObservationOperation,
   'record-market-failure': recordMarketFailureOperation,
   'record-market-type-failure': recordMarketTypeFailureOperation,
   'read-market-replacement-status': readMarketReplacementStatusOperation,
@@ -845,7 +857,7 @@ export type MarketCollectionWrites = PlatformPersistenceMethodsFor<
   readonly [
     'begin-market-observation',
     'stage-market-page',
-    'publish-current-market-observation',
+    'publish-collected-market-observation',
     'record-market-failure',
     'record-market-type-failure',
     'cleanup-market-observations',

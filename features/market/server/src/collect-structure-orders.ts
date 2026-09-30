@@ -39,6 +39,8 @@ export const collectStructureOrderBook = async (input: {
     maximumConcurrentPages: 3,
     signal: input.signal,
   })
+  if (Date.parse(collection.freshUntil) <= Date.now())
+    throw new Error('Market pages are no longer fresh')
   const ids = new Set<number>()
   const orders: MarketOrderRow[] = []
   const pageResults: CollectedStructureBook['pageResults'][number][] = []

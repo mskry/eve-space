@@ -44,6 +44,19 @@ The shared UI layer owns Reka `UiTreeRoot`/`UiTreeItem`, `UiDraggableTreeItem`, 
 
 The detail header shows a 48 px framed type icon (`useEveImages`, with the `bp` variation for blueprints), the category path in small uppercase text, the item name, a bordered Market selector listing only enabled profiles, and a Pin/Unpin action. A summary strip below it reports best sell, best buy, spread with its share of the sell price, and listed units per side. Prices there use compact K/M/B/T display with exact ISK in the title and accessible label. Listed units sum the loaded first page and add "+" when more orders exist.
 
+PLEX (`44992`) uses only the Global PLEX Market profile. Its detail header omits the
+market selector and redundant market-name indicator. An explicit regional profile in a
+PLEX link cannot select or request a regional book or history; a missing global profile
+shows unavailable configuration rather than falling back to a region. Other items retain
+their regional market selector.
+
+Market remembers the last resolved item's public type ID in localStorage under
+`eve-space-market-last-item-v1`. Opening `/market` without a `typeId` restores that item
+after mount and updates the route query. An explicit item link always wins. The stored
+value is a bounded positive safe-integer ID, not a cached item, order book, history,
+profile, session, or authorization decision. Invalid or inaccessible storage leaves
+normal browsing available; SSR and initial hydration never read localStorage.
+
 Sell and buy books sit side by side and stack on narrow widths. Each is a semantic table with sortable Price, Qty, Location and Expires columns and sticky headings. Sellers ascend and buyers descend by exact decimal ISK, with issued time and order ID breaking ties; secondary sorts apply only to the loaded window. Each price shows its difference from the best price on that side ("Best" for the best). In default price order on the first page, a background bar shows cumulative quantity from the best price. Location shows the colored `UiSystemSecurityStatus` value before the exact station label; buy orders add tags for a non-region range and a minimum volume above one. Expiry is compact (for example `89d 23h`, or `23h 18m` under a day) and turns to the warning color under 24 hours; the exact UTC expiry remains in the `<time>` title and label, and server rendering uses the fixed UTC value until mount. Clicking a row or its price copies the exact price through `useUiClipboard` and briefly shows "Copied". Buy orders at or below half the best buy are dimmed as lowball, with a tooltip and screen-reader text; hovering or focusing restores them. Reaching either scroll edge loads the adjacent 100-row keyset page, keeping at most 100 rows mounted; the list ends with a loading row or "End of order book". Prices describe individual orders, not quantity-aware quotes.
 
 ## Price history

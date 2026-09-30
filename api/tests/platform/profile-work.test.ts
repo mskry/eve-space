@@ -59,7 +59,7 @@ const reads = {
 const writes = {
   beginMarketObservation: vi.fn(),
   stageMarketPage: vi.fn(),
-  publishCurrentMarketObservation: vi.fn(),
+  publishCollectedMarketObservation: vi.fn(),
   recordMarketFailure: vi.fn(),
   recordMarketTypeFailure: vi.fn(),
   cleanupMarketObservations: vi.fn(),
@@ -107,7 +107,7 @@ beforeEach(() => {
   mocks.write.mockReturnValue(writes)
   writes.beginMarketObservation.mockResolvedValue({ outcome: 'started' })
   writes.stageMarketPage.mockResolvedValue({ outcome: 'staged' })
-  writes.publishCurrentMarketObservation.mockResolvedValue({
+  writes.publishCollectedMarketObservation.mockResolvedValue({
     outcome: 'published',
   })
   writes.recordMarketFailure.mockResolvedValue({ outcome: 'recorded' })
@@ -167,7 +167,7 @@ test('loads a current profile and publishes only a complete mapped observation',
       orders: [expect.objectContaining({ orderId: 12, price: '6.42', side: 'sell' })],
     }),
   )
-  expect(writes.publishCurrentMarketObservation).toHaveBeenCalledOnce()
+  expect(writes.publishCollectedMarketObservation).toHaveBeenCalledOnce()
   expect(writes.storeMarketMetrics).toHaveBeenCalledWith(
     expect.objectContaining({
       typeId: 34,
@@ -190,7 +190,7 @@ test('continues a watched profile after an unchanged cached book without recordi
     cachedUntil: new Date(Date.now() + 300_000).toISOString(),
     stale: false,
   })
-  writes.publishCurrentMarketObservation
+  writes.publishCollectedMarketObservation
     .mockResolvedValueOnce({ outcome: 'unchanged' })
     .mockResolvedValueOnce({ outcome: 'published' })
   await expect(
@@ -198,7 +198,7 @@ test('continues a watched profile after an unchanged cached book without recordi
       resources: [resource],
     }),
   ).resolves.toBe('completed')
-  expect(writes.publishCurrentMarketObservation).toHaveBeenCalledTimes(2)
+  expect(writes.publishCollectedMarketObservation).toHaveBeenCalledTimes(2)
   expect(writes.recordMarketFailure).not.toHaveBeenCalled()
   expect(writes.recordMarketTypeFailure).not.toHaveBeenCalled()
   expect(writes.storeMarketMetrics).toHaveBeenCalledOnce()
@@ -219,7 +219,7 @@ test('closes admission before publication when the module is disabled in flight'
       resources: [resource],
     }),
   ).resolves.toBe('obsolete')
-  expect(writes.publishCurrentMarketObservation).not.toHaveBeenCalled()
+  expect(writes.publishCollectedMarketObservation).not.toHaveBeenCalled()
 })
 
 test('never begins staging when a page is unavailable or the gateway serves stale', async () => {
@@ -322,7 +322,7 @@ test('does not record an obsolete or cancelled profile result as a source failur
       resources: [resource],
     }),
   ).rejects.toThrow('This operation was aborted')
-  expect(writes.publishCurrentMarketObservation).not.toHaveBeenCalled()
+  expect(writes.publishCollectedMarketObservation).not.toHaveBeenCalled()
   expect(writes.recordMarketFailure).not.toHaveBeenCalled()
 })
 
@@ -405,7 +405,7 @@ test.each([undefined, 48582])(
         ],
       }),
     )
-    expect(writes.publishCurrentMarketObservation).not.toHaveBeenCalled()
+    expect(writes.publishCollectedMarketObservation).not.toHaveBeenCalled()
   },
 )
 

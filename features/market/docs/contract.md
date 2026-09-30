@@ -25,6 +25,11 @@ Public ESI pages use the audited gateway's SDK validation, `cachedUntil`, valida
 cooldowns, rate groups, request collapse and generation-bound private cache. PostgreSQL
 observations are durable publication evidence, not a replacement gateway cache. A cached
 page does not establish a complete book. Each page still counts against collection bounds.
+Complete public books may finish collection and publication after their source expiry.
+Expiry remains the original ESI boundary and determines current versus stale presentation
+and the next refresh; it is not an ingestion deadline. Publication still requires every
+page, consistent pagination, unique orders, coherent source validation times, and the
+current enabled profile revision. Private structure collection retains its freshness gate.
 Order, history, catalogue and reference results have distinct source clocks. Current
 public reads use short HTTP cache lifetimes; unavailable and stale discovery responses
 use `no-store`. Private routes and the public history-demand/quote mutations use

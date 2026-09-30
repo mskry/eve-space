@@ -186,6 +186,38 @@ These are individual local measurements, not latency percentiles. Evidence is in
 `history-demand-merged-routine-sync.log`, `history-demand-merged-routine-audit-after.log`,
 and `history-demand-merged-compose-ps.log`. No authorization-policy conflict was identified.
 
+## Global PLEX selection and last-viewed item follow-up
+
+Scope: `market-profile-selection.ts`, `MarketPage.vue`, and
+`useMarketLastViewedItem.ts`. PLEX selects only the current enabled Global PLEX profile,
+including when its URL requests a regional profile. Both book and history keys use the
+same eligible profile selection; other items retain regional selection. PLEX shows a
+neither a market select control nor a redundant market-name indicator, and no regional fallback is made when
+the global profile is missing.
+
+| Check                                          | Result | Evidence                                                                                                                                                                                                                                                                                           |
+| ---------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AUTH-01 through AUTH-03                        | PASS   | Resuming a public type ID activates existing `useMarketOverview.ts` queries. Generated routes mounted by `api/src/index.ts` classify catalogue, public profiles, books, and history as public; history intent remains a mounted-client trusted-origin mutation. No protected SSR request is added. |
+| QUERY-01, QUERY-03                             | PASS   | Current profile/revision/type keys and matching-result guards remain in place. PLEX eligibility rejects a requested regional profile before either book or history execution.                                                                                                                      |
+| PERSIST-01, PERSIST-03, PERSIST-04, PERSIST-09 | PASS   | The last-viewed key stores only a canonical positive safe-integer public type ID of at most 16 characters. Read/write failures and malformed values are ignored. Restoration runs after mount, explicit item URLs take precedence, and only resolved items are remembered.                         |
+| TIME-03, private persistence checks            | N/A    | No query result, source clock, session, credential, authorization decision, or private data is serialized. Restoring an ID performs normal public queries and does not invent observed data or extend freshness.                                                                                   |
+
+Regression coverage includes a regional PLEX deep link, hidden selector, ordinary-item
+selection, last-item restoration, explicit-link precedence, invalid stored IDs, and
+blocked storage. The preceding implementation fails the PLEX eligibility, rendered
+selector, restore, and persistence cases. No authorization-policy conflict was identified.
+
+Verification passed: Nuxt typechecking, production and E2E builds, lint and architecture
+checks, formatting, Knip, 1,339 frontend tests, all 24 Market Nuxt package tests, and all
+93 browser E2E tests. A focused production-build browser probe confirms global-only PLEX
+book and history requests, a hidden PLEX selector, last-item reopening, explicit-link
+precedence, and the regional selector for other items, with no page errors or hydration
+warnings. Logs are under the session's temporary directory with the
+`market-plex-resume-` prefix; final browser evidence is in
+`market-plex-resume-final-browser.log`. The subsequent indicator removal passed the
+13 mounted Market page cases, Nuxt typechecking, production build, lint, formatting,
+Knip, and the focused production browser probe.
+
 ## Conclusion
 
 The reviewed paths preserve their authorization, query, source and cache classifications. Full runtime acceptance still requires the private structure-market probe listed above.
