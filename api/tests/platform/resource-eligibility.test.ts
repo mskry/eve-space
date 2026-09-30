@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, test, vi } from 'vitest'
+import { platformResources } from '../../src/platform/resources.js'
 import {
   corporationAuthorityFenceEquals,
   createCorporationContinuationAuthorityBinding,
@@ -98,6 +99,30 @@ describe('installed resource eligibility', () => {
       selectDueInstalledResources({ connection: connection as never, limit: 10, resources: [] }),
     ).resolves.toStrictEqual([])
     expect(connection).not.toHaveBeenCalled()
+  })
+
+  test('admits unscheduled profile-keyed resources only for the profile planner', async () => {
+    const profile = platformResources.find(
+      ({ moduleId, resourceId }) => moduleId === 'market' && resourceId === 'orders',
+    )!
+    const connection = vi.fn().mockResolvedValue([])
+    await expect(
+      selectDueInstalledResources({
+        connection: connection as never,
+        limit: 1,
+        resources: [profile],
+      }),
+    ).resolves.toStrictEqual([])
+    expect(connection).not.toHaveBeenCalled()
+    await expect(
+      selectDueInstalledResources({
+        connection: connection as never,
+        limit: 1,
+        resources: [profile],
+        includeProfileKeyed: true,
+      }),
+    ).resolves.toStrictEqual([])
+    expect(connection).toHaveBeenCalled()
   })
 
   test.each([0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1])(

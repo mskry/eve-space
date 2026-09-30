@@ -7,6 +7,16 @@ import type {
 
 export const installedPermissionCatalog = [
   {
+    audiences: ['member'],
+    key: 'market.structure.read',
+    label: 'Read owned structure markets',
+    moduleId: 'market',
+    publisherPackage: '@eve-space/market-manifest',
+    purpose: 'View private structure orders through a current admitted owned character.',
+    reviewAllowed: false,
+    sensitivity: 'standard',
+  },
+  {
     audiences: ['director', 'hr'],
     key: 'member-audit.assets.read',
     label: 'View member assets',

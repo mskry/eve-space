@@ -289,8 +289,12 @@ export async function loadModuleRuntimeState(
   )
 }
 
-export async function isInstalledModuleContributionEnabled(moduleId: string, sectionId?: string) {
-  const state = await loadModuleRuntimeState()
+export async function isInstalledModuleContributionEnabled(
+  moduleId: string,
+  sectionId?: string,
+  connection?: postgres.Sql,
+) {
+  const state = await loadModuleRuntimeState(connection)
   if (!state.enabledModuleIds.includes(moduleId)) {
     return false
   }

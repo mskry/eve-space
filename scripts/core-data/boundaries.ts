@@ -6,6 +6,8 @@ import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 const modulesByTier = {
   adapter: [
     'public-character-profile-adapter',
+    'market-catalogue-adapter',
+    'market-station-regions-adapter',
     'published-skill-catalogue-adapter',
     'published-type-details-adapter',
     'published-type-groups-adapter',

@@ -22,6 +22,8 @@
         "generated/platform/*.ts",
         "scripts/copy-platform-nuxt-runtime-assets.mjs",
         "scripts/module-registry/source-extensions.d.mts",
+        // Standalone fixture server and production-browser smoke runner, invoked directly.
+        "tests/support/market-browser-{fixture,smoke}.mjs",
         // Source-text fixtures read by the SSR boundary review tests, never executed.
         "tests/fixtures/ssr-boundary-review/**/*.ts",
         // Standalone negative type fixture invoked through test:registry:types.
@@ -35,7 +37,7 @@
         "vitest.conformance.config.ts",
       ],
       // vue-tsc is invoked by Nuxt; Pinia modules are selected through generated registries.
-      // The remaining dependencies belong to fixture manifests outside the pnpm workspace graph.
+      // Fixture manifests and JSON-selected publisher packages are not resolved as imports.
       "ignoreDependencies": [
         "vue-tsc",
         "@pinia/colada-nuxt",
@@ -43,6 +45,7 @@
         "@hono/zod-validator",
         "@nuxt/schema",
         "@eve-space/member-audit-manifest",
+        "@eve-space/market-manifest",
         "@eve-space/organization-activity-manifest",
         "zod",
       ],

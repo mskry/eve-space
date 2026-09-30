@@ -12,7 +12,7 @@ export const ASSET_REVEAL_INCREMENT = 100
 
 export function createAssetWorkspaceController(options: AssetWorkspaceControllerOptions = {}) {
   const revealIncrement = positiveInteger(options.revealIncrement, ASSET_REVEAL_INCREMENT)
-  const initiallyExpandedLocations = nonnegativeInteger(options.initiallyExpandedLocations, 1)
+  const initiallyExpandedLocations = nonnegativeInteger(options.initiallyExpandedLocations, 0)
   const expandedLocations = new Set<string>()
   const defaultExpandedLocations = new Set<string>()
   const manuallyToggledLocations = new Set<string>()

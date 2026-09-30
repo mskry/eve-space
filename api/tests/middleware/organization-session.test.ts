@@ -12,7 +12,7 @@ vi.mock('../../src/organization/compliance.js', () => ({
   recomputeOrganizationAccountCompliance: mocks.recompute,
 }))
 
-import { loadOrganizationSessionContext } from '../../src/middleware/organization-session.js'
+import { loadOrganizationSessionContext } from '../../src/organization/session-context.js'
 
 const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
 

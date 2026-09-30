@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  loadMarketCatalogueProduct: vi.fn(),
+  loadMarketStationRegionsProduct: vi.fn(),
   loadPublishedSkillCatalogueProduct: vi.fn(),
   loadPublishedTypeDetailsProduct: vi.fn(),
   loadPublishedTypeGroupsProduct: vi.fn(),
@@ -8,6 +10,12 @@ const mocks = vi.hoisted(() => ({
   loadStaticLocationLabelsProduct: vi.fn(),
 }))
 
+vi.mock('../../src/core-data/market-catalogue-adapter.js', () => ({
+  loadMarketCatalogueProduct: mocks.loadMarketCatalogueProduct,
+}))
+vi.mock('../../src/core-data/market-station-regions-adapter.js', () => ({
+  loadMarketStationRegionsProduct: mocks.loadMarketStationRegionsProduct,
+}))
 vi.mock('../../src/core-data/published-type-groups-adapter.js', () => ({
   loadPublishedTypeGroupsProduct: mocks.loadPublishedTypeGroupsProduct,
 }))
@@ -36,6 +44,7 @@ describe('core-data capabilities', () => {
     })
     for (const mock of [
       mocks.loadPublishedSkillCatalogueProduct,
+      mocks.loadMarketStationRegionsProduct,
       mocks.loadPublishedTypeDetailsProduct,
       mocks.loadStaticLocationLabelsProduct,
     ]) {
@@ -88,5 +97,29 @@ describe('core-data capabilities', () => {
       'Unknown core-data product',
     )
     expect(mocks.loadPublishedTypeGroupsProduct).not.toHaveBeenCalled()
+  })
+
+  test('exposes the market catalogue only to a declared route', async () => {
+    expect(() => createCoreDataCapability(['market-catalogue'], 'resource-projection')).toThrow(
+      'not permitted',
+    )
+    expect(() => createCoreDataCapability(['market-catalogue'], 'activity-provider')).toThrow(
+      'not permitted',
+    )
+    const route = createCoreDataCapability(['market-catalogue'], 'route')
+    expect(Object.keys(route)).toStrictEqual(['marketCatalogue'])
+    expect(mocks.loadMarketCatalogueProduct).not.toHaveBeenCalled()
+    await route.marketCatalogue({ kind: 'tree' })
+    expect(mocks.loadMarketCatalogueProduct).toHaveBeenCalledOnce()
+  })
+
+  test('limits station-to-region evidence to declared route and resource projections', async () => {
+    expect(() => createCoreDataCapability(['market-station-regions'], 'activity-provider')).toThrow(
+      'not permitted',
+    )
+    const resource = createCoreDataCapability(['market-station-regions'], 'resource-projection')
+    expect(Object.keys(resource)).toStrictEqual(['marketStationRegions'])
+    await resource.marketStationRegions({ stationIds: [60003760] })
+    expect(mocks.loadMarketStationRegionsProduct).toHaveBeenCalledWith({ stationIds: [60003760] })
   })
 })

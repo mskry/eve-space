@@ -179,6 +179,14 @@ describe('credential-bound resource operations', () => {
       requestSubjects: ['character_id', 'corporation_id'],
       corporationInput: 'current-affiliation',
     })
+    expect(
+      installedBindings('market', 'structure-orders')['market-structure-orders'],
+    ).toMatchObject({
+      kind: 'current-owned-character',
+      requestSubjects: [],
+      scope: 'esi-markets.structure_markets.v1',
+      corporationInput: null,
+    })
   })
 
   test('rejects incompatible resource subject, eligibility, and generated operation authority', () => {

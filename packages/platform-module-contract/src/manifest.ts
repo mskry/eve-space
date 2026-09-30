@@ -38,17 +38,57 @@ export interface PlatformReviewerContribution
   readonly directoryPermission?: string
 }
 
-export interface PlatformRouteContribution
-  extends
-    PlatformOrganizationContributionAuthorization,
-    PlatformPersistenceContributionReferences,
-    PlatformRouteSecurityClassification {
+interface PlatformRouteContributionBase extends PlatformPersistenceContributionReferences {
   readonly coreDataProducts?: readonly CoreDataProductId[]
+  readonly onDemandResourceId?: string
+  readonly onDemandProfileResourceId?: string
   readonly id: string
   readonly namespace: string
   readonly exportName: string
-  readonly authorization: PlatformAuthorizationStrategy
 }
+
+export type PlatformRouteContribution =
+  | (PlatformRouteContributionBase & {
+      readonly authorization: 'public'
+      readonly audience?: never
+      readonly requiredPermission?: never
+      readonly additionalRequiredPermissions?: never
+      readonly sectionId?: never
+      readonly target?: never
+      readonly exposure?: never
+      readonly reviewerEvidenceResources?: never
+      readonly organizationCommands?: never
+    })
+  | (PlatformRouteContributionBase & {
+      readonly authorization: 'public-mutation'
+      readonly audience?: never
+      readonly requiredPermission?: never
+      readonly additionalRequiredPermissions?: never
+      readonly sectionId?: never
+      readonly target?: never
+      readonly exposure?: never
+      readonly reviewerEvidenceResources?: never
+      readonly organizationCommands?: never
+    })
+  | (PlatformRouteContributionBase & {
+      readonly authorization: 'deployment-administrator'
+      readonly audience?: never
+      readonly requiredPermission?: never
+      readonly additionalRequiredPermissions?: never
+      readonly sectionId?: never
+      readonly target?: never
+      readonly exposure?: never
+      readonly reviewerEvidenceResources?: never
+      readonly organizationCommands?: never
+    })
+  | (PlatformRouteContributionBase &
+      PlatformOrganizationContributionAuthorization &
+      PlatformRouteSecurityClassification & {
+        readonly authorization: Exclude<
+          PlatformAuthorizationStrategy,
+          'public' | 'public-mutation' | 'deployment-administrator'
+        >
+      })
 
 export interface PlatformMigrationContribution {
   readonly name: string

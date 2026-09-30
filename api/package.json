@@ -52,7 +52,8 @@
     "postgres": "catalog:",
     "zod": "catalog:",
     "@eve-space/member-audit-server": "workspace:*",
-    "@eve-space/organization-activity-server": "workspace:*"
+    "@eve-space/organization-activity-server": "workspace:*",
+    "@eve-space/market-server": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

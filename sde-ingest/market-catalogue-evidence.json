@@ -1,0 +1,63 @@
+{
+  "buildNumber": 3542233,
+  "marketGroupCount": 2114,
+  "publishedMarketTypeCount": 19561,
+  "hasTypesDisagreementCount": 56,
+  "marketGroups": [
+    {
+      "_key": 604,
+      "parentGroupID": 128,
+      "name": { "en": "Micro" },
+      "iconID": 86,
+      "hasTypes": true
+    },
+    {
+      "_key": 614,
+      "parentGroupID": 19,
+      "name": { "en": "Criminal Evidence" },
+      "iconID": 2302,
+      "hasTypes": false
+    },
+    {
+      "_key": 751,
+      "parentGroupID": 614,
+      "name": { "en": "Overseer's Personal Effects" },
+      "hasTypes": true
+    },
+    { "_key": 1659, "name": { "en": "Special Edition Assets" }, "hasTypes": false },
+    {
+      "_key": 2332,
+      "parentGroupID": 2210,
+      "name": { "en": "Engineering Service Modules" },
+      "iconID": 3007,
+      "hasTypes": true
+    }
+  ],
+  "inventoryGroups": [
+    { "_key": 1324, "name": { "en": "Structure FLEX Service Module" }, "published": false },
+    { "_key": 4161, "name": { "en": "AIR Ore Asteroid Resources" }, "published": false }
+  ],
+  "types": [
+    {
+      "_key": 47450,
+      "groupID": 526,
+      "marketGroupID": 614,
+      "name": { "en": "Compressed Capsule Shell" },
+      "published": true
+    },
+    {
+      "_key": 35912,
+      "groupID": 1324,
+      "marketGroupID": 2332,
+      "name": { "en": "Standup Cynosural Field Generator I" },
+      "published": true
+    },
+    {
+      "_key": 60771,
+      "groupID": 4161,
+      "marketGroupID": 518,
+      "name": { "en": "Nephrite" },
+      "published": true
+    }
+  ]
+}

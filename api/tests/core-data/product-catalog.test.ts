@@ -5,6 +5,8 @@ import {
   getCoreDataProductDefinition,
 } from '../../src/core-data/product-catalog.js'
 
+const sampleProduct = getCoreDataProductDefinition('published-type-groups')
+
 describe('core-data product catalog', () => {
   test('binds every product to one executable policy', () => {
     expect(() => assertCoreDataProductCatalogConfiguration()).not.toThrow()
@@ -15,6 +17,12 @@ describe('core-data product catalog', () => {
       requestBound: 1,
       revisionStrategy: 'gateway-observation',
       sourceAuthority: 'esi-gateway',
+    })
+    expect(getCoreDataProductDefinition('market-catalogue')).toMatchObject({
+      method: 'marketCatalogue',
+      networkAllowed: false,
+      permittedContexts: ['route'],
+      requestBound: 32_000,
     })
     expect(getCoreDataProductDefinition('published-type-groups')).toMatchObject({
       method: 'publishedTypeGroups',
@@ -43,22 +51,20 @@ describe('core-data product catalog', () => {
     [[], 'Missing core-data product adapter'],
     [[null], 'Core-data catalog entries must be objects'],
     [[...coreDataProductCatalog, coreDataProductCatalog[0]], 'Duplicate core-data product'],
-    [[{ ...coreDataProductCatalog[0], id: 'unknown' }], 'Unknown core-data product'],
-    [[{ ...coreDataProductCatalog[0], adapter: undefined }], 'Missing core-data product adapter'],
-    [[{ ...coreDataProductCatalog[0], method: 'unknown' }], 'method drift'],
-    [[{ ...coreDataProductCatalog[0], audience: 'unknown' }], 'audience drift'],
-    [[{ ...coreDataProductCatalog[0], dtoVersion: 2 }], 'DTO version drift'],
-    [[{ ...coreDataProductCatalog[0], requestBound: 499 }], 'request bound drift'],
-    [[{ ...coreDataProductCatalog[0], sourceAuthority: 'esi' }], 'source authority'],
-    [[{ ...coreDataProductCatalog[0], revisionStrategy: 'none' }], 'revision strategy'],
-    [[{ ...coreDataProductCatalog[0], availabilityBehavior: 'stale' }], 'availability behavior'],
-    [[{ ...coreDataProductCatalog[0], permittedContexts: [null] }], 'context policy drift'],
+    [[{ ...sampleProduct, id: 'unknown' }], 'Unknown core-data product'],
+    [[{ ...sampleProduct, adapter: undefined }], 'Missing core-data product adapter'],
+    [[{ ...sampleProduct, method: 'unknown' }], 'method drift'],
+    [[{ ...sampleProduct, audience: 'unknown' }], 'audience drift'],
+    [[{ ...sampleProduct, dtoVersion: 2 }], 'DTO version drift'],
+    [[{ ...sampleProduct, requestBound: 499 }], 'request bound drift'],
+    [[{ ...sampleProduct, sourceAuthority: 'esi' }], 'source authority'],
+    [[{ ...sampleProduct, revisionStrategy: 'none' }], 'revision strategy'],
+    [[{ ...sampleProduct, availabilityBehavior: 'stale' }], 'availability behavior'],
+    [[{ ...sampleProduct, permittedContexts: [null] }], 'context policy drift'],
+    [[{ ...sampleProduct, permittedContexts: ['route'] }], 'context policy drift'],
+    [[{ ...sampleProduct, networkAllowed: true }], 'network policy'],
     [
-      [{ ...getCoreDataProductDefinition('published-type-groups'), permittedContexts: ['route'] }],
-      'context policy drift',
-    ],
-    [
-      [{ ...getCoreDataProductDefinition('published-type-groups'), networkAllowed: true }],
+      [{ ...getCoreDataProductDefinition('public-character-profile'), networkAllowed: false }],
       'network policy',
     ],
   ])('rejects invalid executable declarations', (catalog, message) => {

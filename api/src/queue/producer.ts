@@ -1,12 +1,13 @@
 import { resolveJobContract, type JobPayloadByName } from './job-contracts.js'
 
 export type QueueSource = 'planner' | 'on-demand' | 'outbox'
+type RefreshQueueSource = Exclude<QueueSource, 'outbox'>
 
 export type QueueCommand =
   | {
       readonly name: 'diagnostic'
       readonly payload: JobPayloadByName['diagnostic']
-      readonly source: 'planner' | 'on-demand'
+      readonly source: RefreshQueueSource
     }
   | {
       readonly name: 'domain-event'
@@ -38,13 +39,25 @@ export type QueueCommand =
   | {
       readonly name: 'resource-refresh'
       readonly payload: JobPayloadByName['resource-refresh']
-      readonly source: 'planner' | 'on-demand'
+      readonly source: RefreshQueueSource
       readonly materializationIntervalSeconds: number
     }
   | {
       readonly name: 'resource-batch'
       readonly payload: JobPayloadByName['resource-batch']
       readonly source: 'planner'
+      readonly materializationIntervalSeconds: number
+    }
+  | {
+      readonly name: 'module-profile-refresh'
+      readonly payload: JobPayloadByName['module-profile-refresh']
+      readonly source: RefreshQueueSource
+      readonly materializationIntervalSeconds: number
+    }
+  | {
+      readonly name: 'module-structure-refresh'
+      readonly payload: JobPayloadByName['module-structure-refresh']
+      readonly source: 'on-demand'
       readonly materializationIntervalSeconds: number
     }
 

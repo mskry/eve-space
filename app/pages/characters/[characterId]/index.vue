@@ -149,7 +149,7 @@ const sectionAuthorizationState = computed<EsiResourceState>(() => {
                       <div class="character-detail-wide">
                         <dt>LOCATION</dt>
                         <dd class="character-location-detail" :title="locationLabel">
-                          <SystemSecurityStatus
+                          <UiSystemSecurityStatus
                             v-if="
                               location?.status === 'ok' &&
                               typeof location.data.solarSystemSecurityStatus === 'number'

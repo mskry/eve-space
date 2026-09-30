@@ -17,7 +17,14 @@ features/<module-id>/
     src/module.ts
     src/runtime/app/
     test/fixtures/
+  docs/
 ```
+
+`docs/` holds documentation that only a change to the module's own code could make wrong, such as
+its UI behaviour, API contract, and limits. Deployment and migration order, core-data and SDE
+products, ESI operation reviews, and fetching-compliance or verification records stay in root
+`docs/` as `<module-id>-*.md`, because core and platform changes can invalidate them. Market's
+[finder](market/docs/finder.md) and [contract](market/docs/contract.md) follow this rule.
 
 The pure manifest package exports canonical JSON and must not import either runtime package. The API
 and worker depend only on `server`; the root Nuxt application depends on the manifest and `nuxt`.

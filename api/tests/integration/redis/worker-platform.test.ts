@@ -2,6 +2,20 @@ import { Queue, Worker } from 'bullmq'
 import { Redis } from 'ioredis'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
+import type { JobPayloadByName } from '../../../src/queue/job-contracts.js'
+
+const profileRefreshCommand = (payload: JobPayloadByName['module-profile-refresh']) => ({
+  name: 'module-profile-refresh' as const,
+  payload,
+  materializationIntervalSeconds: 60,
+  source: 'planner' as const,
+})
+const structureRefreshCommand = (payload: JobPayloadByName['module-structure-refresh']) => ({
+  name: 'module-structure-refresh' as const,
+  payload,
+  source: 'on-demand' as const,
+  materializationIntervalSeconds: 300,
+})
 
 let container: StartedTestContainer
 let redisUrl: string
@@ -146,6 +160,103 @@ describe('durable worker platform', () => {
     }
   })
 
+  test('deduplicates profile work per identity and revision without storing market rows', async () => {
+    await flushQueueRedis()
+    const handle = await openQueue()
+    const { createBullMqQueueProducer } = await import('../../../src/queue/bullmq-producer.js')
+    const producer = createBullMqQueueProducer({ handle })
+    const payload = {
+      moduleId: 'market',
+      resourceId: 'orders',
+      subjectKind: 'deployment' as const,
+      subjectId: '1',
+      subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+      profileId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
+      revision: 1,
+      dueAt: '2026-09-28T12:00:00Z',
+    }
+    try {
+      await expect(producer.enqueue(profileRefreshCommand(payload))).resolves.toMatchObject({
+        status: 'accepted',
+      })
+      await expect(
+        producer.enqueue(profileRefreshCommand({ ...payload, dueAt: '2026-09-28T12:05:00Z' })),
+      ).resolves.toMatchObject({ status: 'rejected', reason: 'coalesced' })
+      await expect(
+        producer.enqueue(profileRefreshCommand({ ...payload, revision: 2 })),
+      ).resolves.toMatchObject({
+        status: 'accepted',
+      })
+      const jobs = await handle.queue.getJobs(['delayed', 'waiting', 'prioritized'])
+      expect(jobs.filter((job) => job.name === 'module-profile-refresh')).toHaveLength(2)
+      const immediate = createBullMqQueueProducer({ handle, plannerDelay: async () => 60_000 })
+      const requested = { ...payload, resourceId: 'daily-history', requestedTypeId: 34 }
+      await expect(
+        immediate.enqueue({ ...profileRefreshCommand(requested), source: 'on-demand' }),
+      ).resolves.toMatchObject({ status: 'accepted' })
+      await expect(
+        immediate.enqueue({ ...profileRefreshCommand(requested), source: 'on-demand' }),
+      ).resolves.toMatchObject({ status: 'rejected', reason: 'coalesced' })
+      await expect(
+        immediate.enqueue({
+          ...profileRefreshCommand({ ...requested, requestedTypeId: 35 }),
+          source: 'on-demand',
+        }),
+      ).resolves.toMatchObject({ status: 'accepted' })
+      const onDemand = (await handle.queue.getJobs(['waiting', 'prioritized', 'delayed'])).filter(
+        (job) => job.data.requestedTypeId,
+      )
+      expect(onDemand).toHaveLength(2)
+      expect(onDemand.every((job) => !job.opts.delay)).toBe(true)
+      expect(JSON.stringify(jobs.map((job) => job.data))).not.toMatch(
+        /order_id|price|token|secret/i,
+      )
+    } finally {
+      await handle.queue.drain(true)
+      await handle.close()
+    }
+  })
+
+  test('deduplicates private structure requests by selected lifecycle, generation, and structure', async () => {
+    await flushQueueRedis()
+    const handle = await openQueue()
+    const { createBullMqQueueProducer } = await import('../../../src/queue/bullmq-producer.js')
+    const producer = createBullMqQueueProducer({ handle })
+    const payload = {
+      moduleId: 'market',
+      resourceId: 'structure-orders',
+      subjectKind: 'character' as const,
+      subjectId: '90000001',
+      subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+      userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+      routeId: 'private-structures',
+      admissionScope: 'organization:v1:market:member:market.structure.read',
+      organizationVersion: 7,
+      structureId: 1020000000000,
+      authorizationGeneration: 4,
+    }
+    try {
+      await expect(producer.enqueue(structureRefreshCommand(payload))).resolves.toMatchObject({
+        status: 'accepted',
+      })
+      await expect(producer.enqueue(structureRefreshCommand(payload))).resolves.toMatchObject({
+        status: 'rejected',
+        reason: 'coalesced',
+      })
+      await expect(
+        producer.enqueue(structureRefreshCommand({ ...payload, authorizationGeneration: 5 })),
+      ).resolves.toMatchObject({ status: 'accepted' })
+      const jobs = await handle.queue.getJobs(['waiting', 'prioritized', 'delayed'])
+      expect(jobs.filter(({ name }) => name === 'module-structure-refresh')).toHaveLength(2)
+      expect(JSON.stringify(jobs.map(({ data }) => data))).not.toMatch(
+        /price|order_id|token|secret/i,
+      )
+    } finally {
+      await handle.queue.drain(true)
+      await handle.close()
+    }
+  })
+
   test('persists and logs only sanitized dependency failures', async () => {
     await flushQueueRedis()
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
@@ -201,7 +312,9 @@ describe('durable worker platform', () => {
       await handle.close()
     }
   })
+})
 
+describe('durable worker platform lifecycle', () => {
   test('does not claim waiting work until schedulers and the first heartbeat are ready', async () => {
     await flushQueueRedis()
     const seed = await openQueue()

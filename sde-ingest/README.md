@@ -48,6 +48,21 @@ A normal run reports one of these outcomes:
 A newer build or a newer projection version for the same build triggers a complete reload. An older
 build or projection cannot replace the active one, including when two ingesters overlap.
 
+Projection version 6 retains nullable `sde_market_groups.icon_id` from the official `iconID` field
+and projects the official `mapSolarSystems.regionID` into `sde_solar_systems.region_id`.
+The market catalogue uses market-group ID, parent ID, English name, and icon ID; `sde_types` retains
+type ID, English name, publication status, and market-group assignment. English descriptions remain
+in the typed projection for other consumers but are not part of the compact market catalogue. The
+source `hasTypes` hint is not retained because direct membership comes from published type
+assignments. Inventory group publication does not remove a published market-assigned type. The
+static projection contains no active-order coverage, order book, history, or regional price.
+
+The published revision is the active `sde_builds` build number, `ingest_version`, and `ingested_at`
+selected through `sde_projection_state`. A same-build version-6 reload updates the build row's
+ingestion time and commits the full replacement atomically. An existing version-4 projection stays
+published until that transaction succeeds; the nullable icon column does not create a partial
+version-6 station-region identity before reingestion. See the [official market-group evidence](../docs/market-catalogue-sde-evidence.md).
+
 ## Retry a failed import
 
 Correct the reported download, archive, migration, database, or data error and rerun:

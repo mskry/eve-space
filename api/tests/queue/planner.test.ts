@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   repairCollection: vi.fn(),
   repairCompliance: vi.fn(),
   resources: vi.fn(),
+  profiles: vi.fn(),
 }))
 
 vi.mock('../../src/queue/affiliation-planner.js', () => ({
@@ -30,6 +31,9 @@ vi.mock('../../src/platform/resource-maintenance.js', () => ({
   runInstalledResourceMaintenance: mocks.maintenance,
 }))
 vi.mock('../../src/queue/resource-planner.js', () => ({ runResourcePlanner: mocks.resources }))
+vi.mock('../../src/queue/profile-work-planner.js', () => ({
+  runProfileWorkPlanner: mocks.profiles,
+}))
 vi.mock('../../src/organization/compliance-repair.js', () => ({
   repairOrganizationCompliance: mocks.repairCompliance,
 }))
@@ -47,6 +51,7 @@ test('runs installed resource maintenance from the production planner', async ()
   expect(mocks.allianceExecutor).toHaveBeenCalledWith(expect.objectContaining({ signal }))
   expect(mocks.groupRules).toHaveBeenCalledWith(expect.objectContaining({ signal }))
   expect(mocks.maintenance).toHaveBeenCalledWith({ signal })
+  expect(mocks.profiles).toHaveBeenCalledWith(expect.objectContaining({ signal }))
   expect(mocks.repairCollection.mock.invocationCallOrder[0]).toBeLessThan(
     mocks.maintenance.mock.invocationCallOrder[0]!,
   )

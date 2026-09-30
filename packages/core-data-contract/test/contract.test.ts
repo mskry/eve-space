@@ -4,9 +4,16 @@ import {
   CORE_DATA_CONTRIBUTION_CONTEXTS,
   CORE_DATA_PRODUCT_CONTRACTS,
   CORE_DATA_PRODUCT_IDS,
+  MARKET_CATALOGUE_MAX_GROUPS,
+  MARKET_CATALOGUE_MAX_TYPES,
+  MARKET_CATALOGUE_GROUP_PAGE_SIZE,
+  MARKET_STATION_REGION_MAX_IDS,
   type CoreDataMethodsFor,
   type CoreDataProductRequest,
   type CoreDataProductResult,
+  type MarketCatalogueResult,
+  type MarketStationRegionsRequest,
+  type MarketStationRegionsResult,
   type PublishedSkillCatalogueResult,
   type PublishedTypeDetailsRequest,
   type PublishedTypeGroupsRequest,
@@ -17,9 +24,9 @@ import {
 describe('core-data contract', () => {
   it('has unique stable product identities and complete policies', () => {
     expect(new Set(CORE_DATA_PRODUCT_IDS).size).toBe(CORE_DATA_PRODUCT_IDS.length)
-    expect(Object.keys(CORE_DATA_PRODUCT_CONTRACTS).toSorted()).toStrictEqual(
-      CORE_DATA_PRODUCT_IDS.toSorted(),
-    )
+    expect(
+      Object.keys(CORE_DATA_PRODUCT_CONTRACTS).toSorted((left, right) => left.localeCompare(right)),
+    ).toStrictEqual(CORE_DATA_PRODUCT_IDS.toSorted((left, right) => left.localeCompare(right)))
 
     for (const productId of CORE_DATA_PRODUCT_IDS) {
       const contract = CORE_DATA_PRODUCT_CONTRACTS[productId]
@@ -75,5 +82,33 @@ describe('core-data contract', () => {
       ingestVersion: number
       ingestedAt: string
     }>()
+  })
+
+  it('declares a route-only bounded market catalogue', () => {
+    const contract = CORE_DATA_PRODUCT_CONTRACTS['market-catalogue']
+    expect(MARKET_CATALOGUE_MAX_GROUPS).toBe(4_000)
+    expect(MARKET_CATALOGUE_MAX_TYPES).toBe(32_000)
+    expect(MARKET_CATALOGUE_GROUP_PAGE_SIZE).toBe(100)
+    expect(contract.permittedContexts).toStrictEqual(['route'])
+    expect(contract.requestBound).toBe(MARKET_CATALOGUE_MAX_TYPES)
+    expectTypeOf<CoreDataProductResult<'market-catalogue'>>().toEqualTypeOf<MarketCatalogueResult>()
+    expectTypeOf<CoreDataMethodsFor<readonly ['market-catalogue']>>().toHaveProperty(
+      'marketCatalogue',
+    )
+  })
+
+  it('declares a bounded, revisioned NPC station-to-region lookup', () => {
+    const contract = CORE_DATA_PRODUCT_CONTRACTS['market-station-regions']
+    expect(contract.requestBound).toBe(MARKET_STATION_REGION_MAX_IDS)
+    expect(contract.permittedContexts).toStrictEqual(['route', 'resource-projection'])
+    expectTypeOf<
+      CoreDataProductRequest<'market-station-regions'>
+    >().toEqualTypeOf<MarketStationRegionsRequest>()
+    expectTypeOf<
+      CoreDataProductResult<'market-station-regions'>
+    >().toEqualTypeOf<MarketStationRegionsResult>()
+    expectTypeOf<CoreDataMethodsFor<readonly ['market-station-regions']>>().toHaveProperty(
+      'marketStationRegions',
+    )
   })
 })

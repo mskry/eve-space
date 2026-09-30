@@ -43,12 +43,45 @@ const visibleSections = computed(() =>
       to: resolveShellSectionPath(section.to, props.characterId),
     })),
 )
+const sidebarOrderKey = 'eve-space-dashboard-sidebar-order'
+const sectionOrder = ref<string[]>([])
+const draggedSectionId = ref<string>()
+const dropTargetId = ref<string>()
+const reorderAnnouncement = ref('')
+const sectionKey = (section: { ownerId: string; navigationId: string }) =>
+  `${section.ownerId}/${section.navigationId}`
+const orderedSections = computed(() => {
+  if (props.variant !== 'persistent' || sectionOrder.value.length === 0) {
+    return visibleSections.value
+  }
+
+  const positions = new Map(sectionOrder.value.map((id, index) => [id, index]))
+  return visibleSections.value.toSorted((left, right) => {
+    const leftPosition = positions.get(sectionKey(left)) ?? sectionOrder.value.length
+    const rightPosition = positions.get(sectionKey(right)) ?? sectionOrder.value.length
+    return leftPosition - rightPosition
+  })
+})
 const mailBadge = computed(() => resolveMailUnreadBadge(props.characterId, props.mailUnreadCount))
 const warpDirection = ref<'expand' | 'collapse'>()
 const labelsVisible = computed(() => props.expanded || warpDirection.value === 'collapse')
 const accountActions = [{ label: 'Log out', tone: 'danger', value: 'logout' }] as const
 const route = useRoute()
 let warpTimer: ReturnType<typeof setTimeout> | undefined
+
+onMounted(() => {
+  if (props.variant !== 'persistent') {
+    return
+  }
+  try {
+    const stored = JSON.parse(globalThis.localStorage.getItem(sidebarOrderKey) ?? '[]')
+    if (Array.isArray(stored)) {
+      sectionOrder.value = [...new Set(stored.filter((id): id is string => typeof id === 'string'))]
+    }
+  } catch {
+    sectionOrder.value = []
+  }
+})
 
 // Shell destinations can nest (/characters and /characters/7/mail); only the
 // most specific match may present itself as the current section.
@@ -66,6 +99,98 @@ const activeSectionId = computed(() => {
 
 function sectionIsActive(ownerId: string, navigationId: string) {
   return activeSectionId.value === `${ownerId}/${navigationId}`
+}
+
+const handleSectionClick = (
+  event: MouseEvent,
+  navigate: (event: MouseEvent) => void,
+  path: string,
+) => {
+  navigate(event)
+  emit('navigate', path)
+}
+
+const moveSection = (sourceId: string, targetId: string, after: boolean) => {
+  if (props.variant !== 'persistent' || sourceId === targetId) {
+    return
+  }
+  const order = [...new Set([...sectionOrder.value, ...dashboardNavigation.value.map(sectionKey)])]
+  const sourceIndex = order.indexOf(sourceId)
+  if (sourceIndex === -1 || !order.includes(targetId)) {
+    return
+  }
+  order.splice(sourceIndex, 1)
+  order.splice(order.indexOf(targetId) + Number(after), 0, sourceId)
+  sectionOrder.value = order
+  const section = orderedSections.value.find((candidate) => sectionKey(candidate) === sourceId)
+  const position = orderedSections.value.findIndex(
+    (candidate) => sectionKey(candidate) === sourceId,
+  )
+  if (section && position !== -1) {
+    reorderAnnouncement.value = `${section.label} moved to position ${position + 1} of ${orderedSections.value.length}`
+  }
+  try {
+    globalThis.localStorage.setItem(sidebarOrderKey, JSON.stringify(order))
+  } catch {
+    return
+  }
+}
+
+const handleSectionKeydown = (event: KeyboardEvent, id: string) => {
+  if (
+    props.variant !== 'persistent' ||
+    !event.altKey ||
+    !['ArrowUp', 'ArrowDown'].includes(event.key)
+  ) {
+    return
+  }
+  event.preventDefault()
+  const index = orderedSections.value.findIndex((section) => sectionKey(section) === id)
+  const target = orderedSections.value[index + (event.key === 'ArrowUp' ? -1 : 1)]
+  if (target) {
+    moveSection(id, sectionKey(target), event.key === 'ArrowDown')
+  }
+}
+
+const handleSectionDragStart = (event: DragEvent, id: string) => {
+  if (props.variant !== 'persistent') {
+    return
+  }
+  draggedSectionId.value = id
+  event.dataTransfer?.setData('text/plain', id)
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+  }
+}
+
+const handleSectionDragOver = (event: DragEvent, id: string) => {
+  if (!draggedSectionId.value || draggedSectionId.value === id) {
+    return
+  }
+  event.preventDefault()
+  dropTargetId.value = id
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+}
+
+const handleSectionDrop = (event: DragEvent, id: string) => {
+  event.preventDefault()
+  if (draggedSectionId.value && event.currentTarget instanceof HTMLElement) {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    moveSection(
+      draggedSectionId.value,
+      id,
+      bounds.height > 0 && event.clientY >= bounds.top + bounds.height / 2,
+    )
+  }
+  draggedSectionId.value = undefined
+  dropTargetId.value = undefined
+}
+
+const handleSectionDragEnd = () => {
+  draggedSectionId.value = undefined
+  dropTargetId.value = undefined
 }
 
 function handleLogout() {
@@ -125,41 +250,72 @@ onBeforeUnmount(() => {
     </NuxtLink>
 
     <nav class="sidebar-nav" aria-label="Dashboard sections">
-      <UiTooltip
-        v-for="section in visibleSections"
-        :key="`${section.ownerId}/${section.navigationId}`"
-        :content="
-          section.access === 'authorized'
-            ? `${section.label}`
-            : section.access === 'admin'
-              ? `${section.label}`
-              : section.label
-        "
-        :disabled="variant === 'drawer' || labelsVisible"
-        side="right"
+      <div
+        v-for="section in orderedSections"
+        :key="sectionKey(section)"
+        class="sidebar-nav-item"
+        :class="{
+          'sidebar-nav-item--dragging': draggedSectionId === sectionKey(section),
+          'sidebar-nav-item--drop-target': dropTargetId === sectionKey(section),
+        }"
+        :draggable="variant === 'persistent'"
+        @dragstart="handleSectionDragStart($event, sectionKey(section))"
+        @dragover="handleSectionDragOver($event, sectionKey(section))"
+        @drop="handleSectionDrop($event, sectionKey(section))"
+        @dragend="handleSectionDragEnd"
       >
-        <NuxtLink
-          :to="section.to"
-          class="sidebar-link"
-          :class="{
-            'sidebar-link--active': sectionIsActive(section.ownerId, section.navigationId),
-          }"
-          @click="$emit('navigate', section.to)"
-        >
-          <span class="sidebar-icon">
-            <AppIcon :name="section.icon" />
-            <span v-if="section.badge" class="sidebar-badge">
-              <span aria-hidden="true">{{ mailUnreadBadgeValue(section.badge.count) }}</span>
-              <span class="sr-only">{{ section.badge.label }}</span>
-            </span>
-          </span>
-          <span class="sidebar-label">
-            <strong>{{ section.label }}</strong>
-            <small>{{ section.description }}</small>
-          </span>
+        <NuxtLink v-slot="{ navigate, prefetch, isExactActive }" :to="section.to" custom>
+          <UiTooltip
+            :content="
+              section.access === 'authorized'
+                ? `${section.label}`
+                : section.access === 'admin'
+                  ? `${section.label}`
+                  : section.label
+            "
+            :disabled="variant === 'drawer' || labelsVisible"
+            side="right"
+          >
+            <a
+              :href="section.to"
+              :draggable="false"
+              class="sidebar-link"
+              :class="{
+                'sidebar-link--active': sectionIsActive(section.ownerId, section.navigationId),
+              }"
+              :aria-current="isExactActive ? 'page' : undefined"
+              :aria-keyshortcuts="
+                variant === 'persistent' ? 'Alt+ArrowUp Alt+ArrowDown' : undefined
+              "
+              :aria-description="
+                variant === 'persistent'
+                  ? 'Drag to reorder, or press Alt+Up or Alt+Down'
+                  : undefined
+              "
+              @click="handleSectionClick($event, navigate, section.to)"
+              @keydown="handleSectionKeydown($event, sectionKey(section))"
+              @pointerenter="prefetch()"
+              @focus="prefetch()"
+            >
+              <span class="sidebar-icon">
+                <AppIcon :name="section.icon" />
+                <span v-if="section.badge" class="sidebar-badge">
+                  <span aria-hidden="true">{{ mailUnreadBadgeValue(section.badge.count) }}</span>
+                  <span class="sr-only">{{ section.badge.label }}</span>
+                </span>
+              </span>
+              <span class="sidebar-label">
+                <strong>{{ section.label }}</strong>
+                <small>{{ section.description }}</small>
+              </span>
+            </a>
+          </UiTooltip>
         </NuxtLink>
-      </UiTooltip>
+      </div>
     </nav>
+    <output v-if="variant === 'persistent'" class="sr-only" aria-live="polite">{{
+      reorderAnnouncement
+    }}</output>
 
     <UiTooltip
       v-if="variant === 'persistent'"

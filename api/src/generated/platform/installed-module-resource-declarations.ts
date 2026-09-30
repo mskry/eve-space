@@ -4,6 +4,34 @@ import type { PlatformInstalledResourceDeclaration } from '@eve-space/platform-m
 
 export const installedModuleResourceDeclarations = [
   {
+    moduleId: 'market',
+    resourceId: 'orders',
+    operationId: 'market-region-orders',
+    subjectKind: 'deployment',
+    eligibility: { kind: 'current-deployment' },
+  },
+  {
+    moduleId: 'market',
+    resourceId: 'reference-prices',
+    operationId: 'market-reference-prices',
+    subjectKind: 'deployment',
+    eligibility: { kind: 'current-deployment' },
+  },
+  {
+    moduleId: 'market',
+    resourceId: 'daily-history',
+    operationId: 'market-region-history',
+    subjectKind: 'deployment',
+    eligibility: { kind: 'current-deployment' },
+  },
+  {
+    moduleId: 'market',
+    resourceId: 'structure-orders',
+    operationId: 'market-structure-orders',
+    subjectKind: 'character',
+    eligibility: { kind: 'current-owned-character' },
+  },
+  {
     moduleId: 'member-audit',
     resourceId: 'trained-skills',
     operationId: 'skills',

@@ -30,9 +30,10 @@ const platformModuleRuntimeQueryKey = ['public', 'modules', 'runtime'] as const
 export function usePlatformModuleRuntime() {
   const runtimeConfig = useRuntimeConfig()
   const runtimeQuery = useQuery({
-    enabled: globalThis.window !== undefined,
+    enabled: true,
     key: platformModuleRuntimeQueryKey,
     query: ({ signal }) => loadPlatformModuleRuntimeState(runtimeConfig.public.apiBase, signal),
+    ssrCatchError: true,
     staleTime: 30_000,
   })
   const enabledModuleIds = computed(() => new Set(runtimeQuery.data.value?.enabledModuleIds ?? []))

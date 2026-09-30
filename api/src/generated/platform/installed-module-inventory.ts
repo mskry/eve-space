@@ -4,6 +4,28 @@ import type { PlatformInstalledModuleProvenance } from '@eve-space/platform-modu
 
 export const installedModuleInventory = [
   {
+    moduleId: 'market',
+    packages: {
+      manifest: {
+        integrity: 'workspace',
+        name: '@eve-space/market-manifest',
+        version: '0.1.0',
+      },
+      nuxt: {
+        integrity: 'workspace',
+        name: '@eve-space/market-nuxt',
+        version: '0.1.0',
+      },
+      server: {
+        integrity: 'workspace',
+        name: '@eve-space/market-server',
+        version: '0.1.0',
+      },
+    },
+    publisherPackage: '@eve-space/market-manifest',
+    releaseVersion: '0.1.0',
+  },
+  {
     moduleId: 'member-audit',
     packages: {
       manifest: {

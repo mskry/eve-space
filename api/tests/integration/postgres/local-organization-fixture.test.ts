@@ -176,7 +176,7 @@ test('seeds one guarded production-shaped organization fixture', async () => {
   const { getOrganizationGroupPermissions } =
     await import('../../../src/organization/group-permissions.js')
   const { loadOrganizationSessionContext } =
-    await import('../../../src/middleware/organization-session.js')
+    await import('../../../src/organization/session-context.js')
   const { authorizeOrganizationContribution } =
     await import('../../../src/organization/module-authorization.js')
   const { listOrganizationRosterCoverage } =

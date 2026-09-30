@@ -280,6 +280,23 @@
   gap: 7px;
 }
 
+.dashboard-sidebar--persistent .sidebar-nav-item .sidebar-link {
+  cursor: grab;
+}
+
+.dashboard-sidebar--persistent .sidebar-nav-item--dragging {
+  opacity: 0.5;
+}
+
+.dashboard-sidebar--persistent .sidebar-nav-item--dragging .sidebar-link {
+  cursor: grabbing;
+}
+
+.dashboard-sidebar--persistent .sidebar-nav-item--drop-target .sidebar-link {
+  outline: 1px dashed var(--accent);
+  outline-offset: -2px;
+}
+
 .sidebar-link {
   position: relative;
   min-height: 62px;

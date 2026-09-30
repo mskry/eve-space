@@ -30,7 +30,13 @@ export function isPlatformReviewerAccountSearchCursor(value: string) {
   return true
 }
 
-export const platformAuthorizationStrategies = ['authenticated-session', 'owned-character'] as const
+export const platformAuthorizationStrategies = [
+  'public',
+  'public-mutation',
+  'deployment-administrator',
+  'authenticated-session',
+  'owned-character',
+] as const
 export type PlatformAuthorizationStrategy = (typeof platformAuthorizationStrategies)[number]
 
 export const platformOrganizationAudiences = ['member', 'hr', 'director'] as const
@@ -304,6 +310,14 @@ export type PlatformModuleRouteCapabilities<
   ProductIds extends readonly CoreDataProductId[] = readonly [],
 > = PlatformModuleContributionCapabilities<Persistence, ProductIds>
 
+export type PlatformPublicRouteCapabilities<
+  ProductIds extends readonly CoreDataProductId[] = readonly [],
+  Persistence extends object = never,
+> = {
+  readonly coreData: CoreDataMethodsFor<ProductIds>
+  readonly logger: PlatformModuleLogger
+} & ([Persistence] extends [never] ? object : { readonly persistence: Persistence })
+
 export interface PlatformAuthorizedOrganizationContext {
   readonly organizationVersion: number
   readonly audience: PlatformOrganizationAudience
@@ -512,6 +526,20 @@ export interface PlatformAuthenticatedSessionRouteContext {
   readonly organization: PlatformAuthorizedOrganizationContext
 }
 
+export interface PlatformPublicRouteEnv {
+  Variables: Record<never, never>
+}
+
+export interface PlatformPublicMutationRouteEnv {
+  Variables: { onDemandProfile?: PlatformOnDemandProfileRequester }
+}
+
+export interface PlatformAdministratorRouteEnv {
+  Variables: {
+    adminSession: { readonly adminId: string } | null
+  }
+}
+
 export interface PlatformOwnedCharacterRouteContext {
   readonly authorization: {
     readonly strategy: 'owned-character'
@@ -522,6 +550,45 @@ export interface PlatformOwnedCharacterRouteContext {
   readonly collectionStatus: PlatformModuleCollectionStatusReads
   readonly organization: PlatformAuthorizedOrganizationContext
   readonly coreReads: OwnedCharacterCoreReads
+  readonly onDemandStructure?: {
+    currentGeneration(): Promise<number | null>
+    request(structureId: number): Promise<'accepted' | 'coalesced' | 'unavailable'>
+  }
+}
+
+export interface PlatformOnDemandStructureAuthority {
+  readonly userId: string
+  readonly characterId: number
+  readonly subjectLifecycleId: string
+  readonly organizationVersion: number
+}
+
+export interface PlatformOnDemandStructureRequester {
+  currentGeneration(authority: PlatformOnDemandStructureAuthority): Promise<number | null>
+  request(
+    authority: PlatformOnDemandStructureAuthority,
+    structureId: number,
+  ): Promise<'accepted' | 'coalesced' | 'unavailable'>
+}
+
+export interface PlatformOnDemandProfileRequest {
+  readonly profileId: string
+  readonly revision: number
+  readonly typeId: number
+}
+
+export type PlatformOnDemandProfileOutcome =
+  | 'queued'
+  | 'collecting'
+  | 'waiting'
+  | 'completed'
+  | 'unavailable'
+
+export interface PlatformOnDemandProfileRequester {
+  request(
+    input: PlatformOnDemandProfileRequest,
+    signal?: AbortSignal,
+  ): Promise<PlatformOnDemandProfileOutcome>
 }
 
 interface PlatformReviewerTargetRouteContextBase<Evidence extends object> {

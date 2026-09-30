@@ -99,6 +99,7 @@ interface BoundRequestPath {
 
 interface ResourceOperationExecutorOptions {
   readonly signal?: AbortSignal
+  readonly selector?: { readonly structureId: number }
   readonly request?: ResourceOperationRequest
   readonly loadCollectionContext?: typeof loadResourceCollectionContext
   readonly createCapabilities?: typeof createPlatformResourceReadCapabilities
@@ -143,6 +144,7 @@ export async function executeInstalledResourceOperation(
   const guarded = await (options.guardExecution ?? guardInstalledResourceExecution)(identity, {
     resources,
     signal: options.signal,
+    allowUndue: options.selector !== undefined,
   })
   options.signal?.throwIfAborted()
   if (guarded.outcome === 'noop') {
@@ -170,6 +172,9 @@ export async function executeInstalledResourceOperation(
   const implementation = guarded.resource.implementation as PlatformResourceImplementation
   if (implementation.mode === 'bounded-collection') {
     return executeCollectedResourceOperation(identity, options, guarded, subject, implementation)
+  }
+  if (implementation.mode === 'profile-collection') {
+    throw new Error('Profile-keyed resource requires a profile work identity')
   }
   return executeSingleResourceOperation(identity, options, guarded, subject, implementation)
 }
@@ -207,6 +212,8 @@ async function executeCollectedResourceOperation(
     }),
     operations: createResourceCollectionOperations(requestContext),
     requestBudget: RESOURCE_COLLECTION_REQUEST_BUDGET,
+    ...(options.selector && { selector: options.selector }),
+    ...(options.signal && { signal: options.signal }),
     subject,
   })
   options.signal?.throwIfAborted()
@@ -288,7 +295,12 @@ async function executeCollectionRequest(
   if (operationId === 'universe-resolve-names' && !context.options.executeEsiOperation) {
     const result = await resolveCollectionUniverseNames(inputs, context.options.signal)
     retainCollectionExecution(context.state, result)
-    return { data: result.data, validatedAt: result.validatedAt }
+    return {
+      data: result.data,
+      validatedAt: result.validatedAt,
+      cachedUntil: result.cachedUntil,
+      stale: result.stale,
+    }
   }
   const result = await executeInstalledResourceOperation(context.identity, {
     ...context.options,
@@ -305,6 +317,8 @@ async function executeCollectionRequest(
   return {
     data: result.result.data,
     validatedAt: result.result.validatedAt,
+    cachedUntil: result.result.cachedUntil,
+    stale: result.result.stale,
     ...(result.result.pagination && { pagination: { ...result.result.pagination } }),
   }
 }

@@ -243,11 +243,13 @@ async function seedFixtureResources(validatedAt: Date) {
   const due = await selectDueInstalledResources({ limit: 100 })
   const fixtureResources = [
     coreResources.find(({ resourceId }) => resourceId === 'corporation-roster')!,
-    ...installedModuleResources.filter((resource) =>
-      due.some(
-        ({ identity }) =>
-          identity.moduleId === resource.moduleId && identity.resourceId === resource.resourceId,
-      ),
+    ...installedModuleResources.filter(
+      (resource) =>
+        resource.moduleId === 'organization-activity' &&
+        due.some(
+          ({ identity }) =>
+            identity.moduleId === resource.moduleId && identity.resourceId === resource.resourceId,
+        ),
     ),
   ]
   await Promise.all(

@@ -223,6 +223,26 @@ mod tests {
     }
 
     #[test]
+    fn same_build_with_previous_market_projection_reimports_archive() {
+        let source_state = Rc::new(RefCell::new(SourceState::default()));
+        let mut ingestor = fixture_ingestor(
+            Some(BuildProjection {
+                build_number: 1234,
+                ingest_version: INGEST_PROJECTION_VERSION - 1,
+            }),
+            Ok(PublicationOutcome::Published(empty_report())),
+            source_state.clone(),
+            Rc::new(RefCell::new(Vec::new())),
+        );
+
+        assert!(matches!(
+            ingestor.run().unwrap(),
+            IngestOutcome::Imported { .. }
+        ));
+        assert_eq!(source_state.borrow().acquired, vec![1234]);
+    }
+
+    #[test]
     fn imported_outcome_reports_optional_failures_and_releases_the_archive() {
         let source_state = Rc::new(RefCell::new(SourceState::default()));
         let imported = Rc::new(RefCell::new(Vec::new()));

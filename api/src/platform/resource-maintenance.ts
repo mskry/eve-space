@@ -29,10 +29,11 @@ type ResourcePurgeWork =
   | (ResourcePurgeWorkBase & { readonly mode: 'account' })
   | (ResourcePurgeWorkBase & PlatformResourceInvalidAuthority & { readonly mode: 'authority' })
 
-export async function runInstalledResourceMaintenance(options: ResourceMaintenanceOptions = {}) {
+export const runInstalledResourceMaintenance = async (options: ResourceMaintenanceOptions = {}) => {
   const connection = options.connection ?? sql
   const now = options.now ?? new Date()
-  const resources = options.resources ?? installedModuleResources
+  const resources: readonly PlatformInstalledResourceDescriptor[] =
+    options.resources ?? installedModuleResources
   const purgeWork = await loadPurgeWork(connection)
   const maintainableResources = resources.filter((resource) =>
     Boolean((resource.implementation as PlatformResourceImplementation).maintain),

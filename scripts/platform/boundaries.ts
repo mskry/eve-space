@@ -18,7 +18,13 @@ const modulesByTier = {
     'resource-purge',
     'resource-collection-context',
   ],
-  application: ['resource-batch', 'resource-maintenance', 'resource-refresh'],
+  application: [
+    'profile-work',
+    'resource-batch',
+    'resource-maintenance',
+    'resource-refresh',
+    'structure-refresh',
+  ],
   declaration: [
     'core-resources',
     'resource-classifier-input',
@@ -45,6 +51,7 @@ const modulesByTier = {
     'resource-failures',
     'resource-operation-executor',
     'resource-planning',
+    'structure-authority',
     'reviewer-contributions',
     'reviewer-profile-release',
     'reviewer-search-capabilities',

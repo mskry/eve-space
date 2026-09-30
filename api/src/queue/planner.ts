@@ -7,6 +7,7 @@ import { runAllianceExecutorPlanner } from './alliance-executor-planner.js'
 import { runGroupRulePlanner } from './group-rule-planner.js'
 import type { QueuePlanningContext } from './planning-context.js'
 import { runResourcePlanner } from './resource-planner.js'
+import { runProfileWorkPlanner } from './profile-work-planner.js'
 
 export async function runQueuePlanner(context: QueuePlanningContext) {
   const { producer, signal } = context
@@ -26,5 +27,6 @@ export async function runQueuePlanner(context: QueuePlanningContext) {
   await repairPlatformCollectionState({ signal })
   await runInstalledResourceMaintenance({ signal })
   await runResourcePlanner(context)
+  await runProfileWorkPlanner(context)
   await repairOrganizationCompliance({ signal })
 }

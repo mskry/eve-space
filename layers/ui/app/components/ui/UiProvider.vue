@@ -18,7 +18,7 @@ const confirmDialogOpen = computed({
 <template>
   <ConfigProvider>
     <TooltipProvider :delay-duration="350" :skip-delay-duration="150">
-      <ToastProvider>
+      <ToastProvider swipe-direction="right">
         <slot />
         <UiToast
           :key="toast.key"

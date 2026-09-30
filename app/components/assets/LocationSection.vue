@@ -65,8 +65,8 @@ const jumpLabel = computed(() => {
           :aria-expanded="expanded"
           @click="emit('toggleLocation', group.key)"
         >
-          <span class="assets-location-chevron" aria-hidden="true">{{ expanded ? '▾' : '▸' }}</span>
-          <SystemSecurityStatus
+          <UiDisclosureChevron :open="expanded" />
+          <UiSystemSecurityStatus
             v-if="group.solarSystemSecurityStatus !== null"
             :value="group.solarSystemSecurityStatus"
           />
@@ -158,17 +158,6 @@ const jumpLabel = computed(() => {
 .assets-location-toggle:focus-visible {
   outline: 0.125rem solid var(--ui-primary);
   outline-offset: -0.125rem;
-}
-
-.assets-location-chevron {
-  width: 0.75rem;
-  flex: 0 0 0.75rem;
-  color: var(--ui-text-subtle);
-  font: 400 0.75rem/1 var(--ui-font-mono);
-}
-
-.assets-location--open .assets-location-chevron {
-  color: var(--ui-primary);
 }
 
 .assets-location-name {

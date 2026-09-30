@@ -2,8 +2,14 @@
 
 import type { PlatformInstalledModuleMigrationDescriptor } from '@eve-space/platform-module-contract/installed'
 
-export const installedModuleIds = ['member-audit', 'organization-activity'] as const
+export const installedModuleIds = ['market', 'member-audit', 'organization-activity'] as const
 export const installedModuleMigrations = [
+  {
+    moduleId: 'market',
+    name: 'market-001-initial.sql',
+    packageName: '@eve-space/market-server',
+    exportPath: './migrations/market-001-initial.sql',
+  },
   {
     moduleId: 'member-audit',
     name: 'member-audit-001-baseline.sql',

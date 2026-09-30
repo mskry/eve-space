@@ -13,6 +13,13 @@
         "package": "@eve-space/member-audit-manifest",
         "export": "./manifest"
       }
+    },
+    {
+      "moduleId": "market",
+      "manifest": {
+        "package": "@eve-space/market-manifest",
+        "export": "./manifest"
+      }
     }
   ]
 }

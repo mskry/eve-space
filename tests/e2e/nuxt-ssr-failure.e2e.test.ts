@@ -86,7 +86,13 @@ describe('Nuxt anonymous SSR boundary', async () => {
     expect(html).toContain('Verifying account identity...')
     expect(html).toContain('All characters')
     expect(html).toContain('data-ssr="true"')
-    expect(html).not.toContain('ApiQueryError')
+    const page = trackPage(await createPage())
+    const mainContent = await page.evaluate((markup) => {
+      const document = new DOMParser().parseFromString(markup, 'text/html')
+      return document.querySelector('#main-content')?.textContent ?? null
+    }, html)
+    expect(mainContent).not.toBeNull()
+    expect(mainContent).not.toContain('ApiQueryError')
   })
 
   it('renders the public overview while account verification is pending', async () => {

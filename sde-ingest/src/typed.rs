@@ -154,6 +154,18 @@ struct RawMarketGroup {
     name: LocalizedText,
     #[serde(default)]
     description: Option<LocalizedText>,
+    #[serde(rename = "iconID")]
+    icon_id: Option<i64>,
+}
+
+fn market_group_row(raw: RawMarketGroup) -> Vec<String> {
+    vec![
+        db::num(raw.key),
+        db::opt_num(raw.parent_group_id),
+        db::text(&raw.name.into_text()),
+        db::opt_text(raw.description.map(LocalizedText::into_text).as_deref()),
+        db::opt_num(raw.icon_id),
+    ]
 }
 
 pub fn ingest_market_groups(
@@ -161,18 +173,17 @@ pub fn ingest_market_groups(
     client: &mut Transaction,
 ) -> Result<u64> {
     let lines = zip_stream::lines(archive, "marketGroups.jsonl")?;
-    let rows = map_lines::<RawMarketGroup, _>(lines, |raw| {
-        vec![
-            db::num(raw.key),
-            db::opt_num(raw.parent_group_id),
-            db::text(&raw.name.into_text()),
-            db::opt_text(raw.description.map(LocalizedText::into_text).as_deref()),
-        ]
-    });
+    let rows = map_lines::<RawMarketGroup, _>(lines, market_group_row);
     db::copy_rows(
         client,
         "sde_market_groups",
-        &["market_group_id", "parent_group_id", "name", "description"],
+        &[
+            "market_group_id",
+            "parent_group_id",
+            "name",
+            "description",
+            "icon_id",
+        ],
         rows,
     )
 }
@@ -456,7 +467,8 @@ pub fn ingest_factions(archive: &mut ZipArchive<File>, client: &mut Transaction)
 
 #[cfg(test)]
 mod tests {
-    use super::{RawType, type_row};
+    use super::{RawMarketGroup, RawType, market_group_row, type_row};
+    use serde_json::Value;
 
     fn description_field(json: &str) -> String {
         let raw: RawType = serde_json::from_str(json).unwrap();
@@ -481,5 +493,61 @@ mod tests {
             ),
             "<b>Raw</b>\\ntext"
         );
+    }
+
+    #[test]
+    fn official_market_fixture_preserves_hint_disagreements_and_unpublished_inventory() {
+        let fixture: Value =
+            serde_json::from_str(include_str!("../market-catalogue-evidence.json")).unwrap();
+        assert_eq!(fixture["buildNumber"], 3542233);
+        assert_eq!(fixture["marketGroupCount"], 2114);
+        assert_eq!(fixture["publishedMarketTypeCount"], 19561);
+        assert_eq!(fixture["hasTypesDisagreementCount"], 56);
+
+        let groups = fixture["marketGroups"].as_array().unwrap();
+        let types = fixture["types"].as_array().unwrap();
+        let inventory = fixture["inventoryGroups"].as_array().unwrap();
+        let group = |id| groups.iter().find(|group| group["_key"] == id).unwrap();
+        let direct_types = |id| {
+            types
+                .iter()
+                .filter(|item| item["published"] == true && item["marketGroupID"] == id)
+                .count()
+        };
+
+        assert_eq!(group(604)["hasTypes"], true);
+        assert_eq!(direct_types(604), 0);
+        assert_eq!(group(614)["hasTypes"], false);
+        assert_eq!(direct_types(614), 1);
+        assert_eq!(group(751)["parentGroupID"], 614);
+        assert!(group(1659).get("iconID").is_none());
+        assert_eq!(group(614)["iconID"], 2302);
+
+        for (type_id, inventory_id, market_id) in [(35912, 1324, 2332), (60771, 4161, 518)] {
+            let item = types.iter().find(|item| item["_key"] == type_id).unwrap();
+            let inventory_group = inventory
+                .iter()
+                .find(|group| group["_key"] == inventory_id)
+                .unwrap();
+            assert_eq!(item["published"], true);
+            assert_eq!(item["groupID"], inventory_id);
+            assert_eq!(item["marketGroupID"], market_id);
+            assert_eq!(inventory_group["published"], false);
+        }
+    }
+
+    #[test]
+    fn market_group_icon_is_nullable_and_english_name_is_retained() {
+        let fixture: Value =
+            serde_json::from_str(include_str!("../market-catalogue-evidence.json")).unwrap();
+        let groups = fixture["marketGroups"].as_array().unwrap();
+        for (id, expected_icon) in [(614, "2302"), (1659, "\\N")] {
+            let source = groups.iter().find(|group| group["_key"] == id).unwrap();
+            let raw: RawMarketGroup = serde_json::from_value(source.clone()).unwrap();
+            let row = market_group_row(raw);
+            assert_eq!(row[0], id.to_string());
+            assert_eq!(row[2], source["name"]["en"].as_str().unwrap());
+            assert_eq!(row[4], expected_icon);
+        }
     }
 }

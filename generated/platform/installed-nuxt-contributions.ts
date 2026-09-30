@@ -4,6 +4,44 @@ import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-mod
 
 export const installedNuxtContributions = [
   {
+    defaultIcon: 'market',
+    moduleId: 'market',
+    navigation: [
+      {
+        audience: 'public',
+        description: 'Browse published EVE items',
+        id: 'market',
+        label: 'Market',
+        order: 15,
+        pageName: 'eve-market-overview',
+        placement: 'dashboard',
+        to: '/market',
+      },
+    ],
+    packageName: '@eve-space/market-nuxt',
+    pages: [
+      {
+        audience: 'public',
+        extensionPoint: 'root',
+        file: 'src/runtime/app/pages/MarketPage.vue',
+        id: 'market',
+        name: 'eve-market-overview',
+        path: '/market',
+      },
+    ],
+    queryAdmissionScopes: [
+      {
+        routeId: 'private-structures',
+        authorization: 'owned-character',
+        audience: 'member',
+        requiredPermission: 'market.structure.read',
+        admissionScope: 'organization:v1:market:member:market.structure.read',
+      },
+    ],
+    reviewerContributions: [],
+    sections: [],
+  },
+  {
     defaultIcon: 'corporation',
     moduleId: 'member-audit',
     navigation: [],

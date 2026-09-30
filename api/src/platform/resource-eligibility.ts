@@ -224,6 +224,7 @@ export interface DueInstalledResource {
 
 type SelectDueResourcesOptions = EligibilityOptions & {
   readonly limit: number
+  readonly includeProfileKeyed?: boolean
 }
 
 interface DueCandidateCursor {
@@ -467,7 +468,8 @@ export async function selectDueInstalledResources(
     throw new Error('Resource planning limit must be a positive safe integer')
   }
   const resources = (options.resources ?? platformResources).filter(
-    ({ scheduled }) => scheduled !== false,
+    ({ scheduled, profileKeyed }) =>
+      scheduled !== false || (options.includeProfileKeyed === true && profileKeyed === true),
   )
   if (resources.length === 0) return []
 

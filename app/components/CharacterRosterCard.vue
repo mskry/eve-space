@@ -119,7 +119,7 @@ function locationLabel(location: CharacterRosterEntry['location']) {
           :station-id="character.location?.stationId"
           :structure-id="character.location?.structureId"
         />
-        <SystemSecurityStatus
+        <UiSystemSecurityStatus
           v-if="typeof character.location?.solarSystemSecurityStatus === 'number'"
           :value="character.location.solarSystemSecurityStatus"
         />

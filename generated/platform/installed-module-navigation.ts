@@ -2,5 +2,17 @@
 
 import type { PlatformInstalledNavigation } from '@eve-space/platform-module-contract/nuxt'
 
-export const installedModuleNavigation =
-  [] as const satisfies readonly PlatformInstalledNavigation[]
+export const installedModuleNavigation = [
+  {
+    moduleId: 'market',
+    id: 'market',
+    label: 'Market',
+    description: 'Browse published EVE items',
+    to: '/market',
+    icon: 'market',
+    audience: 'public',
+    placement: 'dashboard',
+    order: 15,
+    pageName: 'eve-market-overview',
+  },
+] as const satisfies readonly PlatformInstalledNavigation[]

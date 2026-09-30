@@ -9,8 +9,8 @@ const sha256Pattern = /^[0-9a-f]{64}$/
 const initialManifestLength = 1
 const initialTailSequence = 1
 const initialManifestSha256 = '8ea247ed3f0f99633c9778959dd56b38b219adb6bb2f7f2be0876ce01d6d73b1'
-const acceptedManifestLength = 18
-const acceptedManifestSha256 = '9b192f0b562b2d2c27016ec501d3314980b71af21d6bc9bc2b8d69a1c46d2897'
+const acceptedManifestLength = 20
+const acceptedManifestSha256 = 'ec0001c2ac863aceca4e325fa46411eb61c7b4111f9ab33f2f8f77c841c1c7b0'
 
 export interface CoreMigrationIdentity {
   readonly name: string
@@ -40,6 +40,8 @@ export const activeCoreMigrationManifest = defineManifest(`
 016_oauth_lifecycle_intents.sql f6c04435a1508e7a88ef0c6fe1cb92d8acef171f46d29afddb2fbb8e0302b10b
 017_platform_resource_expiry.sql 022cb1bcc8e2766aa57f478fabd2b0304e7f7273ee7ce7fa302a20ef894ff8fc
 018_current_observation_audit.sql 663750bf4eda2e226e12afaf6671ba80f0aeeb5cafa2ef0f67c0cf39ad8d89af
+019_market_group_icon.sql 2b1cd7be615d42293c26b613f041d19a8dc54271dbf4adfa72240c1fd36a8f41
+020_sde_solar_system_region.sql f935fcb56a586cf9660f50e7807a848b31cd0c0cc4bae63c8988759b06605b8a
 `)
 
 export const latestCoreMigrationName = activeCoreMigrationManifest.at(-1)!.name

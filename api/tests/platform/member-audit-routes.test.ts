@@ -55,6 +55,8 @@ vi.mock('../../src/middleware/organization-session.js', () => ({
     context.set('organization', organizationSession)
     await next()
   },
+}))
+vi.mock('../../src/organization/session-context.js', () => ({
   loadOrganizationSessionContext: vi.fn(async () => organizationSession),
 }))
 vi.mock('../../src/core-data/public-character-profile-adapter.js', () => ({

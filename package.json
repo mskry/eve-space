@@ -43,7 +43,7 @@
     "quality:sonar:esi-client": "pnpm --filter @evespace/esi-client test:coverage && pnpm sonar:esi-client",
     "sde:ingest": "cargo run --release --manifest-path sde-ingest/Cargo.toml --",
     "lint": "pnpm lint:workspace && pnpm --filter @evespace/esi-client lint",
-    "lint:workspace": "oxlint . --ignore-pattern 'packages/esi-client/**' && pnpm lint:quality && pnpm registry:check && pnpm core-data:coverage:check && tsx scripts/verify-core-migrations.ts && node scripts/verify-esi-egress.mjs && tsx scripts/verify-module-boundaries.ts && tsx scripts/verify-platform-module-contract-boundaries.ts && tsx scripts/verify-nuxt-module-boundaries.ts && tsx scripts/verify-esi-gateway-boundaries.ts && tsx scripts/verify-esi-query-persistence.ts && tsx scripts/verify-query-persistence-boundaries.ts && tsx scripts/verify-universe-cache-boundaries.ts && tsx scripts/verify-core-data-boundaries.ts && tsx scripts/verify-auth-boundaries.ts && tsx scripts/verify-character-boundaries.ts && tsx scripts/verify-character-route-ownership.ts && tsx scripts/verify-api-http-boundaries.ts && tsx scripts/verify-organization-boundaries.ts && tsx scripts/verify-platform-boundaries.ts && tsx scripts/verify-queue-boundaries.ts && tsx scripts/verify-organization-activity-boundaries.ts && tsx scripts/verify-mail-composition-boundaries.ts",
+    "lint:workspace": "oxlint . --ignore-pattern 'packages/esi-client/**' && pnpm lint:quality && pnpm registry:check && pnpm core-data:coverage:check && tsx scripts/verify-core-migrations.ts && node scripts/verify-esi-egress.mjs && tsx scripts/verify-module-boundaries.ts && tsx scripts/verify-platform-module-contract-boundaries.ts && tsx scripts/verify-nuxt-module-boundaries.ts && tsx scripts/verify-esi-gateway-boundaries.ts && tsx scripts/verify-esi-query-persistence.ts && tsx scripts/verify-query-persistence-boundaries.ts && tsx scripts/verify-universe-cache-boundaries.ts && tsx scripts/verify-core-data-boundaries.ts && tsx scripts/verify-auth-boundaries.ts && tsx scripts/verify-character-boundaries.ts && tsx scripts/verify-character-route-ownership.ts && tsx scripts/verify-api-http-boundaries.ts && tsx scripts/verify-organization-boundaries.ts && tsx scripts/verify-platform-boundaries.ts && tsx scripts/verify-queue-boundaries.ts && tsx scripts/verify-organization-activity-boundaries.ts && tsx scripts/verify-market-server-boundaries.ts && tsx scripts/verify-mail-composition-boundaries.ts",
     "lint:quality": "tsx scripts/check-quality-lint.ts all",
     "lint:quality:baseline": "tsx scripts/check-quality-lint.ts all --write",
     "lint:anti-slop": "tsx scripts/check-quality-lint.ts anti-slop",
@@ -83,6 +83,9 @@
     "postinstall": "pnpm build:nuxt:dependencies && nuxt prepare && lefthook install"
   },
   "dependencies": {
+    "@atlaskit/pragmatic-drag-and-drop": "^4.0.0",
+    "@eve-space/market-manifest": "workspace:*",
+    "@eve-space/market-nuxt": "workspace:*",
     "@eve-space/member-audit-manifest": "workspace:*",
     "@eve-space/member-audit-nuxt": "workspace:*",
     "@eve-space/organization-activity-manifest": "workspace:*",

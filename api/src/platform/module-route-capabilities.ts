@@ -8,6 +8,20 @@ import {
   createPlatformResourceProjectionPersistence,
 } from './module-persistence-capabilities.js'
 
+export const createPlatformPublicRouteCapabilities = <
+  const ModuleId extends string,
+  const RouteId extends string,
+  const ProductIds extends readonly CoreDataProductId[] = readonly [],
+>(
+  moduleId: ModuleId,
+  routeId: RouteId,
+  productIds?: ProductIds,
+) => ({
+  coreData: createCoreDataCapability(productIds ?? [], 'route'),
+  logger: createPlatformModuleLogger(moduleId),
+  persistence: createPlatformModuleRoutePersistence(moduleId, routeId),
+})
+
 export function createPlatformModuleRouteCapabilities<
   const ModuleId extends string,
   const RouteId extends string,

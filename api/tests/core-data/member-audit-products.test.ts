@@ -99,6 +99,7 @@ test('projects bounded skill, type-detail, and location products from one commit
       },
     ]) as never,
   )
+  // SAFETY: The fake database supplies the bounded transaction and cancellable query methods used by this adapter.
   const locationResult = await loadStaticLocationLabelsProduct(
     { locationIds: [30_000_142] },
     database([
@@ -107,6 +108,8 @@ test('projects bounded skill, type-detail, and location products from one commit
         location_id: '30000142',
         name: 'Jita',
         solar_system_id: '30000142',
+        solar_system_name: 'Jita',
+        security_status: 0.945913,
       },
     ]) as never,
   )
@@ -132,7 +135,14 @@ test('projects bounded skill, type-detail, and location products from one commit
   })
   expect(locationResult).toMatchObject({
     complete: true,
-    rows: [{ kind: 'solar_system', locationId: 30_000_142, name: 'Jita' }],
+    rows: [
+      {
+        kind: 'solar_system',
+        locationId: 30_000_142,
+        name: 'Jita',
+        solarSystemSecurityStatus: 0.945913,
+      },
+    ],
   })
   expect(skillResult.revision).toStrictEqual(typeResult.revision)
   expect(typeResult.revision).toStrictEqual(typeGroupResult.revision)

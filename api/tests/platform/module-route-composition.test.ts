@@ -1,13 +1,16 @@
 import type {
+  PlatformAdministratorRouteEnv,
   PlatformAuthenticatedSessionRouteEnv,
   PlatformOwnedCharacterRouteEnv,
+  PlatformPublicRouteEnv,
   PlatformReviewerSearchRouteEnv,
   PlatformReviewerTargetContext,
   PlatformReviewerTargetRouteEnv,
 } from '@eve-space/platform-module-contract/server'
 import type { PlatformInstalledReviewerContributionDescriptor } from '@eve-space/platform-module-contract/installed'
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { env } from '../../src/env.js'
 
 const mocks = vi.hoisted(() => ({
   authorizeOrganizationContribution: vi.fn(),
@@ -19,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   createPlatformReviewerEvidenceReads: vi.fn(() => ({ read: vi.fn() })),
   createPlatformReviewerEvidenceSummaryReads: vi.fn(() => ({ read: vi.fn() })),
   findOwnedCharacter: vi.fn(),
+  findAdminSession: vi.fn(),
   findSession: vi.fn(),
   isInstalledModuleContributionEnabled: vi.fn(),
   loadModuleRuntimeState: vi.fn(),
@@ -30,6 +34,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../src/auth/character-lifecycle.js', () => ({
   findOwnedCharacter: mocks.findOwnedCharacter,
 }))
+vi.mock('../../src/admin/store.js', () => ({ findAdminSession: mocks.findAdminSession }))
 vi.mock('../../src/auth/session-store.js', () => ({
   findSession: mocks.findSession,
 }))
@@ -512,6 +517,60 @@ describe('platform module route composition', () => {
       subjectLifecycleId: 'lifecycle-1',
       userId: 'user-1',
     })
+  })
+
+  test('injects on-demand selectors only after current organization and ownership gates', async () => {
+    const onDemand = {
+      currentGeneration: vi.fn().mockResolvedValue(4),
+      request: vi.fn().mockResolvedValue('accepted'),
+    }
+    const feature = new Hono<PlatformOwnedCharacterRouteEnv>().post(
+      '/structures/10',
+      async (context) => {
+        const capability = context.var.platform.onDemandStructure!
+        const generation = await capability.currentGeneration()
+        const result = await capability.request(10)
+        return context.json({ generation, result })
+      },
+    )
+    const app = new Hono().route(
+      '/alpha/characters/:characterId',
+      platformModuleRouteComposers['owned-character'](
+        'alpha',
+        organizationDeclaration,
+        feature,
+        onDemand,
+      ),
+    )
+    const path = '/alpha/characters/9001/structures/10'
+    const accepted = await app.request(path, {
+      method: 'POST',
+      headers: { cookie: 'eve_space_session=session-token' },
+    })
+    expect(accepted.status).toBe(200)
+    expect(await accepted.json()).toEqual({ generation: 4, result: 'accepted' })
+    expect(onDemand.request).toHaveBeenCalledWith(
+      {
+        userId: 'user-1',
+        characterId: 9001,
+        subjectLifecycleId: 'lifecycle-1',
+        organizationVersion: 7,
+      },
+      10,
+    )
+    mocks.authorizeOrganizationContribution.mockResolvedValue({
+      authorized: false,
+      reason: 'permission',
+    })
+    expect(
+      (
+        await app.request(path, {
+          method: 'POST',
+          headers: { cookie: 'eve_space_session=session-token' },
+        })
+      ).status,
+    ).toBe(403)
+    expect(onDemand.request).toHaveBeenCalledOnce()
   })
 
   test('hides routes for disabled modules before loading a session', async () => {
@@ -1046,6 +1105,101 @@ describe('platform module route composition', () => {
     expect(mocks.authorizeOrganizationReviewerContribution).not.toHaveBeenCalled()
     expect(mocks.resolveOrganizationReviewerTarget).not.toHaveBeenCalled()
   })
+})
+
+test('gates a public route by module enablement without loading a session', async () => {
+  vi.clearAllMocks()
+  mocks.isInstalledModuleContributionEnabled.mockResolvedValue(true)
+  const readProduct = vi.fn().mockReturnValue({ revision: 1 })
+  const handler = vi.fn((context: Context<PlatformPublicRouteEnv>) => {
+    context.header('Cache-Control', 'public, max-age=30')
+    return context.json(readProduct(), 200)
+  })
+  const feature = new Hono<PlatformPublicRouteEnv>().get('/', handler)
+  const app = new Hono().route(
+    '/api/modules/alpha/catalogue',
+    platformModuleRouteComposers.public('alpha', feature),
+  )
+
+  const enabled = await app.request('/api/modules/alpha/catalogue')
+  expect(enabled.status).toBe(200)
+  expect(enabled.headers.get('Cache-Control')).toBe('public, max-age=30')
+  expect(mocks.findSession).not.toHaveBeenCalled()
+  expect(handler).toHaveBeenCalledOnce()
+  expect(readProduct).toHaveBeenCalledOnce()
+
+  mocks.isInstalledModuleContributionEnabled.mockResolvedValue(false)
+  const disabled = await app.request('/api/modules/alpha/catalogue')
+  expect(disabled.status).toBe(404)
+  expect(handler).toHaveBeenCalledOnce()
+  expect(readProduct).toHaveBeenCalledOnce()
+})
+
+test('limits public mutation contributions to enabled modules and trusted browser origins', async () => {
+  vi.clearAllMocks()
+  mocks.isInstalledModuleContributionEnabled.mockResolvedValue(true)
+  const writeDemand = vi.fn(() => ({ status: 'accepted' }))
+  const feature = new Hono<PlatformPublicRouteEnv>().post('/demand', (context) =>
+    context.json(writeDemand(), 202),
+  )
+  const app = new Hono().route(
+    '/api/modules/alpha/history',
+    platformModuleRouteComposers['public-mutation']('alpha', feature),
+  )
+  const path = '/api/modules/alpha/history/demand'
+  const denied = await app.request(path, { method: 'POST' })
+  expect(denied.status).toBe(403)
+  expect(writeDemand).not.toHaveBeenCalled()
+  const accepted = await app.request(path, {
+    method: 'POST',
+    headers: { Origin: env.WEB_ORIGIN },
+  })
+  expect(accepted.status).toBe(202)
+  expect(accepted.headers.get('Cache-Control')).toBe('private, no-store')
+  expect(writeDemand).toHaveBeenCalledOnce()
+  expect(mocks.findSession).not.toHaveBeenCalled()
+  mocks.isInstalledModuleContributionEnabled.mockResolvedValue(false)
+  const disabled = await app.request(path, {
+    method: 'POST',
+    headers: { Origin: env.WEB_ORIGIN },
+  })
+  expect(disabled.status).toBe(404)
+  expect(writeDemand).toHaveBeenCalledOnce()
+})
+
+test('gates a deployment-administrator contribution before private profile access', async () => {
+  vi.clearAllMocks()
+  mocks.isInstalledModuleContributionEnabled.mockResolvedValue(true)
+  mocks.findAdminSession.mockResolvedValue({ adminId: 'admin-1', role: 'owner' })
+  const readProfile = vi.fn(() => ({ configured: true }))
+  const feature = new Hono<PlatformAdministratorRouteEnv>().get('/', (context) =>
+    context.json(readProfile(), 200),
+  )
+  const app = new Hono().route(
+    '/api/modules/alpha/profiles',
+    platformModuleRouteComposers['deployment-administrator']('alpha', feature),
+  )
+
+  const anonymous = await app.request('/api/modules/alpha/profiles')
+  expect(anonymous.status).toBe(401)
+  expectPrivateResponsePolicy(anonymous)
+  expect(readProfile).not.toHaveBeenCalled()
+
+  const authenticated = await app.request('/api/modules/alpha/profiles', {
+    headers: { Cookie: 'eve_space_admin_session=administrator-session' },
+  })
+  expect(authenticated.status).toBe(200)
+  expectPrivateResponsePolicy(authenticated)
+  expect(readProfile).toHaveBeenCalledOnce()
+  expect(mocks.findSession).not.toHaveBeenCalled()
+
+  mocks.isInstalledModuleContributionEnabled.mockResolvedValue(false)
+  const disabled = await app.request('/api/modules/alpha/profiles', {
+    headers: { Cookie: 'eve_space_admin_session=administrator-session' },
+  })
+  expect(disabled.status).toBe(404)
+  expect(readProfile).toHaveBeenCalledOnce()
+  expect(mocks.findAdminSession).toHaveBeenCalledOnce()
 })
 
 function expectPrivateResponsePolicy(response: Response) {

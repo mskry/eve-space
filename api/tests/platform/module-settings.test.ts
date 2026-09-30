@@ -325,7 +325,8 @@ describe('shell navigation order resolution', () => {
   })
 
   test('reconciles Assets in generated order and requires it in a complete order', () => {
-    const resolved = resolveShellNavigationOrder(platformNavigationDefaults, [], new Set(['core']))
+    const owners = new Set(platformNavigationDefaults.map(({ ownerId }) => ownerId))
+    const resolved = resolveShellNavigationOrder(platformNavigationDefaults, [], owners)
     const characterIds = resolved.character.map(({ navigationId }) => navigationId)
     const financeIndex = characterIds.indexOf('core-character-finance')
 

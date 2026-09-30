@@ -25,6 +25,8 @@ interface StaticLocationLabelRow extends postgres.Row {
   kind: 'solar_system' | 'station'
   name: string
   solar_system_id: string
+  solar_system_name: string
+  security_status: number
 }
 
 export function loadStaticLocationLabelsProduct(
@@ -48,7 +50,8 @@ export function loadStaticLocationLabelsProduct(
             sde_projection_state,
             sde_builds,
             sde_solar_systems,
-            sde_npc_stations
+            sde_npc_stations,
+            sde_dataset_rows
           in access share mode
         `,
         signal,
@@ -70,22 +73,50 @@ async function selectStaticLocationLabels(
 ) {
   return executeUniverseQuery(
     transaction<StaticLocationLabelRow[]>`
-      select location_id, kind, name, solar_system_id
+      select location_id, kind, name, solar_system_id, solar_system_name, security_status
       from (
         select
           systems.solar_system_id::text as location_id,
           'solar_system'::text as kind,
           systems.name,
-          systems.solar_system_id::text as solar_system_id
+          systems.solar_system_id::text as solar_system_id,
+          systems.name as solar_system_name,
+          systems.security_status
         from sde_solar_systems as systems
         where systems.solar_system_id = any(${transaction.array([...locationIds], 20)})
         union all
         select
           stations.station_id::text as location_id,
           'station'::text as kind,
-          'NPC station ' || stations.station_id::text as name,
-          stations.solar_system_id::text as solar_system_id
+          coalesce(
+            case when moons.key is not null or planets.key is not null then
+              systems.name || ' ' || to_char((station_data.data ->> 'celestialIndex')::integer, 'FMRN') ||
+                case when moons.key is not null
+                  then ' - Moon ' || (station_data.data ->> 'orbitIndex')
+                  else '' end ||
+                ' - ' || (owner.data -> 'name' ->> 'en') ||
+                case when station_data.data ->> 'useOperationName' = 'true'
+                  then ' ' || (operation.data -> 'operationName' ->> 'en')
+                  else '' end
+            else null end,
+            systems.name || ' · NPC station ' || stations.station_id::text
+          ) as name,
+          stations.solar_system_id::text as solar_system_id,
+          systems.name as solar_system_name,
+          systems.security_status
         from sde_npc_stations as stations
+        join sde_solar_systems as systems on systems.solar_system_id = stations.solar_system_id
+        left join sde_dataset_rows as station_data
+          on station_data.dataset = 'npcStations' and station_data.key = stations.station_id::text
+        left join sde_dataset_rows as moons
+          on moons.dataset = 'mapMoons' and moons.key = station_data.data ->> 'orbitID'
+        left join sde_dataset_rows as planets
+          on planets.dataset = 'mapPlanets' and planets.key = station_data.data ->> 'orbitID'
+        left join sde_dataset_rows as owner
+          on owner.dataset = 'npcCorporations' and owner.key = station_data.data ->> 'ownerID'
+        left join sde_dataset_rows as operation
+          on operation.dataset = 'stationOperations'
+            and operation.key = station_data.data ->> 'operationID'
         where stations.station_id = any(${transaction.array([...locationIds], 20)})
       ) as locations
       order by location_id::bigint
@@ -99,10 +130,19 @@ function mapStaticLocationLabel(row: StaticLocationLabelRow): StaticLocationLabe
   if (row.kind !== 'solar_system' && row.kind !== 'station') {
     throw new CoreDataProductUnavailableError('Core-data location kind is invalid')
   }
+  if (
+    !Number.isFinite(row.security_status) ||
+    row.security_status < -1 ||
+    row.security_status > 1
+  ) {
+    throw new CoreDataProductUnavailableError('Core-data system security is invalid')
+  }
   return {
     kind: row.kind,
     locationId: positiveSafeInteger(row.location_id, 'location ID'),
     name: nonemptyString(row.name, 'location name'),
     solarSystemId: positiveSafeInteger(row.solar_system_id, 'location solar-system ID'),
+    solarSystemName: nonemptyString(row.solar_system_name, 'location solar-system name'),
+    solarSystemSecurityStatus: row.security_status,
   }
 }

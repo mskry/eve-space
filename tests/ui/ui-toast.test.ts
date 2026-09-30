@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { readWorkspaceFile } from '../support/read-workspace-file'
 
 describe('UiToast', () => {
-  it('styles toast elements only with semantic UI variables', () => {
-    const css = readWorkspaceFile('layers/ui/app/assets/css/components.css')
+  it('styles toast elements only with semantic UI and Reka gesture variables', () => {
+    const css = readWorkspaceFile('layers/ui/app/assets/css/toast.css')
     const toastRules = [...css.matchAll(/\.ui-toast[^{}]*\{([^{}]*)\}/g)]
       .map((match) => match[0])
       .join('\n')
@@ -11,7 +11,10 @@ describe('UiToast', () => {
 
     expect(toastRules).not.toBe('')
     expect(variables.length).toBeGreaterThan(0)
-    expect(variables.every((variable) => variable.startsWith('--ui-'))).toBe(true)
+    const gestureVariables = new Set(['--reka-toast-swipe-move-x', '--reka-toast-swipe-end-x'])
+    expect(
+      variables.every((variable) => variable.startsWith('--ui-') || gestureVariables.has(variable)),
+    ).toBe(true)
     expect(toastRules).not.toMatch(/#[\da-f]{3,8}\b|rgba?\(|hsla?\(|\[data-theme=/i)
   })
 

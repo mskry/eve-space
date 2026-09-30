@@ -84,7 +84,7 @@ function historicalDate(value: string | null | undefined) {
           <div>
             <dt>HOME STATION</dt>
             <dd class="character-clones-home-location">
-              <SystemSecurityStatus
+              <UiSystemSecurityStatus
                 v-if="typeof clones.homeLocation?.solarSystemSecurityStatus === 'number'"
                 :value="clones.homeLocation.solarSystemSecurityStatus"
               />

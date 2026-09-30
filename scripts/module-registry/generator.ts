@@ -8,6 +8,8 @@ import type { PlatformModuleManifest } from '@eve-space/platform-module-contract
 import type {
   PlatformInstalledModuleDefinition,
   PlatformInstalledModuleMigrationDescriptor,
+  PlatformInstalledOnDemandResourceDescriptor,
+  PlatformInstalledOnDemandProfileResourceDescriptor,
   PlatformInstalledModuleSectionDefinition,
   PlatformInstalledOrganizationAdmissionScopeDescriptor,
   PlatformInstalledReviewerContributionDescriptor,
@@ -56,6 +58,7 @@ export const generatedRegistryPaths = [
   'api/src/generated/platform/installed-permission-catalog.ts',
   'api/src/generated/platform/installed-reviewer-contributions.ts',
   'api/src/generated/platform/installed-module-resource-declarations.ts',
+  'api/src/generated/platform/installed-module-on-demand.ts',
 ] as const
 
 interface ReviewedPersistenceRoutine extends CanonicalPersistenceRoutine {
@@ -144,6 +147,7 @@ export const generateRegistryFiles = function generateRegistryFiles(
     [generatedRegistryPaths[11], renderInstalledPermissionCatalog(compiled)],
     [generatedRegistryPaths[12], renderInstalledReviewerContributions(compiled)],
     [generatedRegistryPaths[13], renderResourceDeclarations(compiled)],
+    [generatedRegistryPaths[14], renderOnDemandResources(compiled)],
   ])
 } satisfies PlatformRegistryRenderer
 
@@ -214,93 +218,178 @@ const sectionResourceIdsForRoute = (
     .map(({ id }) => id)
 }
 
-function renderApiRoutes(compiled: CompiledPlatformModules) {
-  const manifests = readCompiledPlatformModules(compiled)
-  const reviewerContributions = installedReviewerContributionDescriptors(manifests)
-  const routes = collectApiRoutes(manifests, reviewerContributions)
-  const imports = renderApiRouteImports(routes)
+type GeneratedApiRoute = ReturnType<typeof collectApiRoutes>[number]
+
+const renderApiCapabilityImports = (routes: readonly GeneratedApiRoute[]) => [
+  ...new Set([
+    ...(routes.some(({ route }) => route.authorization === 'public')
+      ? ['createPlatformPublicRouteCapabilities']
+      : []),
+    ...(routes.some(
+      ({ route, reviewerContributionIndex }) =>
+        route.authorization !== 'public' &&
+        reviewerContributionIndex < 0 &&
+        (route.target === undefined || route.target === 'caller'),
+    )
+      ? ['createPlatformModuleRouteCapabilities']
+      : []),
+    ...(routes.some(({ reviewerContributionIndex }) => reviewerContributionIndex >= 0)
+      ? ['createPlatformReviewerContributionRouteCapabilities']
+      : []),
+    ...(routes.some(
+      ({ route, reviewerContributionIndex }) =>
+        reviewerContributionIndex < 0 && route.target !== undefined && route.target !== 'caller',
+    )
+      ? ['createPlatformReviewerContributionRouteCapabilities']
+      : []),
+  ]),
+]
+
+const renderPublicRouteMount = ({ manifest, route, binding }: GeneratedApiRoute) =>
+  `\n  .route(\n    ${quote(route.namespace)},\n    platformModuleRouteComposers.public(${quote(manifest.id)}, ${binding}),\n  )`
+
+const renderAdministratorRouteMount = ({ manifest, route, binding }: GeneratedApiRoute) =>
+  `\n  .route(\n    ${quote(route.namespace)},\n    platformModuleRouteComposers[${quote('deployment-administrator')}](${quote(manifest.id)}, ${binding}),\n  )`
+
+const renderPublicMutationRouteMount = ({ manifest, route, binding }: GeneratedApiRoute) => {
+  const key = `${manifest.id}/${route.id}`
+  const requester = route.onDemandProfileResourceId
+    ? `, createOnDemandProfileRequester(installedModuleOnDemandProfiles[${quote(key)}])`
+    : ''
+  return `\n  .route(\n    ${quote(route.namespace)},\n    platformModuleRouteComposers[${quote('public-mutation')}](${quote(manifest.id)}, ${binding}${requester}),\n  )`
+}
+
+const renderOnDemandRouteArgument = ({ manifest, route }: GeneratedApiRoute) => {
+  if (!route.onDemandResourceId) return ''
+  const onDemandKey = `${manifest.id}/${route.id}`
+  return `      createOnDemandStructureRequester(installedModuleOnDemandResources[${quote(onDemandKey)}]),\n`
+}
+
+const renderProtectedRouteMount = ({
+  manifest,
+  route,
+  binding,
+  reviewerContributionIndex,
+}: GeneratedApiRoute) => {
+  const composer =
+    route.target !== undefined && route.target !== 'caller' ? route.target : route.authorization
+  const section = route.sectionId ? `, sectionId: ${quote(route.sectionId)}` : ''
+  const additionalPermissions = route.additionalRequiredPermissions
+    ? `, additionalRequiredPermissions: ${JSON.stringify(route.additionalRequiredPermissions)} as const`
+    : ''
+  const target = route.target ? `, target: ${quote(route.target)}` : ''
+  const exposure = route.exposure ? `, exposure: ${quote(route.exposure)}` : ''
+  const reviewerEvidence = renderEvidenceRouteBinding(route)
+  const sectionResourceIds = sectionResourceIdsForRoute(manifest, route.sectionId)
+  const reviewerResourceIds =
+    reviewerContributionIndex < 0
+      ? ''
+      : `, reviewerResourceIds: ${JSON.stringify(sectionResourceIds)} as const`
+  const organizationCommands = route.organizationCommands
+    ? `, organizationCommands: ${JSON.stringify(route.organizationCommands)} as const`
+    : ''
+  const coreDataProducts = route.coreDataProducts?.length
+    ? `, coreDataProducts: ${JSON.stringify(route.coreDataProducts)} as const`
+    : ''
+  const contributionRoute =
+    reviewerContributionIndex >= 0
+      ? `, routeId: ${quote(route.id)}, namespace: ${quote(route.namespace)}`
+      : ''
+  const onDemandArgument = renderOnDemandRouteArgument({
+    manifest,
+    route,
+    binding,
+    reviewerContributionIndex,
+  })
+  const organization = `{ publisherPackage: ${quote(manifest.release.publisherPackage)}, moduleId: ${quote(manifest.id)}${contributionRoute}, audience: ${quote(route.audience)}, requiredPermission: ${quote(route.requiredPermission)}${additionalPermissions}${section}${target}${exposure}${reviewerEvidence}${reviewerResourceIds}${organizationCommands}${coreDataProducts} }`
+  if (reviewerContributionIndex >= 0) {
+    return `\n  .route(\n    ${quote(route.namespace)},\n    composePlatformReviewerContributionRoute(\n      installedReviewerContributions[${reviewerContributionIndex}]!,\n      ${organization},\n      ${binding},\n    ),\n  )`
+  }
+  return `\n  .route(\n    ${quote(route.namespace)},\n    platformModuleRouteComposers[${quote(composer)}](\n      ${quote(manifest.id)},\n      { publisherPackage: ${quote(manifest.release.publisherPackage)}, moduleId: ${quote(manifest.id)}, audience: ${quote(route.audience)}, requiredPermission: ${quote(route.requiredPermission)}${additionalPermissions}${section}${target}${exposure}${reviewerEvidence}${organizationCommands}${coreDataProducts} },\n      ${binding},\n${onDemandArgument}    ),\n  )`
+}
+
+const renderApiRouteMount = (route: GeneratedApiRoute) => {
+  if (route.route.authorization === 'public') return renderPublicRouteMount(route)
+  if (route.route.authorization === 'deployment-administrator') {
+    return renderAdministratorRouteMount(route)
+  }
+  if (route.route.authorization === 'public-mutation') {
+    return renderPublicMutationRouteMount(route)
+  }
+  return renderProtectedRouteMount(route)
+}
+
+const renderApiRoutePlatformImports = (routes: readonly GeneratedApiRoute[]) => {
+  if (!routes.length) return ''
   const hasReviewerContributions = routes.some(
     ({ reviewerContributionIndex }) => reviewerContributionIndex >= 0,
   )
   const hasLegacyRoutes = routes.some(
     ({ reviewerContributionIndex }) => reviewerContributionIndex < 0,
   )
+  const hasOnDemand = routes.some(({ route }) => route.onDemandResourceId !== undefined)
+  const hasOnDemandProfiles = routes.some(
+    ({ route }) => route.onDemandProfileResourceId !== undefined,
+  )
+  const onDemandRegistries = [
+    ...(hasOnDemand ? ['installedModuleOnDemandResources'] : []),
+    ...(hasOnDemandProfiles ? ['installedModuleOnDemandProfiles'] : []),
+  ]
   const compositionImports = [
     ...(hasReviewerContributions ? ['composePlatformReviewerContributionRoute'] : []),
     ...(hasLegacyRoutes ? ['platformModuleRouteComposers'] : []),
   ]
-  const capabilityImports = [
-    ...new Set([
-      ...(routes.some(
-        ({ route, reviewerContributionIndex }) =>
-          reviewerContributionIndex < 0 &&
-          (route.target === undefined || route.target === 'caller'),
-      )
-        ? ['createPlatformModuleRouteCapabilities']
+  const capabilityImports = renderApiCapabilityImports(routes)
+  return (
+    [
+      `import { ${compositionImports.join(', ')} } from '../../platform/module-route-composition.js'`,
+      `import { ${capabilityImports.join(', ')} } from '../../platform/module-route-capabilities.js'`,
+      ...(hasReviewerContributions
+        ? ["import { installedReviewerContributions } from './installed-reviewer-contributions.js'"]
         : []),
-      ...(hasReviewerContributions ? ['createPlatformReviewerContributionRouteCapabilities'] : []),
-      ...(routes.some(
-        ({ route, reviewerContributionIndex }) =>
-          reviewerContributionIndex < 0 && route.target !== undefined && route.target !== 'caller',
-      )
-        ? ['createPlatformReviewerContributionRouteCapabilities']
+      ...(hasOnDemand
+        ? ["import { createOnDemandStructureRequester } from '../../queue/on-demand-structure.js'"]
         : []),
-    ]),
-  ]
-  const platformImports = routes.length
-    ? [
-        `import { ${compositionImports.join(', ')} } from '../../platform/module-route-composition.js'`,
-        `import { ${capabilityImports.join(', ')} } from '../../platform/module-route-capabilities.js'`,
-        ...(hasReviewerContributions
-          ? [
-              "import { installedReviewerContributions } from './installed-reviewer-contributions.js'",
-            ]
-          : []),
-      ].join('\n') + '\n'
-    : ''
-  const factories = routes.map(({ manifest, route, binding, reviewerContributionIndex }) => {
-    let capabilities: string
-    if (reviewerContributionIndex >= 0) {
-      capabilities = `createPlatformReviewerContributionRouteCapabilities(installedReviewerContributions[${reviewerContributionIndex}]!, ${JSON.stringify(route.coreDataProducts ?? [])} as const)`
-    } else if (route.target !== undefined && route.target !== 'caller') {
-      capabilities = `createPlatformReviewerContributionRouteCapabilities({ moduleId: ${quote(manifest.id)} }, ${JSON.stringify(route.coreDataProducts ?? [])} as const)`
-    } else {
-      capabilities = `createPlatformModuleRouteCapabilities(${quote(manifest.id)}, ${quote(route.id)}, ${JSON.stringify(route.coreDataProducts ?? [])} as const)`
-    }
-    const evidence = renderEvidenceFactoryArgument(route, binding)
-    return `const ${binding} = ${binding}Factory(${capabilities}${evidence})\n`
+      ...(hasOnDemandProfiles
+        ? ["import { createOnDemandProfileRequester } from '../../queue/on-demand-profile.js'"]
+        : []),
+      ...(onDemandRegistries.length
+        ? [`import { ${onDemandRegistries.join(', ')} } from './installed-module-on-demand.js'`]
+        : []),
+    ].join('\n') + '\n'
+  )
+}
+
+const renderApiRouteCapabilities = ({
+  manifest,
+  route,
+  reviewerContributionIndex,
+}: GeneratedApiRoute) => {
+  const products = `${JSON.stringify(route.coreDataProducts ?? [])} as const`
+  if (route.authorization === 'public') {
+    return `createPlatformPublicRouteCapabilities(${quote(manifest.id)}, ${quote(route.id)}, ${products})`
+  }
+  if (reviewerContributionIndex >= 0) {
+    return `createPlatformReviewerContributionRouteCapabilities(installedReviewerContributions[${reviewerContributionIndex}]!, ${products})`
+  }
+  if (route.target !== undefined && route.target !== 'caller') {
+    return `createPlatformReviewerContributionRouteCapabilities({ moduleId: ${quote(manifest.id)} }, ${products})`
+  }
+  return `createPlatformModuleRouteCapabilities(${quote(manifest.id)}, ${quote(route.id)}, ${products})`
+}
+
+function renderApiRoutes(compiled: CompiledPlatformModules) {
+  const manifests = readCompiledPlatformModules(compiled)
+  const reviewerContributions = installedReviewerContributionDescriptors(manifests)
+  const routes = collectApiRoutes(manifests, reviewerContributions)
+  const imports = renderApiRouteImports(routes)
+  const platformImports = renderApiRoutePlatformImports(routes)
+  const factories = routes.map((generated) => {
+    const capabilities = renderApiRouteCapabilities(generated)
+    const evidence = renderEvidenceFactoryArgument(generated.route, generated.binding)
+    return `const ${generated.binding} = ${generated.binding}Factory(${capabilities}${evidence})\n`
   })
-  const chain = routes.map(({ manifest, route, binding, reviewerContributionIndex }) => {
-    const composer =
-      route.target !== undefined && route.target !== 'caller' ? route.target : route.authorization
-    const section = route.sectionId ? `, sectionId: ${quote(route.sectionId)}` : ''
-    const additionalPermissions = route.additionalRequiredPermissions
-      ? `, additionalRequiredPermissions: ${JSON.stringify(route.additionalRequiredPermissions)} as const`
-      : ''
-    const target = route.target ? `, target: ${quote(route.target)}` : ''
-    const exposure = route.exposure ? `, exposure: ${quote(route.exposure)}` : ''
-    const reviewerEvidence = renderEvidenceRouteBinding(route)
-    const sectionResourceIds = sectionResourceIdsForRoute(manifest, route.sectionId)
-    const reviewerResourceIds =
-      reviewerContributionIndex < 0
-        ? ''
-        : `, reviewerResourceIds: ${JSON.stringify(sectionResourceIds)} as const`
-    const organizationCommands = route.organizationCommands
-      ? `, organizationCommands: ${JSON.stringify(route.organizationCommands)} as const`
-      : ''
-    const coreDataProducts = route.coreDataProducts?.length
-      ? `, coreDataProducts: ${JSON.stringify(route.coreDataProducts)} as const`
-      : ''
-    const contributionRoute =
-      reviewerContributionIndex >= 0
-        ? `, routeId: ${quote(route.id)}, namespace: ${quote(route.namespace)}`
-        : ''
-    const organization = `{ publisherPackage: ${quote(manifest.release.publisherPackage)}, moduleId: ${quote(manifest.id)}${contributionRoute}, audience: ${quote(route.audience)}, requiredPermission: ${quote(route.requiredPermission)}${additionalPermissions}${section}${target}${exposure}${reviewerEvidence}${reviewerResourceIds}${organizationCommands}${coreDataProducts} }`
-    if (reviewerContributionIndex >= 0) {
-      return `\n  .route(\n    ${quote(route.namespace)},\n    composePlatformReviewerContributionRoute(\n      installedReviewerContributions[${reviewerContributionIndex}]!,\n      ${organization},\n      ${binding},\n    ),\n  )`
-    }
-    return `\n  .route(\n    ${quote(route.namespace)},\n    platformModuleRouteComposers[${quote(composer)}](\n      ${quote(manifest.id)},\n      ${organization},\n      ${binding},\n    ),\n  )`
-  })
+  const chain = routes.map(renderApiRouteMount)
   const composition = routes.length ? `${platformImports}${imports}\n${factories.join('')}\n` : '\n'
   return `${generatedHeader}import { Hono } from 'hono'\n${composition}export const installedModuleRoutes = new Hono()${chain.join('')}\n`
 }
@@ -381,13 +470,15 @@ function renderWorkerResources(compiled: CompiledPlatformModules) {
     const sectionId = resource.sectionId ? ` sectionId: ${quote(resource.sectionId)},` : ''
     const scheduled = resource.scheduled === false ? ' scheduled: false,' : ''
     const freshness = resource.freshness ? ` freshness: ${quote(resource.freshness)},` : ''
+    const profileKeyed =
+      'profileKeyed' in resource && resource.profileKeyed ? ' profileKeyed: true,' : ''
     const protocolOperations = [
       ...new Set([resource.operationId, ...(resource.dependentOperationIds ?? [])]),
     ]
       .map(quote)
       .join(' | ')
     const contract = `PlatformResourceImplementationForContract<typeof ${binding}, ${quote(resource.operationId)}, PlatformEsiOperationProtocol<${protocolOperations}>, readonly ${coreDataProducts}, InstalledModuleResourceProjectionPersistence<${capabilityKey}>, InstalledModuleResourceMaterializationPersistence<${capabilityKey}>>`
-    return `({ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${sectionId} coreDataProducts: ${coreDataProducts} as const,${dependent}${batch}${scheduled}${freshness} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, persistence: ${JSON.stringify(resource.persistence)} as const, implementation: ${binding} satisfies ${contract} } as const)`
+    return `({ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${sectionId} coreDataProducts: ${coreDataProducts} as const,${dependent}${batch}${scheduled}${freshness}${profileKeyed} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, persistence: ${JSON.stringify(resource.persistence)} as const, implementation: ${binding} satisfies ${contract} } as const)`
   })
   const rendered = descriptors.length ? `[${descriptors.join(', ')}]` : '[]'
   const importedTypes = resources.length
@@ -410,6 +501,47 @@ function renderResourceDeclarations(compiled: CompiledPlatformModules) {
   )
   const rendered = descriptors.length ? `[${descriptors.join(', ')}]` : '[]'
   return `${generatedHeader}import type { PlatformInstalledResourceDeclaration } from '@eve-space/platform-module-contract/resources'\n\nexport const installedModuleResourceDeclarations =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDeclaration[]\n`
+}
+
+function renderOnDemandResources(compiled: CompiledPlatformModules) {
+  const manifests = readCompiledPlatformModules(compiled)
+  const entries = manifests.flatMap((manifest) =>
+    manifest.server.routes.flatMap((route) => {
+      if (!route.onDemandResourceId) return []
+      const descriptor: PlatformInstalledOnDemandResourceDescriptor = {
+        publisherPackage: manifest.release.publisherPackage,
+        moduleId: manifest.id,
+        routeId: route.id,
+        resourceId: route.onDemandResourceId,
+        admissionScope: platformOrganizationAdmissionScope(manifest.id, {
+          audience: 'member',
+          requiredPermission: route.requiredPermission!,
+        }),
+        audience: 'member',
+        requiredPermission: route.requiredPermission!,
+      }
+      return [[`${manifest.id}/${route.id}`, descriptor] as const]
+    }),
+  )
+  const rendered = entries.length
+    ? `{${entries
+        .map(([key, value]) => `\n  ${quote(key)}: ${JSON.stringify(value)},`)
+        .join('')}\n}`
+    : '{}'
+  const profiles = manifests.flatMap((manifest) =>
+    manifest.server.routes.flatMap((route) => {
+      if (!route.onDemandProfileResourceId) return []
+      const descriptor: PlatformInstalledOnDemandProfileResourceDescriptor = {
+        publisherPackage: manifest.release.publisherPackage,
+        moduleId: manifest.id,
+        routeId: route.id,
+        resourceId: route.onDemandProfileResourceId,
+      }
+      const key = `${manifest.id}/${route.id}`
+      return [`\n  ${quote(key)}: ${JSON.stringify(descriptor)},`]
+    }),
+  )
+  return `${generatedHeader}import type { PlatformInstalledOnDemandResourceDescriptor, PlatformInstalledOnDemandProfileResourceDescriptor } from '@eve-space/platform-module-contract/installed'\n\nexport const installedModuleOnDemandResources = ${rendered} as const satisfies Readonly<Record<string, PlatformInstalledOnDemandResourceDescriptor>>\n\nexport const installedModuleOnDemandProfiles = {${profiles.join('')}\n} as const satisfies Readonly<Record<string, PlatformInstalledOnDemandProfileResourceDescriptor>>\n`
 }
 
 function renderMigrations(
@@ -738,6 +870,13 @@ function installedOrganizationAdmissionScopes(
   const scopes = new Map<string, PlatformInstalledOrganizationAdmissionScopeDescriptor>()
   for (const manifest of manifests) {
     for (const authorization of [...manifest.server.routes, ...manifest.server.activityProviders]) {
+      if (
+        'authorization' in authorization &&
+        (authorization.authorization === 'public' ||
+          authorization.authorization === 'public-mutation' ||
+          authorization.authorization === 'deployment-administrator')
+      )
+        continue
       const admissionScope = platformOrganizationAdmissionScope(manifest.id, authorization)
       scopes.set(admissionScope, {
         additionalRequiredPermissions: authorization.additionalRequiredPermissions,
@@ -772,17 +911,24 @@ function renderNuxtContributions(compiled: CompiledPlatformModules) {
     navigation: manifest.nuxt.navigation,
     packageName: manifest.nuxt.package,
     pages: manifest.nuxt.pages,
-    queryAdmissionScopes: manifest.server.routes.map((route) => ({
-      routeId: route.id,
-      authorization: route.authorization,
-      audience: route.audience,
-      requiredPermission: route.requiredPermission,
-      additionalRequiredPermissions: route.additionalRequiredPermissions,
-      sectionId: route.sectionId,
-      target: route.target,
-      exposure: route.exposure,
-      admissionScope: platformOrganizationAdmissionScope(manifest.id, route),
-    })),
+    queryAdmissionScopes: manifest.server.routes
+      .filter(
+        (route) =>
+          route.authorization !== 'public' &&
+          route.authorization !== 'public-mutation' &&
+          route.authorization !== 'deployment-administrator',
+      )
+      .map((route) => ({
+        routeId: route.id,
+        authorization: route.authorization,
+        audience: route.audience,
+        requiredPermission: route.requiredPermission,
+        additionalRequiredPermissions: route.additionalRequiredPermissions,
+        sectionId: route.sectionId,
+        target: route.target,
+        exposure: route.exposure,
+        admissionScope: platformOrganizationAdmissionScope(manifest.id, route),
+      })),
     reviewerContributions: reviewerNuxtContributionDescriptors(manifest),
     sections: manifest.sections ?? [],
   }))

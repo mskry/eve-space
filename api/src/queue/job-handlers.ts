@@ -12,6 +12,8 @@ import { runRuleGroupReconciliation } from '../organization/group-rule-repair.js
 import { convergeAllianceExecutorChangeInTransaction } from '../organization/alliance-executor-convergence.js'
 import { convergeObservedAffiliationInTransaction } from '../organization/authority-convergence.js'
 import { processInstalledResourceRefresh } from '../platform/resource-refresh.js'
+import { executeInstalledProfileWork } from '../platform/profile-work.js'
+import { processInstalledStructureRefresh } from '../platform/structure-refresh.js'
 import { processAffiliationBatch } from '../characters/affiliation-sync.js'
 import {
   hasJobContract,
@@ -135,6 +137,24 @@ const jobHandlers = {
     classifyError: delayedOr(() => ({ type: 'permanent' })),
     async process(payload, context) {
       await processInstalledResourceRefresh(payload, { signal: context.signal })
+    },
+  }),
+  'module-profile-refresh': handler({
+    name: 'module-profile-refresh',
+    classifyError: delayedOr(() => ({ type: 'permanent' })),
+    async process(payload, context) {
+      const { profileId, revision, dueAt, requestedTypeId, ...resourceIdentity } = payload
+      await executeInstalledProfileWork(
+        { resourceIdentity, profileId, revision, dueAt, requestedTypeId },
+        context.signal,
+      )
+    },
+  }),
+  'module-structure-refresh': handler({
+    name: 'module-structure-refresh',
+    classifyError: delayedOr(() => ({ type: 'permanent' })),
+    async process(payload, context) {
+      await processInstalledStructureRefresh(payload, context.signal)
     },
   }),
   'rule-group-reconciliation': handler({

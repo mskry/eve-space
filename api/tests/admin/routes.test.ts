@@ -141,6 +141,7 @@ const shellNavigationOrder = {
   ],
   dashboard: [
     { ownerId: 'core', navigationId: 'core-overview' },
+    { ownerId: 'market', navigationId: 'market' },
     { ownerId: 'core', navigationId: 'core-characters' },
     { ownerId: 'core', navigationId: 'core-mail' },
     { ownerId: 'core', navigationId: 'core-settings' },

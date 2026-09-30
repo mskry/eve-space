@@ -145,6 +145,12 @@ These rules apply to every source directory. Keep a directory flat by default, w
 - A leaf helper module holds one kind of helper and imports nothing from its own directory.
 - Treat a helper duplicated across files, or one type declared twice under different names, as a defect to remove rather than a style preference.
 
+### Documentation Location
+
+- Put a platform module's documentation in `features/<module-id>/docs/` when only a change to that module's own code could make it wrong: its UI and interaction behaviour, its API contract, limits, and data semantics.
+- Keep documentation in root `docs/`, named `<module-id>-*.md` for module-specific topics, when a core or platform change could invalidate it or operators and reviewers need it across modules: deployment, rollback, and migration order; core migrations; core-data products and SDE ingest; ESI operation reviews; fetching-compliance reviews and other verification records.
+- A document that mixes both belongs in root `docs/`. Link between the two locations rather than duplicating content.
+
 ## Runtime Architecture
 
 - Nuxt renders the UI and may fetch public API data during SSR. Browser-side auth and character-owned requests call Hono directly with credentials enabled.

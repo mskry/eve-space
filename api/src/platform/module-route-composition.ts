@@ -1,19 +1,25 @@
-import type {
-  PlatformAuthenticatedSessionRouteEnv,
-  PlatformOrganizationCommandId,
-  PlatformOwnedCharacterRouteEnv,
-  PlatformReviewerSearchRouteEnv,
-  PlatformReviewerTargetRouteEnv,
-  PlatformRouteSecurityClassification,
+import {
+  resolvePlatformModuleRoutePath,
+  type PlatformAdministratorRouteEnv,
+  type PlatformAuthenticatedSessionRouteEnv,
+  type PlatformOrganizationCommandId,
+  type PlatformOwnedCharacterRouteEnv,
+  type PlatformOnDemandProfileRequester,
+  type PlatformOnDemandStructureRequester,
+  type PlatformPublicMutationRouteEnv,
+  type PlatformPublicRouteEnv,
+  type PlatformReviewerSearchRouteEnv,
+  type PlatformReviewerTargetRouteEnv,
+  type PlatformRouteSecurityClassification,
 } from '@eve-space/platform-module-contract/server'
 import type { CoreDataProductId } from '@eve-space/core-data-contract'
-import { resolvePlatformModuleRoutePath } from '@eve-space/platform-module-contract/server'
 import type {
   PlatformInstalledOrganizationContributionAuthorization,
   PlatformInstalledReviewerContributionDescriptor,
 } from '@eve-space/platform-module-contract/installed'
 import { PlatformModuleHttpError } from '@eve-space/platform-module-server'
 import { Hono, type Context, type MiddlewareHandler, type Schema } from 'hono'
+import { compress } from 'hono/compress'
 import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
 import {
@@ -36,10 +42,8 @@ import {
   type ModuleOrganizationAuthorizationEnv,
 } from '../middleware/module-authorization.js'
 import { requireInstalledModuleEnabled } from '../middleware/module-enablement.js'
-import {
-  loadOrganizationSession,
-  loadOrganizationSessionContext,
-} from '../middleware/organization-session.js'
+import { loadOrganizationSession } from '../middleware/organization-session.js'
+import { loadOrganizationSessionContext } from '../organization/session-context.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
 import {
   loadOrganizationReviewerTarget,
@@ -50,8 +54,46 @@ import {
 import { recordModuleSensitiveAccessDecision } from './module-sensitive-access-audit.js'
 import { requireInstalledReviewerContribution } from './reviewer-contributions.js'
 import { isReviewerProfileReleaseCurrent } from './reviewer-profile-release.js'
+import { loadAdminSession, requireAdminSession } from '../admin/session-middleware.js'
+import { requireTrustedMutationOrigin } from '../http/trusted-origin.js'
 
 const sensitiveAccessSections: ReadonlySet<string> = new Set(organizationSensitiveAccessSections)
+
+const composePublicModuleRoute = <RouteSchema extends Schema, RouteBasePath extends string>(
+  moduleId: string,
+  route: Hono<PlatformPublicRouteEnv, RouteSchema, RouteBasePath>,
+) =>
+  new Hono()
+    .use('*', requireInstalledModuleEnabled(moduleId))
+    .use('*', compress({ encoding: 'gzip' }))
+    .route('/', route)
+
+const composeAdministratorModuleRoute = <RouteSchema extends Schema, RouteBasePath extends string>(
+  moduleId: string,
+  route: Hono<PlatformAdministratorRouteEnv, RouteSchema, RouteBasePath>,
+) =>
+  new Hono()
+    .use('*', privateNoStore)
+    .use('*', requireInstalledModuleEnabled(moduleId))
+    .use('*', requireTrustedMutationOrigin)
+    .use('*', loadAdminSession)
+    .use('*', requireAdminSession)
+    .route('/', route)
+
+const composePublicMutationModuleRoute = <RouteSchema extends Schema, RouteBasePath extends string>(
+  moduleId: string,
+  route: Hono<PlatformPublicMutationRouteEnv, RouteSchema, RouteBasePath>,
+  onDemandProfile?: PlatformOnDemandProfileRequester,
+) =>
+  new Hono<PlatformPublicMutationRouteEnv>()
+    .use('*', privateNoStore)
+    .use('*', requireInstalledModuleEnabled(moduleId))
+    .use('*', requireTrustedMutationOrigin)
+    .use('*', async (context, next) => {
+      context.set('onDemandProfile', onDemandProfile)
+      return next()
+    })
+    .route('/', route)
 
 function composeAuthenticatedSessionModuleRoute<
   RouteSchema extends Schema,
@@ -303,6 +345,7 @@ function composeOwnedCharacterModuleRoute<RouteSchema extends Schema, RouteBaseP
   organization: PlatformInstalledOrganizationContributionAuthorization &
     PlatformRouteSecurityClassification,
   route: Hono<PlatformOwnedCharacterRouteEnv, RouteSchema, RouteBasePath>,
+  onDemand?: PlatformOnDemandStructureRequester,
 ) {
   return new Hono()
     .use('*', privateNoStore)
@@ -313,11 +356,14 @@ function composeOwnedCharacterModuleRoute<RouteSchema extends Schema, RouteBaseP
     .use('*', requireModuleOrganizationAuthorization(organization))
     .use('*', zValidator('param', characterIdParams))
     .use('*', loadOwnedCharacter)
-    .use('*', exposeOwnedCharacterModuleContext(moduleId, organization.sectionId))
+    .use('*', exposeOwnedCharacterModuleContext(moduleId, organization.sectionId, onDemand))
     .route('/', route)
 }
 
 export const platformModuleRouteComposers = {
+  public: composePublicModuleRoute,
+  'public-mutation': composePublicMutationModuleRoute,
+  'deployment-administrator': composeAdministratorModuleRoute,
   'authenticated-session': composeAuthenticatedSessionModuleRoute,
   'managed-organization-account': composeReviewerTargetModuleRoute,
   'managed-organization-account-search': composeReviewerSearchModuleRoute,
