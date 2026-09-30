@@ -333,6 +333,7 @@ describe('Assets workspace resource states', () => {
       ]),
       state(),
     )
+    await expandFirstLocation(wrapper)
 
     expect(wrapper.get('[data-asset-item-id="57006"] img').attributes('src')).toBe(
       '/images/eve-skin.png',
@@ -507,6 +508,8 @@ describe('Assets workspace inventory interactions', () => {
 
     const locationToggle = wrapper.get('.assets-location-toggle')
     expect(locationToggle.element.tagName).toBe('BUTTON')
+    expect(locationToggle.attributes('aria-expanded')).toBe('false')
+    await locationToggle.trigger('click')
     expect(locationToggle.attributes('aria-expanded')).toBe('true')
     const containerToggle = wrapper.get('.assets-hierarchy-toggle')
     expect(containerToggle.element.tagName).toBe('BUTTON')
@@ -541,6 +544,7 @@ describe('Assets workspace inventory interactions', () => {
       state(),
     )
 
+    await expandFirstLocation(wrapper)
     await wrapper.get('.assets-hierarchy-toggle').trigger('click')
     const order = wrapper
       .findAll('.assets-hierarchy-row')
@@ -554,6 +558,7 @@ describe('Assets workspace inventory interactions', () => {
       collection(Array.from({ length: 235 }, (_, index) => asset(index + 1))),
       state(),
     )
+    await expandFirstLocation(wrapper)
 
     expect(wrapper.findAll('.assets-hierarchy-row')).toHaveLength(100)
     const search = wrapper.get('#assets-search')
@@ -598,7 +603,7 @@ describe('Assets workspace inventory interactions', () => {
     expect(wrapper.find('[aria-label="Asset location pages"]').exists()).toBe(false)
   })
 
-  it('expands the first location after asynchronous route ranks reorder pages', async () => {
+  it('keeps every location collapsed after asynchronous route ranks reorder pages', async () => {
     const assets = Array.from({ length: 51 }, (_, index) =>
       asset(index + 1, {
         locationId: 60_000_001 + index,
@@ -628,7 +633,7 @@ describe('Assets workspace inventory interactions', () => {
       wrapper
         .findAll('.assets-location-toggle')
         .map((toggle) => toggle.attributes('aria-expanded')),
-    ).toStrictEqual(['true', ...Array.from({ length: 49 }, () => 'false')])
+    ).toStrictEqual(Array.from({ length: 50 }, () => 'false'))
     expect(wrapper.text()).not.toContain('Location 001')
   })
 
@@ -709,6 +714,7 @@ describe('Assets workspace inventory interactions', () => {
       state(),
       true,
     )
+    await expandFirstLocation(wrapper)
 
     await wrapper
       .get('button[aria-label="View item information for Asset Safety Wrap"]')
@@ -742,6 +748,10 @@ async function mountWorkspace(
   })
   mountedWrappers.push(wrapper)
   return wrapper
+}
+
+async function expandFirstLocation(wrapper: Awaited<ReturnType<typeof mountWorkspace>>) {
+  await wrapper.get('.assets-location-toggle').trigger('click')
 }
 
 async function settle() {

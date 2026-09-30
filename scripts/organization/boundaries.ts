@@ -55,6 +55,7 @@ const modulesByTier = {
     'policy-store',
     'reviewer-commands',
     'role-store',
+    'session-context',
   ],
   entry: ['alliance-executor-repair', 'compliance-repair', 'group-rule-repair'],
   observability: [

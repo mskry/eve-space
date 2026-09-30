@@ -51,6 +51,10 @@ export interface PlatformCorporationResourceRequirements {
 
 const resourceModeMethods = {
   'bounded-collection': { forbidden: ['request', 'map'], required: ['collect'] },
+  'profile-collection': {
+    forbidden: ['request', 'map', 'collect', 'materialize', 'batch'],
+    required: ['plan', 'execute'],
+  },
   'single-request': { forbidden: ['collect'], required: ['request', 'map'] },
 } as const satisfies Record<
   PlatformResourceExecutionMode,
@@ -192,7 +196,6 @@ const compileResourceCredentialBinding = (
   if (
     resource.subjectKind !== 'character' ||
     (kind !== 'current-owned-character' && kind !== 'current-managed-member-character') ||
-    subjects.length === 0 ||
     subjects.some((subject) => subject !== 'character_id' && subject !== 'corporation_id') ||
     authority.requiredRolePredicate !== null
   ) {
@@ -234,7 +237,8 @@ function assertResourceImplementation(
   const methods = resourceModeMethods[implementation.mode]
   if (
     typeof implementation.operation !== 'string' ||
-    typeof implementation.materialize !== 'function' ||
+    (implementation.mode !== 'profile-collection' &&
+      typeof implementation.materialize !== 'function') ||
     methods.required.some((method) => typeof implementation[method] !== 'function')
   ) {
     throw new Error(
@@ -249,6 +253,12 @@ function assertResourceImplementation(
   }
   if (implementation.mode === 'single-request' && resource.dependentOperationIds?.length) {
     throw new Error(`${label} single-request execution cannot declare dependent operations`)
+  }
+  if (implementation.mode === 'profile-collection' && resource.profileKeyed !== true) {
+    throw new Error(`${label} profile collection requires a profile-keyed descriptor`)
+  }
+  if (resource.profileKeyed === true && implementation.mode !== 'profile-collection') {
+    throw new Error(`${label} profile-keyed descriptor requires profile collection`)
   }
   if (implementation.operation !== resource.operationId) {
     throw new Error(

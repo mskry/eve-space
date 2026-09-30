@@ -3,6 +3,7 @@ import type {
   PlatformAuthenticatedSessionRouteEnv,
   PlatformOrganizationCommandId,
   PlatformOwnedCharacterRouteEnv,
+  PlatformOnDemandStructureRequester,
   PlatformReviewerSearchRouteEnv,
   PlatformReviewerTargetRouteEnv,
 } from '@eve-space/platform-module-contract/server'
@@ -200,7 +201,11 @@ export function exposeAuthenticatedSessionModuleContext(moduleId: string, sectio
   })
 }
 
-export function exposeOwnedCharacterModuleContext(moduleId: string, sectionId?: string) {
+export function exposeOwnedCharacterModuleContext(
+  moduleId: string,
+  sectionId?: string,
+  onDemand?: PlatformOnDemandStructureRequester,
+) {
   return createMiddleware<OwnedCharacterModuleEnv>(async (context, next) => {
     const session = context.var.session
     if (!session) {
@@ -209,6 +214,12 @@ export function exposeOwnedCharacterModuleContext(moduleId: string, sectionId?: 
 
     const { characterId, subjectLifecycleId } = context.var.ownedCharacter
     const organization = context.var.moduleOrganizationAuthorization!
+    const authority = {
+      userId: session.userId,
+      characterId,
+      subjectLifecycleId,
+      organizationVersion: organization.organizationVersion,
+    }
     context.set('platform', {
       authorization: {
         characterId,
@@ -227,6 +238,12 @@ export function exposeOwnedCharacterModuleContext(moduleId: string, sectionId?: 
         userId: session.userId,
         characterId,
         subjectLifecycleId,
+      }),
+      ...(onDemand && {
+        onDemandStructure: {
+          currentGeneration: () => onDemand.currentGeneration(authority),
+          request: (structureId: number) => onDemand.request(authority, structureId),
+        },
       }),
     })
     await next()

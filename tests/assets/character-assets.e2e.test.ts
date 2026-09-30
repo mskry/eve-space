@@ -232,7 +232,8 @@ describe('character Assets production route', async () => {
     const page = await openPage(`/characters/${characterId}/assets`)
     await page.setViewportSize({ height: 900, width: 1440 })
     await page.getByRole('heading', { name: '237 TOTAL ASSETS' }).waitFor()
-    expect(await assetRows(page).count()).toBe(100)
+    await page.getByRole('button', { name: 'Jita IV - Moon 4' }).click()
+    await expect.poll(() => assetRows(page).count()).toBe(100)
     expect(
       await page.getByText('Inventory context is incomplete', { exact: true }).isVisible(),
     ).toBe(true)

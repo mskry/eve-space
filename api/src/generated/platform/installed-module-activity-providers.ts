@@ -2,7 +2,7 @@
 
 import type { PlatformInstalledActivityProviderDescriptor } from '@eve-space/platform-module-contract/activity'
 import { createPlatformModuleActivityProviderCapabilities } from '../../platform/module-activity-provider-capabilities.js'
-import { organizationActivityProvider as module1ActivityProvider0Factory } from '@eve-space/organization-activity-server'
+import { organizationActivityProvider as module2ActivityProvider0Factory } from '@eve-space/organization-activity-server'
 
 export const installedModuleActivityProviders = [
   {
@@ -20,7 +20,7 @@ export const installedModuleActivityProviders = [
     ],
     persistenceOperations: [{ operationId: 'read-activity-snapshots' }] as const,
     invoke: (context) =>
-      module1ActivityProvider0Factory(
+      module2ActivityProvider0Factory(
         createPlatformModuleActivityProviderCapabilities(
           'organization-activity',
           'organization-activity',

@@ -619,6 +619,8 @@ function parseRoute(
       'requiredPermission',
       'additionalRequiredPermissions',
       'coreDataProducts',
+      'onDemandResourceId',
+      'onDemandProfileResourceId',
       'persistenceOperations',
       'sectionId',
       'target',
@@ -640,6 +642,50 @@ function parseRoute(
     `${path}.authorization`,
     issues,
   )
+  if (
+    authorization === 'public' ||
+    authorization === 'public-mutation' ||
+    authorization === 'deployment-administrator'
+  ) {
+    const forbidden = [
+      'audience',
+      'requiredPermission',
+      'additionalRequiredPermissions',
+      'sectionId',
+      'target',
+      'exposure',
+      'reviewerEvidenceResources',
+      'organizationCommands',
+      'onDemandResourceId',
+    ]
+    for (const key of forbidden) {
+      if (record[key] !== undefined)
+        issues.push(`${path}.${key} is not allowed for a ${authorization} route`)
+    }
+    const persistence = parsePersistenceReferences(record, path, issues)
+    const coreDataProducts = readOptionalMembers(
+      record.coreDataProducts,
+      CORE_DATA_PRODUCT_IDS,
+      `${path} core-data products`,
+      issues,
+    )
+    if (id === undefined || namespace === undefined || exportName === undefined || !persistence) {
+      return undefined
+    }
+    return {
+      authorization,
+      coreDataProducts,
+      exportName,
+      id,
+      namespace,
+      onDemandProfileResourceId: readOptionalString(
+        record.onDemandProfileResourceId,
+        `${path}.onDemandProfileResourceId`,
+        issues,
+      ),
+      persistenceOperations: persistence.persistenceOperations,
+    }
+  }
   const audience = readDeclaredMember(
     record.audience,
     platformOrganizationAudiences,
@@ -657,6 +703,11 @@ function parseRoute(
     record.coreDataProducts,
     CORE_DATA_PRODUCT_IDS,
     `${path} core-data products`,
+    issues,
+  )
+  const onDemandResourceId = readOptionalString(
+    record.onDemandResourceId,
+    `${path}.onDemandResourceId`,
     issues,
   )
   const persistence = parsePersistenceReferences(record, path, issues)
@@ -702,6 +753,12 @@ function parseRoute(
     audience,
     authorization,
     coreDataProducts,
+    onDemandResourceId,
+    onDemandProfileResourceId: readOptionalString(
+      record.onDemandProfileResourceId,
+      `${path}.onDemandProfileResourceId`,
+      issues,
+    ),
     exportName,
     exposure,
     id,
@@ -784,6 +841,7 @@ function parseResource(
       'sectionId',
       'scheduled',
       'freshness',
+      'profileKeyed',
     ],
     issues,
   )
@@ -832,6 +890,10 @@ function parseResource(
     record.scheduled === undefined
       ? undefined
       : readBoolean(record.scheduled, `${path}.scheduled`, issues)
+  const profileKeyed =
+    record.profileKeyed === undefined
+      ? undefined
+      : readBoolean(record.profileKeyed, `${path}.profileKeyed`, issues)
   if (
     id === undefined ||
     operationId === undefined ||
@@ -852,6 +914,7 @@ function parseResource(
     materializationIntervalSeconds,
     operationId,
     persistence,
+    profileKeyed,
     scheduled,
   }
   return {

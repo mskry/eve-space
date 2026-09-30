@@ -8,6 +8,7 @@ import type {
 import type { PlatformNavigationDefault } from '@eve-space/platform-module-contract/nuxt'
 
 export const installedModuleDefinitions = [
+  { moduleId: 'market', defaultEnabled: true },
   { moduleId: 'member-audit', defaultEnabled: false },
   { moduleId: 'organization-activity', defaultEnabled: true },
 ] as const satisfies readonly PlatformInstalledModuleDefinition[]
@@ -56,6 +57,13 @@ export const installedModuleSectionDefinitions = [
   },
 ] as const satisfies readonly PlatformInstalledModuleSectionDefinition[]
 export const installedModuleOrganizationAdmissionScopes = [
+  {
+    publisherPackage: '@eve-space/market-manifest',
+    moduleId: 'market',
+    admissionScope: 'organization:v1:market:member:market.structure.read',
+    audience: 'member',
+    requiredPermission: 'market.structure.read',
+  },
   {
     publisherPackage: '@eve-space/member-audit-manifest',
     moduleId: 'member-audit',
@@ -122,6 +130,7 @@ export const installedModuleOrganizationAdmissionScopes = [
 ] as const satisfies readonly PlatformInstalledOrganizationAdmissionScopeDescriptor[]
 export const platformNavigationDefaults = [
   { ownerId: 'core', navigationId: 'core-overview', placement: 'dashboard', order: 10 },
+  { ownerId: 'market', navigationId: 'market', placement: 'dashboard', order: 15 },
   { ownerId: 'core', navigationId: 'core-characters', placement: 'dashboard', order: 20 },
   { ownerId: 'core', navigationId: 'core-mail', placement: 'dashboard', order: 25 },
   { ownerId: 'core', navigationId: 'core-settings', placement: 'dashboard', order: 30 },

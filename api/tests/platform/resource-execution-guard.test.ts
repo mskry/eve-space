@@ -61,6 +61,29 @@ describe('platform resource execution guard', () => {
     expect(loadAuthorization).not.toHaveBeenCalled()
   })
 
+  test('admits only an unscheduled owned-character selector when global resource work is current', async () => {
+    const loadAuthorization = vi.fn().mockResolvedValue({ tokenVersion: 4 })
+    const options = {
+      allowUndue: true,
+      loadCharacterCacheAuthorization: loadAuthorization,
+      resolveEligibility: vi.fn().mockResolvedValue(eligible(4, false)),
+      resources: [{ ...privateResource, scheduled: false }],
+    }
+    await expect(guardInstalledResourceExecution(identity, options)).resolves.toMatchObject({
+      outcome: 'ready',
+      authorization: { tokenVersion: 4 },
+    })
+    expect(loadAuthorization).toHaveBeenCalledOnce()
+    loadAuthorization.mockClear()
+    await expect(
+      guardInstalledResourceExecution(identity, {
+        ...options,
+        resources: [privateResource],
+      }),
+    ).resolves.toStrictEqual({ outcome: 'noop', reason: 'already-current' })
+    expect(loadAuthorization).not.toHaveBeenCalled()
+  })
+
   test('loads authorization only after the durable execution-time check', async () => {
     const order: string[] = []
     const resolveEligibility = vi.fn().mockImplementation(() => {

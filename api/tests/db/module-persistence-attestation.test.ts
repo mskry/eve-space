@@ -4,6 +4,7 @@ import {
   installedModulePersistenceContractFingerprint,
   installedModulePersistenceOperations,
 } from '../../src/generated/platform/installed-module-persistence.js'
+import { installedModuleIds } from '../../src/generated/platform/installed-module-migrations.js'
 import {
   assertInstalledModulePersistenceContract,
   assertInstalledModulePersistenceContractWhenCurrent,
@@ -14,13 +15,13 @@ import { canonicalizePersistenceRoutineSql } from '../../src/db/module-persisten
 import type { ModulePersistenceRoutineDescriptor } from '../../src/db/module-persistence-routine-provisioner.js'
 
 describe('module persistence attestation', () => {
-  test('keeps the installed contract fingerprint compatible with persisted attestations', () => {
+  test('pins the installed contract fingerprint after registered migrations', () => {
     expect(installedModulePersistenceContractFingerprint).toBe(
-      '70d99af4406a0dead81cbb4edf5c9042e3eab48dad63e7e4f7cc91743fce6761',
+      'fb6f42f3c0fc1de39907493bab4055f196397d12b42ce07086e037a2c2b52306',
     )
-    expect(persistenceContractFingerprintFor(installedModulePersistenceOperations)).toBe(
-      installedModulePersistenceContractFingerprint,
-    )
+    expect(
+      persistenceContractFingerprintFor(installedModulePersistenceOperations, installedModuleIds),
+    ).toBe(installedModulePersistenceContractFingerprint)
   })
 
   test('attests exact installed state through installed module filters', async () => {

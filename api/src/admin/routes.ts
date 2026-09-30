@@ -3,7 +3,7 @@ import {
   isPlatformModuleId,
 } from '@eve-space/platform-module-contract/identifiers'
 import { Hono } from 'hono'
-import type { Context, MiddlewareHandler } from 'hono'
+import type { Context } from 'hono'
 import { z } from 'zod'
 import {
   createAdminSession,
@@ -14,8 +14,13 @@ import {
   findAdminSession,
   isDeploymentConfigured,
   updateDeploymentOrganization,
-  type AdminSessionAccount,
 } from './store.js'
+import {
+  adminSessionCookie,
+  loadAdminSession,
+  requireAdminSession,
+  type AdminEnv,
+} from './session-middleware.js'
 import {
   CharacterTransferApprovalError,
   createCharacterTransferApproval,
@@ -41,9 +46,6 @@ import { deleteAuthCookie, readAuthCookie, setAuthCookie } from '../http/auth-co
 import { requireTrustedMutationOrigin } from '../http/trusted-origin.js'
 import { zValidator } from '../http/validation.js'
 
-type AdminEnv = { Variables: { adminSession: AdminSessionAccount | null } }
-
-const adminSessionCookie = 'eve_space_admin_session'
 const adminSessionDurationSeconds = 12 * 60 * 60
 const adminEmailSchema = z
   .string()
@@ -94,23 +96,6 @@ const transferPreviewSchema = z
 const transferApprovalCreateSchema = z.object({ previewId: z.uuid() }).strict()
 const transferApprovalParamsSchema = z.object({ approvalId: z.uuid() })
 const transferApprovalRevokeSchema = z.object({ reason: transferReasonSchema }).strict()
-
-const loadAdminSession: MiddlewareHandler<AdminEnv> = async (context, next) => {
-  setPrivateHeaders(context)
-  const token = readAuthCookie(context, adminSessionCookie)
-  context.set('adminSession', token ? await findAdminSession(token) : null)
-  return next()
-}
-
-const requireAdminSession: MiddlewareHandler<AdminEnv> = async (context, next) => {
-  if (!context.var.adminSession) {
-    return context.json(
-      { code: 'ADMIN_AUTH_REQUIRED', message: 'Administrator login is required.' },
-      401,
-    )
-  }
-  return next()
-}
 
 export const adminRoutes = new Hono<AdminEnv>()
   .use('*', privateNoStore)

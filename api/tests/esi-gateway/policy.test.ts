@@ -24,7 +24,10 @@ import {
 } from '../../src/esi-gateway/internal/catalog.js'
 import { assertEsiOperationContracts } from '../../src/esi-gateway/internal/catalog-validation.js'
 import { classifyEsiResponse } from '../../src/esi-gateway/internal/policy.js'
-import { installedModuleEsiOperationCatalog } from '../../src/generated/platform/installed-module-esi.js'
+import {
+  installedModuleEsiOperationCatalog,
+  installedModuleEsiOperationDefinitions,
+} from '../../src/generated/platform/installed-module-esi.js'
 
 const runtimePrivateCache = {
   collapse: true,
@@ -35,6 +38,86 @@ const runtimePrivateCache = {
 } as const
 
 describe('ESI operation policies', () => {
+  test('registers reviewed Market operations with distinct page identities and exact SDK policy', () => {
+    const operations = {
+      'market-region-orders': ['GetMarketsRegionIdOrders', 'market-order', 300],
+      'market-region-types': ['GetMarketsRegionIdTypes', null, 600],
+      'market-region-history': ['GetMarketsRegionIdHistory', null, null],
+      'market-reference-prices': ['GetMarketsPrices', null, 3600],
+      'market-structure-orders': ['GetMarketsStructuresStructureId', null, 300],
+    } as const
+
+    // SAFETY: Object.keys enumerates only the literal operation table above.
+    for (const id of Object.keys(operations) as (keyof typeof operations)[]) {
+      const [sdkId, rateGroup, fallbackSeconds] = operations[id]
+      const definition = installedModuleEsiOperationDefinitions[id]!
+      const contract = installedModuleEsiOperationCatalog[id]!
+      expect(definition.sdkOperationId).toBe(sdkId)
+      expect(definition.descriptor).toBe(operationRegistry[sdkId])
+      expect(definition.descriptor.classification).toBe('read')
+      expect(contract.responseValidation).toStrictEqual({ kind: 'enabled' })
+      expect(contract.compatibility.minimumDate).toBe('2020-01-01')
+      expect(contract.audit.reviewedDate).toBe('2026-09-28')
+      expect(contract.representationVersion).toBe('v1')
+      expect(contract.cache).toMatchObject({
+        kind: 'shared',
+        collapse: true,
+        revalidate: true,
+      })
+      expect(definition.descriptor.transport.protocol.conditionalRequestValidators).toEqual([
+        'if-modified-since',
+        'if-none-match',
+      ])
+      const expectedFreshness =
+        fallbackSeconds === null
+          ? { kind: 'runtime-only' }
+          : { kind: 'relative', seconds: fallbackSeconds }
+      expect(contract.freshness).toStrictEqual(expectedFreshness)
+      const expectedRate =
+        rateGroup === null ? { kind: 'legacy-only' } : { group: rateGroup, maximumTokens: 12000 }
+      expect(contract.rateGroup).toMatchObject(expectedRate)
+    }
+
+    expect(installedModuleEsiOperationCatalog['market-region-orders'].identity).toMatchObject({
+      fields: [
+        { field: 'regionId' },
+        { field: 'orderType' },
+        { field: 'typeId' },
+        { field: 'page' },
+      ],
+    })
+    expect(installedModuleEsiOperationCatalog['market-region-types'].identity).toMatchObject({
+      fields: [{ field: 'regionId' }, { field: 'page' }],
+    })
+    expect(installedModuleEsiOperationCatalog['market-region-history'].identity).toMatchObject({
+      fields: [{ field: 'regionId' }, { field: 'typeId' }],
+    })
+    expect(installedModuleEsiOperationCatalog['market-reference-prices'].identity).toStrictEqual({
+      kind: 'ordered',
+      fields: [],
+    })
+    expect(installedModuleEsiOperationCatalog['market-structure-orders'].identity).toMatchObject({
+      fields: [{ field: 'structureId' }, { field: 'page' }],
+    })
+    expect(
+      installedModuleEsiOperationCatalog['market-structure-orders'].authorization,
+    ).toMatchObject({
+      kind: 'oauth',
+      scope: 'esi-markets.structure_markets.v1',
+    })
+    expect(installedModuleEsiOperationCatalog['market-structure-orders'].cache).toMatchObject({
+      stale: { kind: 'outage' },
+    })
+    for (const id of [
+      'market-region-orders',
+      'market-region-types',
+      'market-region-history',
+      'market-reference-prices',
+    ] as const) {
+      expect(installedModuleEsiOperationCatalog[id].authorization.kind).toBe('public')
+    }
+  })
+
   test('keeps GetUniverseBloodlines as the only API response-validation override', () => {
     const disabled = Object.entries(esiOperationCatalog)
       .filter(([, contract]) => contract.responseValidation.kind === 'disabled')
@@ -832,7 +915,7 @@ describe('reviewed private ESI operation policy', () => {
         ssoEnabled: true,
       }),
     ).toThrow(
-      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-assets.read_assets.v1 esi-characters.read_contacts.v1 esi-characters.read_corporation_roles.v1 esi-characters.read_freelance_jobs.v1 esi-clones.read_clones.v1 esi-clones.read_implants.v1 esi-contracts.read_character_contracts.v1 esi-corporations.read_corporation_membership.v1 esi-corporations.read_freelance_jobs.v1 esi-corporations.read_projects.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-markets.read_character_orders.v1 esi-search.search_structures.v1 esi-skills.read_skillqueue.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1 esi.activity.char:read',
+      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-assets.read_assets.v1 esi-characters.read_contacts.v1 esi-characters.read_corporation_roles.v1 esi-characters.read_freelance_jobs.v1 esi-clones.read_clones.v1 esi-clones.read_implants.v1 esi-contracts.read_character_contracts.v1 esi-corporations.read_corporation_membership.v1 esi-corporations.read_freelance_jobs.v1 esi-corporations.read_projects.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-markets.read_character_orders.v1 esi-markets.structure_markets.v1 esi-search.search_structures.v1 esi-skills.read_skillqueue.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1 esi.activity.char:read',
     )
   })
 
@@ -854,6 +937,7 @@ describe('reviewed private ESI operation policy', () => {
           'esi-mail.read_mail.v1',
           'esi-mail.send_mail.v1',
           'esi-markets.read_character_orders.v1',
+          'esi-markets.structure_markets.v1',
           'esi-search.search_structures.v1',
           'esi-skills.read_skillqueue.v1',
           'esi-skills.read_skills.v1',
@@ -882,6 +966,7 @@ test.each([
   'esi-clones.read_clones.v1',
   'esi-clones.read_implants.v1',
   'esi-markets.read_character_orders.v1',
+  'esi-markets.structure_markets.v1',
   'esi-contracts.read_character_contracts.v1',
   'esi-corporations.read_corporation_membership.v1',
 ])('rejects configured SSO when %s is missing', (missingScope) => {
@@ -899,6 +984,7 @@ test.each([
     'esi-mail.read_mail.v1',
     'esi-mail.send_mail.v1',
     'esi-markets.read_character_orders.v1',
+    'esi-markets.structure_markets.v1',
     'esi-search.search_structures.v1',
     'esi-skills.read_skillqueue.v1',
     'esi-skills.read_skills.v1',

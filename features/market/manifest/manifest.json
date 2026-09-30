@@ -1,0 +1,504 @@
+{
+  "id": "market",
+  "release": {
+    "publisherPackage": "@eve-space/market-manifest",
+    "version": "0.1.0",
+    "hostContractRange": "^1.0.0"
+  },
+  "icon": "market",
+  "defaultEnabled": true,
+  "permissions": [
+    {
+      "key": "market.structure.read",
+      "label": "Read owned structure markets",
+      "purpose": "View private structure orders through a current admitted owned character.",
+      "audiences": ["member"],
+      "sensitivity": "standard",
+      "reviewAllowed": false
+    }
+  ],
+  "server": {
+    "package": "@eve-space/market-server",
+    "routes": [
+      {
+        "id": "catalogue",
+        "namespace": "/market/catalogue",
+        "exportName": "catalogueRoutes",
+        "authorization": "public",
+        "coreDataProducts": ["market-catalogue"],
+        "persistenceOperations": []
+      },
+      {
+        "id": "profiles",
+        "namespace": "/market/profiles",
+        "exportName": "profileRoutes",
+        "authorization": "deployment-administrator",
+        "coreDataProducts": ["market-station-regions"],
+        "persistenceOperations": [
+          { "operationId": "list-market-profiles" },
+          { "operationId": "save-market-profile" },
+          { "operationId": "list-due-market-profiles" },
+          { "operationId": "read-market-observation" }
+        ]
+      },
+      {
+        "id": "public-books",
+        "namespace": "/market/books",
+        "exportName": "marketBookRoutes",
+        "authorization": "public",
+        "coreDataProducts": ["static-location-labels"],
+        "persistenceOperations": [
+          { "operationId": "list-market-profiles" },
+          { "operationId": "read-market-observation" },
+          { "operationId": "read-market-replacement-status" },
+          { "operationId": "read-market-order-rows" },
+          { "operationId": "read-market-quote-rows" },
+          { "operationId": "read-market-metrics" }
+        ]
+      },
+      {
+        "id": "reference-prices",
+        "namespace": "/market/reference-prices",
+        "exportName": "marketReferenceRoutes",
+        "authorization": "public",
+        "persistenceOperations": [{ "operationId": "read-market-reference-prices" }]
+      },
+      {
+        "id": "daily-history",
+        "namespace": "/market/history",
+        "exportName": "marketHistoryRoutes",
+        "authorization": "public",
+        "persistenceOperations": [{ "operationId": "read-market-history" }]
+      },
+      {
+        "id": "daily-history-demand",
+        "namespace": "/market/history-intent",
+        "exportName": "marketHistoryDemandRoutes",
+        "authorization": "public-mutation",
+        "onDemandProfileResourceId": "daily-history",
+        "coreDataProducts": ["market-catalogue"],
+        "persistenceOperations": [
+          { "operationId": "list-market-profiles" },
+          { "operationId": "read-market-history" },
+          { "operationId": "request-market-history-demand" }
+        ]
+      },
+      {
+        "id": "private-structures",
+        "namespace": "/market/characters/:characterId",
+        "exportName": "marketStructureRoutes",
+        "authorization": "owned-character",
+        "audience": "member",
+        "requiredPermission": "market.structure.read",
+        "onDemandResourceId": "structure-orders",
+        "persistenceOperations": [
+          { "operationId": "read-structure-book" },
+          { "operationId": "reserve-structure-demand" },
+          { "operationId": "release-structure-demand" }
+        ]
+      },
+      {
+        "id": "quotes",
+        "namespace": "/market/quotes",
+        "exportName": "marketQuoteRoutes",
+        "authorization": "public-mutation",
+        "persistenceOperations": [
+          { "operationId": "read-market-observation" },
+          { "operationId": "read-market-quote-rows" }
+        ]
+      }
+    ],
+    "migrations": [{ "name": "market-001-initial.sql" }],
+    "persistenceOperations": [
+      {
+        "id": "list-market-profiles",
+        "method": "listMarketProfiles",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "listMarketProfilesOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "save-market-profile",
+        "method": "saveMarketProfile",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "saveMarketProfileOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "list-due-market-profiles",
+        "method": "listDueMarketProfiles",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "listDueMarketProfilesOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "begin-market-observation",
+        "method": "beginMarketObservation",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "beginMarketObservationOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "stage-market-page",
+        "method": "stageMarketPage",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "stageMarketPageOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "publish-current-market-observation",
+        "method": "publishCurrentMarketObservation",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "publishCurrentMarketObservationOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "record-market-failure",
+        "method": "recordMarketFailure",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "recordMarketFailureOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "cleanup-market-observations",
+        "method": "cleanupMarketObservations",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "cleanupMarketObservationsOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "cleanup-market-observation-backlog",
+        "method": "cleanupMarketObservationBacklog",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "cleanupMarketObservationBacklogOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "read-market-observation",
+        "method": "readMarketObservation",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketObservationOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "read-market-order-rows",
+        "method": "readMarketOrderRows",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketOrderRowsOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "upsert-market-reference-prices",
+        "method": "upsertMarketReferencePrices",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "upsertMarketReferencePricesOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "read-market-reference-prices",
+        "method": "readMarketReferencePrices",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketReferencePricesOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "request-market-history-demand",
+        "method": "requestMarketHistoryDemand",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "requestMarketHistoryDemandOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "list-due-market-history-profiles",
+        "method": "listDueMarketHistoryProfiles",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "listDueMarketHistoryProfilesOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "list-due-market-history-types",
+        "method": "listDueMarketHistoryTypes",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "listDueMarketHistoryTypesOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "upsert-market-history",
+        "method": "upsertMarketHistory",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "upsertMarketHistoryOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "record-market-history-failure",
+        "method": "recordMarketHistoryFailure",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "recordMarketHistoryFailureOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "read-market-history",
+        "method": "readMarketHistory",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketHistoryOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "store-market-metrics",
+        "method": "storeMarketMetrics",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "storeMarketMetricsOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "list-market-derivation-types",
+        "method": "listMarketDerivationTypes",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "listMarketDerivationTypesOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "read-market-metrics",
+        "method": "readMarketMetrics",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketMetricsOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "cleanup-market-history-demands",
+        "method": "cleanupMarketHistoryDemands",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "cleanupMarketHistoryDemandsOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "begin-structure-observation",
+        "method": "beginStructureObservation",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "beginStructureObservationOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "stage-structure-page",
+        "method": "stageStructurePage",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "stageStructurePageOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "publish-structure-observation",
+        "method": "publishStructureObservation",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "publishStructureObservationOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "read-structure-book",
+        "method": "readStructureBook",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readStructureBookOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "cleanup-structure-observations",
+        "method": "cleanupStructureObservations",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "cleanupStructureObservationsOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "reserve-structure-demand",
+        "method": "reserveStructureDemand",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "reserveStructureDemandOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "release-structure-demand",
+        "method": "releaseStructureDemand",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "releaseStructureDemandOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "cleanup-structure-demands",
+        "method": "cleanupStructureDemands",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "cleanupStructureDemandsOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "read-market-quote-rows",
+        "method": "readMarketQuoteRows",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketQuoteRowsOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "record-market-type-failure",
+        "method": "recordMarketTypeFailure",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "recordMarketTypeFailureOperation",
+        "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "read-market-replacement-status",
+        "method": "readMarketReplacementStatus",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketReplacementStatusOperation",
+        "migration": "market-001-initial.sql"
+      }
+    ],
+    "resources": [
+      {
+        "id": "orders",
+        "exportName": "marketOrdersResource",
+        "subjectKind": "deployment",
+        "eligibility": { "kind": "current-deployment" },
+        "scheduled": false,
+        "profileKeyed": true,
+        "operationId": "market-region-orders",
+        "materializationIntervalSeconds": 60,
+        "coreDataProducts": ["market-station-regions"],
+        "persistence": {
+          "projection": [
+            { "operationId": "list-due-market-profiles" },
+            { "operationId": "list-market-profiles" },
+            { "operationId": "list-market-derivation-types" }
+          ],
+          "materialization": [
+            { "operationId": "begin-market-observation" },
+            { "operationId": "stage-market-page" },
+            { "operationId": "publish-current-market-observation" },
+            { "operationId": "record-market-failure" },
+            { "operationId": "record-market-type-failure" },
+            { "operationId": "cleanup-market-observations" },
+            { "operationId": "cleanup-market-observation-backlog" },
+            { "operationId": "store-market-metrics" }
+          ]
+        }
+      },
+      {
+        "id": "reference-prices",
+        "exportName": "marketReferencePricesResource",
+        "subjectKind": "deployment",
+        "eligibility": { "kind": "current-deployment" },
+        "operationId": "market-reference-prices",
+        "materializationIntervalSeconds": 3600,
+        "persistence": {
+          "projection": [],
+          "materialization": [{ "operationId": "upsert-market-reference-prices" }]
+        }
+      },
+      {
+        "id": "daily-history",
+        "exportName": "marketHistoryResource",
+        "subjectKind": "deployment",
+        "eligibility": { "kind": "current-deployment" },
+        "scheduled": false,
+        "profileKeyed": true,
+        "operationId": "market-region-history",
+        "materializationIntervalSeconds": 60,
+        "persistence": {
+          "projection": [
+            { "operationId": "list-due-market-history-profiles" },
+            { "operationId": "list-due-market-history-types" },
+            { "operationId": "read-market-history" },
+            { "operationId": "list-market-profiles" }
+          ],
+          "materialization": [
+            { "operationId": "upsert-market-history" },
+            { "operationId": "record-market-history-failure" },
+            { "operationId": "cleanup-market-history-demands" }
+          ]
+        }
+      },
+      {
+        "id": "structure-orders",
+        "exportName": "marketStructureResource",
+        "subjectKind": "character",
+        "eligibility": { "kind": "current-owned-character" },
+        "scheduled": false,
+        "operationId": "market-structure-orders",
+        "materializationIntervalSeconds": 300,
+        "persistence": {
+          "projection": [],
+          "materialization": [
+            { "operationId": "begin-structure-observation" },
+            { "operationId": "stage-structure-page" },
+            { "operationId": "publish-structure-observation" },
+            { "operationId": "cleanup-structure-observations" },
+            { "operationId": "cleanup-structure-demands" }
+          ]
+        }
+      }
+    ],
+    "esiOperations": [
+      { "id": "market-region-orders", "exportName": "regionOrdersOperation" },
+      { "id": "market-region-types", "exportName": "regionTypesOperation" },
+      { "id": "market-region-history", "exportName": "regionHistoryOperation" },
+      { "id": "market-reference-prices", "exportName": "referencePricesOperation" },
+      { "id": "market-structure-orders", "exportName": "structureOrdersOperation" }
+    ],
+    "activityProviders": []
+  },
+  "nuxt": {
+    "package": "@eve-space/market-nuxt",
+    "pages": [
+      {
+        "id": "market",
+        "name": "eve-market-overview",
+        "path": "/market",
+        "file": "src/runtime/app/pages/MarketPage.vue",
+        "extensionPoint": "root",
+        "audience": "public"
+      }
+    ],
+    "navigation": [
+      {
+        "id": "market",
+        "label": "Market",
+        "description": "Browse published EVE items",
+        "to": "/market",
+        "audience": "public",
+        "placement": "dashboard",
+        "order": 15,
+        "pageName": "eve-market-overview"
+      }
+    ]
+  }
+}

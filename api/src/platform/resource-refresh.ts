@@ -49,53 +49,76 @@ import {
 
 interface ResourceRefreshProcessingOptions {
   readonly signal?: AbortSignal
+  readonly selector?: { readonly structureId: number }
+  readonly expectedAuthorizationGeneration?: number
+  readonly expectedOrganizationVersion?: number
+  readonly beforeApply?: () => Promise<boolean>
   readonly executeOperation?: typeof executeInstalledResourceOperation
   readonly applyObservation?: typeof applyInstalledResourceObservation
   readonly recordFailure?: typeof recordInstalledResourceCollectionFailure
 }
 
-export async function processInstalledResourceRefresh(
+type ResourceExecution = Awaited<ReturnType<typeof executeInstalledResourceOperation>>
+
+type ResourceAttemptAuthority = {
+  readonly authorizationGeneration: number | null
+  readonly managedAuthority: PlatformManagedCollectionAuthority | null
+  readonly corporationAuthorityFence?: PlatformCorporationAuthorityFence
+}
+
+const guardCoreInstalledResourceExecution = (
   identity: PlatformCollectionStateIdentity,
-  options: ResourceRefreshProcessingOptions = {},
-) {
-  options.signal?.throwIfAborted()
-  let execution: Awaited<ReturnType<typeof executeInstalledResourceOperation>>
-  let attemptAuthority:
-    | {
-        readonly authorizationGeneration: number | null
-        readonly managedAuthority: PlatformManagedCollectionAuthority | null
-        readonly corporationAuthorityFence?: PlatformCorporationAuthorityFence
-      }
-    | undefined
+  options: Parameters<typeof guardInstalledResourceExecution>[1] = {},
+) =>
+  guardInstalledResourceExecution(identity, {
+    ...options,
+    isCorporationSourceCurrent: isCorporationSourceExecutionCurrent,
+  })
+
+const executeResourceRefresh = async (
+  identity: PlatformCollectionStateIdentity,
+  options: ResourceRefreshProcessingOptions,
+): Promise<ResourceExecution | undefined> => {
+  let attemptAuthority: ResourceAttemptAuthority | undefined
   try {
-    execution = await (options.executeOperation ?? executeInstalledResourceOperation)(identity, {
+    return await (options.executeOperation ?? executeInstalledResourceOperation)(identity, {
       guardExecution: guardCoreInstalledResourceExecution,
-      onAuthorityResolved(authority) {
+      onAuthorityResolved: (authority) => {
         attemptAuthority = authority
+        if (
+          options.selector &&
+          authority.authorizationGeneration !== options.expectedAuthorizationGeneration
+        )
+          throw new PlatformResourceObsoleteError()
       },
       signal: options.signal,
+      selector: options.selector,
     })
   } catch (error) {
     options.signal?.throwIfAborted()
     if (error instanceof PlatformResourceObsoleteError) return
-    await (options.recordFailure ?? recordInstalledResourceCollectionFailure)(
-      identity,
-      error,
-      attemptAuthority
-        ? {
-            expectedAuthorizationGeneration: attemptAuthority.authorizationGeneration,
-            expectedManagedAuthority: attemptAuthority.managedAuthority,
-            expectedCorporationAuthorityFence: attemptAuthority.corporationAuthorityFence,
-          }
-        : {},
-    )
+    if (!options.selector) {
+      await (options.recordFailure ?? recordInstalledResourceCollectionFailure)(
+        identity,
+        error,
+        attemptAuthority
+          ? {
+              expectedAuthorizationGeneration: attemptAuthority.authorizationGeneration,
+              expectedManagedAuthority: attemptAuthority.managedAuthority,
+              expectedCorporationAuthorityFence: attemptAuthority.corporationAuthorityFence,
+            }
+          : {},
+      )
+    }
     throw error
   }
-  if (execution.outcome === 'noop') {
-    return
-  }
-  options.signal?.throwIfAborted()
+}
 
+const applyResourceRefresh = async (
+  identity: PlatformCollectionStateIdentity,
+  execution: Exclude<ResourceExecution, { outcome: 'noop' }>,
+  options: ResourceRefreshProcessingOptions,
+) => {
   try {
     await (options.applyObservation ?? applyInstalledResourceObservation)({
       authorizationCharacterId: execution.authorizationCharacterId,
@@ -111,6 +134,7 @@ export async function processInstalledResourceRefresh(
       }),
       outcome: 'complete',
       resource: execution.resource,
+      selector: options.selector,
       signal: options.signal,
       subject: execution.subject,
       validatedAt: execution.result.validatedAt,
@@ -119,23 +143,29 @@ export async function processInstalledResourceRefresh(
   } catch (error) {
     options.signal?.throwIfAborted()
     const failure = new PlatformResourcePersistenceError(error)
-    await (options.recordFailure ?? recordInstalledResourceCollectionFailure)(identity, failure, {
-      expectedAuthorizationGeneration: execution.authorizationGeneration,
-      expectedManagedAuthority: execution.managedAuthority,
-      expectedCorporationAuthorityFence: execution.corporationAuthorityFence,
-    })
+    if (!options.selector) {
+      await (options.recordFailure ?? recordInstalledResourceCollectionFailure)(identity, failure, {
+        expectedAuthorizationGeneration: execution.authorizationGeneration,
+        expectedManagedAuthority: execution.managedAuthority,
+        expectedCorporationAuthorityFence: execution.corporationAuthorityFence,
+      })
+    }
     throw failure
   }
 }
 
-function guardCoreInstalledResourceExecution(
+export const processInstalledResourceRefresh = async (
   identity: PlatformCollectionStateIdentity,
-  options: Parameters<typeof guardInstalledResourceExecution>[1] = {},
-) {
-  return guardInstalledResourceExecution(identity, {
-    ...options,
-    isCorporationSourceCurrent: isCorporationSourceExecutionCurrent,
-  })
+  options: ResourceRefreshProcessingOptions = {},
+) => {
+  options.signal?.throwIfAborted()
+  const execution = await executeResourceRefresh(identity, options)
+  if (!execution || execution.outcome === 'noop') return
+  if (options.selector && execution.organizationVersion !== options.expectedOrganizationVersion)
+    return
+  options.signal?.throwIfAborted()
+  if (options.beforeApply && !(await options.beforeApply())) return
+  await applyResourceRefresh(identity, execution, options)
 }
 
 type PlatformResourceObservation = {
@@ -152,6 +182,7 @@ type PlatformResourceObservation = {
   readonly organizationVersion?: number
   readonly complete?: boolean
   readonly signal?: AbortSignal
+  readonly selector?: { readonly structureId: number }
 } & ({ readonly outcome: 'complete'; readonly data: unknown } | { readonly outcome: 'unchanged' })
 
 const isCurrentObservationEligibility = (
@@ -160,7 +191,10 @@ const isCurrentObservationEligibility = (
 ): eligibility is Extract<PlatformResourceEligibility, { status: 'eligible' }> => {
   if (eligibility.status !== 'eligible') return false
   const admitted = [
-    eligibility.due,
+    eligibility.due ||
+      (observation.selector !== undefined &&
+        observation.resource.scheduled === false &&
+        observation.subject.kind === 'character'),
     eligibility.authorizationGeneration === observation.authorizationGeneration,
     managedCollectionAuthorityEquals(eligibility.managedAuthority, observation.managedAuthority),
   ].every(Boolean)
@@ -175,94 +209,103 @@ const isCurrentObservationEligibility = (
   )
 }
 
-export async function applyInstalledResourceObservation(
+const applyModuleResourceObservationInTransaction = async (
+  transaction: postgres.TransactionSql,
+  observation: PlatformResourceObservation,
+  implementation: PlatformResourceImplementation,
+) => {
+  await transaction`
+    select pg_advisory_xact_lock(
+      ${resourceRefreshLockNamespace},
+      ${resourceRefreshLockKey(observation.identity)}
+    )
+  `
+  observation.signal?.throwIfAborted()
+  await transaction`
+    select module_id
+    from deployment_modules
+    where module_id = ${observation.identity.moduleId}
+    for share
+  `
+  if (observation.resource.sectionId) {
+    await transaction`
+      select module_id, section_id
+      from deployment_module_sections
+      where module_id = ${observation.identity.moduleId}
+        and section_id = ${observation.resource.sectionId}
+      for share
+    `
+  }
+  observation.signal?.throwIfAborted()
+  if (observation.subject.kind === 'character') {
+    await transaction`
+      select pg_advisory_xact_lock_shared(
+        ${characterLockNamespace},
+        ${characterLockKey(observation.subject.characterId)}
+      )
+    `
+  }
+  observation.signal?.throwIfAborted()
+  const eligibility = await resolveInstalledResourceEligibility(observation.identity, {
+    connection: transaction,
+    lockAuthority: true,
+    resources: [observation.resource],
+    signal: observation.signal,
+  })
+  if (!isCurrentObservationEligibility(eligibility, observation)) return
+  if (
+    observation.subject.kind === 'corporation' &&
+    !(await lockCurrentCorporationSource(transaction, observation, eligibility))
+  ) {
+    return
+  }
+
+  if (!(await observationOrganizationVersionMatches(transaction, observation))) {
+    return
+  }
+  if (observation.outcome === 'complete') {
+    const materialized = await materializeInstalledResourceObservation(
+      transaction,
+      observation,
+      implementation,
+    )
+    observation.signal?.throwIfAborted()
+    if (materialized?.outcome === 'obsolete') {
+      return
+    }
+  }
+
+  if (observation.complete === false) {
+    await recordIncompleteObservation(transaction, observation, eligibility)
+    return
+  }
+  if (observation.selector) return
+  await recordInstalledResourceCollectionSuccess(
+    observation.identity,
+    { validatedAt: observation.validatedAt, cachedUntil: observation.cachedUntil },
+    observation.authorizationGeneration,
+    {
+      managedAuthority: eligibility.managedAuthority,
+      resources: [observation.resource],
+      upsertState: (input) => upsertPlatformCollectionStateInTransaction(input, transaction),
+    },
+  )
+  observation.signal?.throwIfAborted()
+}
+
+export const applyInstalledResourceObservation = async (
   observation: PlatformResourceObservation,
   options: { readonly connection?: postgres.Sql } = {},
-) {
+) => {
   observation.signal?.throwIfAborted()
   if (observation.resource.moduleId === 'core') {
     await applyCoreResourceObservation(observation)
     return
   }
   const implementation = observation.resource.implementation as PlatformResourceImplementation
-  await (options.connection ?? sql).begin(async (transaction) => {
-    await transaction`
-      select pg_advisory_xact_lock(
-        ${resourceRefreshLockNamespace},
-        ${resourceRefreshLockKey(observation.identity)}
-      )
-    `
-    observation.signal?.throwIfAborted()
-    await transaction`
-      select module_id
-      from deployment_modules
-      where module_id = ${observation.identity.moduleId}
-      for share
-    `
-    if (observation.resource.sectionId) {
-      await transaction`
-        select module_id, section_id
-        from deployment_module_sections
-        where module_id = ${observation.identity.moduleId}
-          and section_id = ${observation.resource.sectionId}
-        for share
-      `
-    }
-    observation.signal?.throwIfAborted()
-    if (observation.subject.kind === 'character') {
-      await transaction`
-        select pg_advisory_xact_lock_shared(
-          ${characterLockNamespace},
-          ${characterLockKey(observation.subject.characterId)}
-        )
-      `
-    }
-    observation.signal?.throwIfAborted()
-    const eligibility = await resolveInstalledResourceEligibility(observation.identity, {
-      connection: transaction,
-      lockAuthority: true,
-      resources: [observation.resource],
-      signal: observation.signal,
-    })
-    if (!isCurrentObservationEligibility(eligibility, observation)) return
-    if (
-      observation.subject.kind === 'corporation' &&
-      !(await lockCurrentCorporationSource(transaction, observation, eligibility))
-    ) {
-      return
-    }
-
-    if (!(await observationOrganizationVersionMatches(transaction, observation))) {
-      return
-    }
-    if (observation.outcome === 'complete') {
-      const materialized = await materializeInstalledResourceObservation(
-        transaction,
-        observation,
-        implementation,
-      )
-      observation.signal?.throwIfAborted()
-      if (materialized?.outcome === 'obsolete') {
-        return
-      }
-    }
-
-    if (observation.complete === false) {
-      await recordIncompleteObservation(transaction, observation, eligibility)
-      return
-    }
-    await recordInstalledResourceCollectionSuccess(
-      observation.identity,
-      { validatedAt: observation.validatedAt, cachedUntil: observation.cachedUntil },
-      observation.authorizationGeneration,
-      {
-        managedAuthority: eligibility.managedAuthority,
-        resources: [observation.resource],
-        upsertState: (input) => upsertPlatformCollectionStateInTransaction(input, transaction),
-      },
-    )
-    observation.signal?.throwIfAborted()
-  })
+  await (options.connection ?? sql).begin((transaction) =>
+    applyModuleResourceObservationInTransaction(transaction, observation, implementation),
+  )
 }
 
 async function observationOrganizationVersionMatches(
@@ -316,6 +359,9 @@ async function materializeInstalledResourceObservation(
   observation: Extract<PlatformResourceObservation, { outcome: 'complete' }>,
   implementation: PlatformResourceImplementation,
 ) {
+  if (!implementation.materialize) {
+    throw new Error('Profile-keyed resources cannot use fixed-resource materialization')
+  }
   const persistence = createPlatformResourceMaterializationPersistence(
     transaction,
     observation.resource.moduleId,
@@ -389,6 +435,7 @@ function materializationContext(
     subject: observation.subject,
     validatedAt: observation.validatedAt,
     ...(observation.cachedUntil && { cachedUntil: observation.cachedUntil }),
+    ...(observation.signal && { signal: observation.signal }),
   }
 }
 

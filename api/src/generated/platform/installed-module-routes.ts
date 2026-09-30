@@ -6,82 +6,127 @@ import {
   platformModuleRouteComposers,
 } from '../../platform/module-route-composition.js'
 import {
+  createPlatformPublicRouteCapabilities,
   createPlatformModuleRouteCapabilities,
   createPlatformReviewerContributionRouteCapabilities,
 } from '../../platform/module-route-capabilities.js'
 import { installedReviewerContributions } from './installed-reviewer-contributions.js'
+import { createOnDemandStructureRequester } from '../../queue/on-demand-structure.js'
+import { createOnDemandProfileRequester } from '../../queue/on-demand-profile.js'
 import {
-  memberSummaryRoutes as module0Route0Factory,
-  memberCharacterOverviewRoutes as module0Route1Factory,
-  memberCurrentObservationRoutes as module0Route2Factory,
-  readCurrentObservationOperation as module0Route2EvidenceOperation,
-  memberSkillsRoutes as module0Route3Factory,
-  readTrainedSkillsEvidenceOperation as module0Route3EvidenceOperation,
-  memberAssetsRoutes as module0Route4Factory,
-  readAssetEvidenceOperation as module0Route4EvidenceOperation,
-  memberWalletRoutes as module0Route5Factory,
-  readWalletEvidenceOperation as module0Route5EvidenceOperation,
-  memberMailRoutes as module0Route6Factory,
-  readMailEvidenceOperation as module0Route6EvidenceOperation,
-  memberGroupRoutes as module0Route7Factory,
-  memberBlockRoutes as module0Route8Factory,
+  installedModuleOnDemandResources,
+  installedModuleOnDemandProfiles,
+} from './installed-module-on-demand.js'
+import {
+  catalogueRoutes as module0Route0Factory,
+  profileRoutes as module0Route1Factory,
+  marketBookRoutes as module0Route2Factory,
+  marketReferenceRoutes as module0Route3Factory,
+  marketHistoryRoutes as module0Route4Factory,
+  marketHistoryDemandRoutes as module0Route5Factory,
+  marketStructureRoutes as module0Route6Factory,
+  marketQuoteRoutes as module0Route7Factory,
+} from '@eve-space/market-server'
+import {
+  memberSummaryRoutes as module1Route0Factory,
+  memberCharacterOverviewRoutes as module1Route1Factory,
+  memberCurrentObservationRoutes as module1Route2Factory,
+  readCurrentObservationOperation as module1Route2EvidenceOperation,
+  memberSkillsRoutes as module1Route3Factory,
+  readTrainedSkillsEvidenceOperation as module1Route3EvidenceOperation,
+  memberAssetsRoutes as module1Route4Factory,
+  readAssetEvidenceOperation as module1Route4EvidenceOperation,
+  memberWalletRoutes as module1Route5Factory,
+  readWalletEvidenceOperation as module1Route5EvidenceOperation,
+  memberMailRoutes as module1Route6Factory,
+  readMailEvidenceOperation as module1Route6EvidenceOperation,
+  memberGroupRoutes as module1Route7Factory,
+  memberBlockRoutes as module1Route8Factory,
 } from '@eve-space/member-audit-server'
 import {
-  activityRoutes as module1Route0Factory,
-  participationRoutes as module1Route1Factory,
+  activityRoutes as module2Route0Factory,
+  participationRoutes as module2Route1Factory,
 } from '@eve-space/organization-activity-server'
 
 const module0Route0 = module0Route0Factory(
+  createPlatformPublicRouteCapabilities('market', 'catalogue', ['market-catalogue'] as const),
+)
+const module0Route1 = module0Route1Factory(
+  createPlatformModuleRouteCapabilities('market', 'profiles', ['market-station-regions'] as const),
+)
+const module0Route2 = module0Route2Factory(
+  createPlatformPublicRouteCapabilities('market', 'public-books', [
+    'static-location-labels',
+  ] as const),
+)
+const module0Route3 = module0Route3Factory(
+  createPlatformPublicRouteCapabilities('market', 'reference-prices', [] as const),
+)
+const module0Route4 = module0Route4Factory(
+  createPlatformPublicRouteCapabilities('market', 'daily-history', [] as const),
+)
+const module0Route5 = module0Route5Factory(
+  createPlatformModuleRouteCapabilities('market', 'daily-history-demand', [
+    'market-catalogue',
+  ] as const),
+)
+const module0Route6 = module0Route6Factory(
+  createPlatformModuleRouteCapabilities('market', 'private-structures', [] as const),
+)
+const module0Route7 = module0Route7Factory(
+  createPlatformModuleRouteCapabilities('market', 'quotes', [] as const),
+)
+const module1Route0 = module1Route0Factory(
   createPlatformReviewerContributionRouteCapabilities(
     installedReviewerContributions[0]!,
     [] as const,
   ),
 )
-const module0Route1 = module0Route1Factory(
+const module1Route1 = module1Route1Factory(
   createPlatformReviewerContributionRouteCapabilities(installedReviewerContributions[1]!, [
     'public-character-profile',
   ] as const),
 )
-const module0Route2 = module0Route2Factory(
+const module1Route2 = module1Route2Factory(
   createPlatformReviewerContributionRouteCapabilities(
     installedReviewerContributions[2]!,
     [] as const,
   ),
   {
-    operation: module0Route2EvidenceOperation,
+    operation: module1Route2EvidenceOperation,
     resources: [
       { resourceId: 'current-ship', field: 'currentShip' },
       { resourceId: 'current-location', field: 'currentLocation' },
     ] as const,
   },
 )
-const module0Route3 = module0Route3Factory(
+const module1Route3 = module1Route3Factory(
   createPlatformReviewerContributionRouteCapabilities(
     installedReviewerContributions[3]!,
     [] as const,
   ),
   {
-    operation: module0Route3EvidenceOperation,
+    operation: module1Route3EvidenceOperation,
     resources: [{ resourceId: 'trained-skills', field: 'trainedSkills' }] as const,
   },
 )
-const module0Route4 = module0Route4Factory(
+const module1Route4 = module1Route4Factory(
   createPlatformReviewerContributionRouteCapabilities(
     installedReviewerContributions[4]!,
     [] as const,
   ),
   {
-    operation: module0Route4EvidenceOperation,
+    operation: module1Route4EvidenceOperation,
     resources: [{ resourceId: 'assets', field: null }] as const,
   },
 )
-const module0Route5 = module0Route5Factory(
+const module1Route5 = module1Route5Factory(
   createPlatformReviewerContributionRouteCapabilities(
     installedReviewerContributions[5]!,
     [] as const,
   ),
   {
-    operation: module0Route5EvidenceOperation,
+    operation: module1Route5EvidenceOperation,
     resources: [
       { resourceId: 'wallet-balance', field: 'balance' },
       { resourceId: 'wallet-journal', field: 'journal' },
@@ -89,35 +134,35 @@ const module0Route5 = module0Route5Factory(
     ] as const,
   },
 )
-const module0Route6 = module0Route6Factory(
+const module1Route6 = module1Route6Factory(
   createPlatformReviewerContributionRouteCapabilities(
     installedReviewerContributions[6]!,
     [] as const,
   ),
   {
-    operation: module0Route6EvidenceOperation,
+    operation: module1Route6EvidenceOperation,
     resources: [
       { resourceId: 'mail-headers', field: 'headers' },
       { resourceId: 'mail-details', field: 'contents' },
     ] as const,
   },
 )
-const module0Route7 = module0Route7Factory(
+const module1Route7 = module1Route7Factory(
   createPlatformReviewerContributionRouteCapabilities(
     installedReviewerContributions[7]!,
     [] as const,
   ),
 )
-const module0Route8 = module0Route8Factory(
+const module1Route8 = module1Route8Factory(
   createPlatformReviewerContributionRouteCapabilities(
     installedReviewerContributions[8]!,
     [] as const,
   ),
 )
-const module1Route0 = module1Route0Factory(
+const module2Route0 = module2Route0Factory(
   createPlatformModuleRouteCapabilities('organization-activity', 'activity-details', [] as const),
 )
-const module1Route1 = module1Route1Factory(
+const module2Route1 = module2Route1Factory(
   createPlatformModuleRouteCapabilities(
     'organization-activity',
     'activity-participation',
@@ -126,6 +171,41 @@ const module1Route1 = module1Route1Factory(
 )
 
 export const installedModuleRoutes = new Hono()
+  .route('/market/catalogue', platformModuleRouteComposers.public('market', module0Route0))
+  .route(
+    '/market/profiles',
+    platformModuleRouteComposers['deployment-administrator']('market', module0Route1),
+  )
+  .route('/market/books', platformModuleRouteComposers.public('market', module0Route2))
+  .route('/market/reference-prices', platformModuleRouteComposers.public('market', module0Route3))
+  .route('/market/history', platformModuleRouteComposers.public('market', module0Route4))
+  .route(
+    '/market/history-intent',
+    platformModuleRouteComposers['public-mutation'](
+      'market',
+      module0Route5,
+      createOnDemandProfileRequester(
+        installedModuleOnDemandProfiles['market/daily-history-demand'],
+      ),
+    ),
+  )
+  .route(
+    '/market/characters/:characterId',
+    platformModuleRouteComposers['owned-character'](
+      'market',
+      {
+        publisherPackage: '@eve-space/market-manifest',
+        moduleId: 'market',
+        audience: 'member',
+        requiredPermission: 'market.structure.read',
+      },
+      module0Route6,
+      createOnDemandStructureRequester(
+        installedModuleOnDemandResources['market/private-structures'],
+      ),
+    ),
+  )
+  .route('/market/quotes', platformModuleRouteComposers['public-mutation']('market', module0Route7))
   .route(
     '/member-audit/accounts/:userId/summary',
     composePlatformReviewerContributionRoute(
@@ -152,7 +232,7 @@ export const installedModuleRoutes = new Hono()
           'current-location',
         ] as const,
       },
-      module0Route0,
+      module1Route0,
     ),
   )
   .route(
@@ -182,7 +262,7 @@ export const installedModuleRoutes = new Hono()
         ] as const,
         coreDataProducts: ['public-character-profile'] as const,
       },
-      module0Route1,
+      module1Route1,
     ),
   )
   .route(
@@ -209,7 +289,7 @@ export const installedModuleRoutes = new Hono()
         },
         reviewerResourceIds: ['current-ship', 'current-location'] as const,
       },
-      module0Route2,
+      module1Route2,
     ),
   )
   .route(
@@ -233,7 +313,7 @@ export const installedModuleRoutes = new Hono()
         },
         reviewerResourceIds: ['trained-skills'] as const,
       },
-      module0Route3,
+      module1Route3,
     ),
   )
   .route(
@@ -257,7 +337,7 @@ export const installedModuleRoutes = new Hono()
         },
         reviewerResourceIds: ['assets'] as const,
       },
-      module0Route4,
+      module1Route4,
     ),
   )
   .route(
@@ -285,7 +365,7 @@ export const installedModuleRoutes = new Hono()
         },
         reviewerResourceIds: ['wallet-balance', 'wallet-journal', 'wallet-transactions'] as const,
       },
-      module0Route5,
+      module1Route5,
     ),
   )
   .route(
@@ -312,7 +392,7 @@ export const installedModuleRoutes = new Hono()
         },
         reviewerResourceIds: ['mail-headers', 'mail-details'] as const,
       },
-      module0Route6,
+      module1Route6,
     ),
   )
   .route(
@@ -332,7 +412,7 @@ export const installedModuleRoutes = new Hono()
         reviewerResourceIds: [] as const,
         organizationCommands: ['assign-ordinary-group', 'revoke-ordinary-group'] as const,
       },
-      module0Route7,
+      module1Route7,
     ),
   )
   .route(
@@ -352,7 +432,7 @@ export const installedModuleRoutes = new Hono()
         reviewerResourceIds: [] as const,
         organizationCommands: ['block-member', 'unblock-member'] as const,
       },
-      module0Route8,
+      module1Route8,
     ),
   )
   .route(
@@ -365,7 +445,7 @@ export const installedModuleRoutes = new Hono()
         audience: 'member',
         requiredPermission: 'organization-activity.view',
       },
-      module1Route0,
+      module2Route0,
     ),
   )
   .route(
@@ -378,6 +458,6 @@ export const installedModuleRoutes = new Hono()
         audience: 'member',
         requiredPermission: 'organization-activity.view',
       },
-      module1Route1,
+      module2Route1,
     ),
   )

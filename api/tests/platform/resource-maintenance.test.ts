@@ -15,9 +15,43 @@ vi.mock('../../src/platform/module-logging.js', () => ({
 
 import { runInstalledResourceMaintenance } from '../../src/platform/resource-maintenance.js'
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
-test('runs maintenance for non-scheduled resources with invalid authority context', async () => {
+test('runs retention cleanup while the Market module is disabled without pending purge work', async () => {
+  const maintain = vi.fn()
+  const resource = {
+    eligibility: { kind: 'current-deployment' },
+    implementation: { maintain },
+    materializationIntervalSeconds: 60,
+    moduleId: 'market',
+    operationId: 'market-region-orders',
+    resourceId: 'orders',
+    scheduled: false,
+    profileKeyed: true,
+    subjectKind: 'deployment',
+  } as const satisfies PlatformInstalledResourceDescriptor
+  const connection = vi.fn().mockResolvedValue([])
+  await expect(
+    runInstalledResourceMaintenance({
+      // SAFETY: Maintenance only uses the SQL tag, which this mock supplies.
+      connection: connection as never,
+      resources: [resource],
+    }),
+  ).resolves.toStrictEqual({ maintained: 1 })
+  expect(maintain).toHaveBeenCalledOnce()
+  expect(maintain).toHaveBeenCalledWith(
+    expect.objectContaining({
+      purgeAccountIds: [],
+      invalidAuthorities: [],
+      purgeRetention: true,
+    }),
+  )
+  expect(mocks.createPersistence).toHaveBeenCalledWith('market', 'orders', undefined)
+})
+
+test('runs maintenance for disabled non-scheduled resources with invalid authority context', async () => {
   const maintain = vi.fn()
   const connection = vi.fn().mockResolvedValue([
     {
@@ -45,6 +79,7 @@ test('runs maintenance for non-scheduled resources with invalid authority contex
 
   await expect(
     runInstalledResourceMaintenance({
+      // SAFETY: Maintenance only uses the SQL tag, which this mock supplies.
       connection: connection as never,
       now: new Date('2026-09-18T10:00:00Z'),
       resources: [resource],
@@ -66,7 +101,7 @@ test('runs maintenance for non-scheduled resources with invalid authority contex
   expect(mocks.createPersistence).toHaveBeenCalledWith('member-audit', 'wallet-balance', undefined)
 })
 
-test('consumes durable account and lifecycle purge work after maintenance succeeds', async () => {
+test('consumes durable purge work regardless of module enablement', async () => {
   const maintain = vi.fn()
   const connection = vi.fn((strings: TemplateStringsArray) => {
     const statement = strings.join(' ')
@@ -109,21 +144,66 @@ test('consumes durable account and lifecycle purge work after maintenance succee
   } satisfies PlatformInstalledResourceDescriptor
 
   // SAFETY: The mocked connection implements only the SQL tag exercised by this maintenance test.
-  await runInstalledResourceMaintenance({ connection: connection as never, resources: [resource] })
+  await runInstalledResourceMaintenance({
+    connection: connection as never,
+    resources: [resource],
+  })
 
   expect(maintain).toHaveBeenCalledWith(
     expect.objectContaining({
       invalidAuthorities: [expect.objectContaining({ characterId: 90_000_001 })],
       purgeAccountIds: ['22222222-2222-4222-8222-222222222222'],
+      purgeRetention: true,
     }),
   )
   expect(
     connection.mock.calls.filter(([strings]) =>
-      (strings as TemplateStringsArray)
-        .join(' ')
-        .includes('delete from platform_resource_purge_work'),
+      strings.join(' ').includes('delete from platform_resource_purge_work'),
     ),
   ).toHaveLength(2)
+})
+
+test('retains durable purge work when disabled-module maintenance fails', async () => {
+  const failure = new Error('Purge failed')
+  const maintain = vi.fn().mockRejectedValue(failure)
+  const connection = vi.fn((strings: TemplateStringsArray) => {
+    if (!strings.join(' ').includes('from platform_resource_purge_work')) {
+      return Promise.resolve([])
+    }
+    return Promise.resolve([
+      {
+        mode: 'account',
+        moduleId: 'member-audit',
+        purgeWorkId: '11111111-1111-4111-8111-111111111111',
+        resourceId: 'trained-skills',
+        targetUserId: '22222222-2222-4222-8222-222222222222',
+      },
+    ])
+  })
+  const resource = {
+    eligibility: { kind: 'current-managed-member-character' },
+    implementation: { maintain },
+    materializationIntervalSeconds: 900,
+    moduleId: 'member-audit',
+    operationId: 'skills',
+    resourceId: 'trained-skills',
+    sectionId: 'skills',
+    subjectKind: 'character',
+  } satisfies PlatformInstalledResourceDescriptor
+
+  // SAFETY: The mocked connection implements only the SQL tag exercised by this maintenance test.
+  await expect(
+    runInstalledResourceMaintenance({
+      connection: connection as never,
+      resources: [resource],
+    }),
+  ).rejects.toBe(failure)
+  expect(maintain).toHaveBeenCalledOnce()
+  expect(
+    connection.mock.calls.some(([strings]) =>
+      strings.join(' ').includes('delete from platform_resource_purge_work'),
+    ),
+  ).toBe(false)
 })
 
 test('drains invalid-authority pages beyond the first thousand before completing maintenance', async () => {
@@ -157,7 +237,10 @@ test('drains invalid-authority pages beyond the first thousand before completing
   } satisfies PlatformInstalledResourceDescriptor
 
   // SAFETY: The mock returns bounded PostgreSQL-tag pages for the maintenance query.
-  await runInstalledResourceMaintenance({ connection: connection as never, resources: [resource] })
+  await runInstalledResourceMaintenance({
+    connection: connection as never,
+    resources: [resource],
+  })
 
   expect(maintain).toHaveBeenCalledTimes(2)
   expect(maintain.mock.calls[0]?.[0].invalidAuthorities).toHaveLength(1000)

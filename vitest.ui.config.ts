@@ -27,6 +27,7 @@ export default defineVitestConfig({
       'tests/mail/**/*.nuxt.test.ts',
       'tests/organization/**/*.nuxt.test.ts',
       'tests/ui/**/*.nuxt.test.ts',
+      'features/market/nuxt/test/**/*.nuxt.test.ts',
     ],
     maxWorkers: 1,
     pool: 'forks',

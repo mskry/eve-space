@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 use time::OffsetDateTime;
 use zip::ZipArchive;
 
-pub const INGEST_PROJECTION_VERSION: i32 = 4;
+pub const INGEST_PROJECTION_VERSION: i32 = 6;
 
 type DatasetIngestFn = fn(&mut ZipArchive<File>, &mut Transaction) -> Result<u64>;
 
@@ -237,7 +237,10 @@ fn record_import(
 
 #[cfg(test)]
 mod tests {
-    use super::{RAW_EXCLUDED_MEMBERS, REPLACED_TABLES, REQUIRED_RAW_MEMBERS};
+    use super::{
+        INGEST_PROJECTION_VERSION, RAW_EXCLUDED_MEMBERS, REPLACED_TABLES, REQUIRED_DATASETS,
+        REQUIRED_RAW_MEMBERS, RequiredDataset,
+    };
 
     #[test]
     fn raw_dataset_policy_preserves_required_and_location_sources() {
@@ -247,5 +250,22 @@ mod tests {
         assert!(REPLACED_TABLES.contains(&"sde_dataset_rows"));
         assert!(REPLACED_TABLES.contains(&"sde_solar_systems"));
         assert!(REPLACED_TABLES.contains(&"sde_npc_stations"));
+    }
+
+    #[test]
+    fn market_groups_are_part_of_the_complete_versioned_publication() {
+        assert_eq!(INGEST_PROJECTION_VERSION, 6);
+        assert!(REPLACED_TABLES.contains(&"sde_market_groups"));
+        assert!(REPLACED_TABLES.contains(&"sde_types"));
+        assert!(
+            REQUIRED_DATASETS
+                .iter()
+                .any(|dataset| matches!(dataset, RequiredDataset::Single("market groups", _)))
+        );
+        assert!(
+            REQUIRED_DATASETS
+                .iter()
+                .any(|dataset| matches!(dataset, RequiredDataset::Single("types", _)))
+        );
     }
 }

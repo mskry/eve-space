@@ -16,6 +16,7 @@ const nuxtRuntimePackages = new Set([
   '@nuxt/kit',
   '@nuxt/schema',
   '@pinia/colada',
+  'fuse.js',
   'vue',
 ])
 const exactServerRuntimeImports = new Set([
@@ -44,6 +45,8 @@ const exactNuxtRuntimeImports = new Set([
   '@nuxt/kit',
   '@nuxt/schema',
   '@pinia/colada',
+  'fuse.js/worker',
+  'fuse.js/worker-script?url',
   'vue',
 ])
 const sharedDevelopmentPackages = new Set([

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ToastClose, ToastDescription, ToastRoot, ToastTitle } from 'reka-ui'
+import { ToastAction, ToastClose, ToastDescription, ToastRoot, ToastTitle } from 'reka-ui'
 
 withDefaults(
   defineProps<{
@@ -27,8 +27,12 @@ const open = defineModel<boolean>('open', { default: false })
       <ToastDescription v-if="description" class="ui-toast-description">
         {{ description }}
       </ToastDescription>
-      <a v-if="actionHref" class="ui-toast-action" :href="actionHref">{{ actionLabel }}</a>
+      <ToastAction v-if="actionHref" as-child :alt-text="actionLabel">
+        <a class="ui-toast-action" :href="actionHref">{{ actionLabel }}</a>
+      </ToastAction>
     </div>
     <ToastClose class="ui-toast-close">Dismiss</ToastClose>
   </ToastRoot>
 </template>
+
+<style src="../../assets/css/toast.css"></style>

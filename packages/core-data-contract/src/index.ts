@@ -8,6 +8,8 @@ export const CORE_DATA_CONTRIBUTION_CONTEXTS = [
 
 export const CORE_DATA_PRODUCT_IDS = [
   'public-character-profile',
+  'market-catalogue',
+  'market-station-regions',
   'published-type-groups',
   'published-skill-catalogue',
   'published-type-details',
@@ -22,6 +24,66 @@ export interface SdeProjectionRevision {
   ingestVersion: number
   ingestedAt: string
 }
+
+export const MARKET_CATALOGUE_MAX_GROUPS = 4_000
+export const MARKET_CATALOGUE_MAX_TYPES = 32_000
+export const MARKET_CATALOGUE_GROUP_PAGE_SIZE = 100
+export const MARKET_STATION_REGION_MAX_IDS = 100
+
+export interface MarketCatalogueGroup {
+  id: number
+  parentId: number | null
+  name: string
+  iconId: number | null
+  directTypeCount: number
+}
+
+export interface MarketCatalogueType {
+  id: number
+  groupId: number
+  name: string
+}
+
+export type MarketCatalogueRequest =
+  | { kind: 'tree' }
+  | { kind: 'group-types'; groupId: number; cursor?: string }
+  | { kind: 'search-index' }
+  | { kind: 'type-by-id'; typeId: number }
+
+export interface MarketCatalogueTreeResult {
+  kind: 'tree'
+  groups: readonly MarketCatalogueGroup[]
+  revision: SdeProjectionRevision
+  complete: true
+}
+
+export interface MarketCatalogueGroupTypesResult {
+  kind: 'group-types'
+  groupId: number
+  items: readonly MarketCatalogueType[]
+  nextCursor: string | null
+  revision: SdeProjectionRevision
+}
+
+export interface MarketCatalogueSearchIndexResult {
+  kind: 'search-index'
+  types: readonly MarketCatalogueType[]
+  revision: SdeProjectionRevision
+  complete: true
+}
+
+export interface MarketCatalogueTypeByIdResult {
+  kind: 'type-by-id'
+  item: MarketCatalogueType | null
+  revision: SdeProjectionRevision
+  complete: true
+}
+
+export type MarketCatalogueResult =
+  | MarketCatalogueTreeResult
+  | MarketCatalogueGroupTypesResult
+  | MarketCatalogueSearchIndexResult
+  | MarketCatalogueTypeByIdResult
 
 export interface PublishedTypeGroup {
   typeId: number
@@ -92,6 +154,8 @@ export interface StaticLocationLabel {
   kind: 'solar_system' | 'station'
   name: string
   solarSystemId: number
+  solarSystemName: string
+  solarSystemSecurityStatus: number
 }
 
 export interface StaticLocationLabelsResult {
@@ -136,8 +200,26 @@ export interface PublicCharacterProfileResult {
   readonly refreshFailureClass?: 'esi-cooldown' | 'esi-unavailable' | 'response-invalid' | 'unknown'
 }
 
+export interface MarketStationRegionsRequest {
+  stationIds: readonly number[]
+}
+
+export interface MarketStationRegion {
+  stationId: number
+  solarSystemId: number
+  regionId: number
+}
+
+export interface MarketStationRegionsResult {
+  rows: readonly MarketStationRegion[]
+  revision: SdeProjectionRevision
+  complete: true
+}
+
 export interface CoreDataProductRequestMap {
   'public-character-profile': PublicCharacterProfileRequest
+  'market-catalogue': MarketCatalogueRequest
+  'market-station-regions': MarketStationRegionsRequest
   'published-type-groups': PublishedTypeGroupsRequest
   'published-skill-catalogue': Record<never, never>
   'published-type-details': PublishedTypeDetailsRequest
@@ -146,6 +228,8 @@ export interface CoreDataProductRequestMap {
 
 export interface CoreDataProductResultMap {
   'public-character-profile': PublicCharacterProfileResult
+  'market-catalogue': MarketCatalogueResult
+  'market-station-regions': MarketStationRegionsResult
   'published-type-groups': PublishedTypeGroupsResult
   'published-skill-catalogue': PublishedSkillCatalogueResult
   'published-type-details': PublishedTypeDetailsResult
@@ -154,6 +238,8 @@ export interface CoreDataProductResultMap {
 
 export interface CoreDataProductMethodNameMap {
   'public-character-profile': 'publicCharacterProfile'
+  'market-catalogue': 'marketCatalogue'
+  'market-station-regions': 'marketStationRegions'
   'published-type-groups': 'publishedTypeGroups'
   'published-skill-catalogue': 'publishedSkillCatalogue'
   'published-type-details': 'publishedTypeDetails'
@@ -164,6 +250,8 @@ export interface CoreDataMethods {
   publicCharacterProfile(
     request: PublicCharacterProfileRequest,
   ): Promise<PublicCharacterProfileResult>
+  marketCatalogue(request: MarketCatalogueRequest): Promise<MarketCatalogueResult>
+  marketStationRegions(request: MarketStationRegionsRequest): Promise<MarketStationRegionsResult>
   publishedTypeGroups(request: PublishedTypeGroupsRequest): Promise<PublishedTypeGroupsResult>
   publishedSkillCatalogue(request?: Record<never, never>): Promise<PublishedSkillCatalogueResult>
   publishedTypeDetails(request: PublishedTypeDetailsRequest): Promise<PublishedTypeDetailsResult>
@@ -195,6 +283,24 @@ export const CORE_DATA_PRODUCT_CONTRACTS = {
     requestBound: 1,
     sensitivity: 'public',
   },
+  'market-catalogue': {
+    audience: 'installed-module',
+    dtoVersion: 1,
+    id: 'market-catalogue',
+    method: 'marketCatalogue',
+    permittedContexts: ['route'],
+    requestBound: MARKET_CATALOGUE_MAX_TYPES,
+    sensitivity: 'public',
+  },
+  'market-station-regions': {
+    audience: 'installed-module',
+    dtoVersion: 1,
+    id: 'market-station-regions',
+    method: 'marketStationRegions',
+    permittedContexts: ['route', 'resource-projection'],
+    requestBound: MARKET_STATION_REGION_MAX_IDS,
+    sensitivity: 'public',
+  },
   'published-skill-catalogue': {
     audience: 'installed-module',
     dtoVersion: 1,
@@ -224,7 +330,7 @@ export const CORE_DATA_PRODUCT_CONTRACTS = {
   },
   'static-location-labels': {
     audience: 'installed-module',
-    dtoVersion: 1,
+    dtoVersion: 2,
     id: 'static-location-labels',
     method: 'staticLocationLabels',
     permittedContexts: ['route', 'resource-projection'],

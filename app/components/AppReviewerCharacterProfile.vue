@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { PlatformCharacterProfileProps } from '@eve-space/platform-module-nuxt/runtime'
 
-defineProps<PlatformCharacterProfileProps>()
+defineProps<{
+  profile: PlatformCharacterProfileProps['profile']
+  state: PlatformCharacterProfileProps['state']
+}>()
 </script>
 
 <template>

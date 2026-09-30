@@ -34,6 +34,7 @@ export type PlatformResourceContribution =
       readonly batch?: never
       readonly subjectKind: 'deployment'
       readonly eligibility: { readonly kind: 'current-deployment' }
+      readonly profileKeyed?: true
     })
   | (PlatformResourceContributionBase & {
       readonly batch?: PlatformResourceBatchContribution
@@ -44,12 +45,16 @@ export type PlatformResourceContribution =
       readonly batch?: PlatformResourceBatchContribution
       readonly sectionId: string
       readonly subjectKind: 'character'
-      readonly eligibility: { readonly kind: 'current-managed-member-character' }
+      readonly eligibility: {
+        readonly kind: 'current-managed-member-character'
+      }
     })
   | (PlatformResourceContributionBase & {
       readonly batch?: never
       readonly subjectKind: 'corporation'
-      readonly eligibility: { readonly kind: 'current-managed-corporation-source' }
+      readonly eligibility: {
+        readonly kind: 'current-managed-corporation-source'
+      }
     })
   | (PlatformResourceContributionBase & {
       readonly batch?: never
@@ -116,6 +121,7 @@ export interface PlatformResourceMaterializationContext<
 > {
   readonly subject: Subject
   readonly data: Data
+  readonly signal?: AbortSignal
   readonly validatedAt: string
   readonly cachedUntil?: string
   readonly authorizationGeneration: number | null
@@ -219,6 +225,8 @@ export type PlatformResourceRootProtocol<Operation extends string> =
 export interface PlatformResourceOperationResult<Output> {
   readonly data: Output
   readonly validatedAt: string
+  readonly cachedUntil?: string
+  readonly stale?: boolean
   readonly pagination?: {
     readonly pages?: number
   }
@@ -248,6 +256,8 @@ export interface PlatformResourceCollectionContext<
   readonly continuationAuthorityBinding?: string
   readonly capabilities: PlatformModuleResourceCapabilities<Persistence, ProductIds>
   readonly requestBudget: number
+  readonly selector?: { readonly structureId: number }
+  readonly signal?: AbortSignal
   readonly operations: PlatformResourceOperationMethods<Protocol>
 }
 
@@ -262,7 +272,11 @@ export interface PlatformResourceCollectionResult<Data> {
   readonly complete: boolean
 }
 
-export const platformResourceExecutionModes = ['single-request', 'bounded-collection'] as const
+export const platformResourceExecutionModes = [
+  'single-request',
+  'bounded-collection',
+  'profile-collection',
+] as const
 export type PlatformResourceExecutionMode = (typeof platformResourceExecutionModes)[number]
 
 interface PlatformResourceImplementationBase<
@@ -278,6 +292,95 @@ interface PlatformResourceImplementationBase<
   ): Promise<void | { readonly outcome: 'obsolete' }>
   maintain?(context: PlatformResourceMaintenanceContext<MaintenancePersistence>): Promise<void>
   readonly batch?: PlatformResourceBatchOperationImplementation<BatchOperation, Data, BatchData>
+}
+
+export interface PlatformProfileCollectionIdentity {
+  readonly profileId: string
+  readonly revision: number
+  readonly dueAt: string
+}
+
+export interface PlatformStructureWorkIdentity {
+  readonly moduleId: string
+  readonly resourceId: string
+  readonly subjectId: string
+  readonly subjectKind: 'character'
+  readonly subjectLifecycleId: string
+  readonly userId: string
+  readonly routeId: string
+  readonly admissionScope: string
+  readonly organizationVersion: number
+  readonly structureId: number
+  readonly authorizationGeneration: number
+}
+
+export interface PlatformProfileCollectionOperationResult<
+  Output,
+> extends PlatformResourceOperationResult<Output> {
+  readonly cachedUntil: string
+  readonly stale: boolean
+}
+
+export type PlatformProfileCollectionOperationMethods<
+  Protocol extends PlatformResourceOperationProtocol,
+> = {
+  readonly [Operation in keyof Protocol & string]: (
+    input: Protocol[Operation]['input'],
+  ) => Promise<PlatformProfileCollectionOperationResult<Protocol[Operation]['output']>>
+}
+
+export interface PlatformProfileCollectionResourceImplementation<
+  Operation extends string = string,
+  Protocol extends PlatformResourceRootProtocol<Operation> =
+    PlatformResourceRootProtocol<Operation>,
+  Subject extends PlatformDeploymentResourceSubject = PlatformDeploymentResourceSubject,
+  ProductIds extends readonly CoreDataProductId[] = readonly [],
+  ProjectionPersistence extends object = object,
+  MaterializationPersistence extends object = object,
+> {
+  readonly mode: 'profile-collection'
+  readonly operation: Operation
+  readonly batch?: never
+  readonly materialize?: never
+  readonly collect?: never
+  readonly request?: never
+  readonly map?: never
+  maintain?(context: PlatformResourceMaintenanceContext<MaterializationPersistence>): Promise<void>
+  plan(context: {
+    readonly now: string
+    readonly limit: number
+    readonly subject: Subject
+    readonly capabilities: PlatformModuleResourceCapabilities<ProjectionPersistence, ProductIds>
+    readonly signal?: AbortSignal
+  }): Promise<readonly PlatformProfileCollectionIdentity[]>
+  execute(context: {
+    readonly profileId: string
+    readonly expectedRevision: number
+    readonly requestedTypeId?: number
+    readonly subject: Subject
+    readonly capabilities: PlatformModuleResourceCapabilities<
+      ProjectionPersistence & MaterializationPersistence,
+      ProductIds
+    >
+    readonly operations: PlatformProfileCollectionOperationMethods<Protocol>
+    readonly requestBudget: number
+    readonly assertCurrent: () => Promise<boolean>
+    readonly signal: AbortSignal
+  }): Promise<'completed' | 'obsolete'>
+  onFailure(context: {
+    readonly profileId: string
+    readonly expectedRevision: number
+    readonly requestedTypeId?: number
+    readonly failureClass:
+      | 'esi-cooldown'
+      | 'esi-unavailable'
+      | 'response-invalid'
+      | 'mapping-failed'
+      | 'persistence-failed'
+      | 'unknown'
+    readonly retryAt: string | null
+    readonly capabilities: PlatformModuleResourceMaterializationCapabilities<MaterializationPersistence>
+  }): Promise<void>
 }
 
 export interface PlatformSingleRequestResourceImplementation<
@@ -359,6 +462,11 @@ export type PlatformResourceImplementation =
       unknown,
       PlatformResourceSubject
     >
+  | PlatformProfileCollectionResourceImplementation<
+      string,
+      PlatformResourceOperationProtocol,
+      PlatformDeploymentResourceSubject
+    >
 
 interface PlatformResourceImplementationParts<
   Mode extends PlatformResourceExecutionMode,
@@ -379,27 +487,24 @@ interface PlatformResourceImplementationParts<
 }
 
 type PlatformResourceImplementationPartsOf<Implementation> =
-  Implementation extends PlatformSingleRequestResourceImplementation<
+  Implementation extends PlatformProfileCollectionResourceImplementation<
     infer Operation,
     infer Protocol,
-    infer _Data,
-    infer _BatchOperation,
-    infer _BatchData,
     infer _Subject,
     infer ProductIds,
-    infer MaterializationPersistence,
-    infer MaintenancePersistence
+    infer ProjectionPersistence,
+    infer MaterializationPersistence
   >
     ? PlatformResourceImplementationParts<
-        'single-request',
+        'profile-collection',
         Operation,
         Protocol,
         ProductIds,
-        object,
+        ProjectionPersistence,
         MaterializationPersistence,
-        MaintenancePersistence
+        object
       >
-    : Implementation extends PlatformBoundedCollectionResourceImplementation<
+    : Implementation extends PlatformSingleRequestResourceImplementation<
           infer Operation,
           infer Protocol,
           infer _Data,
@@ -407,20 +512,40 @@ type PlatformResourceImplementationPartsOf<Implementation> =
           infer _BatchData,
           infer _Subject,
           infer ProductIds,
-          infer ProjectionPersistence,
           infer MaterializationPersistence,
           infer MaintenancePersistence
         >
       ? PlatformResourceImplementationParts<
-          'bounded-collection',
+          'single-request',
           Operation,
           Protocol,
           ProductIds,
-          ProjectionPersistence,
+          object,
           MaterializationPersistence,
           MaintenancePersistence
         >
-      : never
+      : Implementation extends PlatformBoundedCollectionResourceImplementation<
+            infer Operation,
+            infer Protocol,
+            infer _Data,
+            infer _BatchOperation,
+            infer _BatchData,
+            infer _Subject,
+            infer ProductIds,
+            infer ProjectionPersistence,
+            infer MaterializationPersistence,
+            infer MaintenancePersistence
+          >
+        ? PlatformResourceImplementationParts<
+            'bounded-collection',
+            Operation,
+            Protocol,
+            ProductIds,
+            ProjectionPersistence,
+            MaterializationPersistence,
+            MaintenancePersistence
+          >
+        : never
 
 type SameProductIds<Left, Right> = [Left] extends [Right]
   ? [Right] extends [Left]
@@ -627,6 +752,7 @@ interface PlatformInstalledResourceDescriptorBase<
   readonly freshness?: PlatformResourceFreshnessPolicy
   readonly persistence?: PlatformResourcePersistenceReferences
   readonly scheduled?: boolean
+  readonly profileKeyed?: boolean
   readonly implementation: Implementation
   readonly sectionId?: string
 }
@@ -649,12 +775,16 @@ export type PlatformInstalledResourceDescriptor<
       readonly batch?: PlatformResourceBatchContribution
       readonly sectionId: string
       readonly subjectKind: 'character'
-      readonly eligibility: { readonly kind: 'current-managed-member-character' }
+      readonly eligibility: {
+        readonly kind: 'current-managed-member-character'
+      }
     })
   | (PlatformInstalledResourceDescriptorBase<Implementation, ProductIds> & {
       readonly batch?: never
       readonly subjectKind: 'corporation'
-      readonly eligibility: { readonly kind: 'current-managed-corporation-source' }
+      readonly eligibility: {
+        readonly kind: 'current-managed-corporation-source'
+      }
     })
   | (PlatformInstalledResourceDescriptorBase<Implementation, ProductIds> & {
       readonly batch?: never

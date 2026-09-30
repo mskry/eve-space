@@ -72,6 +72,21 @@ const ruleGroupReconciliationJobPayload = z
   })
   .strict()
 const resourceRefreshJobPayload = platformCollectionStateIdentitySchema
+const profileRefreshJobPayload = platformCollectionStateIdentitySchema.safeExtend({
+  profileId: z.uuid(),
+  revision: z.int().positive(),
+  dueAt: z.iso.datetime({ offset: true }),
+  requestedTypeId: z.int().positive().optional(),
+})
+const structureRefreshJobPayload = platformCollectionStateIdentitySchema.safeExtend({
+  subjectKind: z.literal('character'),
+  userId: z.uuid(),
+  routeId: z.string().min(1).max(100),
+  admissionScope: z.string().min(1).max(256),
+  organizationVersion: z.int().positive(),
+  structureId: z.int().positive(),
+  authorizationGeneration: z.int().nonnegative(),
+})
 const resourceBatchJobPayload = platformResourceBatchPayloadSchema.safeExtend({
   subjects: platformResourceBatchPayloadSchema.shape.subjects.max(
     env.QUEUE_RESOURCE_PLANNER_PAGE_SIZE,
@@ -89,6 +104,8 @@ export interface JobPayloadByName {
   'alliance-executor-observation': z.infer<typeof allianceExecutorObservationJobPayload>
   'rule-group-reconciliation': z.infer<typeof ruleGroupReconciliationJobPayload>
   'resource-refresh': PlatformCollectionStateIdentity
+  'module-profile-refresh': z.infer<typeof profileRefreshJobPayload>
+  'module-structure-refresh': z.infer<typeof structureRefreshJobPayload>
   'resource-batch': PlatformResourceBatchPayload
 }
 
@@ -228,6 +245,26 @@ const jobContracts = {
     priority: 'resource',
     operationIdentity: resourceRefreshJobId,
   }),
+  'module-profile-refresh': contract({
+    name: 'module-profile-refresh',
+    payload: profileRefreshJobPayload,
+    attempts: 1,
+    durability: { kind: 'derived' },
+    activeWorkDeduplication: 'simple',
+    delay: 'planner-stagger',
+    priority: 'resource',
+    operationIdentity: profileRefreshJobId,
+  }),
+  'module-structure-refresh': contract({
+    name: 'module-structure-refresh',
+    payload: structureRefreshJobPayload,
+    attempts: 1,
+    durability: { kind: 'derived' },
+    activeWorkDeduplication: 'simple',
+    delay: 'none',
+    priority: 'resource',
+    operationIdentity: structureRefreshJobId,
+  }),
   'rule-group-reconciliation': contract({
     name: 'rule-group-reconciliation',
     payload: ruleGroupReconciliationJobPayload,
@@ -314,6 +351,32 @@ export function resourceRefreshJobId(identity: PlatformCollectionStateIdentity) 
   const parsed = platformCollectionStateIdentitySchema.parse(identity)
   const digest = createHash('sha256').update(collectionStateIdentityJson(parsed)).digest('hex')
   return `resource-refresh-${digest}`
+}
+
+export function profileRefreshJobId(payload: z.infer<typeof profileRefreshJobPayload>) {
+  const parsed = profileRefreshJobPayload.parse(payload)
+  const identity = [collectionStateIdentityJson(parsed), parsed.profileId, parsed.revision]
+  if (parsed.requestedTypeId !== undefined) identity.push(parsed.requestedTypeId)
+  const digest = createHash('sha256').update(JSON.stringify(identity)).digest('hex')
+  return `module-profile-refresh-${digest}`
+}
+
+export function structureRefreshJobId(payload: z.infer<typeof structureRefreshJobPayload>) {
+  const parsed = structureRefreshJobPayload.parse(payload)
+  const digest = createHash('sha256')
+    .update(
+      JSON.stringify([
+        collectionStateIdentityJson(parsed),
+        parsed.structureId,
+        parsed.authorizationGeneration,
+        parsed.organizationVersion,
+        parsed.userId,
+        parsed.routeId,
+        parsed.admissionScope,
+      ]),
+    )
+    .digest('hex')
+  return `module-structure-refresh-${digest}`
 }
 
 export function resourceBatchJobId(payload: PlatformResourceBatchPayload) {

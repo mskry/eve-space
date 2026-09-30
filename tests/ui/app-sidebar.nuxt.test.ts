@@ -45,11 +45,13 @@ mockNuxtImport('useRoute', () => () => currentRoute)
 mockNuxtImport('usePlatformNavigation', () => () => platformNavigation)
 
 const mountedWrappers: { unmount: () => void }[] = []
+const sidebarOrderKey = 'eve-space-dashboard-sidebar-order'
 
 afterEach(() => {
   for (const wrapper of mountedWrappers.splice(0)) {
     wrapper.unmount()
   }
+  localStorage.removeItem(sidebarOrderKey)
 })
 
 async function mountSidebar(props: Record<string, unknown> = {}) {
@@ -164,5 +166,53 @@ describe('AppSidebar mail entry', () => {
     expect(rosterActive).toHaveLength(1)
     expect(rosterActive[0]?.text()).toContain('Characters')
     currentRoute.path = '/'
+  })
+})
+
+const sectionLabels = (wrapper: Awaited<ReturnType<typeof mountSidebar>>) =>
+  wrapper.findAll('.sidebar-nav-item .sidebar-label strong').map((label) => label.text())
+
+describe('AppSidebar persistent section order', () => {
+  it('reorders on drop and restores the order from local storage on remount', async () => {
+    const wrapper = await mountSidebar()
+    const items = wrapper.findAll('.sidebar-nav-item')
+    expect(sectionLabels(wrapper)).toEqual(['Overview', 'Characters', 'Mail'])
+
+    await items[2]!.trigger('dragstart', { dataTransfer: { setData: vi.fn() } })
+    await items[0]!.trigger('dragover')
+    await items[0]!.trigger('drop', { clientY: 0 })
+
+    expect(sectionLabels(wrapper)).toEqual(['Mail', 'Overview', 'Characters'])
+    expect(JSON.parse(localStorage.getItem(sidebarOrderKey)!)).toEqual([
+      'core/core-mail',
+      'core/core-overview',
+      'core/core-characters',
+    ])
+    const restored = await mountSidebar()
+    expect(sectionLabels(restored)).toEqual(['Mail', 'Overview', 'Characters'])
+  })
+
+  it('moves focused links with Alt+Arrow keys and keeps the drawer in default order', async () => {
+    const wrapper = await mountSidebar()
+    await wrapper.findAll('.sidebar-nav-item .sidebar-link')[0]!.trigger('keydown', {
+      altKey: true,
+      key: 'ArrowDown',
+    })
+    expect(sectionLabels(wrapper)).toEqual(['Characters', 'Overview', 'Mail'])
+    expect(wrapper.get('output').text()).toContain('Overview moved to position 2')
+
+    const drawer = await mountSidebar({ variant: 'drawer' })
+    expect(sectionLabels(drawer)).toEqual(['Overview', 'Characters', 'Mail'])
+    expect(drawer.find('.sidebar-nav-item').attributes('draggable')).toBe('false')
+  })
+
+  it('ignores malformed preferences and places newly available sections after saved entries', async () => {
+    localStorage.setItem(sidebarOrderKey, '{bad json')
+    const fallback = await mountSidebar()
+    expect(sectionLabels(fallback)).toEqual(['Overview', 'Characters', 'Mail'])
+
+    localStorage.setItem(sidebarOrderKey, JSON.stringify(['core/core-mail', 'core/core-overview']))
+    const restored = await mountSidebar()
+    expect(sectionLabels(restored)).toEqual(['Mail', 'Overview', 'Characters'])
   })
 })

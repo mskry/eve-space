@@ -38,6 +38,7 @@ export type PlatformPageExtensionPoint = (typeof platformPageExtensionPoints)[nu
 
 export const platformIconTokens = [
   'overview',
+  'market',
   'character',
   'mail',
   'wallet',

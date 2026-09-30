@@ -35,9 +35,22 @@ describe('asset workspace controller', () => {
     expect(controller.visibleLocation(refreshed[0]!).rows).toHaveLength(4)
   })
 
+  it('keeps every location collapsed by default', () => {
+    const groups = buildAssetHierarchy([
+      asset(1, { locationId: 60_003_760, locationName: 'Alpha' }),
+      asset(2, { locationId: 60_003_761, locationName: 'Bravo' }),
+    ])
+    const controller = createAssetWorkspaceController()
+    controller.sync(groups)
+    expect(groups.map(({ key }) => controller.isLocationExpanded(key))).toStrictEqual([
+      false,
+      false,
+    ])
+  })
+
   it('waits for loaded groups before applying the initial location expansion', () => {
     const group = buildAssetHierarchy([asset(1)])[0]!
-    const controller = createAssetWorkspaceController()
+    const controller = createAssetWorkspaceController({ initiallyExpandedLocations: 1 })
     controller.sync([])
     controller.sync([group])
     expect(controller.isLocationExpanded(group.key)).toBe(true)
@@ -49,7 +62,7 @@ describe('asset workspace controller', () => {
       asset(2, { locationId: 60_003_761, locationName: 'Bravo' }),
       asset(3, { locationId: 60_003_762, locationName: 'Charlie' }),
     ])
-    const controller = createAssetWorkspaceController()
+    const controller = createAssetWorkspaceController({ initiallyExpandedLocations: 1 })
     controller.sync(groups)
     controller.toggleLocation(groups[0]!.key)
     controller.toggleLocation(groups[2]!.key)
@@ -81,7 +94,10 @@ describe('asset workspace controller', () => {
 
   it('resets reveal cursors, but not expansion, only when normalized criteria change', () => {
     const group = buildAssetHierarchy(Array.from({ length: 8 }, (_, index) => asset(index + 1)))[0]!
-    const controller = createAssetWorkspaceController({ revealIncrement: 2 })
+    const controller = createAssetWorkspaceController({
+      initiallyExpandedLocations: 1,
+      revealIncrement: 2,
+    })
     controller.sync([group])
     controller.toggleContainer(1)
     controller.showMore(group)

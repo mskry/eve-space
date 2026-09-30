@@ -18,6 +18,12 @@ export function createCoreDataCapability<const ProductIds extends readonly CoreD
         'public-character-profile',
       ).adapter
     }
+    if (productId === 'market-catalogue') {
+      methods.marketCatalogue = getCoreDataProductDefinition('market-catalogue').adapter
+    }
+    if (productId === 'market-station-regions') {
+      methods.marketStationRegions = getCoreDataProductDefinition('market-station-regions').adapter
+    }
     if (productId === 'published-type-groups') {
       methods.publishedTypeGroups = getCoreDataProductDefinition('published-type-groups').adapter
     }

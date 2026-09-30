@@ -9,6 +9,8 @@ import {
   getJobContract,
   listJobContracts,
   parseJobPayload,
+  profileRefreshJobId,
+  structureRefreshJobId,
   resourceBatchJobId,
   resourceRefreshJobId,
   verifyJobContracts,
@@ -60,6 +62,29 @@ const fixtures = {
   planner: { operationId: 'queue-planner' },
   'resource-batch': resourceBatch,
   'resource-refresh': resourceIdentity,
+  'module-profile-refresh': {
+    moduleId: 'market',
+    resourceId: 'orders',
+    subjectKind: 'deployment',
+    subjectId: '1',
+    subjectLifecycleId: grantId,
+    profileId: eventId,
+    revision: 3,
+    dueAt: '2026-09-28T12:00:00Z',
+  },
+  'module-structure-refresh': {
+    moduleId: 'market',
+    resourceId: 'structure-orders',
+    subjectKind: 'character',
+    subjectId: '90000001',
+    subjectLifecycleId: grantId,
+    userId,
+    routeId: 'private-structures',
+    admissionScope: 'organization:v1:market:member:market.structure.read',
+    organizationVersion: 7,
+    structureId: 1020000000000,
+    authorizationGeneration: 4,
+  },
 } satisfies JobPayloadByName
 
 const expected = [
@@ -74,6 +99,8 @@ const expected = [
   ['corporation-role-observation', 3, 'derived', undefined, 'simple', 'due-time', 'none'],
   ['resource-refresh', 1, 'derived', undefined, 'simple', 'planner-stagger', 'resource'],
   ['resource-batch', 1, 'derived', undefined, 'simple', 'planner-stagger', 'resource'],
+  ['module-profile-refresh', 1, 'derived', undefined, 'simple', 'planner-stagger', 'resource'],
+  ['module-structure-refresh', 1, 'derived', undefined, 'simple', 'none', 'resource'],
 ] as const
 
 describe('job contracts', () => {
@@ -120,6 +147,26 @@ describe('job contracts', () => {
     ).toMatch(new RegExp(`-${eventId}$`))
     expect(resourceRefreshJobId(resourceIdentity)).toMatch(/^resource-refresh-[0-9a-f]{64}$/)
     expect(resourceBatchJobId(resourceBatch)).toMatch(/^resource-batch-[0-9a-f]{64}$/)
+    const profile = fixtures['module-profile-refresh']
+    expect(profileRefreshJobId(profile)).toMatch(/^module-profile-refresh-[0-9a-f]{64}$/)
+    expect(profileRefreshJobId({ ...profile, dueAt: '2026-09-28T12:05:00Z' })).toBe(
+      profileRefreshJobId(profile),
+    )
+    expect(profileRefreshJobId({ ...profile, revision: 4 })).not.toBe(profileRefreshJobId(profile))
+    expect(profileRefreshJobId({ ...profile, requestedTypeId: 34 })).not.toBe(
+      profileRefreshJobId(profile),
+    )
+    expect(profileRefreshJobId({ ...profile, requestedTypeId: 34 })).not.toBe(
+      profileRefreshJobId({ ...profile, requestedTypeId: 35 }),
+    )
+    const structure = fixtures['module-structure-refresh']
+    expect(structureRefreshJobId(structure)).toMatch(/^module-structure-refresh-[\da-f]{64}$/)
+    expect(
+      structureRefreshJobId({ ...structure, structureId: structure.structureId + 1 }),
+    ).not.toBe(structureRefreshJobId(structure))
+    expect(structureRefreshJobId({ ...structure, authorizationGeneration: 5 })).not.toBe(
+      structureRefreshJobId(structure),
+    )
     expect(
       resourceBatchJobId({
         ...resourceBatch,

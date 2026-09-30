@@ -3,7 +3,7 @@ import {
   formatSystemSecurityStatus,
   getSystemSecurityBand,
   roundSystemSecurityStatus,
-} from '../../app/utils/system-security'
+} from '../../layers/ui/app/utils/system-security'
 
 describe('system security', () => {
   it.each([

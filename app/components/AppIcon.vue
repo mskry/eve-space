@@ -14,6 +14,9 @@ defineProps<{
       <rect x="3" y="14" width="7" height="7" />
       <rect x="14" y="14" width="7" height="7" />
     </template>
+    <template v-else-if="name === 'market'">
+      <image href="/images/market-header-logo.png" width="24" height="24" />
+    </template>
     <template v-else-if="name === 'character'">
       <circle cx="9" cy="12" r="4.5" />
       <path d="M14 9.5h5l-2.5 6.5" />

@@ -91,6 +91,27 @@ describe('SDE projection migrations', () => {
       initialBuild!.ingested_at.getTime(),
     )
   })
+
+  test('adds a nullable icon to market groups without changing published build state', async () => {
+    await connection`
+      insert into sde_market_groups (market_group_id, name, icon_id)
+      values (614, 'Criminal Evidence', 2302), (1659, 'Special Edition Assets', null)
+    `
+    const groups = await connection<{ market_group_id: string; icon_id: string | null }[]>`
+      select market_group_id::text, icon_id::text
+      from sde_market_groups
+      where market_group_id in (614, 1659)
+      order by sde_market_groups.market_group_id
+    `
+    expect(groups).toEqual([
+      { market_group_id: '614', icon_id: '2302' },
+      { market_group_id: '1659', icon_id: null },
+    ])
+    const [state] = await connection<{ active_build_number: string }[]>`
+      select active_build_number::text from sde_projection_state
+    `
+    expect(state?.active_build_number).toBe(String(buildNumber))
+  })
 })
 
 function needsReload(build: { build_number: string; ingest_version: number } | undefined) {

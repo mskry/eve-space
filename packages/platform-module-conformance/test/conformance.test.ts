@@ -22,6 +22,18 @@ import { platformModuleSourceIssues } from '../src/source-policy.js'
 const fixtureRoot = fileURLToPath(new URL('./fixtures/release', import.meta.url))
 const temporaryRoots: string[] = []
 const readFixture = async () => ({ value: 'public-contract' })
+const fuseSourceIssues = (specifier: string) =>
+  platformModuleSourceIssues(
+    {
+      moduleId: 'market',
+      environment: 'nuxt',
+      scope: 'source',
+      boundaryRoot: 'features/market/nuxt',
+      path: 'features/market/nuxt/src/runtime/app/market-search-worker.ts',
+      source: `import worker from '${specifier}'\nvoid worker\n`,
+    },
+    new Set(['fuse.js']),
+  )
 
 afterEach(async () => {
   await Promise.all(
@@ -30,6 +42,14 @@ afterEach(async () => {
 })
 
 describe('public conformance fixtures', () => {
+  it('allows only the worker-specific Fuse entry points in Nuxt source', () => {
+    expect(fuseSourceIssues('fuse.js/worker')).toStrictEqual([])
+    expect(fuseSourceIssues('fuse.js/worker-script?url')).toStrictEqual([])
+    expect(fuseSourceIssues('fuse.js')).toContainEqual(
+      expect.objectContaining({ code: 'IMPORT_NOT_ALLOWED' }),
+    )
+  })
+
   it('rejects a module importing core automatic-group decisions', () => {
     const issues = platformModuleSourceIssues(
       {

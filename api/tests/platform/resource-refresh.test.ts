@@ -204,6 +204,39 @@ describe('local resource observations', () => {
       expect(mocks.recordSuccess).not.toHaveBeenCalled()
     },
   )
+  test('fences on-demand private materialization without advancing global resource state', async () => {
+    const materialize = vi.fn(async () => undefined)
+    const input = observation(materialize)
+    mocks.transaction.mockResolvedValue([{ version: 7 }])
+    mocks.resolveEligibility.mockResolvedValue({
+      authorizationGeneration: 4,
+      due: false,
+      managedAuthority: null,
+      nextEligibleAt: new Date(Date.now() + 300_000),
+      status: 'eligible',
+    })
+    const privateObservation = {
+      ...input,
+      data: { structureId: 1020000000000 },
+      outcome: 'complete' as const,
+      organizationVersion: 7,
+      selector: { structureId: 1020000000000 },
+      resource: { ...input.resource, scheduled: false },
+    }
+    await applyInstalledResourceObservation(privateObservation)
+    expect(materialize).toHaveBeenCalledOnce()
+    expect(mocks.recordSuccess).not.toHaveBeenCalled()
+
+    materialize.mockClear()
+    mocks.resolveEligibility.mockResolvedValue({
+      authorizationGeneration: 5,
+      due: false,
+      managedAuthority: null,
+      status: 'eligible',
+    })
+    await applyInstalledResourceObservation(privateObservation)
+    expect(materialize).not.toHaveBeenCalled()
+  })
 })
 
 describe('corporation resource authority', () => {

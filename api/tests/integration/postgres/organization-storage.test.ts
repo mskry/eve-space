@@ -64,7 +64,7 @@ let revokeOrganizationCharacterException: typeof import('../../../src/organizati
 let updateOrganizationRegistrationPolicy: typeof import('../../../src/organization/policy-store.js').updateOrganizationRegistrationPolicy
 let repairOrganizationCompliance: typeof import('../../../src/organization/compliance-repair.js').repairOrganizationCompliance
 let getOrganizationAccountComplianceDetails: typeof import('../../../src/organization/compliance-details.js').getOrganizationAccountComplianceDetails
-let loadOrganizationSessionContext: typeof import('../../../src/middleware/organization-session.js').loadOrganizationSessionContext
+let loadOrganizationSessionContext: typeof import('../../../src/organization/session-context.js').loadOrganizationSessionContext
 let listOrganizationRosterCoverage: typeof import('../../../src/organization/roster-coverage.js').listOrganizationRosterCoverage
 let searchManagedOrganizationAccounts: typeof import('../../../src/organization/reviewer-account-search.js').searchManagedOrganizationAccounts
 let searchManagedOrganizationDirectory: typeof import('../../../src/organization/reviewer-account-search.js').searchManagedOrganizationDirectory
@@ -165,7 +165,7 @@ beforeAll(async () => {
   ;({ getOrganizationAccountComplianceDetails } =
     await import('../../../src/organization/compliance-details.js'))
   ;({ loadOrganizationSessionContext } =
-    await import('../../../src/middleware/organization-session.js'))
+    await import('../../../src/organization/session-context.js'))
   ;({ listOrganizationRosterCoverage } =
     await import('../../../src/organization/roster-coverage.js'))
   ;({ searchManagedOrganizationAccounts, searchManagedOrganizationDirectory } =

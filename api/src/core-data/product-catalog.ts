@@ -2,11 +2,15 @@ import {
   CORE_DATA_CONTRIBUTION_CONTEXTS,
   CORE_DATA_PRODUCT_CONTRACTS,
   CORE_DATA_PRODUCT_IDS,
+  MARKET_CATALOGUE_MAX_TYPES,
+  MARKET_STATION_REGION_MAX_IDS,
   type CoreDataContributionContext,
   type CoreDataProductId,
   type CoreDataProductRequest,
   type CoreDataProductResult,
 } from '@eve-space/core-data-contract'
+import { loadMarketCatalogueProduct } from './market-catalogue-adapter.js'
+import { loadMarketStationRegionsProduct } from './market-station-regions-adapter.js'
 import { loadPublishedTypeGroupsProduct } from './published-type-groups-adapter.js'
 import { loadPublishedSkillCatalogueProduct } from './published-skill-catalogue-adapter.js'
 import { loadPublishedTypeDetailsProduct } from './published-type-details-adapter.js'
@@ -70,6 +74,34 @@ export const coreDataProductCatalog = [
     sourceAuthority: 'esi-gateway',
   },
   {
+    adapter: loadMarketCatalogueProduct,
+    audience: 'installed-module',
+    availabilityBehavior: 'fail-closed',
+    dtoVersion: 1,
+    id: 'market-catalogue',
+    method: 'marketCatalogue',
+    networkAllowed: false,
+    permittedContexts: ['route'],
+    requestBound: MARKET_CATALOGUE_MAX_TYPES,
+    revisionStrategy: 'committed-sde-projection',
+    sensitivity: 'public',
+    sourceAuthority: 'official-sde',
+  },
+  {
+    adapter: loadMarketStationRegionsProduct,
+    audience: 'installed-module',
+    availabilityBehavior: 'fail-closed',
+    dtoVersion: 1,
+    id: 'market-station-regions',
+    method: 'marketStationRegions',
+    networkAllowed: false,
+    permittedContexts: ['route', 'resource-projection'],
+    requestBound: MARKET_STATION_REGION_MAX_IDS,
+    revisionStrategy: 'committed-sde-projection',
+    sensitivity: 'public',
+    sourceAuthority: 'official-sde',
+  },
+  {
     adapter: loadPublishedTypeGroupsProduct,
     audience: 'installed-module',
     availabilityBehavior: 'fail-closed',
@@ -115,7 +147,7 @@ export const coreDataProductCatalog = [
     adapter: loadStaticLocationLabelsProduct,
     audience: 'installed-module',
     availabilityBehavior: 'fail-closed',
-    dtoVersion: 1,
+    dtoVersion: 2,
     id: 'static-location-labels',
     method: 'staticLocationLabels',
     networkAllowed: false,

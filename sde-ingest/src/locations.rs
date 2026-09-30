@@ -10,6 +10,8 @@ use zip::ZipArchive;
 struct SolarSystem {
     #[serde(rename = "_key")]
     id: i64,
+    #[serde(rename = "regionID")]
+    region_id: i64,
     name: LocalizedText,
     #[serde(rename = "securityStatus")]
     security_status: f64,
@@ -32,7 +34,7 @@ pub fn ingest_solar_systems(
     db::copy_rows(
         client,
         "sde_solar_systems",
-        &["solar_system_id", "name", "security_status"],
+        &["solar_system_id", "region_id", "name", "security_status"],
         rows,
     )
 }
@@ -52,7 +54,10 @@ pub fn ingest_npc_stations(
 
 fn solar_system_row(line: &str) -> Result<Vec<String>> {
     let raw: SolarSystem = serde_json::from_str(line)?;
-    ensure!(raw.id > 0, "invalid solar system ID");
+    ensure!(
+        raw.id > 0 && raw.region_id > 0,
+        "invalid solar system or region ID"
+    );
     ensure!(
         raw.security_status.is_finite() && (-1.0..=1.0).contains(&raw.security_status),
         "invalid system security"
@@ -63,6 +68,7 @@ fn solar_system_row(line: &str) -> Result<Vec<String>> {
         .ok_or_else(|| anyhow::anyhow!("missing English solar system name"))?;
     Ok(vec![
         db::num(raw.id),
+        db::num(raw.region_id),
         db::text(&name),
         db::num(raw.security_status),
     ])
@@ -84,14 +90,14 @@ mod tests {
     #[test]
     fn preserves_true_security_and_projects_station_system_ids() {
         assert_eq!(
-            solar_system_row(r#"{"_key":30000142,"name":{"en":"Jita"},"securityStatus":0.945913}"#)
+            solar_system_row(r#"{"_key":30000142,"regionID":10000002,"name":{"en":"Jita"},"securityStatus":0.945913}"#)
                 .unwrap(),
-            vec!["30000142", "Jita", "0.945913"]
+            vec!["30000142", "10000002", "Jita", "0.945913"]
         );
         assert_eq!(
-            solar_system_row(r#"{"_key":30000001,"name":{"en":"Null"},"securityStatus":-0.06}"#)
+            solar_system_row(r#"{"_key":30000001,"regionID":10000001,"name":{"en":"Null"},"securityStatus":-0.06}"#)
                 .unwrap(),
-            vec!["30000001", "Null", "-0.06"]
+            vec!["30000001", "10000001", "Null", "-0.06"]
         );
         assert_eq!(
             npc_station_row(r#"{"_key":60003760,"solarSystemID":30000142,"ownerID":1000035}"#)
@@ -103,8 +109,20 @@ mod tests {
     #[test]
     fn rejects_missing_or_invalid_location_data() {
         assert!(solar_system_row(r#"{"_key":1,"name":{"en":"Jita"}}"#).is_err());
-        assert!(solar_system_row(r#"{"_key":1,"name":{"en":"Jita"},"securityStatus":2}"#).is_err());
-        assert!(solar_system_row(r#"{"_key":1,"name":{},"securityStatus":0}"#).is_err());
+        assert!(
+            solar_system_row(r#"{"_key":1,"regionID":0,"name":{"en":"Jita"},"securityStatus":0}"#)
+                .is_err()
+        );
+        assert!(
+            solar_system_row(
+                r#"{"_key":1,"regionID":10000002,"name":{"en":"Jita"},"securityStatus":2}"#
+            )
+            .is_err()
+        );
+        assert!(
+            solar_system_row(r#"{"_key":1,"regionID":10000002,"name":{},"securityStatus":0}"#)
+                .is_err()
+        );
         assert!(npc_station_row(r#"{"_key":60003760}"#).is_err());
         assert!(npc_station_row(r#"{"_key":60003760,"solarSystemID":0}"#).is_err());
     }

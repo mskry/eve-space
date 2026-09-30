@@ -10,26 +10,149 @@ import type {
   InstalledModuleResourceProjectionPersistence,
 } from './installed-module-persistence.js'
 import {
-  trainedSkillsResource as module0Resource0,
-  assetsResource as module0Resource1,
-  walletBalanceResource as module0Resource2,
-  walletJournalResource as module0Resource3,
-  walletTransactionsResource as module0Resource4,
-  mailHeadersResource as module0Resource5,
-  mailDetailsResource as module0Resource6,
-  currentShipResource as module0Resource7,
-  currentLocationResource as module0Resource8,
+  marketOrdersResource as module0Resource0,
+  marketReferencePricesResource as module0Resource1,
+  marketHistoryResource as module0Resource2,
+  marketStructureResource as module0Resource3,
+} from '@eve-space/market-server'
+import {
+  trainedSkillsResource as module1Resource0,
+  assetsResource as module1Resource1,
+  walletBalanceResource as module1Resource2,
+  walletJournalResource as module1Resource3,
+  walletTransactionsResource as module1Resource4,
+  mailHeadersResource as module1Resource5,
+  mailDetailsResource as module1Resource6,
+  currentShipResource as module1Resource7,
+  currentLocationResource as module1Resource8,
 } from '@eve-space/member-audit-server'
 import {
-  campaignsResource as module1Resource0,
-  publicJobsResource as module1Resource1,
-  corporationJobsResource as module1Resource2,
-  corporationProjectsResource as module1Resource3,
-  characterJobsResource as module1Resource4,
-  characterCampaignsResource as module1Resource5,
-  characterProjectsResource as module1Resource6,
+  campaignsResource as module2Resource0,
+  publicJobsResource as module2Resource1,
+  corporationJobsResource as module2Resource2,
+  corporationProjectsResource as module2Resource3,
+  characterJobsResource as module2Resource4,
+  characterCampaignsResource as module2Resource5,
+  characterProjectsResource as module2Resource6,
 } from '@eve-space/organization-activity-server'
 export const installedModuleResources = [
+  {
+    moduleId: 'market',
+    resourceId: 'orders',
+    operationId: 'market-region-orders',
+    coreDataProducts: ['market-station-regions'] as const,
+    scheduled: false,
+    profileKeyed: true,
+    subjectKind: 'deployment',
+    materializationIntervalSeconds: 60,
+    eligibility: { kind: 'current-deployment' },
+    persistence: {
+      materialization: [
+        { operationId: 'begin-market-observation' },
+        { operationId: 'stage-market-page' },
+        { operationId: 'publish-current-market-observation' },
+        { operationId: 'record-market-failure' },
+        { operationId: 'record-market-type-failure' },
+        { operationId: 'cleanup-market-observations' },
+        { operationId: 'cleanup-market-observation-backlog' },
+        { operationId: 'store-market-metrics' },
+      ],
+      projection: [
+        { operationId: 'list-due-market-profiles' },
+        { operationId: 'list-market-profiles' },
+        { operationId: 'list-market-derivation-types' },
+      ],
+    } as const,
+    implementation: module0Resource0 satisfies PlatformResourceImplementationForContract<
+      typeof module0Resource0,
+      'market-region-orders',
+      PlatformEsiOperationProtocol<'market-region-orders'>,
+      readonly ['market-station-regions'],
+      InstalledModuleResourceProjectionPersistence<'market/orders'>,
+      InstalledModuleResourceMaterializationPersistence<'market/orders'>
+    >,
+  } as const,
+  {
+    moduleId: 'market',
+    resourceId: 'reference-prices',
+    operationId: 'market-reference-prices',
+    coreDataProducts: [] as const,
+    subjectKind: 'deployment',
+    materializationIntervalSeconds: 3600,
+    eligibility: { kind: 'current-deployment' },
+    persistence: {
+      materialization: [{ operationId: 'upsert-market-reference-prices' }],
+      projection: [],
+    } as const,
+    implementation: module0Resource1 satisfies PlatformResourceImplementationForContract<
+      typeof module0Resource1,
+      'market-reference-prices',
+      PlatformEsiOperationProtocol<'market-reference-prices'>,
+      readonly [],
+      InstalledModuleResourceProjectionPersistence<'market/reference-prices'>,
+      InstalledModuleResourceMaterializationPersistence<'market/reference-prices'>
+    >,
+  } as const,
+  {
+    moduleId: 'market',
+    resourceId: 'daily-history',
+    operationId: 'market-region-history',
+    coreDataProducts: [] as const,
+    scheduled: false,
+    profileKeyed: true,
+    subjectKind: 'deployment',
+    materializationIntervalSeconds: 60,
+    eligibility: { kind: 'current-deployment' },
+    persistence: {
+      materialization: [
+        { operationId: 'upsert-market-history' },
+        { operationId: 'record-market-history-failure' },
+        { operationId: 'cleanup-market-history-demands' },
+      ],
+      projection: [
+        { operationId: 'list-due-market-history-profiles' },
+        { operationId: 'list-due-market-history-types' },
+        { operationId: 'read-market-history' },
+        { operationId: 'list-market-profiles' },
+      ],
+    } as const,
+    implementation: module0Resource2 satisfies PlatformResourceImplementationForContract<
+      typeof module0Resource2,
+      'market-region-history',
+      PlatformEsiOperationProtocol<'market-region-history'>,
+      readonly [],
+      InstalledModuleResourceProjectionPersistence<'market/daily-history'>,
+      InstalledModuleResourceMaterializationPersistence<'market/daily-history'>
+    >,
+  } as const,
+  {
+    moduleId: 'market',
+    resourceId: 'structure-orders',
+    operationId: 'market-structure-orders',
+    coreDataProducts: [] as const,
+    scheduled: false,
+    subjectKind: 'character',
+    materializationIntervalSeconds: 300,
+    eligibility: { kind: 'current-owned-character' },
+    persistence: {
+      materialization: [
+        { operationId: 'begin-structure-observation' },
+        { operationId: 'stage-structure-page' },
+        { operationId: 'publish-structure-observation' },
+        { operationId: 'cleanup-structure-observations' },
+        { operationId: 'cleanup-structure-demands' },
+      ],
+      projection: [],
+    } as const,
+    implementation: module0Resource3 satisfies PlatformResourceImplementationForContract<
+      typeof module0Resource3,
+      'market-structure-orders',
+      PlatformEsiOperationProtocol<'market-structure-orders'>,
+      readonly [],
+      InstalledModuleResourceProjectionPersistence<'market/structure-orders'>,
+      InstalledModuleResourceMaterializationPersistence<'market/structure-orders'>
+    >,
+  } as const,
   {
     moduleId: 'member-audit',
     resourceId: 'trained-skills',
@@ -46,8 +169,8 @@ export const installedModuleResources = [
       ],
       projection: [],
     } as const,
-    implementation: module0Resource0 satisfies PlatformResourceImplementationForContract<
-      typeof module0Resource0,
+    implementation: module1Resource0 satisfies PlatformResourceImplementationForContract<
+      typeof module1Resource0,
       'skills',
       PlatformEsiOperationProtocol<'skills'>,
       readonly ['published-skill-catalogue'],
@@ -73,8 +196,8 @@ export const installedModuleResources = [
       ],
       projection: [{ operationId: 'read-active-evidence-continuation' }],
     } as const,
-    implementation: module0Resource1 satisfies PlatformResourceImplementationForContract<
-      typeof module0Resource1,
+    implementation: module1Resource1 satisfies PlatformResourceImplementationForContract<
+      typeof module1Resource1,
       'character-assets-page',
       PlatformEsiOperationProtocol<
         'character-assets-page' | 'character-asset-names' | 'universe-resolve-names'
@@ -100,8 +223,8 @@ export const installedModuleResources = [
       ],
       projection: [],
     } as const,
-    implementation: module0Resource2 satisfies PlatformResourceImplementationForContract<
-      typeof module0Resource2,
+    implementation: module1Resource2 satisfies PlatformResourceImplementationForContract<
+      typeof module1Resource2,
       'wallet-balance',
       PlatformEsiOperationProtocol<'wallet-balance'>,
       readonly [],
@@ -126,8 +249,8 @@ export const installedModuleResources = [
       ],
       projection: [{ operationId: 'read-active-evidence-continuation' }],
     } as const,
-    implementation: module0Resource3 satisfies PlatformResourceImplementationForContract<
-      typeof module0Resource3,
+    implementation: module1Resource3 satisfies PlatformResourceImplementationForContract<
+      typeof module1Resource3,
       'wallet-journal',
       PlatformEsiOperationProtocol<'wallet-journal'>,
       readonly [],
@@ -152,8 +275,8 @@ export const installedModuleResources = [
       ],
       projection: [{ operationId: 'read-active-evidence-continuation' }],
     } as const,
-    implementation: module0Resource4 satisfies PlatformResourceImplementationForContract<
-      typeof module0Resource4,
+    implementation: module1Resource4 satisfies PlatformResourceImplementationForContract<
+      typeof module1Resource4,
       'wallet-transactions',
       PlatformEsiOperationProtocol<'wallet-transactions'>,
       readonly ['published-type-details', 'static-location-labels'],
@@ -179,8 +302,8 @@ export const installedModuleResources = [
       ],
       projection: [{ operationId: 'read-active-evidence-continuation' }],
     } as const,
-    implementation: module0Resource5 satisfies PlatformResourceImplementationForContract<
-      typeof module0Resource5,
+    implementation: module1Resource5 satisfies PlatformResourceImplementationForContract<
+      typeof module1Resource5,
       'mail-headers',
       PlatformEsiOperationProtocol<'mail-headers' | 'mail-lists' | 'universe-resolve-names'>,
       readonly [],
@@ -206,8 +329,8 @@ export const installedModuleResources = [
       ],
       projection: [{ operationId: 'read-active-evidence-continuation' }],
     } as const,
-    implementation: module0Resource6 satisfies PlatformResourceImplementationForContract<
-      typeof module0Resource6,
+    implementation: module1Resource6 satisfies PlatformResourceImplementationForContract<
+      typeof module1Resource6,
       'mail-headers',
       PlatformEsiOperationProtocol<
         'mail-headers' | 'mail-message' | 'mail-lists' | 'universe-resolve-names'
@@ -234,8 +357,8 @@ export const installedModuleResources = [
       ],
       projection: [],
     } as const,
-    implementation: module0Resource7 satisfies PlatformResourceImplementationForContract<
-      typeof module0Resource7,
+    implementation: module1Resource7 satisfies PlatformResourceImplementationForContract<
+      typeof module1Resource7,
       'ship',
       PlatformEsiOperationProtocol<'ship'>,
       readonly ['published-type-details'],
@@ -260,8 +383,8 @@ export const installedModuleResources = [
       ],
       projection: [],
     } as const,
-    implementation: module0Resource8 satisfies PlatformResourceImplementationForContract<
-      typeof module0Resource8,
+    implementation: module1Resource8 satisfies PlatformResourceImplementationForContract<
+      typeof module1Resource8,
       'location',
       PlatformEsiOperationProtocol<'location'>,
       readonly ['static-location-labels'],
@@ -286,8 +409,8 @@ export const installedModuleResources = [
       materialization: [{ operationId: 'materialize-activity-observation' }],
       projection: [{ operationId: 'read-activity-checkpoint' }],
     } as const,
-    implementation: module1Resource0 satisfies PlatformResourceImplementationForContract<
-      typeof module1Resource0,
+    implementation: module2Resource0 satisfies PlatformResourceImplementationForContract<
+      typeof module2Resource0,
       'organization-activity-campaign-list',
       PlatformEsiOperationProtocol<
         | 'organization-activity-campaign-list'
@@ -313,8 +436,8 @@ export const installedModuleResources = [
       materialization: [{ operationId: 'materialize-activity-observation' }],
       projection: [{ operationId: 'read-activity-checkpoint' }],
     } as const,
-    implementation: module1Resource1 satisfies PlatformResourceImplementationForContract<
-      typeof module1Resource1,
+    implementation: module2Resource1 satisfies PlatformResourceImplementationForContract<
+      typeof module2Resource1,
       'organization-activity-job-list',
       PlatformEsiOperationProtocol<
         'organization-activity-job-list' | 'organization-activity-job-detail'
@@ -336,8 +459,8 @@ export const installedModuleResources = [
       materialization: [{ operationId: 'materialize-activity-observation' }],
       projection: [{ operationId: 'read-activity-checkpoint' }],
     } as const,
-    implementation: module1Resource2 satisfies PlatformResourceImplementationForContract<
-      typeof module1Resource2,
+    implementation: module2Resource2 satisfies PlatformResourceImplementationForContract<
+      typeof module2Resource2,
       'organization-activity-corporation-jobs',
       PlatformEsiOperationProtocol<'organization-activity-corporation-jobs'>,
       readonly [],
@@ -358,8 +481,8 @@ export const installedModuleResources = [
       materialization: [{ operationId: 'materialize-activity-observation' }],
       projection: [{ operationId: 'read-activity-checkpoint' }],
     } as const,
-    implementation: module1Resource3 satisfies PlatformResourceImplementationForContract<
-      typeof module1Resource3,
+    implementation: module2Resource3 satisfies PlatformResourceImplementationForContract<
+      typeof module2Resource3,
       'organization-activity-project-list',
       PlatformEsiOperationProtocol<
         'organization-activity-project-list' | 'organization-activity-project-detail'
@@ -382,8 +505,8 @@ export const installedModuleResources = [
       materialization: [{ operationId: 'materialize-activity-observation' }],
       projection: [{ operationId: 'read-activity-checkpoint' }],
     } as const,
-    implementation: module1Resource4 satisfies PlatformResourceImplementationForContract<
-      typeof module1Resource4,
+    implementation: module2Resource4 satisfies PlatformResourceImplementationForContract<
+      typeof module2Resource4,
       'organization-activity-character-jobs',
       PlatformEsiOperationProtocol<
         'organization-activity-character-jobs' | 'organization-activity-job-participation'
@@ -406,8 +529,8 @@ export const installedModuleResources = [
       materialization: [{ operationId: 'materialize-activity-observation' }],
       projection: [{ operationId: 'read-activity-checkpoint' }],
     } as const,
-    implementation: module1Resource5 satisfies PlatformResourceImplementationForContract<
-      typeof module1Resource5,
+    implementation: module2Resource5 satisfies PlatformResourceImplementationForContract<
+      typeof module2Resource5,
       'organization-activity-character-objectives',
       PlatformEsiOperationProtocol<
         | 'organization-activity-character-objectives'
@@ -431,8 +554,8 @@ export const installedModuleResources = [
       materialization: [{ operationId: 'materialize-activity-observation' }],
       projection: [{ operationId: 'read-activity-checkpoint' }],
     } as const,
-    implementation: module1Resource6 satisfies PlatformResourceImplementationForContract<
-      typeof module1Resource6,
+    implementation: module2Resource6 satisfies PlatformResourceImplementationForContract<
+      typeof module2Resource6,
       'organization-activity-project-list',
       PlatformEsiOperationProtocol<
         'organization-activity-project-list' | 'organization-activity-project-contribution'

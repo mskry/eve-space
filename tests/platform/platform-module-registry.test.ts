@@ -120,6 +120,130 @@ it('rejects repeated or empty-field reviewer evidence resources', () => {
   )
 })
 
+it('compiles only explicitly public routes without organization authority', () => {
+  const declaration = manifest('alpha')
+  Object.assign(declaration.server, {
+    routes: [
+      {
+        id: 'catalogue',
+        namespace: '/alpha/catalogue',
+        exportName: 'catalogueRoutes',
+        authorization: 'public',
+        coreDataProducts: ['market-catalogue'],
+        persistenceOperations: [],
+      },
+    ],
+  })
+  const [compiled] = validatePlatformModuleManifests([declaration], coreModuleValidationAuthorities)
+  expect(compiled?.server.routes[0]).toMatchObject({ authorization: 'public' })
+  const files = generateRegistryFiles([declaration])
+  const routes = files.get('api/src/generated/platform/installed-module-routes.ts')
+  expect(routes).toContain('platformModuleRouteComposers.public')
+  expect(routes).toContain('createPlatformPublicRouteCapabilities')
+  expect(routes).not.toContain('requiredPermission')
+
+  Object.assign(declaration.server.routes[0]!, {
+    audience: 'member',
+    requiredPermission: 'alpha.view',
+  })
+  expect(validationErrorMessage(declaration)).toContain('is not allowed for a public route')
+})
+
+it('compiles deployment-administrator routes without organization admission', () => {
+  const declaration = manifest('alpha')
+  Object.assign(declaration.server, {
+    routes: [
+      {
+        id: 'profiles',
+        namespace: '/alpha/profiles',
+        exportName: 'profileRoutes',
+        authorization: 'deployment-administrator',
+        persistenceOperations: [],
+      },
+    ],
+  })
+  const [compiled] = validatePlatformModuleManifests([declaration], coreModuleValidationAuthorities)
+  expect(compiled?.server.routes[0]).toMatchObject({ authorization: 'deployment-administrator' })
+  const files = generateRegistryFiles([declaration])
+  const routes = files.get('api/src/generated/platform/installed-module-routes.ts')
+  expect(routes).toContain("platformModuleRouteComposers['deployment-administrator']")
+  expect(routes).toContain("createPlatformModuleRouteCapabilities('alpha', 'profiles'")
+  expect(files.get('generated/platform/installed-nuxt-contributions.ts')).not.toContain(
+    "routeId: 'profiles'",
+  )
+
+  Object.assign(declaration.server.routes[0]!, { audience: 'member' })
+  expect(validationErrorMessage(declaration)).toContain(
+    'is not allowed for a deployment-administrator route',
+  )
+})
+
+it('grants profile wake-up only to a declared public mutation and deployment profile resource', () => {
+  const declaration = manifest('alpha', {
+    resource: {
+      subjectKind: 'deployment',
+      eligibility: { kind: 'current-deployment' },
+      profileKeyed: true,
+      scheduled: false,
+    },
+  })
+  Object.assign(declaration.server, {
+    routes: [
+      {
+        id: 'history-demand',
+        namespace: '/alpha/history-intent',
+        exportName: 'historyDemandRoutes',
+        authorization: 'public-mutation',
+        onDemandProfileResourceId: 'alpha-resource',
+        persistenceOperations: [],
+      },
+    ],
+  })
+  const files = generateRegistryFiles([declaration])
+  expect(files.get('api/src/generated/platform/installed-module-routes.ts')).toContain(
+    'createOnDemandProfileRequester',
+  )
+  expect(files.get('api/src/generated/platform/installed-module-on-demand.ts')).toContain(
+    '"resourceId":"alpha-resource"',
+  )
+  Object.assign(declaration.server.routes[0]!, { authorization: 'public' })
+  expect(validationErrorMessage(declaration)).toContain(
+    'requires a public mutation and a deployment profile resource',
+  )
+  Object.assign(declaration.server.routes[0]!, { authorization: 'public-mutation' })
+  Object.assign(declaration.server.resources[0]!, {
+    subjectKind: 'character',
+    eligibility: { kind: 'current-owned-character' },
+    profileKeyed: undefined,
+  })
+  expect(validationErrorMessage(declaration)).toContain(
+    'requires a public mutation and a deployment profile resource',
+  )
+})
+
+it('allows only declared read persistence on public routes', () => {
+  const declaration = manifest('alpha', { persistenceOperation: {} })
+  Object.assign(declaration.server, {
+    routes: [
+      {
+        id: 'observation',
+        namespace: '/alpha/observation',
+        exportName: 'observationRoutes',
+        authorization: 'public',
+        persistenceOperations: [{ operationId: 'alpha-read' }],
+      },
+    ],
+  })
+  expect(() =>
+    validatePlatformModuleManifests([declaration], coreModuleValidationAuthorities),
+  ).not.toThrow()
+
+  Object.assign(declaration.server.persistenceOperations[0]!, { mode: 'write' })
+  expect(validationErrorMessage(declaration)).toContain(
+    'route alpha/observation cannot use write persistence operation alpha-read; expected read',
+  )
+})
+
 describe('platform module declarations', () => {
   it('compiles unknown candidates into stable canonical order without partial output', () => {
     const alpha = manifest('alpha')

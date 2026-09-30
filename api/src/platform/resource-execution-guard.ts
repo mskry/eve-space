@@ -53,6 +53,7 @@ export type PlatformResourceExecutionGuard =
 
 interface ResourceExecutionGuardOptions {
   readonly signal?: AbortSignal
+  readonly allowUndue?: boolean
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly resolveEligibility?: typeof resolveInstalledResourceEligibility
   readonly loadCharacterCacheAuthorization?: typeof getCharacterCacheAuthorizationForLifecycle
@@ -71,9 +72,15 @@ export async function guardInstalledResourceExecution(
 ): Promise<PlatformResourceExecutionGuard> {
   options.signal?.throwIfAborted()
   const resources = options.resources ?? platformResources
+  const selected = findInstalledResource(identity, resources)
+  const allowUndue =
+    options.allowUndue === true &&
+    selected?.subjectKind === 'character' &&
+    selected.scheduled === false
   const resolveEligibility = options.resolveEligibility ?? resolveInstalledResourceEligibility
   const initialEligibility = classifyExecutionEligibility(
     await resolveEligibility(identity, { resources, signal: options.signal }),
+    allowUndue,
   )
   options.signal?.throwIfAborted()
   if (initialEligibility.outcome === 'noop') {
@@ -81,7 +88,7 @@ export async function guardInstalledResourceExecution(
   }
   const eligibility = initialEligibility.eligibility
 
-  const resource = findInstalledResource(identity, resources)
+  const resource = selected
   if (!resource) {
     return { outcome: 'noop', reason: 'resource-unavailable' }
   }
@@ -170,6 +177,7 @@ export async function guardInstalledResourceExecution(
 
   const refreshedEligibility = classifyExecutionEligibility(
     await resolveEligibility(identity, { resources, signal: options.signal }),
+    allowUndue,
   )
   options.signal?.throwIfAborted()
   if (refreshedEligibility.outcome === 'noop') {
@@ -299,11 +307,12 @@ async function isCorporationAuthorizationCurrent(
 
 function classifyExecutionEligibility(
   eligibility: PlatformResourceEligibility,
+  allowUndue = false,
 ): ResourceExecutionEligibility {
   if (eligibility.status !== 'eligible') {
     return { outcome: 'noop', reason: eligibility.status }
   }
-  if (!eligibility.due) {
+  if (!eligibility.due && !allowUndue) {
     return { outcome: 'noop', reason: 'already-current' }
   }
   return { eligibility, outcome: 'eligible' }

@@ -30,6 +30,7 @@ export const sdeProjectionState = pgTable('sde_projection_state', {
 
 export const sdeSolarSystems = pgTable('sde_solar_systems', {
   name: text().notNull(),
+  regionId: bigint('region_id', { mode: 'number' }),
   securityStatus: doublePrecision('security_status').notNull(),
   solarSystemId: bigint('solar_system_id', { mode: 'number' }).primaryKey().notNull(),
 })
@@ -96,6 +97,7 @@ export const sdeMarketGroups = pgTable(
   'sde_market_groups',
   {
     description: text(),
+    iconId: bigint('icon_id', { mode: 'number' }),
     marketGroupId: bigint('market_group_id', { mode: 'number' }).primaryKey().notNull(),
     name: text().notNull(),
     parentGroupId: bigint('parent_group_id', { mode: 'number' }),

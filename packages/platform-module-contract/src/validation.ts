@@ -308,7 +308,9 @@ function validatePersistenceGrants(
     validatePersistenceReferences(
       route.persistenceOperations,
       `route ${manifest.id}/${route.id}`,
-      route.reviewerEvidenceResources === undefined ? undefined : 'read',
+      route.authorization === 'public' || route.reviewerEvidenceResources !== undefined
+        ? 'read'
+        : undefined,
       validationContext,
     )
   }
@@ -390,6 +392,29 @@ function reportMissingPersistenceOperation(
   context.issues.push(`${identity} references unknown persistence operation ${operationId}`)
 }
 
+const validateOnDemandProfileRoute = (
+  manifest: PlatformModuleManifest,
+  route: PlatformRouteContribution,
+  identity: string,
+  issues: string[],
+) => {
+  if (route.onDemandProfileResourceId === undefined) return
+  const resource = manifest.server.resources.find(
+    ({ id }) => id === route.onDemandProfileResourceId,
+  )
+  if (
+    route.authorization !== 'public-mutation' ||
+    resource?.subjectKind !== 'deployment' ||
+    resource.eligibility.kind !== 'current-deployment' ||
+    resource.profileKeyed !== true ||
+    route.onDemandResourceId !== undefined
+  ) {
+    issues.push(
+      `on-demand profile route ${identity} requires a public mutation and a deployment profile resource`,
+    )
+  }
+}
+
 function validateRoutes(
   manifest: PlatformModuleManifest,
   sections: ReadonlyMap<string, PlatformModuleSectionContribution>,
@@ -416,12 +441,25 @@ function validateRoute(
   validateContributionId(route.id, manifest.id, 'route', issues)
   validateExportName(route.exportName, manifest.id, 'route', issues)
   validateRouteNamespace(manifest.id, route, identity, routeCoordinates, issues)
+  validateOnDemandProfileRoute(manifest, route, identity, issues)
   validateMember(
     route.authorization,
     platformAuthorizationStrategies,
     `route ${identity} uses unsupported authorization ${String(route.authorization)}`,
     issues,
   )
+  if (route.authorization === 'public') {
+    validatePublicRoute(route, identity, productContracts, issues)
+    return
+  }
+  if (route.authorization === 'deployment-administrator') {
+    validateAdministratorRoute(route, identity, productContracts, issues)
+    return
+  }
+  if (route.authorization === 'public-mutation') {
+    validateAdministratorRoute(route, identity, productContracts, issues)
+    return
+  }
   validateOrganizationAuthorization(route, `route ${identity}`, issues)
   const section = validateContributionSection(
     manifest,
@@ -449,6 +487,64 @@ function validateRoute(
   validateOrganizationCommands(route.organizationCommands, route.target, section, identity, issues)
   validateCoreDataProducts(route, `route ${identity}`, 'route', productContracts, issues)
   validateOwnedCharacterRoute(route, identity, issues)
+  if (route.onDemandResourceId !== undefined) {
+    const resource = manifest.server.resources.find(({ id }) => id === route.onDemandResourceId)
+    if (
+      route.authorization !== 'owned-character' ||
+      route.audience !== 'member' ||
+      (route.additionalRequiredPermissions?.length ?? 0) > 0 ||
+      resource?.subjectKind !== 'character' ||
+      resource.eligibility.kind !== 'current-owned-character' ||
+      resource.scheduled !== false
+    ) {
+      issues.push(`on-demand route ${identity} requires an unscheduled owned-character resource`)
+    }
+  }
+}
+
+const validatePublicRoute = (
+  route: PlatformRouteContribution,
+  identity: string,
+  productContracts: PlatformModuleValidationAuthorities['coreDataProductContracts'],
+  issues: string[],
+) => {
+  for (const key of [
+    'audience',
+    'requiredPermission',
+    'additionalRequiredPermissions',
+    'sectionId',
+    'target',
+    'exposure',
+    'reviewerEvidenceResources',
+    'organizationCommands',
+    'onDemandResourceId',
+  ] as const) {
+    if (route[key] !== undefined) issues.push(`public route ${identity} cannot declare ${key}`)
+  }
+  validateCoreDataProducts(route, `route ${identity}`, 'route', productContracts, issues)
+}
+
+const validateAdministratorRoute = (
+  route: PlatformRouteContribution,
+  identity: string,
+  productContracts: PlatformModuleValidationAuthorities['coreDataProductContracts'],
+  issues: string[],
+) => {
+  for (const key of [
+    'audience',
+    'requiredPermission',
+    'additionalRequiredPermissions',
+    'sectionId',
+    'target',
+    'exposure',
+    'reviewerEvidenceResources',
+    'organizationCommands',
+    'onDemandResourceId',
+  ] as const) {
+    if (route[key] !== undefined)
+      issues.push(`administrator route ${identity} cannot declare ${key}`)
+  }
+  validateCoreDataProducts(route, `route ${identity}`, 'route', productContracts, issues)
 }
 
 function validateRouteNamespace(
@@ -815,6 +911,13 @@ function validateResource(
   issues: string[],
 ) {
   const identity = `${manifest.id}/${resource.id}`
+  const profileKeyed = 'profileKeyed' in resource && resource.profileKeyed === true
+  if (profileKeyed && (resource.subjectKind !== 'deployment' || resource.scheduled !== false)) {
+    issues.push(`profile-keyed resource ${identity} must be an unscheduled deployment resource`)
+  }
+  if ('profileKeyed' in resource && resource.profileKeyed !== undefined && !profileKeyed) {
+    issues.push(`resource ${identity} has invalid profile-keyed configuration`)
+  }
   validateContributionId(resource.id, manifest.id, 'resource', issues)
   validateExportName(resource.exportName, manifest.id, 'resource', issues)
   const section = validateContributionSection(
@@ -1320,6 +1423,12 @@ function validateCatalogedContributionPermissions(
   issues: string[],
 ) {
   for (const route of manifest.server.routes) {
+    if (
+      route.authorization === 'public' ||
+      route.authorization === 'public-mutation' ||
+      route.authorization === 'deployment-administrator'
+    )
+      continue
     validatePermissionReferences(
       [route.requiredPermission, ...(route.additionalRequiredPermissions ?? [])],
       `route ${manifest.id}/${route.id}`,

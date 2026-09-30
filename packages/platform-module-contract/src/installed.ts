@@ -71,6 +71,21 @@ export interface PlatformInstalledModuleMigrationDescriptor {
   readonly exportPath: string
 }
 
+export interface PlatformInstalledOnDemandResourceDescriptor {
+  readonly publisherPackage: string
+  readonly moduleId: string
+  readonly routeId: string
+  readonly resourceId: string
+  readonly admissionScope: string
+  readonly audience: 'member'
+  readonly requiredPermission: string
+}
+
+export type PlatformInstalledOnDemandProfileResourceDescriptor = Pick<
+  PlatformInstalledOnDemandResourceDescriptor,
+  'publisherPackage' | 'moduleId' | 'routeId' | 'resourceId'
+>
+
 export interface PlatformInstalledPackageProvenance {
   readonly name: string
   readonly version: string
