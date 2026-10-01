@@ -1220,7 +1220,6 @@
     "scripts/run-installed-module-package-script.ts:anti-slop(require-safety-comment-for-type-assertion):407ebd574e3ac10841192d1626ed68a05fb15ad35469af44ed0157d49a00b1d1": 1,
     "scripts/run-sonar-quality.ts:anti-slop(require-safety-comment-for-type-assertion):bfe5508ce5a3f3f6c07b7a41e99f166b0fddd548145684cf93c54e31f7df9341": 1,
     "scripts/universe-cache/boundaries.ts:anti-slop(require-safety-comment-for-type-assertion):1e1f4babffbbc72ad9e3cdb03356c2483d167db5b6366f30e250b6ce68dd3c4b": 1,
-    "scripts/verify-market-server-boundaries.ts:anti-slop(no-known-value-widening):9b5c930dcf2dcc1f11d7c0cc11f872e5b596dc06e331725c3a129228097949a4": 1,
     "scripts/verify-organization-activity-boundaries.ts:anti-slop(require-safety-comment-for-type-assertion):a8a7d54234e7f8ef6648f74f7e5643092afeed1d61fa342193b915eeb15a18a9": 1,
     "scripts/verify-organization-activity-boundaries.ts:anti-slop(require-safety-comment-for-type-assertion):d33fd16005b683af0068deb4a55ba792163ae326eb575a62656ae69cd2be9a20": 1,
     "scripts/verify-platform-module-contract-boundaries.ts:anti-slop(no-unsafe-dictionary-type):0f80b77f7ac3ccf112b1a784734e3de51c01e8fb18e642c39bfbecc81d9427ea": 1,

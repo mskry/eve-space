@@ -7,7 +7,7 @@ import { typescriptModuleSpecifiers } from './typescript-module-specifiers.js'
 const directory = new URL('../features/market/server/src/', import.meta.url)
 type MarketTier = 'route' | 'collection' | 'entry' | 'representation' | 'declaration' | 'resource'
 
-const tiers: Readonly<Record<string, MarketTier>> = {
+const tiers = {
   'book-routes': 'route',
   'catalogue-routes': 'route',
   'collect-orders': 'collection',
@@ -18,6 +18,7 @@ const tiers: Readonly<Record<string, MarketTier>> = {
   'market-bounds': 'representation',
   'market-derived': 'representation',
   'market-page-collection': 'collection',
+  'market-page-batches': 'collection',
   'market-order-expiry': 'representation',
   'market-representation': 'representation',
   'order-depth': 'representation',
@@ -32,7 +33,8 @@ const tiers: Readonly<Record<string, MarketTier>> = {
   'reference-prices-resource': 'resource',
   'structure-resource': 'resource',
   'structure-routes': 'route',
-}
+} satisfies Record<string, MarketTier>
+const tiersByModule = new Map<string, MarketTier>(Object.entries(tiers))
 const allowed = {
   collection: ['representation', 'collection'],
   declaration: ['representation'],
@@ -52,12 +54,12 @@ const sources = await Promise.all(
 )
 
 for (const { name, path, source } of sources) {
-  const tier = tiers[name]
+  const tier = tiersByModule.get(name)
   if (!tier) throw new Error(`Undeclared Market server module: ${name}`)
   for (const specifier of typescriptModuleSpecifiers(path, source)) {
     if (!specifier.startsWith('.')) continue
     const target = basename(specifier, '.js')
-    const targetTier = tiers[target]
+    const targetTier = tiersByModule.get(target)
     if (!targetTier || !allowed[tier].includes(targetTier)) {
       throw new Error(`Market server import direction: ${name} imports ${target}`)
     }

@@ -15,6 +15,7 @@ export {
   listDueMarketProfilesOperation,
   beginMarketObservationOperation,
   stageMarketPageOperation,
+  stageMarketPagesOperation,
   publishCurrentMarketObservationOperation,
   publishCollectedMarketObservationOperation,
   recordMarketFailureOperation,

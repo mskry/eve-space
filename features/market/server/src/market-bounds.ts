@@ -1,3 +1,5 @@
+import { platformPersistencePayloadMaximumBytes } from '@eve-space/platform-module-server'
+
 export const marketCollectionBounds = {
   maximumProfiles: 4,
   maximumRegionProfiles: 1,
@@ -8,6 +10,10 @@ export const marketCollectionBounds = {
   maximumOrderDurationDays: 365,
   maximumConcurrentPages: 3,
   maximumQueuedProfiles: 16,
+  maximumPagesPerBatch: 20,
+  defaultPagesPerBatch: 10,
+  maximumOrdersPerBatch: 20_000,
+  maximumStagingInputBytes: platformPersistencePayloadMaximumBytes,
 } as const
 
 export const globalPlexMarketRegionId = 19000001

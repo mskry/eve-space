@@ -38,6 +38,15 @@ a separate explicit classification and admission review.
 
 ## Request and access seams
 
+Public profile observations stage in sequential atomic batches with a measured default
+of 10 whole pages. The declared operation's hard ceilings are 20 pages, 20,000 orders,
+and 16 MiB of serialized UTF-8 input including envelope overhead. Every
+batch checks cancellation and module eligibility and is fenced by the current enabled
+profile revision. Identical page replay, even regrouped into different batches, preserves
+page/order identities and original validation/expiry metadata. A failed batch rolls back
+all its writes; earlier staging batches remain unpublished until complete publication.
+Batching does not extend source freshness or alter the complete-publication contract.
+
 `api/src/index.ts` mounts generated Market routes under `/api/modules`. Public catalogue,
 profile/book/history/reference reads use the enabled-module composer without a session.
 An anonymous history **GET** is read-only; a trusted-origin **POST** records at most 256

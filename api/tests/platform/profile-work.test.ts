@@ -58,7 +58,7 @@ const reads = {
 }
 const writes = {
   beginMarketObservation: vi.fn(),
-  stageMarketPage: vi.fn(),
+  stageMarketPages: vi.fn(),
   publishCollectedMarketObservation: vi.fn(),
   recordMarketFailure: vi.fn(),
   recordMarketTypeFailure: vi.fn(),
@@ -106,7 +106,7 @@ beforeEach(() => {
   })
   mocks.write.mockReturnValue(writes)
   writes.beginMarketObservation.mockResolvedValue({ outcome: 'started' })
-  writes.stageMarketPage.mockResolvedValue({ outcome: 'staged' })
+  writes.stageMarketPages.mockResolvedValue({ outcome: 'staged' })
   writes.publishCollectedMarketObservation.mockResolvedValue({
     outcome: 'published',
   })
@@ -162,9 +162,13 @@ test('loads a current profile and publishes only a complete mapped observation',
       },
     }),
   )
-  expect(writes.stageMarketPage).toHaveBeenCalledWith(
+  expect(writes.stageMarketPages).toHaveBeenCalledWith(
     expect.objectContaining({
-      orders: [expect.objectContaining({ orderId: 12, price: '6.42', side: 'sell' })],
+      pages: [
+        expect.objectContaining({
+          orders: [expect.objectContaining({ orderId: 12, price: '6.42', side: 'sell' })],
+        }),
+      ],
     }),
   )
   expect(writes.publishCollectedMarketObservation).toHaveBeenCalledOnce()
@@ -447,5 +451,80 @@ test.each([undefined, 48582])(
     ).rejects.toThrow('ESI unavailable')
     expect(recordMarketHistoryFailure).toHaveBeenCalledOnce()
     expect(recordMarketHistoryFailure.mock.calls[0]?.[0]?.typeId).toBe(requestedTypeId)
+  },
+)
+
+type PublicProfileMode = 'region' | 'watched-types'
+
+const preparePagedProfile = async (mode: PublicProfileMode) => {
+  const [profile] = await reads.listMarketProfiles()
+  reads.listMarketProfiles.mockResolvedValue([
+    { ...profile, mode, watchedTypeIds: mode === 'region' ? [] : [34] },
+  ])
+  const response = await mocks.esi()
+  mocks.esi.mockClear()
+  mocks.esi.mockImplementation(async ({ inputs }: { inputs: { query: { page: number } } }) => ({
+    ...response,
+    data: [{ ...response.data[0], order_id: inputs.query.page }],
+    pagination: { pages: 41 },
+  }))
+  return response
+}
+
+test.each(['region', 'watched-types'] as const)(
+  'stages %s profiles in bounded batches before complete publication',
+  async (mode) => {
+    const response = await preparePagedProfile(mode)
+    expect(
+      await executeInstalledProfileWork(work, new AbortController().signal, {
+        resources: [resource],
+      }),
+    ).toBe('completed')
+    const batches = writes.stageMarketPages.mock.calls.map(([batch]) => batch)
+    expect(batches.map((batch) => batch.pages.length)).toEqual([10, 10, 10, 10, 1])
+    expect(
+      batches.flatMap((batch) => batch.pages.map((page: { page: number }) => page.page)),
+    ).toEqual(Array.from({ length: 41 }, (_, index) => index + 1))
+    const sourcePages = batches.flatMap((batch) => batch.pages)
+    expect(
+      sourcePages.every(
+        (page) =>
+          page.validatedAt === response.validatedAt && page.freshUntil === response.cachedUntil,
+      ),
+    ).toBe(true)
+    const published = writes.publishCollectedMarketObservation.mock.calls[0]![0].observationId
+    expect(batches.every((batch) => batch.observationId === published)).toBe(true)
+    expect(writes.storeMarketMetrics.mock.calls[0]![0].observationId).toBe(published)
+    expect(writes.publishCollectedMarketObservation).toHaveBeenCalledOnce()
+  },
+)
+
+test.each([
+  { reason: 'cancelled', expected: { error: expect.stringContaining('aborted') } },
+  { reason: 'disabled', expected: { outcome: 'obsolete' } },
+  { reason: 'obsolete', expected: { outcome: 'obsolete' } },
+  { reason: 'failed', expected: { error: 'batch failed' } },
+])(
+  'stops remaining batches and publication after work is $reason',
+  async ({ reason, expected }) => {
+    await preparePagedProfile('region')
+    const cancellation = new AbortController()
+    writes.stageMarketPages.mockImplementationOnce(async () => {
+      if (reason === 'cancelled') cancellation.abort()
+      if (reason === 'disabled')
+        mocks.guard.mockResolvedValue({ outcome: 'noop', reason: 'resource-unavailable' })
+      if (reason === 'obsolete') return { outcome: 'obsolete' }
+      if (reason === 'failed') throw new Error('batch failed')
+      return { outcome: 'staged' }
+    })
+    const result = executeInstalledProfileWork(work, cancellation.signal, { resources: [resource] })
+    const outcome = await result.then(
+      (value) => ({ outcome: value }),
+      (error) => ({ error: error instanceof Error ? error.message : String(error) }),
+    )
+    expect(outcome).toEqual(expected)
+    expect(writes.stageMarketPages).toHaveBeenCalledOnce()
+    expect(writes.publishCollectedMarketObservation).not.toHaveBeenCalled()
+    expect(writes.storeMarketMetrics).not.toHaveBeenCalled()
   },
 )

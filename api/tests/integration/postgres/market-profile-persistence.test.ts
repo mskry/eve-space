@@ -1,18 +1,31 @@
 import { randomUUID } from 'node:crypto'
-import { readFile } from 'node:fs/promises'
 import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, beforeAll, beforeEach, expect, test, vi } from 'vitest'
 import { runMigrations } from '../../../src/db/migration-runner.js'
-import { runModuleMigrationSets } from '../../../src/db/module-migration-runner.js'
-import { createStandaloneModulePersistenceOperationInvoker } from '../../../src/db/module-persistence-operation-transaction.js'
+import {
+  loadInstalledModuleMigrationSets,
+  runModuleMigrationSets,
+} from '../../../src/db/module-migration-runner.js'
+import {
+  createStandaloneModulePersistenceOperationInvoker,
+  createTransactionScopedModulePersistenceOperationInvoker,
+} from '../../../src/db/module-persistence-operation-transaction.js'
 import {
   installedModulePersistenceCapabilityFactories,
   installedModulePersistenceOperations,
 } from '../../../src/generated/platform/installed-module-persistence.js'
+import { installedModuleMigrations } from '../../../src/generated/platform/installed-module-migrations.js'
+import {
+  assertInstalledModulePersistenceContract,
+  reconcileInstalledModulePersistenceContract,
+  persistenceContractFingerprintFor,
+} from '../../../src/db/module-persistence-attestation.js'
 import { platformResources } from '../../../src/platform/resources.js'
 import { createInMemoryQueueProducer } from '../../../src/queue/producer.js'
 import { runProfileWorkPlanner } from '../../../src/queue/profile-work-planner.js'
+
+const databasePassword = randomUUID()
 
 let container: StartedTestContainer
 let connection: postgres.Sql
@@ -54,40 +67,30 @@ let structureReads: ReturnType<
 >
 const moduleId = 'market'
 
+const loadMarketMigrationSets = () =>
+  loadInstalledModuleMigrationSets(
+    installedModuleMigrations.filter((migration) => migration.moduleId === moduleId),
+    undefined,
+    [moduleId],
+    installedModulePersistenceOperations.filter((operation) => operation.moduleId === moduleId),
+  )
+
 beforeAll(async () => {
-  const password = randomUUID()
   container = await new GenericContainer('postgres:17-alpine')
     .withEnvironment({
       POSTGRES_DB: 'eve_space',
-      POSTGRES_PASSWORD: password,
+      POSTGRES_PASSWORD: databasePassword,
       POSTGRES_USER: 'eve_space',
     })
     .withExposedPorts(5432)
     .withWaitStrategy(Wait.forLogMessage(/database system is ready to accept connections/, 2))
     .start()
   connection = postgres(
-    `postgres://eve_space:${password}@${container.getHost()}:${container.getMappedPort(5432)}/eve_space`,
+    `postgres://eve_space:${databasePassword}@${container.getHost()}:${container.getMappedPort(5432)}/eve_space`,
     { onnotice: () => {} },
   )
   await runMigrations(connection)
-  const migrations = await Promise.all(
-    ['market-001-initial.sql', 'market-002-collected-publication.sql'].map(async (name) => ({
-      name,
-      sql: await readFile(
-        new URL(`../../../../features/market/server/migrations/${name}`, import.meta.url),
-        'utf8',
-      ),
-    })),
-  )
-  await runModuleMigrationSets(connection, [
-    {
-      moduleId,
-      migrations,
-      persistenceOperations: installedModulePersistenceOperations.filter(
-        (operation) => operation.moduleId === moduleId,
-      ),
-    },
-  ])
+  await runModuleMigrationSets(connection, await loadMarketMigrationSets())
   const invoke = createStandaloneModulePersistenceOperationInvoker(
     connection,
     moduleId,
@@ -318,13 +321,10 @@ test('keeps a previous complete book when a replacement page is missing or repea
       startedAt: validatedAt,
     })
   const stage = async (observationId: string, page: number, orderId: number) =>
-    observations.stageMarketPage({
+    observations.stageMarketPages({
       observationId,
-      page,
       expectedPages: 2,
-      validatedAt,
-      freshUntil,
-      orders: [order(orderId)],
+      pages: [{ page, validatedAt, freshUntil, orders: [order(orderId)] }],
     })
 
   const initial = randomUUID()
@@ -393,13 +393,10 @@ test('keeps a previous complete book when a replacement page is missing or repea
     expectedPages: 1,
     startedAt: recoveredAt,
   })
-  await observations.stageMarketPage({
+  await observations.stageMarketPages({
     observationId: recovered,
-    page: 1,
     expectedPages: 1,
-    validatedAt: recoveredAt,
-    freshUntil,
-    orders: [order(31)],
+    pages: [{ page: 1, validatedAt: recoveredAt, freshUntil, orders: [order(31)] }],
   })
   expect(
     await observations.publishCollectedMarketObservation({
@@ -472,13 +469,10 @@ test('reads only the identified complete book with bounded price-time pages and 
     }),
   )
   expect(
-    await observations.stageMarketPage({
+    await observations.stageMarketPages({
       observationId,
-      page: 1,
       expectedPages: 1,
-      validatedAt,
-      freshUntil,
-      orders,
+      pages: [{ page: 1, validatedAt, freshUntil, orders }],
     }),
   ).toStrictEqual({ outcome: 'staged' })
   expect(await observations.publishCollectedMarketObservation({ observationId })).toStrictEqual({
@@ -654,24 +648,18 @@ test('rejects page-count drift, incoherent validation times, and obsolete profil
     }),
   ).toStrictEqual({ outcome: 'started' })
   expect(
-    await observations.stageMarketPage({
+    await observations.stageMarketPages({
       observationId,
-      page: 1,
       expectedPages: 3,
-      validatedAt: now.toISOString(),
-      freshUntil,
-      orders: [],
+      pages: [{ page: 1, validatedAt: now.toISOString(), freshUntil, orders: [] }],
     }),
   ).toStrictEqual({ outcome: 'obsolete' })
   for (const [page, validatedAt] of [now, later].entries()) {
     expect(
-      await observations.stageMarketPage({
+      await observations.stageMarketPages({
         observationId,
-        page: page + 1,
         expectedPages: 2,
-        validatedAt: validatedAt.toISOString(),
-        freshUntil,
-        orders: [],
+        pages: [{ page: page + 1, validatedAt: validatedAt.toISOString(), freshUntil, orders: [] }],
       }),
     ).toStrictEqual({ outcome: 'staged' })
   }
@@ -695,13 +683,10 @@ test('rejects page-count drift, incoherent validation times, and obsolete profil
     requestId: randomUUID(),
   })
   expect(
-    await observations.stageMarketPage({
+    await observations.stageMarketPages({
       observationId,
-      page: 1,
       expectedPages: 2,
-      validatedAt: now.toISOString(),
-      freshUntil,
-      orders: [],
+      pages: [{ page: 1, validatedAt: now.toISOString(), freshUntil, orders: [] }],
     }),
   ).toStrictEqual({ outcome: 'obsolete' })
   expect(await observations.publishCollectedMarketObservation({ observationId })).toStrictEqual({
@@ -772,25 +757,29 @@ test('a delayed complete generation cannot replace a newer current pointer', asy
       }),
     ).toStrictEqual({ outcome: 'started' })
     expect(
-      await observations.stageMarketPage({
+      await observations.stageMarketPages({
         observationId,
-        page: 1,
         expectedPages: 1,
-        validatedAt,
-        freshUntil,
-        orders: [
+        pages: [
           {
-            orderId,
-            typeId: 34,
-            locationId: 60003760,
-            solarSystemId: 30000142,
-            side: 'sell',
-            price: '6.42',
-            volumeRemain: 10,
-            issuedAt: validatedAt,
-            durationDays: 90,
-            minimumVolume: 1,
-            range: 'station',
+            page: 1,
+            validatedAt,
+            freshUntil,
+            orders: [
+              {
+                orderId,
+                typeId: 34,
+                locationId: 60003760,
+                solarSystemId: 30000142,
+                side: 'sell',
+                price: '6.42',
+                volumeRemain: 10,
+                issuedAt: validatedAt,
+                durationDays: 90,
+                minimumVolume: 1,
+                range: 'station',
+              },
+            ],
           },
         ],
       }),
@@ -847,13 +836,17 @@ test.each([{ typeIds: [34, 35] }, { typeIds: [35, 34] }])(
         expectedPages: 1,
         startedAt: validatedAt,
       })
-      await observations.stageMarketPage({
+      await observations.stageMarketPages({
         observationId,
-        page: 1,
         expectedPages: 1,
-        validatedAt,
-        freshUntil: typeId === 34 ? earlyExpiry : lateExpiry,
-        orders: [],
+        pages: [
+          {
+            page: 1,
+            validatedAt,
+            freshUntil: typeId === 34 ? earlyExpiry : lateExpiry,
+            orders: [],
+          },
+        ],
       })
       expect(await observations.publishCollectedMarketObservation({ observationId })).toEqual({
         outcome: 'published',
@@ -881,13 +874,17 @@ test.each([{ typeIds: [34, 35] }, { typeIds: [35, 34] }])(
       expectedPages: 1,
       startedAt: new Date(now).toISOString(),
     })
-    await observations.stageMarketPage({
+    await observations.stageMarketPages({
       observationId: refreshed,
-      page: 1,
       expectedPages: 1,
-      validatedAt: new Date(now).toISOString(),
-      freshUntil: new Date(now + 600_000).toISOString(),
-      orders: [],
+      pages: [
+        {
+          page: 1,
+          validatedAt: new Date(now).toISOString(),
+          freshUntil: new Date(now + 600_000).toISOString(),
+          orders: [],
+        },
+      ],
     })
     expect(
       await observations.publishCollectedMarketObservation({
@@ -929,13 +926,10 @@ test('accepts a still-fresh cached book without replacing its current observatio
       expectedPages: 1,
       startedAt: validatedAt,
     })
-    await observations.stageMarketPage({
+    await observations.stageMarketPages({
       observationId,
-      page: 1,
       expectedPages: 1,
-      validatedAt,
-      freshUntil,
-      orders: [],
+      pages: [{ page: 1, validatedAt, freshUntil, orders: [] }],
     })
     expect(await observations.publishCollectedMarketObservation({ observationId })).toEqual({
       outcome: observationId === initial ? 'published' : 'unchanged',
@@ -978,31 +972,19 @@ test('publishes complete expired public books without extending source freshness
       profileRevision: 1,
       marketKey: `${profileId}:all`,
       typeId: null,
-      expectedPages: 2,
+      expectedPages: 3,
       startedAt: validatedAt,
     })
-    for (const page of [1, 2]) {
-      await observations.stageMarketPage({
+    for (const pages of [[1, 2], [3]]) {
+      await observations.stageMarketPages({
         observationId,
-        page,
-        expectedPages: 2,
-        validatedAt,
-        freshUntil,
-        orders: [
-          {
-            orderId: page,
-            typeId: 34,
-            locationId: 60003760,
-            solarSystemId: 30000142,
-            side: 'sell',
-            price: '6.42',
-            volumeRemain: 10,
-            issuedAt: validatedAt,
-            durationDays: 90,
-            minimumVolume: 1,
-            range: 'station',
-          },
-        ],
+        expectedPages: 3,
+        pages: pages.map((page) => ({
+          page,
+          validatedAt,
+          freshUntil,
+          orders: [batchOrder(page, validatedAt)],
+        })),
       })
       outcomes.push(await observations.publishCollectedMarketObservation({ observationId }))
     }
@@ -1020,7 +1002,7 @@ test('publishes complete expired public books without extending source freshness
   })
   expect(stored).toMatchObject({
     observationId: initial,
-    totalBookOrders: 2,
+    totalBookOrders: 3,
   })
   expect(Date.parse(stored!.freshUntil)).toBe(Date.parse(freshUntil))
   const [profile] = await profiles.listMarketProfiles({ enabledOnly: true })
@@ -1806,4 +1788,355 @@ test('bounds exact-character structure demand and releases failed queue reservat
     where character_id = ${characterId}
   `
   expect(remaining?.count).toBe('0')
+})
+
+const batchOrder = (orderId: number, issuedAt: string) => ({
+  orderId,
+  typeId: 34,
+  locationId: 60003760,
+  solarSystemId: 30000142,
+  side: 'sell' as const,
+  price: '6.42',
+  volumeRemain: 10,
+  issuedAt,
+  durationDays: 90,
+  minimumVolume: 1,
+  range: 'station',
+})
+
+const batchCounts = async (observationId: string) => {
+  const [counts] = await connection<{ pages: number; orders: number }[]>`
+    select (select count(*)::integer from eve_module_market.market_observation_pages
+      where observation_id = ${observationId}) as pages,
+      (select count(*)::integer from eve_module_market.market_observation_orders
+      where observation_id = ${observationId}) as orders
+  `
+  return counts
+}
+
+const batchFixture = async (expectedPages = 3) => {
+  const profileId = randomUUID()
+  const observationId = randomUUID()
+  const previousId = randomUUID()
+  const validatedAt = new Date().toISOString()
+  const previousAt = new Date(Date.parse(validatedAt) - 1_000).toISOString()
+  const freshUntil = new Date(Date.parse(validatedAt) + 300_000).toISOString()
+  const profile = {
+    profileId,
+    regionId: 10000002,
+    mode: 'watched-types' as const,
+    stationIds: [],
+    watchedTypeIds: [34],
+    enabled: true,
+  }
+  await profiles.saveMarketProfile({ ...profile, expectedRevision: 0, requestId: randomUUID() })
+  const begin = async (id: string, pages: number, at: string) =>
+    observations.beginMarketObservation({
+      observationId: id,
+      profileId,
+      profileRevision: 1,
+      marketKey: `${profileId}:34`,
+      typeId: 34,
+      expectedPages: pages,
+      startedAt: at,
+    })
+  await begin(previousId, 1, previousAt)
+  await observations.stageMarketPages({
+    observationId: previousId,
+    expectedPages: 1,
+    pages: [
+      { page: 1, validatedAt: previousAt, freshUntil, orders: [batchOrder(10000, previousAt)] },
+    ],
+  })
+  await observations.publishCollectedMarketObservation({ observationId: previousId })
+  await begin(observationId, expectedPages, validatedAt)
+  const page = (number: number, ids = [number]) => ({
+    page: number,
+    validatedAt,
+    freshUntil,
+    orders: ids.map((id) => batchOrder(id, validatedAt)),
+  })
+  const stage = (pages: ReturnType<typeof page>[]) =>
+    observations.stageMarketPages({ observationId, expectedPages, pages })
+  const publish = () => observations.publishCollectedMarketObservation({ observationId })
+  const current = () =>
+    bookReads.readMarketObservation({ profileId, typeId: 34, observationId: null })
+  return {
+    profile,
+    profileId,
+    observationId,
+    previousId,
+    validatedAt,
+    freshUntil,
+    page,
+    stage,
+    publish,
+    current,
+  }
+}
+
+test('publishes multi-batch replacements and converges replay across batch boundaries', async () => {
+  const fixture = await batchFixture(4)
+  const { page, stage, publish, current, observationId } = fixture
+  expect(await stage([page(1), page(2)])).toEqual({ outcome: 'staged' })
+  expect(await publish()).toEqual({ outcome: 'incomplete' })
+  expect(await current()).toMatchObject({ observationId: fixture.previousId })
+  expect(
+    await stage([
+      { ...page(1), freshUntil: new Date(Date.parse(fixture.freshUntil) + 1_000).toISOString() },
+      page(3),
+    ]),
+  ).toEqual({ outcome: 'obsolete' })
+  expect(await batchCounts(observationId)).toEqual({ pages: 2, orders: 2 })
+  expect(await stage([page(2), page(3)])).toEqual({ outcome: 'staged' })
+  expect(await stage([page(1), page(3)])).toEqual({ outcome: 'staged' })
+  expect(await stage([page(4)])).toEqual({ outcome: 'staged' })
+  expect(await batchCounts(observationId)).toEqual({ pages: 4, orders: 4 })
+  expect(await publish()).toEqual({ outcome: 'published' })
+  const stored = await current()
+  expect(stored).toMatchObject({ observationId, totalBookOrders: 4, expectedPages: 4 })
+  expect(Date.parse(stored!.validatedAt)).toBe(Date.parse(fixture.validatedAt))
+  expect(Date.parse(stored!.freshUntil)).toBe(Date.parse(fixture.freshUntil))
+})
+
+test.each(['within', 'across'])(
+  'retains the prior book when orders repeat %s batches',
+  async (kind) => {
+    const fixture = await batchFixture()
+    await fixture.stage([fixture.page(1)])
+    const second = kind === 'within' ? fixture.page(2, [2, 2]) : fixture.page(2, [1])
+    await fixture.stage([second, fixture.page(3)])
+    expect(await fixture.publish()).toEqual({ outcome: 'incomplete' })
+    expect(await fixture.current()).toMatchObject({
+      observationId: fixture.previousId,
+      totalBookOrders: 1,
+    })
+  },
+)
+
+test('rolls back metadata and orders for an entire failed batch while retaining earlier batches', async () => {
+  const fixture = await batchFixture()
+  await fixture.stage([fixture.page(1)])
+  await connection`alter table eve_module_market.market_observation_orders
+    add constraint market_batch_fault check (order_id <> 99999999)`
+  try {
+    await expect(fixture.stage([fixture.page(2), fixture.page(3, [99999999])])).rejects.toThrow(
+      'execution',
+    )
+    expect(await batchCounts(fixture.observationId)).toEqual({ pages: 1, orders: 1 })
+    expect(await fixture.publish()).toEqual({ outcome: 'incomplete' })
+    expect(await fixture.current()).toMatchObject({ observationId: fixture.previousId })
+  } finally {
+    await connection`alter table eve_module_market.market_observation_orders drop constraint market_batch_fault`
+  }
+  expect(await fixture.stage([fixture.page(2), fixture.page(3)])).toEqual({ outcome: 'staged' })
+  expect(await fixture.publish()).toEqual({ outcome: 'published' })
+})
+
+test.each([
+  { enabled: false, afterFinalBatch: false },
+  { enabled: true, afterFinalBatch: false },
+  { enabled: false, afterFinalBatch: true },
+  { enabled: true, afterFinalBatch: true },
+])(
+  'fences profile changes before later batches and publication %j',
+  async ({ enabled, afterFinalBatch }) => {
+    const fixture = await batchFixture()
+    await fixture.stage([fixture.page(1), fixture.page(2)])
+    if (afterFinalBatch) await fixture.stage([fixture.page(3)])
+    const before = await batchCounts(fixture.observationId)
+    await profiles.saveMarketProfile({
+      ...fixture.profile,
+      enabled,
+      expectedRevision: 1,
+      requestId: randomUUID(),
+    })
+    expect(await fixture.stage([fixture.page(3)])).toEqual({ outcome: 'obsolete' })
+    expect(await batchCounts(fixture.observationId)).toEqual(before)
+    expect(await fixture.publish()).toEqual({ outcome: 'incomplete' })
+    const [pointer] = await connection<{ observationId: string }[]>`
+    select observation_id::text as "observationId" from eve_module_market.market_current_observations
+    where market_key = ${`${fixture.profileId}:34`}
+  `
+    expect(pointer?.observationId).toBe(fixture.previousId)
+  },
+)
+
+const createBatchLatch = () => {
+  let resolve!: () => void
+  let reject!: (reason: Error) => void
+  const promise = new Promise<void>((accept, deny) => {
+    resolve = accept
+    reject = deny
+  })
+  return { promise, resolve, reject }
+}
+
+test('holds batch eligibility through commit while a concurrent profile update waits', async () => {
+  const fixture = await batchFixture()
+  const staged = createBatchLatch()
+  const release = createBatchLatch()
+  const batch = connection.begin(async (transaction) => {
+    const scope = createTransactionScopedModulePersistenceOperationInvoker(
+      transaction,
+      moduleId,
+      installedModulePersistenceOperations,
+    )
+    const writes = installedModulePersistenceCapabilityFactories.resourceMaterializations[
+      'market/orders'
+    ](scope.invoke)
+    try {
+      await writes.stageMarketPages({
+        observationId: fixture.observationId,
+        expectedPages: 3,
+        pages: [fixture.page(1), fixture.page(2)],
+      })
+      staged.resolve()
+      await release.promise
+    } finally {
+      scope.close()
+    }
+  })
+  void batch.catch(staged.reject)
+  await staged.promise
+  const update = profiles.saveMarketProfile({
+    ...fixture.profile,
+    enabled: false,
+    expectedRevision: 1,
+    requestId: randomUUID(),
+  })
+  try {
+    await vi.waitFor(async () => {
+      const [waiting] = await connection<{ count: number }[]>`
+        select count(*)::integer as count from pg_stat_activity
+        where wait_event_type = 'Lock' and query like '%persist_save_market_profile%'
+      `
+      expect(waiting?.count).toBe(1)
+    })
+  } finally {
+    release.resolve()
+  }
+  await batch
+  expect(await update).toMatchObject({ outcome: 'saved', revision: 2 })
+  expect(await batchCounts(fixture.observationId)).toEqual({ pages: 2, orders: 2 })
+  expect(await fixture.stage([fixture.page(3)])).toEqual({ outcome: 'obsolete' })
+  expect(await fixture.publish()).toEqual({ outcome: 'incomplete' })
+})
+
+test('serializes concurrent identical batch replay without duplicating pages or orders', async () => {
+  const fixture = await batchFixture()
+  const pages = [fixture.page(1), fixture.page(2), fixture.page(3)]
+  expect(await Promise.all([fixture.stage(pages), fixture.stage(pages)])).toEqual([
+    { outcome: 'staged' },
+    { outcome: 'staged' },
+  ])
+  expect(await batchCounts(fixture.observationId)).toEqual({ pages: 3, orders: 3 })
+  expect(await fixture.publish()).toEqual({ outcome: 'published' })
+})
+
+test('upgrades and attests batch staging without losing complete or staged observations', async () => {
+  await connection`create database market_batch_upgrade`
+  const upgraded = postgres(
+    `postgres://eve_space:${databasePassword}@${container.getHost()}:${container.getMappedPort(5432)}/market_batch_upgrade`,
+    { onnotice: () => {} },
+  )
+  try {
+    await runMigrations(upgraded)
+    const [currentSet] = await loadMarketMigrationSets()
+    const oldOperations = currentSet!.persistenceOperations!.filter(
+      (operation) => operation.migration !== 'market-003-batch-staging.sql',
+    )
+    await runModuleMigrationSets(upgraded, [
+      {
+        ...currentSet!,
+        migrations: currentSet!.migrations.slice(0, 2),
+        persistenceOperations: oldOperations,
+      },
+    ])
+    const invoke = createStandaloneModulePersistenceOperationInvoker(
+      upgraded,
+      moduleId,
+      installedModulePersistenceOperations,
+    )
+    const configured =
+      installedModulePersistenceCapabilityFactories.routes['market/profiles'](invoke)
+    const writes =
+      installedModulePersistenceCapabilityFactories.resourceMaterializations['market/orders'](
+        invoke,
+      )
+    const reads =
+      installedModulePersistenceCapabilityFactories.routes['market/public-books'](invoke)
+    const oldStage = installedModulePersistenceOperations.find(
+      (operation) =>
+        operation.moduleId === moduleId && operation.operationId === 'stage-market-page',
+    )!
+    const profileId = randomUUID()
+    const previous = randomUUID()
+    const replacement = randomUUID()
+    const validatedAt = new Date().toISOString()
+    const freshUntil = new Date(Date.parse(validatedAt) + 300_000).toISOString()
+    await configured.saveMarketProfile({
+      profileId,
+      regionId: 10000002,
+      mode: 'watched-types',
+      stationIds: [],
+      watchedTypeIds: [34],
+      enabled: true,
+      expectedRevision: 0,
+      requestId: randomUUID(),
+    })
+    for (const observationId of [previous, replacement]) {
+      const at =
+        observationId === previous
+          ? new Date(Date.parse(validatedAt) - 1_000).toISOString()
+          : validatedAt
+      const expectedPages = observationId === previous ? 1 : 2
+      await writes.beginMarketObservation({
+        observationId,
+        profileId,
+        profileRevision: 1,
+        marketKey: `${profileId}:34`,
+        typeId: 34,
+        expectedPages,
+        startedAt: at,
+      })
+      await invoke(oldStage, {
+        observationId,
+        expectedPages,
+        page: 1,
+        validatedAt: at,
+        freshUntil,
+        orders: [batchOrder(1, at)],
+      })
+      expect(await writes.publishCollectedMarketObservation({ observationId })).toEqual({
+        outcome: observationId === previous ? 'published' : 'incomplete',
+      })
+    }
+    await runModuleMigrationSets(upgraded, [currentSet!])
+    const operations = installedModulePersistenceOperations.filter(
+      (operation) => operation.moduleId === moduleId,
+    )
+    const fingerprint = persistenceContractFingerprintFor(operations, [moduleId])
+    await reconcileInstalledModulePersistenceContract(upgraded, fingerprint, operations, [moduleId])
+    await assertInstalledModulePersistenceContract(upgraded, fingerprint, operations, [moduleId])
+    expect(
+      await reads.readMarketObservation({ profileId, typeId: 34, observationId: null }),
+    ).toMatchObject({ observationId: previous, totalBookOrders: 1 })
+    expect(
+      await writes.stageMarketPages({
+        observationId: replacement,
+        expectedPages: 2,
+        pages: [{ page: 2, validatedAt, freshUntil, orders: [batchOrder(2, validatedAt)] }],
+      }),
+    ).toEqual({ outcome: 'staged' })
+    expect(await writes.publishCollectedMarketObservation({ observationId: replacement })).toEqual({
+      outcome: 'published',
+    })
+    expect(
+      await reads.readMarketObservation({ profileId, typeId: 34, observationId: null }),
+    ).toMatchObject({ observationId: replacement, totalBookOrders: 2 })
+  } finally {
+    await upgraded.end()
+    await connection`drop database market_batch_upgrade`
+  }
 })

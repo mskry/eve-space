@@ -29,6 +29,7 @@ interface MountedControllers {
 }
 
 beforeEach(() => {
+  vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-02T12:00:00.000Z'))
   requests.length = 0
   installFinanceHandlers()
 })
@@ -38,6 +39,7 @@ afterEach(() => {
     wrapper.unmount()
   }
   document.body.replaceChildren()
+  vi.restoreAllMocks()
 })
 
 describe('character Finance controllers', () => {
