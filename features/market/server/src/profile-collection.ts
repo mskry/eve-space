@@ -3,7 +3,8 @@ import type {
   PlatformProfileCollectionResourceImplementation,
 } from '@eve-space/platform-module-contract/resources'
 import type { PlatformExecutableEsiOperationProtocol } from '@eve-space/platform-module-server'
-import { collectRegionalOrderBook } from './collect-orders.js'
+import { collectRegionalOrderBook, type CollectedMarketBook } from './collect-orders.js'
+import { createMarketPageBatches } from './market-page-batches.js'
 import { marketCollectionBounds } from './market-bounds.js'
 import { deriveMarketMetrics } from './market-derived.js'
 import type {
@@ -28,9 +29,28 @@ type MarketProfileResource = PlatformProfileCollectionResourceImplementation<
   MarketCollectionWrites
 >
 type MarketProfile = Awaited<ReturnType<MarketProfileReads['listMarketProfiles']>>[number]
+type MarketProfileContext = Parameters<MarketProfileResource['execute']>[0]
+type MarketStagingOutcome = 'staged' | 'obsolete'
+
+const stageBook = async (
+  context: MarketProfileContext,
+  observationId: string,
+  book: CollectedMarketBook,
+): Promise<MarketStagingOutcome> => {
+  for (const batch of createMarketPageBatches(observationId, book.pages, book.pageResults)) {
+    context.signal.throwIfAborted()
+    // oxlint-disable-next-line no-await-in-loop -- Recheck host eligibility between bounded transactions.
+    if (!(await context.assertCurrent())) return 'obsolete'
+    // oxlint-disable-next-line no-await-in-loop -- Each batch is an independently bounded transaction.
+    const staged = await context.capabilities.persistence.stageMarketPages(batch)
+    context.signal.throwIfAborted()
+    if (staged.outcome === 'obsolete') return 'obsolete'
+  }
+  return 'staged'
+}
 
 const completeType = async (
-  context: Parameters<MarketProfileResource['execute']>[0],
+  context: MarketProfileContext,
   profile: MarketProfile,
   typeId: number | undefined,
   budget: { remaining: number },
@@ -73,19 +93,7 @@ const completeType = async (
     startedAt: book.observedAt,
   })
   if (started.outcome === 'obsolete') return 'obsolete'
-  for (const page of book.pageResults) {
-    context.signal.throwIfAborted()
-    // oxlint-disable-next-line no-await-in-loop -- Keep staged page writes ordered and bounded.
-    const staged = await context.capabilities.persistence.stageMarketPage({
-      observationId,
-      page: page.page,
-      expectedPages: book.pages,
-      validatedAt: page.validatedAt,
-      freshUntil: page.freshUntil,
-      orders: [...page.orders],
-    })
-    if (staged.outcome === 'obsolete') return 'obsolete'
-  }
+  if ((await stageBook(context, observationId, book)) === 'obsolete') return 'obsolete'
   context.signal.throwIfAborted()
   if (!(await context.assertCurrent())) return 'obsolete'
   const published = await context.capabilities.persistence.publishCollectedMarketObservation({

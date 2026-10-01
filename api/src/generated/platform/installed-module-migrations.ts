@@ -17,6 +17,12 @@ export const installedModuleMigrations = [
     exportPath: './migrations/market-002-collected-publication.sql',
   },
   {
+    moduleId: 'market',
+    name: 'market-003-batch-staging.sql',
+    packageName: '@eve-space/market-server',
+    exportPath: './migrations/market-003-batch-staging.sql',
+  },
+  {
     moduleId: 'member-audit',
     name: 'member-audit-001-baseline.sql',
     packageName: '@eve-space/member-audit-server',

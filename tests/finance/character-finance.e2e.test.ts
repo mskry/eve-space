@@ -254,6 +254,13 @@ describe('character Finance production route', async () => {
   })
 
   const openPages = new Set<Page>()
+  const openPage = async (path: string) => {
+    const page = await createPage()
+    openPages.add(page)
+    await page.clock.setFixedTime('2026-09-02T12:00:00.000Z')
+    await page.goto(new URL(path, useTestContext().url).toString())
+    return page
+  }
 
   beforeEach(() => {
     apiMode = 'data'
@@ -513,12 +520,6 @@ describe('character Finance production route', async () => {
     ).toBe(true)
     expect(await hasHorizontalOverflow(page)).toBe(false)
   })
-
-  async function openPage(path: string) {
-    const page = await createPage(path)
-    openPages.add(page)
-    return page
-  }
 })
 
 function servicePanel(page: Page, title: string): Locator {

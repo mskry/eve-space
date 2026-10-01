@@ -1532,3 +1532,44 @@ function representationIdentity(
     representationVersion: getEsiOperationContract(operation).representationVersion,
   })
 }
+
+test('uses a mail owner publication when its lease ends before the follower TTL check', async () => {
+  let completeOwner!: (response: Response) => void
+  const ownerResponse = new Promise<Response>((resolve) => {
+    completeOwner = resolve
+  })
+  const fetch = vi
+    .fn()
+    .mockImplementationOnce(() => ownerResponse)
+    .mockRejectedValue(new Error('Unexpected second upstream mail request'))
+  vi.stubGlobal('fetch', fetch)
+  const representation = await mailRepresentation()
+  const owner = execute(
+    representation,
+    { characterId: 90_000_001, mailId: 7 },
+    { subjectLifecycleId },
+  )
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+
+  vi.resetModules()
+  const followerRepresentation = await mailRepresentation()
+  const leaseTtl = coordination.pttl.bind(coordination)
+  vi.spyOn(coordination, 'pttl').mockImplementationOnce(async (key) => {
+    completeOwner(esiResponse({ body: 'owner' }, 30))
+    await owner
+    return leaseTtl(key)
+  })
+  const follower = execute(
+    followerRepresentation,
+    {
+      characterId: 90_000_001,
+      mailId: 7,
+    },
+    { subjectLifecycleId },
+  )
+  await expect(Promise.all([owner, follower])).resolves.toStrictEqual([
+    expect.objectContaining({ data: { body: 'owner' }, source: 'esi' }),
+    expect.objectContaining({ data: { body: 'owner' }, source: 'cache' }),
+  ])
+  expect(fetch).toHaveBeenCalledOnce()
+})

@@ -123,6 +123,41 @@ export const stageMarketPageOperation = definePlatformPersistenceOperation({
   maximumOutputBytes: 256,
 })
 
+export const stageMarketPagesOperation = definePlatformPersistenceOperation({
+  id: 'stage-market-pages',
+  method: 'stageMarketPages',
+  revision: 1,
+  mode: 'write',
+  inputSchema: z
+    .strictObject({
+      observationId: z.uuid(),
+      expectedPages: z.number().int().min(1).max(marketCollectionBounds.maximumPagesPerObservation),
+      pages: z
+        .array(
+          z
+            .strictObject({
+              page: z.number().int().min(1).max(marketCollectionBounds.maximumPagesPerObservation),
+              validatedAt: instant,
+              freshUntil: instant,
+              orders: z.array(z.strictObject(marketOrderFields)).max(1_000),
+            })
+            .refine((page) => Date.parse(page.freshUntil) > Date.parse(page.validatedAt)),
+        )
+        .min(1)
+        .max(marketCollectionBounds.maximumPagesPerBatch),
+    })
+    .refine((input) => new Set(input.pages.map(({ page }) => page)).size === input.pages.length)
+    .refine((input) => input.pages.every(({ page }) => page <= input.expectedPages))
+    .refine(
+      (input) =>
+        input.pages.reduce((count, page) => count + page.orders.length, 0) <=
+        marketCollectionBounds.maximumOrdersPerBatch,
+    ),
+  outputSchema: stageMarketPageOperation.outputSchema,
+  maximumInputBytes: marketCollectionBounds.maximumStagingInputBytes,
+  maximumOutputBytes: 256,
+})
+
 export const publishCurrentMarketObservationOperation = definePlatformPersistenceOperation({
   id: 'publish-current-market-observation',
   method: 'publishCurrentMarketObservation',
@@ -805,6 +840,7 @@ const operations = {
   'list-due-market-profiles': listDueMarketProfilesOperation,
   'begin-market-observation': beginMarketObservationOperation,
   'stage-market-page': stageMarketPageOperation,
+  'stage-market-pages': stageMarketPagesOperation,
   'publish-current-market-observation': publishCurrentMarketObservationOperation,
   'publish-collected-market-observation': publishCollectedMarketObservationOperation,
   'record-market-failure': recordMarketFailureOperation,
@@ -856,7 +892,7 @@ export type MarketCollectionWrites = PlatformPersistenceMethodsFor<
   typeof operations,
   readonly [
     'begin-market-observation',
-    'stage-market-page',
+    'stage-market-pages',
     'publish-collected-market-observation',
     'record-market-failure',
     'record-market-type-failure',

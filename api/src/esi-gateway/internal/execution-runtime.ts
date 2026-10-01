@@ -1275,13 +1275,13 @@ class EsiExecutionRuntimeImplementation {
           Math.min(followerWaitMs, ttlMs, Math.max(1, deadline - this.ports.timing.now())),
           context.resource.signal,
         )
-        // oxlint-disable-next-line no-await-in-loop
-        const published = await this.#readL2<Data>(context)
-        context.resource.signal?.throwIfAborted()
-        if (published && isEnvelopeFresh(published, this.ports.timing.now())) {
-          this.state.l1.set(context.key, published)
-          return { lease: undefined, published }
-        }
+      }
+      // oxlint-disable-next-line no-await-in-loop
+      const published = await this.#readL2<Data>(context)
+      context.resource.signal?.throwIfAborted()
+      if (published && isEnvelopeFresh(published, this.ports.timing.now())) {
+        this.state.l1.set(context.key, published)
+        return { lease: undefined, published }
       }
       let lease: EsiRequestLease | undefined
       try {

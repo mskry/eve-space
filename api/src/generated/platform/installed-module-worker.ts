@@ -49,7 +49,7 @@ export const installedModuleResources = [
     persistence: {
       materialization: [
         { operationId: 'begin-market-observation' },
-        { operationId: 'stage-market-page' },
+        { operationId: 'stage-market-pages' },
         { operationId: 'publish-collected-market-observation' },
         { operationId: 'record-market-failure' },
         { operationId: 'record-market-type-failure' },

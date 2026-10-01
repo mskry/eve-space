@@ -12,36 +12,37 @@ import {
   listDueMarketProfilesOperation as module0PersistenceOperation2,
   beginMarketObservationOperation as module0PersistenceOperation3,
   stageMarketPageOperation as module0PersistenceOperation4,
-  publishCurrentMarketObservationOperation as module0PersistenceOperation5,
-  publishCollectedMarketObservationOperation as module0PersistenceOperation6,
-  recordMarketFailureOperation as module0PersistenceOperation7,
-  cleanupMarketObservationsOperation as module0PersistenceOperation8,
-  cleanupMarketObservationBacklogOperation as module0PersistenceOperation9,
-  readMarketObservationOperation as module0PersistenceOperation10,
-  readMarketOrderRowsOperation as module0PersistenceOperation11,
-  upsertMarketReferencePricesOperation as module0PersistenceOperation12,
-  readMarketReferencePricesOperation as module0PersistenceOperation13,
-  requestMarketHistoryDemandOperation as module0PersistenceOperation14,
-  listDueMarketHistoryProfilesOperation as module0PersistenceOperation15,
-  listDueMarketHistoryTypesOperation as module0PersistenceOperation16,
-  upsertMarketHistoryOperation as module0PersistenceOperation17,
-  recordMarketHistoryFailureOperation as module0PersistenceOperation18,
-  readMarketHistoryOperation as module0PersistenceOperation19,
-  storeMarketMetricsOperation as module0PersistenceOperation20,
-  listMarketDerivationTypesOperation as module0PersistenceOperation21,
-  readMarketMetricsOperation as module0PersistenceOperation22,
-  cleanupMarketHistoryDemandsOperation as module0PersistenceOperation23,
-  beginStructureObservationOperation as module0PersistenceOperation24,
-  stageStructurePageOperation as module0PersistenceOperation25,
-  publishStructureObservationOperation as module0PersistenceOperation26,
-  readStructureBookOperation as module0PersistenceOperation27,
-  cleanupStructureObservationsOperation as module0PersistenceOperation28,
-  reserveStructureDemandOperation as module0PersistenceOperation29,
-  releaseStructureDemandOperation as module0PersistenceOperation30,
-  cleanupStructureDemandsOperation as module0PersistenceOperation31,
-  readMarketQuoteRowsOperation as module0PersistenceOperation32,
-  recordMarketTypeFailureOperation as module0PersistenceOperation33,
-  readMarketReplacementStatusOperation as module0PersistenceOperation34,
+  stageMarketPagesOperation as module0PersistenceOperation5,
+  publishCurrentMarketObservationOperation as module0PersistenceOperation6,
+  publishCollectedMarketObservationOperation as module0PersistenceOperation7,
+  recordMarketFailureOperation as module0PersistenceOperation8,
+  cleanupMarketObservationsOperation as module0PersistenceOperation9,
+  cleanupMarketObservationBacklogOperation as module0PersistenceOperation10,
+  readMarketObservationOperation as module0PersistenceOperation11,
+  readMarketOrderRowsOperation as module0PersistenceOperation12,
+  upsertMarketReferencePricesOperation as module0PersistenceOperation13,
+  readMarketReferencePricesOperation as module0PersistenceOperation14,
+  requestMarketHistoryDemandOperation as module0PersistenceOperation15,
+  listDueMarketHistoryProfilesOperation as module0PersistenceOperation16,
+  listDueMarketHistoryTypesOperation as module0PersistenceOperation17,
+  upsertMarketHistoryOperation as module0PersistenceOperation18,
+  recordMarketHistoryFailureOperation as module0PersistenceOperation19,
+  readMarketHistoryOperation as module0PersistenceOperation20,
+  storeMarketMetricsOperation as module0PersistenceOperation21,
+  listMarketDerivationTypesOperation as module0PersistenceOperation22,
+  readMarketMetricsOperation as module0PersistenceOperation23,
+  cleanupMarketHistoryDemandsOperation as module0PersistenceOperation24,
+  beginStructureObservationOperation as module0PersistenceOperation25,
+  stageStructurePageOperation as module0PersistenceOperation26,
+  publishStructureObservationOperation as module0PersistenceOperation27,
+  readStructureBookOperation as module0PersistenceOperation28,
+  cleanupStructureObservationsOperation as module0PersistenceOperation29,
+  reserveStructureDemandOperation as module0PersistenceOperation30,
+  releaseStructureDemandOperation as module0PersistenceOperation31,
+  cleanupStructureDemandsOperation as module0PersistenceOperation32,
+  readMarketQuoteRowsOperation as module0PersistenceOperation33,
+  recordMarketTypeFailureOperation as module0PersistenceOperation34,
+  readMarketReplacementStatusOperation as module0PersistenceOperation35,
 } from '@eve-space/market-server'
 import {
   writeSkillSnapshotOperation as module1PersistenceOperation0,
@@ -176,6 +177,29 @@ export const installedModulePersistenceOperations = [
     >,
     grants: {
       activityProviders: [],
+      resourceMaterializations: [],
+      resourceProjections: [],
+      routes: [],
+    },
+  },
+  {
+    moduleId: 'market',
+    operationId: 'stage-market-pages',
+    method: 'stageMarketPages',
+    revision: 1,
+    mode: 'write',
+    migration: 'market-003-batch-staging.sql',
+    schemaName: 'eve_module_market',
+    routineName: 'persist_stage_market_pages',
+    definitionFingerprint: 'bbed4c565ea097a540ab29485f5582599366645c9c0a82f37e8f78fabe4194a1',
+    definition: module0PersistenceOperation5 satisfies PlatformPersistenceOperationDefinition<
+      'stage-market-pages',
+      'stageMarketPages',
+      1,
+      'write'
+    >,
+    grants: {
+      activityProviders: [],
       resourceMaterializations: ['orders'],
       resourceProjections: [],
       routes: [],
@@ -191,7 +215,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_publish_current_market_observation',
     definitionFingerprint: 'b0cae3efdd7368534eecea1d24176a1e5839b5b9b81046a438076be5be3e3110',
-    definition: module0PersistenceOperation5 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation6 satisfies PlatformPersistenceOperationDefinition<
       'publish-current-market-observation',
       'publishCurrentMarketObservation',
       1,
@@ -214,7 +238,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_publish_collected_market_observation',
     definitionFingerprint: 'e223acb7ed5462cfa6ddfadd9194530d0ac42b0f4a0caf8241cf7a8739b40d8b',
-    definition: module0PersistenceOperation6 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation7 satisfies PlatformPersistenceOperationDefinition<
       'publish-collected-market-observation',
       'publishCollectedMarketObservation',
       1,
@@ -237,7 +261,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_record_market_failure',
     definitionFingerprint: '2cfe3ed1d41d61ada68868eda55ef7328548f7989d0f0a0c761674888b45ea9b',
-    definition: module0PersistenceOperation7 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation8 satisfies PlatformPersistenceOperationDefinition<
       'record-market-failure',
       'recordMarketFailure',
       1,
@@ -260,7 +284,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_cleanup_market_observations',
     definitionFingerprint: '0b813315850b4b693b8d591cf84c36415e2d49bc3b2c36e2d621afede91eb94c',
-    definition: module0PersistenceOperation8 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation9 satisfies PlatformPersistenceOperationDefinition<
       'cleanup-market-observations',
       'cleanupMarketObservations',
       1,
@@ -283,7 +307,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_cleanup_market_observation_backlog',
     definitionFingerprint: 'd770ec1e0a17f5ec4a166242a80d7e588ab514e55c74f308793e9110fc533c2e',
-    definition: module0PersistenceOperation9 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation10 satisfies PlatformPersistenceOperationDefinition<
       'cleanup-market-observation-backlog',
       'cleanupMarketObservationBacklog',
       1,
@@ -306,7 +330,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_read_market_observation',
     definitionFingerprint: '0ce416f43b6108000dbedbe11d24f3b3f2c853679d669cca434147280f0ea929',
-    definition: module0PersistenceOperation10 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation11 satisfies PlatformPersistenceOperationDefinition<
       'read-market-observation',
       'readMarketObservation',
       1,
@@ -329,7 +353,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_read_market_order_rows',
     definitionFingerprint: 'c64a7c1ece1223ab0cc4ae4589f132674f1d7589adab063f74887e3da38da12a',
-    definition: module0PersistenceOperation11 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation12 satisfies PlatformPersistenceOperationDefinition<
       'read-market-order-rows',
       'readMarketOrderRows',
       1,
@@ -352,7 +376,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_upsert_market_reference_prices',
     definitionFingerprint: 'b44f3bfd1addce557ec9e113fd5bb09af4d213a8248350cf84d2babed2aee574',
-    definition: module0PersistenceOperation12 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation13 satisfies PlatformPersistenceOperationDefinition<
       'upsert-market-reference-prices',
       'upsertMarketReferencePrices',
       1,
@@ -375,7 +399,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_read_market_reference_prices',
     definitionFingerprint: '2219eb6691f57a1299dfb357931528f7f30707afee5d9a6a00772314b0429069',
-    definition: module0PersistenceOperation13 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation14 satisfies PlatformPersistenceOperationDefinition<
       'read-market-reference-prices',
       'readMarketReferencePrices',
       1,
@@ -398,7 +422,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_request_market_history_demand',
     definitionFingerprint: '465bce5c99941582ecb4e88b132b229c1e9526c8f90e910d521a01d1325f8b45',
-    definition: module0PersistenceOperation14 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation15 satisfies PlatformPersistenceOperationDefinition<
       'request-market-history-demand',
       'requestMarketHistoryDemand',
       1,
@@ -421,7 +445,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_list_due_market_history_profiles',
     definitionFingerprint: '08cbe7e2099e958dba4d04a7c12a136a610b07ac39fdd67d0acd824e2296dcc7',
-    definition: module0PersistenceOperation15 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation16 satisfies PlatformPersistenceOperationDefinition<
       'list-due-market-history-profiles',
       'listDueMarketHistoryProfiles',
       1,
@@ -444,7 +468,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_list_due_market_history_types',
     definitionFingerprint: '446b879f941495fd3030a50997ea73e284d36b2c9588c2c1c1010e31fe25f4ad',
-    definition: module0PersistenceOperation16 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation17 satisfies PlatformPersistenceOperationDefinition<
       'list-due-market-history-types',
       'listDueMarketHistoryTypes',
       1,
@@ -467,7 +491,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_upsert_market_history',
     definitionFingerprint: '4b16c8d1a4803a15d21784520006c42e9b5fb86ce56e487e0b14edf9b80c27fd',
-    definition: module0PersistenceOperation17 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation18 satisfies PlatformPersistenceOperationDefinition<
       'upsert-market-history',
       'upsertMarketHistory',
       1,
@@ -490,7 +514,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_record_market_history_failure',
     definitionFingerprint: 'f76a051e2a86ff7172b19c08aabaa7e9f92ce0d950d9be49159a9c3add42fa52',
-    definition: module0PersistenceOperation18 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation19 satisfies PlatformPersistenceOperationDefinition<
       'record-market-history-failure',
       'recordMarketHistoryFailure',
       1,
@@ -513,7 +537,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_read_market_history',
     definitionFingerprint: '22a548fd02555a9543c48c61421032512ed3f94df5b60d09f443ce9a7228cb65',
-    definition: module0PersistenceOperation19 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation20 satisfies PlatformPersistenceOperationDefinition<
       'read-market-history',
       'readMarketHistory',
       1,
@@ -536,7 +560,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_store_market_metrics',
     definitionFingerprint: 'c6e1f8c62209e0e2c134f599536a53684ec121282fa620021ca6ceb14114abab',
-    definition: module0PersistenceOperation20 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation21 satisfies PlatformPersistenceOperationDefinition<
       'store-market-metrics',
       'storeMarketMetrics',
       1,
@@ -559,7 +583,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_list_market_derivation_types',
     definitionFingerprint: 'f7a4c7d05255dfd7a4690732dda71dc3a90515fcd86800e538b812cc5a81df64',
-    definition: module0PersistenceOperation21 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation22 satisfies PlatformPersistenceOperationDefinition<
       'list-market-derivation-types',
       'listMarketDerivationTypes',
       1,
@@ -582,7 +606,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_read_market_metrics',
     definitionFingerprint: 'b4b4517eb2eb4fcf3b6faa7274afce55085b03d88ef510264d607e0a10cb846b',
-    definition: module0PersistenceOperation22 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation23 satisfies PlatformPersistenceOperationDefinition<
       'read-market-metrics',
       'readMarketMetrics',
       1,
@@ -605,7 +629,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_cleanup_market_history_demands',
     definitionFingerprint: '5370a728c2ee753440943a4af8c2c24686779020b8d9a9ac46c34cef9211befe',
-    definition: module0PersistenceOperation23 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation24 satisfies PlatformPersistenceOperationDefinition<
       'cleanup-market-history-demands',
       'cleanupMarketHistoryDemands',
       1,
@@ -628,7 +652,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_begin_structure_observation',
     definitionFingerprint: 'd44842a7529f1619faa99c7522749a8c5d30fea827aff9a44b6694780946295a',
-    definition: module0PersistenceOperation24 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation25 satisfies PlatformPersistenceOperationDefinition<
       'begin-structure-observation',
       'beginStructureObservation',
       1,
@@ -651,7 +675,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_stage_structure_page',
     definitionFingerprint: '27d5e0338f4db48c0d4bc3c3691b89968e2da6ca30908e90bd21b57baaf93047',
-    definition: module0PersistenceOperation25 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation26 satisfies PlatformPersistenceOperationDefinition<
       'stage-structure-page',
       'stageStructurePage',
       1,
@@ -674,7 +698,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_publish_structure_observation',
     definitionFingerprint: '69ee3147a2d4ed06c1f2c23f0088e6d3c46dbb44f47079f9702bee4b62d2a86f',
-    definition: module0PersistenceOperation26 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation27 satisfies PlatformPersistenceOperationDefinition<
       'publish-structure-observation',
       'publishStructureObservation',
       1,
@@ -697,7 +721,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_read_structure_book',
     definitionFingerprint: '3c0179ad3caa03e28afafd60a15477801b19a0ea0e83b9a2d141d9e6460ac572',
-    definition: module0PersistenceOperation27 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation28 satisfies PlatformPersistenceOperationDefinition<
       'read-structure-book',
       'readStructureBook',
       1,
@@ -720,7 +744,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_cleanup_structure_observations',
     definitionFingerprint: '21cc0148310f1749fdc6fb00c5325ae83fba6fe36f6d7d4b79d8edaf8914ec30',
-    definition: module0PersistenceOperation28 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation29 satisfies PlatformPersistenceOperationDefinition<
       'cleanup-structure-observations',
       'cleanupStructureObservations',
       1,
@@ -743,7 +767,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_reserve_structure_demand',
     definitionFingerprint: 'e54554b0e58bcbf6f7becf61e8c58a1bd632a42e99a97bc444e0344fce2523c5',
-    definition: module0PersistenceOperation29 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation30 satisfies PlatformPersistenceOperationDefinition<
       'reserve-structure-demand',
       'reserveStructureDemand',
       1,
@@ -766,7 +790,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_release_structure_demand',
     definitionFingerprint: '5d6a0229bfa605d19ed091feafd22afd6052ea1a1c0db0187e36c0d6be24c13a',
-    definition: module0PersistenceOperation30 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation31 satisfies PlatformPersistenceOperationDefinition<
       'release-structure-demand',
       'releaseStructureDemand',
       1,
@@ -789,7 +813,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_cleanup_structure_demands',
     definitionFingerprint: 'ad34b00f0fdd4ffab67c7c5140fb935a33ddee3924d1e6692cd14ff52cd1d45b',
-    definition: module0PersistenceOperation31 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation32 satisfies PlatformPersistenceOperationDefinition<
       'cleanup-structure-demands',
       'cleanupStructureDemands',
       1,
@@ -812,7 +836,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_read_market_quote_rows',
     definitionFingerprint: '85c7650604cbef8ac47502668979da58d1760db77fa21c0e060f18d11da8328d',
-    definition: module0PersistenceOperation32 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation33 satisfies PlatformPersistenceOperationDefinition<
       'read-market-quote-rows',
       'readMarketQuoteRows',
       1,
@@ -835,7 +859,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_record_market_type_failure',
     definitionFingerprint: '84feca47476b5d6282dd6d4fc454d82828399f865f420142753e11505f22a7cf',
-    definition: module0PersistenceOperation33 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation34 satisfies PlatformPersistenceOperationDefinition<
       'record-market-type-failure',
       'recordMarketTypeFailure',
       1,
@@ -858,7 +882,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_market',
     routineName: 'persist_read_market_replacement_status',
     definitionFingerprint: '586ef429783789cc0e417c0f9ef21d59e657c5fb7f147e90453fdf505dbc550b',
-    definition: module0PersistenceOperation34 satisfies PlatformPersistenceOperationDefinition<
+    definition: module0PersistenceOperation35 satisfies PlatformPersistenceOperationDefinition<
       'read-market-replacement-status',
       'readMarketReplacementStatus',
       1,
@@ -1307,7 +1331,7 @@ export const installedModulePersistenceOperations = [
 ] as const satisfies readonly PlatformInstalledPersistenceOperationDescriptor[]
 
 export const installedModulePersistenceContractFingerprint =
-  '5d1e127af1d4f1500e2b5b23ba012f3dda56202c2f6b8eb6c2965ac0bc138fa6'
+  '4200da49bdec0a40df95b9a4c77de547697d716b948717872a359ba5fd8cd617'
 
 export const installedModulePersistenceOperationCatalog = {
   'market/list-market-profiles': installedModulePersistenceOperations[0]!,
@@ -1315,54 +1339,55 @@ export const installedModulePersistenceOperationCatalog = {
   'market/list-due-market-profiles': installedModulePersistenceOperations[2]!,
   'market/begin-market-observation': installedModulePersistenceOperations[3]!,
   'market/stage-market-page': installedModulePersistenceOperations[4]!,
-  'market/publish-current-market-observation': installedModulePersistenceOperations[5]!,
-  'market/publish-collected-market-observation': installedModulePersistenceOperations[6]!,
-  'market/record-market-failure': installedModulePersistenceOperations[7]!,
-  'market/cleanup-market-observations': installedModulePersistenceOperations[8]!,
-  'market/cleanup-market-observation-backlog': installedModulePersistenceOperations[9]!,
-  'market/read-market-observation': installedModulePersistenceOperations[10]!,
-  'market/read-market-order-rows': installedModulePersistenceOperations[11]!,
-  'market/upsert-market-reference-prices': installedModulePersistenceOperations[12]!,
-  'market/read-market-reference-prices': installedModulePersistenceOperations[13]!,
-  'market/request-market-history-demand': installedModulePersistenceOperations[14]!,
-  'market/list-due-market-history-profiles': installedModulePersistenceOperations[15]!,
-  'market/list-due-market-history-types': installedModulePersistenceOperations[16]!,
-  'market/upsert-market-history': installedModulePersistenceOperations[17]!,
-  'market/record-market-history-failure': installedModulePersistenceOperations[18]!,
-  'market/read-market-history': installedModulePersistenceOperations[19]!,
-  'market/store-market-metrics': installedModulePersistenceOperations[20]!,
-  'market/list-market-derivation-types': installedModulePersistenceOperations[21]!,
-  'market/read-market-metrics': installedModulePersistenceOperations[22]!,
-  'market/cleanup-market-history-demands': installedModulePersistenceOperations[23]!,
-  'market/begin-structure-observation': installedModulePersistenceOperations[24]!,
-  'market/stage-structure-page': installedModulePersistenceOperations[25]!,
-  'market/publish-structure-observation': installedModulePersistenceOperations[26]!,
-  'market/read-structure-book': installedModulePersistenceOperations[27]!,
-  'market/cleanup-structure-observations': installedModulePersistenceOperations[28]!,
-  'market/reserve-structure-demand': installedModulePersistenceOperations[29]!,
-  'market/release-structure-demand': installedModulePersistenceOperations[30]!,
-  'market/cleanup-structure-demands': installedModulePersistenceOperations[31]!,
-  'market/read-market-quote-rows': installedModulePersistenceOperations[32]!,
-  'market/record-market-type-failure': installedModulePersistenceOperations[33]!,
-  'market/read-market-replacement-status': installedModulePersistenceOperations[34]!,
-  'member-audit/write-skill-snapshot': installedModulePersistenceOperations[35]!,
-  'member-audit/read-trained-skills-evidence': installedModulePersistenceOperations[36]!,
-  'member-audit/read-asset-evidence': installedModulePersistenceOperations[37]!,
-  'member-audit/read-wallet-evidence': installedModulePersistenceOperations[38]!,
-  'member-audit/read-mail-evidence': installedModulePersistenceOperations[39]!,
-  'member-audit/materialize-current-snapshot': installedModulePersistenceOperations[40]!,
-  'member-audit/read-active-evidence-continuation': installedModulePersistenceOperations[41]!,
-  'member-audit/read-evidence-continuation': installedModulePersistenceOperations[42]!,
-  'member-audit/write-evidence-continuation': installedModulePersistenceOperations[43]!,
-  'member-audit/promote-evidence-observation': installedModulePersistenceOperations[44]!,
-  'member-audit/purge-evidence': installedModulePersistenceOperations[45]!,
-  'member-audit/write-current-observation': installedModulePersistenceOperations[46]!,
-  'member-audit/read-current-observation': installedModulePersistenceOperations[47]!,
-  'member-audit/purge-current-observation': installedModulePersistenceOperations[48]!,
-  'organization-activity/read-activity-checkpoint': installedModulePersistenceOperations[49]!,
-  'organization-activity/read-activity-snapshots': installedModulePersistenceOperations[50]!,
+  'market/stage-market-pages': installedModulePersistenceOperations[5]!,
+  'market/publish-current-market-observation': installedModulePersistenceOperations[6]!,
+  'market/publish-collected-market-observation': installedModulePersistenceOperations[7]!,
+  'market/record-market-failure': installedModulePersistenceOperations[8]!,
+  'market/cleanup-market-observations': installedModulePersistenceOperations[9]!,
+  'market/cleanup-market-observation-backlog': installedModulePersistenceOperations[10]!,
+  'market/read-market-observation': installedModulePersistenceOperations[11]!,
+  'market/read-market-order-rows': installedModulePersistenceOperations[12]!,
+  'market/upsert-market-reference-prices': installedModulePersistenceOperations[13]!,
+  'market/read-market-reference-prices': installedModulePersistenceOperations[14]!,
+  'market/request-market-history-demand': installedModulePersistenceOperations[15]!,
+  'market/list-due-market-history-profiles': installedModulePersistenceOperations[16]!,
+  'market/list-due-market-history-types': installedModulePersistenceOperations[17]!,
+  'market/upsert-market-history': installedModulePersistenceOperations[18]!,
+  'market/record-market-history-failure': installedModulePersistenceOperations[19]!,
+  'market/read-market-history': installedModulePersistenceOperations[20]!,
+  'market/store-market-metrics': installedModulePersistenceOperations[21]!,
+  'market/list-market-derivation-types': installedModulePersistenceOperations[22]!,
+  'market/read-market-metrics': installedModulePersistenceOperations[23]!,
+  'market/cleanup-market-history-demands': installedModulePersistenceOperations[24]!,
+  'market/begin-structure-observation': installedModulePersistenceOperations[25]!,
+  'market/stage-structure-page': installedModulePersistenceOperations[26]!,
+  'market/publish-structure-observation': installedModulePersistenceOperations[27]!,
+  'market/read-structure-book': installedModulePersistenceOperations[28]!,
+  'market/cleanup-structure-observations': installedModulePersistenceOperations[29]!,
+  'market/reserve-structure-demand': installedModulePersistenceOperations[30]!,
+  'market/release-structure-demand': installedModulePersistenceOperations[31]!,
+  'market/cleanup-structure-demands': installedModulePersistenceOperations[32]!,
+  'market/read-market-quote-rows': installedModulePersistenceOperations[33]!,
+  'market/record-market-type-failure': installedModulePersistenceOperations[34]!,
+  'market/read-market-replacement-status': installedModulePersistenceOperations[35]!,
+  'member-audit/write-skill-snapshot': installedModulePersistenceOperations[36]!,
+  'member-audit/read-trained-skills-evidence': installedModulePersistenceOperations[37]!,
+  'member-audit/read-asset-evidence': installedModulePersistenceOperations[38]!,
+  'member-audit/read-wallet-evidence': installedModulePersistenceOperations[39]!,
+  'member-audit/read-mail-evidence': installedModulePersistenceOperations[40]!,
+  'member-audit/materialize-current-snapshot': installedModulePersistenceOperations[41]!,
+  'member-audit/read-active-evidence-continuation': installedModulePersistenceOperations[42]!,
+  'member-audit/read-evidence-continuation': installedModulePersistenceOperations[43]!,
+  'member-audit/write-evidence-continuation': installedModulePersistenceOperations[44]!,
+  'member-audit/promote-evidence-observation': installedModulePersistenceOperations[45]!,
+  'member-audit/purge-evidence': installedModulePersistenceOperations[46]!,
+  'member-audit/write-current-observation': installedModulePersistenceOperations[47]!,
+  'member-audit/read-current-observation': installedModulePersistenceOperations[48]!,
+  'member-audit/purge-current-observation': installedModulePersistenceOperations[49]!,
+  'organization-activity/read-activity-checkpoint': installedModulePersistenceOperations[50]!,
+  'organization-activity/read-activity-snapshots': installedModulePersistenceOperations[51]!,
   'organization-activity/materialize-activity-observation':
-    installedModulePersistenceOperations[51]!,
+    installedModulePersistenceOperations[52]!,
 } as const
 
 export function createModule0Route0Persistence(_invoke: PlatformPersistenceOperationInvoker) {
@@ -1384,7 +1409,7 @@ export function createModule0Route1Persistence(invoke: PlatformPersistenceOperat
       invoke,
     ),
     readMarketObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[10]!,
+      installedModulePersistenceOperations[11]!,
       invoke,
     ),
   }
@@ -1397,23 +1422,23 @@ export function createModule0Route2Persistence(invoke: PlatformPersistenceOperat
       invoke,
     ),
     readMarketObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[10]!,
-      invoke,
-    ),
-    readMarketReplacementStatus: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[34]!,
-      invoke,
-    ),
-    readMarketOrderRows: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[11]!,
       invoke,
     ),
+    readMarketReplacementStatus: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[35]!,
+      invoke,
+    ),
+    readMarketOrderRows: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[12]!,
+      invoke,
+    ),
     readMarketQuoteRows: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[32]!,
+      installedModulePersistenceOperations[33]!,
       invoke,
     ),
     readMarketMetrics: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[22]!,
+      installedModulePersistenceOperations[23]!,
       invoke,
     ),
   }
@@ -1422,7 +1447,7 @@ export function createModule0Route2Persistence(invoke: PlatformPersistenceOperat
 export function createModule0Route3Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readMarketReferencePrices: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[13]!,
+      installedModulePersistenceOperations[14]!,
       invoke,
     ),
   }
@@ -1431,7 +1456,7 @@ export function createModule0Route3Persistence(invoke: PlatformPersistenceOperat
 export function createModule0Route4Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readMarketHistory: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[19]!,
+      installedModulePersistenceOperations[20]!,
       invoke,
     ),
   }
@@ -1444,11 +1469,11 @@ export function createModule0Route5Persistence(invoke: PlatformPersistenceOperat
       invoke,
     ),
     readMarketHistory: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[19]!,
+      installedModulePersistenceOperations[20]!,
       invoke,
     ),
     requestMarketHistoryDemand: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[14]!,
+      installedModulePersistenceOperations[15]!,
       invoke,
     ),
   }
@@ -1457,15 +1482,15 @@ export function createModule0Route5Persistence(invoke: PlatformPersistenceOperat
 export function createModule0Route6Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readStructureBook: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[27]!,
+      installedModulePersistenceOperations[28]!,
       invoke,
     ),
     reserveStructureDemand: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[29]!,
+      installedModulePersistenceOperations[30]!,
       invoke,
     ),
     releaseStructureDemand: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[30]!,
+      installedModulePersistenceOperations[31]!,
       invoke,
     ),
   }
@@ -1474,11 +1499,11 @@ export function createModule0Route6Persistence(invoke: PlatformPersistenceOperat
 export function createModule0Route7Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readMarketObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[10]!,
+      installedModulePersistenceOperations[11]!,
       invoke,
     ),
     readMarketQuoteRows: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[32]!,
+      installedModulePersistenceOperations[33]!,
       invoke,
     ),
   }
@@ -1497,7 +1522,7 @@ export function createModule0Resource0ProjectionPersistence(
       invoke,
     ),
     listMarketDerivationTypes: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[21]!,
+      installedModulePersistenceOperations[22]!,
       invoke,
     ),
   }
@@ -1511,32 +1536,32 @@ export function createModule0Resource0MaterializationPersistence(
       installedModulePersistenceOperations[3]!,
       invoke,
     ),
-    stageMarketPage: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[4]!,
+    stageMarketPages: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[5]!,
       invoke,
     ),
     publishCollectedMarketObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[6]!,
-      invoke,
-    ),
-    recordMarketFailure: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[7]!,
       invoke,
     ),
-    recordMarketTypeFailure: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[33]!,
-      invoke,
-    ),
-    cleanupMarketObservations: bindPlatformPersistenceOperation(
+    recordMarketFailure: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[8]!,
       invoke,
     ),
-    cleanupMarketObservationBacklog: bindPlatformPersistenceOperation(
+    recordMarketTypeFailure: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[34]!,
+      invoke,
+    ),
+    cleanupMarketObservations: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[9]!,
       invoke,
     ),
+    cleanupMarketObservationBacklog: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[10]!,
+      invoke,
+    ),
     storeMarketMetrics: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[20]!,
+      installedModulePersistenceOperations[21]!,
       invoke,
     ),
   }
@@ -1553,7 +1578,7 @@ export function createModule0Resource1MaterializationPersistence(
 ) {
   return {
     upsertMarketReferencePrices: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[12]!,
+      installedModulePersistenceOperations[13]!,
       invoke,
     ),
   }
@@ -1564,15 +1589,15 @@ export function createModule0Resource2ProjectionPersistence(
 ) {
   return {
     listDueMarketHistoryProfiles: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[15]!,
-      invoke,
-    ),
-    listDueMarketHistoryTypes: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[16]!,
       invoke,
     ),
+    listDueMarketHistoryTypes: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[17]!,
+      invoke,
+    ),
     readMarketHistory: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[19]!,
+      installedModulePersistenceOperations[20]!,
       invoke,
     ),
     listMarketProfiles: bindPlatformPersistenceOperation(
@@ -1587,15 +1612,15 @@ export function createModule0Resource2MaterializationPersistence(
 ) {
   return {
     upsertMarketHistory: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[17]!,
-      invoke,
-    ),
-    recordMarketHistoryFailure: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[18]!,
       invoke,
     ),
+    recordMarketHistoryFailure: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[19]!,
+      invoke,
+    ),
     cleanupMarketHistoryDemands: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[23]!,
+      installedModulePersistenceOperations[24]!,
       invoke,
     ),
   }
@@ -1612,23 +1637,23 @@ export function createModule0Resource3MaterializationPersistence(
 ) {
   return {
     beginStructureObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[24]!,
-      invoke,
-    ),
-    stageStructurePage: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[25]!,
       invoke,
     ),
-    publishStructureObservation: bindPlatformPersistenceOperation(
+    stageStructurePage: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[26]!,
       invoke,
     ),
+    publishStructureObservation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[27]!,
+      invoke,
+    ),
     cleanupStructureObservations: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[28]!,
+      installedModulePersistenceOperations[29]!,
       invoke,
     ),
     cleanupStructureDemands: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[31]!,
+      installedModulePersistenceOperations[32]!,
       invoke,
     ),
   }
@@ -1645,7 +1670,7 @@ export function createModule1Route1Persistence(_invoke: PlatformPersistenceOpera
 export function createModule1Route2Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readCurrentObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[47]!,
+      installedModulePersistenceOperations[48]!,
       invoke,
     ),
   }
@@ -1654,7 +1679,7 @@ export function createModule1Route2Persistence(invoke: PlatformPersistenceOperat
 export function createModule1Route3Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readTrainedSkillsEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[36]!,
+      installedModulePersistenceOperations[37]!,
       invoke,
     ),
   }
@@ -1663,7 +1688,7 @@ export function createModule1Route3Persistence(invoke: PlatformPersistenceOperat
 export function createModule1Route4Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readAssetEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[37]!,
+      installedModulePersistenceOperations[38]!,
       invoke,
     ),
   }
@@ -1672,7 +1697,7 @@ export function createModule1Route4Persistence(invoke: PlatformPersistenceOperat
 export function createModule1Route5Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readWalletEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[38]!,
+      installedModulePersistenceOperations[39]!,
       invoke,
     ),
   }
@@ -1681,7 +1706,7 @@ export function createModule1Route5Persistence(invoke: PlatformPersistenceOperat
 export function createModule1Route6Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readMailEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[39]!,
+      installedModulePersistenceOperations[40]!,
       invoke,
     ),
   }
@@ -1706,11 +1731,11 @@ export function createModule1Resource0MaterializationPersistence(
 ) {
   return {
     materializeCurrentSnapshot: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[40]!,
+      installedModulePersistenceOperations[41]!,
       invoke,
     ),
     purgeEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[45]!,
+      installedModulePersistenceOperations[46]!,
       invoke,
     ),
   }
@@ -1721,7 +1746,7 @@ export function createModule1Resource1ProjectionPersistence(
 ) {
   return {
     readActiveEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[41]!,
+      installedModulePersistenceOperations[42]!,
       invoke,
     ),
   }
@@ -1732,15 +1757,15 @@ export function createModule1Resource1MaterializationPersistence(
 ) {
   return {
     writeEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[43]!,
-      invoke,
-    ),
-    promoteEvidenceObservation: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[44]!,
       invoke,
     ),
-    purgeEvidence: bindPlatformPersistenceOperation(
+    promoteEvidenceObservation: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[45]!,
+      invoke,
+    ),
+    purgeEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[46]!,
       invoke,
     ),
   }
@@ -1757,11 +1782,11 @@ export function createModule1Resource2MaterializationPersistence(
 ) {
   return {
     materializeCurrentSnapshot: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[40]!,
+      installedModulePersistenceOperations[41]!,
       invoke,
     ),
     purgeEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[45]!,
+      installedModulePersistenceOperations[46]!,
       invoke,
     ),
   }
@@ -1772,7 +1797,7 @@ export function createModule1Resource3ProjectionPersistence(
 ) {
   return {
     readActiveEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[41]!,
+      installedModulePersistenceOperations[42]!,
       invoke,
     ),
   }
@@ -1783,15 +1808,15 @@ export function createModule1Resource3MaterializationPersistence(
 ) {
   return {
     writeEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[43]!,
-      invoke,
-    ),
-    promoteEvidenceObservation: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[44]!,
       invoke,
     ),
-    purgeEvidence: bindPlatformPersistenceOperation(
+    promoteEvidenceObservation: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[45]!,
+      invoke,
+    ),
+    purgeEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[46]!,
       invoke,
     ),
   }
@@ -1802,7 +1827,7 @@ export function createModule1Resource4ProjectionPersistence(
 ) {
   return {
     readActiveEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[41]!,
+      installedModulePersistenceOperations[42]!,
       invoke,
     ),
   }
@@ -1813,15 +1838,15 @@ export function createModule1Resource4MaterializationPersistence(
 ) {
   return {
     writeEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[43]!,
-      invoke,
-    ),
-    promoteEvidenceObservation: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[44]!,
       invoke,
     ),
-    purgeEvidence: bindPlatformPersistenceOperation(
+    promoteEvidenceObservation: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[45]!,
+      invoke,
+    ),
+    purgeEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[46]!,
       invoke,
     ),
   }
@@ -1832,7 +1857,7 @@ export function createModule1Resource5ProjectionPersistence(
 ) {
   return {
     readActiveEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[41]!,
+      installedModulePersistenceOperations[42]!,
       invoke,
     ),
   }
@@ -1843,15 +1868,15 @@ export function createModule1Resource5MaterializationPersistence(
 ) {
   return {
     writeEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[43]!,
-      invoke,
-    ),
-    promoteEvidenceObservation: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[44]!,
       invoke,
     ),
-    purgeEvidence: bindPlatformPersistenceOperation(
+    promoteEvidenceObservation: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[45]!,
+      invoke,
+    ),
+    purgeEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[46]!,
       invoke,
     ),
   }
@@ -1862,7 +1887,7 @@ export function createModule1Resource6ProjectionPersistence(
 ) {
   return {
     readActiveEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[41]!,
+      installedModulePersistenceOperations[42]!,
       invoke,
     ),
   }
@@ -1873,15 +1898,15 @@ export function createModule1Resource6MaterializationPersistence(
 ) {
   return {
     writeEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[43]!,
-      invoke,
-    ),
-    promoteEvidenceObservation: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[44]!,
       invoke,
     ),
-    purgeEvidence: bindPlatformPersistenceOperation(
+    promoteEvidenceObservation: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[45]!,
+      invoke,
+    ),
+    purgeEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[46]!,
       invoke,
     ),
   }
@@ -1898,11 +1923,11 @@ export function createModule1Resource7MaterializationPersistence(
 ) {
   return {
     writeCurrentObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[46]!,
+      installedModulePersistenceOperations[47]!,
       invoke,
     ),
     purgeCurrentObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[48]!,
+      installedModulePersistenceOperations[49]!,
       invoke,
     ),
   }
@@ -1919,11 +1944,11 @@ export function createModule1Resource8MaterializationPersistence(
 ) {
   return {
     writeCurrentObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[46]!,
+      installedModulePersistenceOperations[47]!,
       invoke,
     ),
     purgeCurrentObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[48]!,
+      installedModulePersistenceOperations[49]!,
       invoke,
     ),
   }
@@ -1932,7 +1957,7 @@ export function createModule1Resource8MaterializationPersistence(
 export function createModule2Route0Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readActivitySnapshots: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[50]!,
+      installedModulePersistenceOperations[51]!,
       invoke,
     ),
   }
@@ -1941,7 +1966,7 @@ export function createModule2Route0Persistence(invoke: PlatformPersistenceOperat
 export function createModule2Route1Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readActivitySnapshots: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[50]!,
+      installedModulePersistenceOperations[51]!,
       invoke,
     ),
   }
@@ -1952,7 +1977,7 @@ export function createModule2ActivityProvider0Persistence(
 ) {
   return {
     readActivitySnapshots: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[50]!,
+      installedModulePersistenceOperations[51]!,
       invoke,
     ),
   }
@@ -1963,7 +1988,7 @@ export function createModule2Resource0ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[49]!,
+      installedModulePersistenceOperations[50]!,
       invoke,
     ),
   }
@@ -1974,7 +1999,7 @@ export function createModule2Resource0MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[51]!,
+      installedModulePersistenceOperations[52]!,
       invoke,
     ),
   }
@@ -1985,7 +2010,7 @@ export function createModule2Resource1ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[49]!,
+      installedModulePersistenceOperations[50]!,
       invoke,
     ),
   }
@@ -1996,7 +2021,7 @@ export function createModule2Resource1MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[51]!,
+      installedModulePersistenceOperations[52]!,
       invoke,
     ),
   }
@@ -2007,7 +2032,7 @@ export function createModule2Resource2ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[49]!,
+      installedModulePersistenceOperations[50]!,
       invoke,
     ),
   }
@@ -2018,7 +2043,7 @@ export function createModule2Resource2MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[51]!,
+      installedModulePersistenceOperations[52]!,
       invoke,
     ),
   }
@@ -2029,7 +2054,7 @@ export function createModule2Resource3ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[49]!,
+      installedModulePersistenceOperations[50]!,
       invoke,
     ),
   }
@@ -2040,7 +2065,7 @@ export function createModule2Resource3MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[51]!,
+      installedModulePersistenceOperations[52]!,
       invoke,
     ),
   }
@@ -2051,7 +2076,7 @@ export function createModule2Resource4ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[49]!,
+      installedModulePersistenceOperations[50]!,
       invoke,
     ),
   }
@@ -2062,7 +2087,7 @@ export function createModule2Resource4MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[51]!,
+      installedModulePersistenceOperations[52]!,
       invoke,
     ),
   }
@@ -2073,7 +2098,7 @@ export function createModule2Resource5ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[49]!,
+      installedModulePersistenceOperations[50]!,
       invoke,
     ),
   }
@@ -2084,7 +2109,7 @@ export function createModule2Resource5MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[51]!,
+      installedModulePersistenceOperations[52]!,
       invoke,
     ),
   }
@@ -2095,7 +2120,7 @@ export function createModule2Resource6ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[49]!,
+      installedModulePersistenceOperations[50]!,
       invoke,
     ),
   }
@@ -2106,7 +2131,7 @@ export function createModule2Resource6MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[51]!,
+      installedModulePersistenceOperations[52]!,
       invoke,
     ),
   }
