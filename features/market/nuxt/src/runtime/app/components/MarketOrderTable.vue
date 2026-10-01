@@ -427,6 +427,8 @@ const retryPage = () => {
 <style scoped>
 .market-order-table {
   min-width: 0;
+  min-height: 0;
+  max-height: clamp(19rem, 58dvh, 42rem);
   display: flex;
   flex-direction: column;
 }
@@ -467,8 +469,9 @@ const retryPage = () => {
   text-align: center;
 }
 .market-order-table__scroll {
+  position: relative;
+  min-height: 0;
   max-width: 100%;
-  max-height: clamp(19rem, 58dvh, 42rem);
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-color: color-mix(in srgb, var(--ui-primary) 30%, transparent) transparent;

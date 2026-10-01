@@ -18,6 +18,9 @@
     animation: none !important;
   }
   .dashboard-sidebar,
+  .dashboard-sidebar .sidebar-brand,
+  .dashboard-sidebar .sidebar-link,
+  .dashboard-sidebar .sidebar-session,
   .dashboard-workspace,
   .roster-portrait img {
     transition: none !important;

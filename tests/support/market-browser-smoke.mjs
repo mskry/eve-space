@@ -199,12 +199,25 @@ try {
   await largeSellers.getByText('Showing 1–100 sellers orders.').waitFor()
   assert.equal(await largeSellers.getByRole('button', { name: 'Previous' }).count(), 0)
   assert.equal(await largeSellers.getByRole('button', { name: 'Next' }).count(), 0)
+  const pageHeightBeforeOrders = await large.evaluate(() => document.documentElement.scrollHeight)
+  const orderTableHeight = await largeSellers.evaluate(
+    (element) => element.getBoundingClientRect().height,
+  )
+  assert.ok(
+    orderTableHeight <= 0.58 * 800,
+    'Order table, including its heading, must fit its viewport budget',
+  )
   await largeSellers.locator('.market-order-table__scroll').evaluate((element) => {
     element.scrollTop = element.scrollHeight
     element.dispatchEvent(new Event('scroll'))
   })
   await largeSellers.getByText('Showing 101–103 sellers orders.').waitFor()
   assert.ok((await largeSellers.locator('tbody tr').count()) <= 101)
+  assert.equal(
+    await large.evaluate(() => document.documentElement.scrollHeight),
+    pageHeightBeforeOrders,
+    'Loading another order page must not extend the document scroll area',
+  )
   await largeSellers.locator('.market-order-table__scroll').evaluate((element) => {
     element.scrollTop = 0
     element.dispatchEvent(new Event('scroll'))

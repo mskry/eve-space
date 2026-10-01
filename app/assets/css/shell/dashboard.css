@@ -14,7 +14,9 @@
   border-right: 1px solid var(--line);
   background: var(--ui-surface);
   backdrop-filter: blur(18px);
-  transition: width 180ms ease;
+  transition:
+    width 180ms ease,
+    padding-inline 180ms ease;
 }
 
 .dashboard-sidebar.dashboard-sidebar--drawer {
@@ -36,6 +38,7 @@
 .dashboard-sidebar--persistent {
   width: 88px;
   padding-inline: 12px;
+  overflow-x: clip;
 }
 
 .dashboard-sidebar--persistent.dashboard-sidebar--expanded {
@@ -43,9 +46,25 @@
   padding-inline: 18px;
 }
 
-.dashboard-sidebar--persistent:not(.dashboard-sidebar--labels-visible) .sidebar-brand {
-  padding-inline: 0;
-  justify-content: center;
+.dashboard-sidebar--persistent .sidebar-brand {
+  padding-inline: 12.5px;
+  transition: padding-inline 180ms ease;
+}
+
+.dashboard-sidebar--persistent.dashboard-sidebar--expanded .sidebar-brand {
+  padding-inline: 10px;
+}
+
+.dashboard-sidebar .brand-mark,
+.sidebar-auth-link .app-icon {
+  flex-shrink: 0;
+}
+
+.sidebar-brand-copy,
+.sidebar-label strong,
+.sidebar-auth-link,
+.session-pulse {
+  white-space: nowrap;
 }
 
 .dashboard-sidebar--persistent:not(.dashboard-sidebar--labels-visible) .sidebar-brand-copy,
@@ -64,19 +83,21 @@
   border: 0;
 }
 
-.dashboard-sidebar--persistent:not(.dashboard-sidebar--labels-visible) .sidebar-link {
-  grid-template-columns: 1fr;
-  justify-items: center;
-  padding-inline: 0;
+.dashboard-sidebar--persistent:not(.dashboard-sidebar--expanded) .sidebar-link {
+  padding-inline: 13.5px;
 }
 
-.dashboard-sidebar--persistent:not(.dashboard-sidebar--labels-visible) .sidebar-session {
-  justify-content: center;
-  padding-inline: 0;
+.dashboard-sidebar--persistent .sidebar-session {
+  padding-inline: 20.5px;
+  transition: padding-inline 180ms ease;
 }
 
-.dashboard-sidebar--persistent:not(.dashboard-sidebar--labels-visible) .sidebar-auth-link {
-  justify-content: center;
+.dashboard-sidebar--persistent .sidebar-session:has(.sidebar-avatar-trigger) {
+  padding-inline: 14px;
+}
+
+.dashboard-sidebar--persistent.dashboard-sidebar--expanded .sidebar-session {
+  padding-inline: 8px;
 }
 
 .sidebar-toggle.sidebar-link {
@@ -280,6 +301,10 @@
   gap: 7px;
 }
 
+.sidebar-nav-item {
+  min-width: 0;
+}
+
 .dashboard-sidebar--persistent .sidebar-nav-item .sidebar-link {
   cursor: grab;
 }
@@ -308,13 +333,20 @@
   border: 1px solid transparent;
   color: var(--ui-text-muted);
   text-decoration: none;
-  transition: 140ms ease;
+  transition:
+    color 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease,
+    padding-inline 180ms ease;
 }
 
-.dashboard-sidebar--drawer .sidebar-link,
+.dashboard-sidebar--drawer .sidebar-link {
+  transition: none;
+}
+
 .dashboard-sidebar--warp-expand .sidebar-link,
 .dashboard-sidebar--warp-collapse .sidebar-link {
-  transition: none;
+  transition: padding-inline 180ms ease;
 }
 
 .sidebar-link:hover {
