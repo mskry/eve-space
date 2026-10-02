@@ -3,7 +3,7 @@
   "release": {
     "publisherPackage": "@example/fixture-manifest",
     "version": "1.2.3",
-    "hostContractRange": "^1.0.0"
+    "hostContractRange": "^1.1.0"
   },
   "icon": "overview",
   "defaultEnabled": false,
@@ -19,6 +19,34 @@
   ],
   "server": {
     "package": "@example/fixture-server",
+    "graphql": [
+      {
+        "id": "public-read",
+        "exportName": "fixtureGraphQL",
+        "rootField": "fixture",
+        "types": ["FixtureRead"],
+        "reads": [
+          {
+            "id": "root",
+            "field": "Query.fixture",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": []
+          },
+          {
+            "id": "value",
+            "field": "FixtureRead.value",
+            "strategy": "public",
+            "cost": 2,
+            "sourceCost": 1,
+            "persistenceOperations": [{ "operationId": "read-fixture" }],
+            "coreDataProducts": []
+          }
+        ]
+      }
+    ],
     "routes": [
       {
         "id": "fixture-route",

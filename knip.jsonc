@@ -2,6 +2,10 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   // The conformance archive test invokes the host utility to create a special-entry fixture.
   "ignoreBinaries": ["mkfifo"],
+  // Codegen exports the composed schema types alongside curated operation types.
+  "ignoreIssues": {
+    "app/generated/graphql-operations.ts": ["types"],
+  },
   "workspaces": {
     ".": {
       "ignore": [
@@ -26,8 +30,9 @@
         "tests/support/market-browser-{fixture,smoke}.mjs",
         // Source-text fixtures read by the SSR boundary review tests, never executed.
         "tests/fixtures/ssr-boundary-review/**/*.ts",
-        // Standalone negative type fixture invoked through test:registry:types.
+        // Standalone negative type fixtures invoked through test:registry:types and graphql:types.
         "tests/fixtures/platform-module-registry-types/*.ts",
+        "tests/fixtures/graphql-contract-types/*.ts",
         "tests/fixtures/platform-module-conformance/{nuxt.config.ts,api/src/index.ts,app/**/*.{ts,vue}}",
         "tests/fixtures/platform-module-conformance/features/conformance/module.config.ts",
         "tests/fixtures/platform-module-conformance/features/conformance/server/src/index.ts",

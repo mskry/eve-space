@@ -14,8 +14,10 @@ const mocks = vi.hoisted(() => {
     ScopeRequiredError,
     TokenRefreshUnavailableError,
     findOwnedCharacter: vi.fn(),
+    findCharacterCacheAuthorizationForLifecycle: vi.fn(),
     findSession: vi.fn(),
     getCharacterAssets: vi.fn(),
+    schedulePendingCharacterTokenRecovery: vi.fn(),
   }
 })
 
@@ -26,6 +28,12 @@ vi.mock('../../src/auth/character-lifecycle.js', () => ({
   setMainCharacter: vi.fn(),
 }))
 vi.mock('../../src/auth/session-store.js', () => ({ findSession: mocks.findSession }))
+vi.mock('../../src/auth/tokens.js', () => ({
+  schedulePendingCharacterTokenRecovery: mocks.schedulePendingCharacterTokenRecovery,
+}))
+vi.mock('../../src/auth/character-token-store.js', () => ({
+  findCharacterCacheAuthorizationForLifecycle: mocks.findCharacterCacheAuthorizationForLifecycle,
+}))
 vi.mock('../../src/env.js', () => ({
   env: {
     EVE_CALLBACK_URL: 'http://localhost:8788/auth/eve/callback',
@@ -36,10 +44,10 @@ vi.mock('../../src/auth/token-errors.js', () => ({
   ScopeRequiredError: mocks.ScopeRequiredError,
   TokenRefreshUnavailableError: mocks.TokenRefreshUnavailableError,
 }))
-vi.mock('../../src/characters/assets.js', () => ({
+vi.mock('../../src/characters/assets.js', () => ({ getCharacterAssets: mocks.getCharacterAssets }))
+vi.mock('../../src/characters/asset-pages.js', () => ({
   CharacterAssetsPaginationError: mocks.CharacterAssetsPaginationError,
   characterAssetsScope: 'esi-assets.read_assets.v1',
-  getCharacterAssets: mocks.getCharacterAssets,
 }))
 vi.mock('../../src/characters/profile.js', () => ({ getCharacterProfile: vi.fn() }))
 vi.mock('../../src/characters/overview.js', () => ({
@@ -55,7 +63,7 @@ vi.mock('../../src/characters/skills.js', () => ({
 }))
 
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/token-errors.js'
-import { CharacterAssetsPaginationError } from '../../src/characters/assets.js'
+import { CharacterAssetsPaginationError } from '../../src/characters/asset-pages.js'
 import { characterRoutes } from '../../src/characters/routes.js'
 import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 
@@ -111,12 +119,109 @@ beforeEach(() => {
   mocks.findOwnedCharacter.mockReset()
   mocks.findSession.mockReset()
   mocks.getCharacterAssets.mockReset()
+  mocks.findCharacterCacheAuthorizationForLifecycle.mockReset()
   mocks.findOwnedCharacter.mockResolvedValue(character)
   mocks.findSession.mockResolvedValue(session)
   mocks.getCharacterAssets.mockResolvedValue(assets)
+  mocks.findCharacterCacheAuthorizationForLifecycle.mockResolvedValue({
+    tokenVersion: 3,
+    scopes: ['esi-assets.read_assets.v1'],
+  })
 })
 
 describe('typed character asset route', () => {
+  test('schedules exact-lifecycle recovery while denying pending credentials, then admits verified assets', async () => {
+    mocks.findCharacterCacheAuthorizationForLifecycle.mockResolvedValue({
+      tokenVersion: 3,
+      scopes: ['esi-assets.read_assets.v1'],
+      pendingAttemptId: 'rotation',
+    })
+    const pending = await authorizedRequest(`/${characterId}/assets`)
+    expect(pending.status).toBe(503)
+    await expect(pending.json()).resolves.toEqual({
+      code: 'EVE_TOKEN_REFRESH_UNAVAILABLE',
+      message: 'EVE token refresh is temporarily unavailable. Try again shortly.',
+    })
+    expect(mocks.schedulePendingCharacterTokenRecovery).toHaveBeenCalledWith(
+      characterId,
+      character.subjectLifecycleId,
+    )
+    expect(mocks.getCharacterAssets).not.toHaveBeenCalled()
+    expectPrivateHeaders(pending)
+    mocks.findCharacterCacheAuthorizationForLifecycle.mockResolvedValue({
+      tokenVersion: 4,
+      scopes: ['esi-assets.read_assets.v1'],
+      pendingAttemptId: null,
+    })
+    const verified = await authorizedRequest(`/${characterId}/assets`)
+    expect(verified.status).toBe(200)
+    await expect(verified.json()).resolves.toEqual(assets)
+    expect(mocks.getCharacterAssets).toHaveBeenCalledOnce()
+    expectPrivateHeaders(verified)
+  })
+  test('rejects a scope denial before reading assets with the same reauthorization DTO', async () => {
+    mocks.findCharacterCacheAuthorizationForLifecycle.mockResolvedValue({
+      tokenVersion: 3,
+      scopes: [],
+    })
+    const response = await authorizedRequest(`/${characterId}/assets`)
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toStrictEqual({
+      authorizeUrl: reauthorizationUrl(),
+      code: 'EVE_SCOPE_REQUIRED',
+      message: 'Authorize asset access for this character.',
+      requiredScope: 'esi-assets.read_assets.v1',
+    })
+    expect(mocks.getCharacterAssets).not.toHaveBeenCalled()
+    expectPrivateHeaders(response)
+  })
+
+  test.each(['transfer', 'lifecycle', 'revision', 'session'] as const)(
+    'does not release an asynchronous asset result after a %s change',
+    async (change) => {
+      mocks.getCharacterAssets.mockImplementation(async () => {
+        if (change === 'transfer') mocks.findOwnedCharacter.mockResolvedValue(null)
+        if (change === 'lifecycle')
+          mocks.findOwnedCharacter.mockResolvedValue({
+            ...character,
+            subjectLifecycleId: 'new-lifecycle',
+          })
+        if (change === 'revision')
+          mocks.findCharacterCacheAuthorizationForLifecycle.mockResolvedValue({
+            tokenVersion: 4,
+            scopes: ['esi-assets.read_assets.v1'],
+          })
+        if (change === 'session') mocks.findSession.mockResolvedValue(null)
+        return assets
+      })
+      const response = await authorizedRequest(`/${characterId}/assets`)
+      expect(response.status).toBeGreaterThanOrEqual(400)
+      expect(await response.json()).not.toHaveProperty('assets')
+      expectPrivateHeaders(response)
+    },
+  )
+
+  test('allows an attached non-main subject without organization admission', async () => {
+    mocks.findOwnedCharacter.mockResolvedValue({ ...character, isMain: false })
+    const response = await authorizedRequest(`/${characterId}/assets`)
+    expect(response.status).toBe(200)
+    expect(mocks.getCharacterAssets).toHaveBeenCalledWith(
+      characterId,
+      character.subjectLifecycleId,
+      expect.any(AbortSignal),
+    )
+  })
+
+  test('does not use an administrator cookie as member ownership', async () => {
+    const response = await characterRoutes.request(`/${characterId}/assets`, {
+      headers: { Cookie: 'eve_space_admin_session=admin-session' },
+    })
+    expect(response.status).toBe(401)
+    expect(mocks.findSession).not.toHaveBeenCalled()
+    expect(mocks.getCharacterAssets).not.toHaveBeenCalled()
+    expectPrivateHeaders(response)
+  })
+
   test('returns the complete DTO and independent enrichment/freshness state privately', async () => {
     const response = await client[':characterId'].assets.$get(
       { param: { characterId: String(characterId) } },
@@ -125,7 +230,11 @@ describe('typed character asset route', () => {
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toStrictEqual(assets)
-    expect(mocks.getCharacterAssets).toHaveBeenCalledWith(characterId, character.subjectLifecycleId)
+    expect(mocks.getCharacterAssets).toHaveBeenCalledWith(
+      characterId,
+      character.subjectLifecycleId,
+      expect.any(AbortSignal),
+    )
     expectPrivateHeaders(response)
   })
 

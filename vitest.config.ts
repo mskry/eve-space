@@ -13,6 +13,8 @@ export default defineConfig({
       'tests/platform/auth-boundaries.test.ts',
       'tests/platform/character-boundaries.test.ts',
       'tests/platform/esi-gateway-boundaries.test.ts',
+      'tests/platform/graphql-boundaries.test.ts',
+      'tests/platform/graphql-contributions.test.ts',
       'tests/platform/module-composition-side-effects.test.ts',
       'tests/platform/module-package-boundaries.test.ts',
       'tests/platform/organization-boundaries.test.ts',

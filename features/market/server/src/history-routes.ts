@@ -12,6 +12,7 @@ import type {
   MarketHistoryReads,
   MarketProfileReads,
 } from './persistence.js'
+import { readMarketHistory } from './history-reads.js'
 
 const historyParams = z.strictObject({
   profileId: z.uuid(),
@@ -45,7 +46,7 @@ export const marketHistoryRoutes = ({
     zValidator('param', historyParams),
     async (context) => {
       const { profileId, typeId } = context.req.valid('param')
-      const history = await persistence.readMarketHistory({ profileId, typeId })
+      const history = await readMarketHistory(persistence, profileId, typeId)
       if (!history) {
         context.header('Cache-Control', 'no-store')
         return context.json({ code: 'MARKET_HISTORY_PROFILE_UNAVAILABLE' }, 404)
@@ -54,10 +55,7 @@ export const marketHistoryRoutes = ({
         context.header('Cache-Control', 'no-store')
         return context.json({ ...history, freshness: 'uncollected' as const }, 200)
       }
-      const freshness =
-        new Date(history.freshUntil!).getTime() > Date.now()
-          ? ('current' as const)
-          : ('stale' as const)
+      const { freshness } = history
       context.header(
         'Cache-Control',
         freshness === 'current' ? 'public, max-age=60, must-revalidate' : 'no-store',

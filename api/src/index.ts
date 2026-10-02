@@ -26,6 +26,7 @@ import { loadSession, requireSession } from './middleware/auth-session.js'
 import { TokenRefreshUnavailableError } from './auth/token-errors.js'
 import { organizationRoutes } from './organization/routes.js'
 import { universeRoutes } from './universe/routes.js'
+import { graphqlRoutes } from './graphql/routes.js'
 import { apiLogger, recordDiagnostic, safeRequestMetadata } from './logging.js'
 
 type GlobalErrorBody = { message: string } | PlatformModuleErrorBody
@@ -53,6 +54,10 @@ export const app = new Hono<{ Variables: HonoLogLayerVariables }>()
       .info('request completed')
   })
   .use('*', secureHeaders())
+  .use('/api/graphql', async (context, next) => {
+    context.header('Cache-Control', 'no-store')
+    await next()
+  })
   .use('*', csrf({ origin: isTrustedFormOrigin }))
   .use('/api/*', cors({ credentials: true, origin: env.WEB_ORIGIN }))
   .use('/auth/*', cors({ credentials: true, origin: env.WEB_ORIGIN }))
@@ -60,6 +65,7 @@ export const app = new Hono<{ Variables: HonoLogLayerVariables }>()
   .route('/api/status', statusRoutes)
   .route('/api/modules', moduleRuntimeRoutes)
   .route('/api/modules', installedModuleRoutes)
+  .route('/api/graphql', graphqlRoutes)
   .route('/api/universe', universeRoutes)
   .use('/api/characters/*', loadSession, requireSession)
   .use('/api/corporations/*', loadSession, requireSession)

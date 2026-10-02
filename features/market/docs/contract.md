@@ -79,3 +79,151 @@ Market server implementation or treat historical average or adjusted reference p
 as executable revenue. That future seam must carry observation ID, source time,
 freshness, location constraints, fill completeness, and private subject admission where
 applicable.
+
+## GraphQL read projection
+
+Market contributes `Query.market` through the installed module inventory. The host
+[GraphQL contract guide](../../../docs/graphql-application-api.md) owns endpoint execution,
+admission, scalar coercion and caching. The contribution is composed offline and every
+read, including bounded list projections, passes the host's runtime module enablement gate.
+It grants only named persistence reads and the public `market-catalogue` and
+`static-location-labels` products. It has no profile administration, private structure,
+collection demand, quote, ESI dispatch or queue capability. Public selection needs no session.
+The endpoint mount and explorer are delivered in the later host/frontend task sections.
+
+| Field                                                          | Projection                                                                                                                                                                                           |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `catalogueRevision`                                            | Committed SDE key, build number, ingest version and ingest timestamp; loads revision metadata only.                                                                                                  |
+| `catalogueType(revision, typeId)`                              | Published marketable type, pinned to the supplied catalogue key.                                                                                                                                     |
+| `catalogueGroupTypes(revision, groupId, first, after)`         | At most 100 direct types. `first` defaults to 100; `after` and `nextCursor` retain the canonical `t_` cursor. A short requested page continues after its last returned type.                         |
+| `profiles`                                                     | At most four enabled summaries with profile revision, region/global-plex scope, station IDs and watched type IDs.                                                                                    |
+| `book(profileId, typeId)`                                      | Current/stale/uncollected state, profile revision, complete observation and separate incomplete replacement; reads no orders or labels.                                                              |
+| `orders(profileId, typeId, observationId, side, first, after)` | At most 100 rows from the explicit complete observation; source metadata, profile revision, label completeness and opaque price/time/order continuation.                                             |
+| `history(profileId, typeId)`                                   | Enabled profile revision and at most 365 retained daily averages, highs, lows, volumes and counts, with its own validation/expiry and freshness.                                                     |
+| `referencePrices(typeIds)`                                     | At most 100 distinct types, marked `non-executable-reference`, with exact stored decimal prices, nullable missing statistics, UTC source hour and validation time. No book-style expiry is invented. |
+
+Discover a revision and enabled profile before selecting pinned pages:
+
+```graphql
+query DiscoverMarket {
+  market {
+    catalogueRevision {
+      key
+      buildNumber
+      ingestVersion
+      ingestedAt
+    }
+    profiles {
+      profileId
+      revision
+      regionId
+      marketScope
+      mode
+      stationIds
+      watchedTypeIds
+    }
+  }
+}
+
+query ReadMarketBook($profile: UUID!, $type: EveId!) {
+  market {
+    book(profileId: $profile, typeId: $type) {
+      profileRevision
+      status
+      collectionStatus
+      replacement {
+        status
+        attemptedAt
+      }
+      observation {
+        observationId
+        observedAt
+        validatedAt
+        freshUntil
+        expectedPages
+        totalBookOrders
+      }
+    }
+    history(profileId: $profile, typeId: $type) {
+      profileRevision
+      freshness
+      validatedAt
+      freshUntil
+      days {
+        date
+        averageIsk
+        highIsk
+        lowIsk
+        volume
+        orderCount
+      }
+    }
+    referencePrices(typeIds: [$type]) {
+      kind
+      rows {
+        typeId
+        adjustedPriceIsk
+        averagePriceIsk
+        sourceHour
+        validatedAt
+      }
+    }
+  }
+}
+
+query ReadMarketOrders($profile: UUID!, $type: EveId!, $observation: UUID!, $after: String) {
+  market {
+    orders(
+      profileId: $profile
+      typeId: $type
+      observationId: $observation
+      side: sell
+      first: 100
+      after: $after
+    ) {
+      observationId
+      profileRevision
+      hasMore
+      nextCursor
+      labelsComplete
+      observation {
+        observedAt
+        validatedAt
+        freshUntil
+      }
+      rows {
+        orderId
+        price
+        volumeRemain
+        locationId
+        locationName
+        issuedAt
+        expiryAt
+      }
+    }
+  }
+}
+```
+
+Omit `after` on the first order page; send its `nextCursor` with the same profile, type,
+observation and side for continuation. A new publication does not change that selector.
+If retention removed the observation, `MARKET_OBSERVATION_UNAVAILABLE` requires rediscovery;
+if the SDE revision changed, `MARKET_CATALOGUE_REVISION_MISSING` requires a new catalogue key.
+Malformed or mismatched cursors fail before order reads. Unknown locations retain public
+IDs and a system/ID or ID-only fallback label; one bounded public label batch serves the
+page, without protected structure lookup.
+
+These fields preserve public publication after source expiry and the original complete
+pointer during incomplete replacement. Catalogue, book, history and reference clocks remain
+independent: a current book can coexist with stale history and older reference statistics.
+Only a selected current, complete source can contribute a bounded public cache lifetime;
+stale, uncollected, incomplete replacement or incomplete label results close cache eligibility.
+Reference prices use `no-store` because their DTO supplies no expiry boundary. Repeated or
+aliased reads do not record history demand or schedule collection.
+
+GraphQL history returns `uncollected` for eligible full-region types with no recorded demand.
+It checks the profile revision around the source read; `MARKET_HISTORY_PROFILE_CHANGED` requires
+restarting the read. Missing or ineligible profiles remain unavailable. The REST history contract
+is unchanged. Catalogue page sizes and continuations are owned by the core catalogue read; Market
+checks the requested revision and classifies unavailable catalogues and missing types before
+transport adapters shape a response.

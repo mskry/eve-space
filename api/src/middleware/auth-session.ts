@@ -1,7 +1,8 @@
 import { createMiddleware } from 'hono/factory'
+import type { Context } from 'hono'
 import { findSession, type SessionAccount } from '../auth/session-store.js'
 import { readAuthCookie } from '../http/auth-cookie.js'
-import { authRequiredBody } from '../http/contracts.js'
+import { sessionAdmissionDenial } from '../auth/read-admission.js'
 
 export const sessionCookie = 'eve_space_session'
 
@@ -11,15 +12,18 @@ export type SessionEnv = {
   }
 }
 
-export const loadSession = createMiddleware<SessionEnv>(async (context, next) => {
+export const readRequestSession = (context: Context) => {
   const sessionToken = readAuthCookie(context, sessionCookie)
-  context.set('session', sessionToken ? await findSession(sessionToken) : null)
+  return sessionToken ? findSession(sessionToken) : Promise.resolve(null)
+}
+
+export const loadSession = createMiddleware<SessionEnv>(async (context, next) => {
+  context.set('session', await readRequestSession(context))
   await next()
 })
 
 export const requireSession = createMiddleware<SessionEnv>(async (context, next) => {
-  if (!context.var.session) {
-    return context.json(authRequiredBody, 401)
-  }
+  const denial = sessionAdmissionDenial(context.var.session)
+  if (denial) return context.json(denial.body, denial.status)
   await next()
 })

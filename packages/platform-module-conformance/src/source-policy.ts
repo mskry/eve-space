@@ -28,6 +28,7 @@ const exactServerRuntimeImports = new Set([
   '@eve-space/core-eve-projections/wallet',
   '@eve-space/platform-module-contract/activity',
   '@eve-space/platform-module-contract/esi',
+  '@eve-space/platform-module-contract/graphql',
   '@eve-space/platform-module-contract/identifiers',
   '@eve-space/platform-module-contract/persistence',
   '@eve-space/platform-module-contract/resources',

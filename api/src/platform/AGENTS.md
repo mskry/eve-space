@@ -16,6 +16,11 @@ entry, and transport tiers. Exact file membership belongs in
   in their consumers.
 - Adapters own PostgreSQL access, module capabilities, and focused materialization boundaries.
 - Services coordinate declarations, adapters, and state without owning complete collection jobs.
+- Read admission services compose module/section enablement with the organization-owned policy and
+  optional exact owned-character admission. Public reads have no session or organization gate.
+  Capability adapters construct exact installed read-only grants; guarded methods recheck the fixed
+  admission before execution or reuse and after asynchronous work. Transport adapters share these
+  interfaces rather than supplying independent authorization decisions.
 - Application modules execute complete resource collection or observation use cases.
 - Entry modules initiate scheduled repair or maintenance work.
 - Transport modules compose HTTP routes and middleware. They never initiate scheduled work.
@@ -24,6 +29,8 @@ entry, and transport tiers. Exact file membership belongs in
 - Keep organization integration imports narrow: platform may call the explicit core-resource
   materializers and compliance convergence operations, but generic platform policy must remain
   organization-independent.
+  Read admission is an explicit integration seam for organization session loading and contribution
+  authorization; it must not query organization tables or reimplement organization decisions.
 - `scripts/verify-platform-boundaries.ts` must reject undeclared modules, forbidden tier imports,
   platform-to-queue imports, and platform dependency cycles.
 

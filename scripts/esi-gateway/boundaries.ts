@@ -21,6 +21,7 @@ const modulesByTier = {
     'internal/request-lifecycle',
     'internal/production-runtime',
     'internal/runtime-state',
+    'internal/read-waiters',
     'internal/resource-revision',
     'internal/cooldowns',
     'internal/permits',

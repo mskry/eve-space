@@ -96,7 +96,12 @@ export const planInstalledProfileWork = async (
     }
     if (seen.has(parsed.profileId)) throw new Error('Profile work planner repeated an identity')
     seen.add(parsed.profileId)
-    return Object.assign({ resourceIdentity: identity }, parsed)
+    return {
+      resourceIdentity: identity,
+      profileId: parsed.profileId,
+      revision: parsed.revision,
+      dueAt: parsed.dueAt,
+    }
   })
 }
 

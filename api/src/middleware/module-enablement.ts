@@ -1,15 +1,13 @@
 import type { MiddlewareHandler } from 'hono'
-import { routeNotFoundBody } from '../http/contracts.js'
-import { isInstalledModuleContributionEnabled } from '../platform/module-settings.js'
+import { moduleReadEnablementDenial } from '../platform/read-enablement.js'
 
-export function requireInstalledModuleEnabled(
+export const requireInstalledModuleEnabled = (
   moduleId: string,
   sectionId?: string,
-): MiddlewareHandler {
+): MiddlewareHandler => {
   return async (context, next) => {
-    if (!(await isInstalledModuleContributionEnabled(moduleId, sectionId))) {
-      return context.json(routeNotFoundBody, 404)
-    }
+    const denial = await moduleReadEnablementDenial(moduleId, sectionId)
+    if (denial) return context.json(denial.body, denial.status)
     await next()
   }
 }

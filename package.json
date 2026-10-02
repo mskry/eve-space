@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "pnpm build:nuxt:dependencies && nuxt build",
-    "build:nuxt:dependencies": "pnpm --filter @evespace/esi-client build && pnpm --filter @eve-space/core-eve-projections build && pnpm --filter @eve-space/core-data-contract build && pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-persistence-policy build && pnpm --filter @eve-space/platform-module-conformance build && pnpm --filter @eve-space/platform-module-server build && pnpm --filter @eve-space/platform-module-nuxt build && tsx scripts/run-installed-module-package-script.ts server build && tsx scripts/run-installed-module-package-script.ts nuxt build",
+    "build:nuxt:dependencies": "pnpm --filter @evespace/esi-client build && pnpm --filter @eve-space/core-eve-projections build && pnpm --filter @eve-space/core-data-contract build && pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-persistence-policy build && pnpm --filter @eve-space/platform-module-conformance build && pnpm --filter @eve-space/platform-module-server build && pnpm --filter @eve-space/platform-module-nuxt build && tsx scripts/run-installed-module-package-script.ts server build && tsx scripts/run-installed-module-package-script.ts nuxt build && pnpm graphql:check",
     "dev": "nuxt dev",
     "dev:api": "pnpm --filter @eve-space/api dev",
     "dev:fixture:organization": "pnpm --filter @eve-space/api dev:fixture:organization",
@@ -43,7 +43,7 @@
     "quality:sonar:esi-client": "pnpm --filter @evespace/esi-client test:coverage && pnpm sonar:esi-client",
     "sde:ingest": "cargo run --release --manifest-path sde-ingest/Cargo.toml --",
     "lint": "pnpm lint:workspace && pnpm --filter @evespace/esi-client lint",
-    "lint:workspace": "oxlint . --ignore-pattern 'packages/esi-client/**' && pnpm lint:quality && pnpm registry:check && pnpm core-data:coverage:check && tsx scripts/verify-core-migrations.ts && node scripts/verify-esi-egress.mjs && tsx scripts/verify-module-boundaries.ts && tsx scripts/verify-platform-module-contract-boundaries.ts && tsx scripts/verify-nuxt-module-boundaries.ts && tsx scripts/verify-esi-gateway-boundaries.ts && tsx scripts/verify-esi-query-persistence.ts && tsx scripts/verify-query-persistence-boundaries.ts && tsx scripts/verify-universe-cache-boundaries.ts && tsx scripts/verify-core-data-boundaries.ts && tsx scripts/verify-auth-boundaries.ts && tsx scripts/verify-character-boundaries.ts && tsx scripts/verify-character-route-ownership.ts && tsx scripts/verify-api-http-boundaries.ts && tsx scripts/verify-organization-boundaries.ts && tsx scripts/verify-platform-boundaries.ts && tsx scripts/verify-queue-boundaries.ts && tsx scripts/verify-organization-activity-boundaries.ts && tsx scripts/verify-market-server-boundaries.ts && tsx scripts/verify-mail-composition-boundaries.ts",
+    "lint:workspace": "oxlint . --ignore-pattern 'packages/esi-client/**' && pnpm lint:quality && pnpm registry:check && pnpm graphql:check && pnpm core-data:coverage:check && tsx scripts/verify-core-migrations.ts && node scripts/verify-esi-egress.mjs && tsx scripts/verify-module-boundaries.ts && tsx scripts/verify-platform-module-contract-boundaries.ts && tsx scripts/verify-nuxt-module-boundaries.ts && tsx scripts/verify-esi-gateway-boundaries.ts && tsx scripts/verify-esi-query-persistence.ts && tsx scripts/verify-query-persistence-boundaries.ts && tsx scripts/verify-universe-cache-boundaries.ts && tsx scripts/verify-core-data-boundaries.ts && tsx scripts/verify-auth-boundaries.ts && tsx scripts/verify-character-boundaries.ts && tsx scripts/verify-character-route-ownership.ts && tsx scripts/verify-api-http-boundaries.ts && tsx scripts/verify-organization-boundaries.ts && tsx scripts/verify-platform-boundaries.ts && tsx scripts/verify-queue-boundaries.ts && tsx scripts/verify-organization-activity-boundaries.ts && tsx scripts/verify-market-server-boundaries.ts && tsx scripts/verify-mail-composition-boundaries.ts && tsx scripts/verify-graphql-boundaries.ts",
     "lint:quality": "tsx scripts/check-quality-lint.ts all",
     "lint:quality:baseline": "tsx scripts/check-quality-lint.ts all --write",
     "lint:anti-slop": "tsx scripts/check-quality-lint.ts anti-slop",
@@ -80,7 +80,10 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "start": "node .output/server/index.mjs",
-    "postinstall": "pnpm build:nuxt:dependencies && nuxt prepare && lefthook install"
+    "postinstall": "pnpm build:nuxt:dependencies && nuxt prepare && lefthook install",
+    "graphql:generate": "pnpm registry:generate && tsx scripts/generate-graphql.ts --write",
+    "graphql:check": "tsx scripts/generate-graphql.ts --check && pnpm graphql:types",
+    "graphql:types": "pnpm --filter @eve-space/platform-module-contract exec tsc --noEmit --project ../../tests/fixtures/graphql-contract-types/tsconfig.json"
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^4.0.0",
@@ -108,6 +111,10 @@
   "devDependencies": {
     "@eve-space/platform-module-conformance": "workspace:*",
     "@eve-space/platform-module-persistence-policy": "workspace:*",
+    "@graphql-codegen/core": "6.2.1",
+    "@graphql-codegen/typed-document-node": "7.1.1",
+    "@graphql-codegen/typescript": "6.1.0",
+    "@graphql-codegen/typescript-operations": "6.1.9",
     "@hono/node-server": "catalog:",
     "@nuxt/kit": "catalog:",
     "@nuxt/test-utils": "catalog:",
@@ -119,6 +126,7 @@
     "@vitest/coverage-v8": "catalog:vitest4",
     "@vue/test-utils": "catalog:",
     "devalue": "catalog:",
+    "graphql": "catalog:",
     "happy-dom": "catalog:",
     "knip": "catalog:",
     "lefthook": "catalog:",
@@ -135,6 +143,7 @@
     "vitest": "catalog:vitest4",
     "vitest-environment-nuxt": "catalog:",
     "vue-tsc": "catalog:",
-    "yaml": "catalog:"
+    "yaml": "catalog:",
+    "@graphql-typed-document-node/core": "3.2.0"
   }
 }

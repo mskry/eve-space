@@ -28,6 +28,21 @@ afterEach(async () => {
   )
 })
 
+it('allows deferred GraphQL read definitions while rejecting eager helper arguments', () => {
+  const deferred = serverSource(`
+    import { definePlatformGraphQLRead } from '@eve-space/platform-module-contract/graphql'
+    export const read = definePlatformGraphQLRead(({ capabilities }) => capabilities.persistence.readSnapshot())
+  `)
+  expect(serverSourceBoundaryViolations(deferred)).toStrictEqual([])
+  const eager = serverSource(`
+    import { definePlatformGraphQLRead } from '@eve-space/platform-module-contract/graphql'
+    export const read = definePlatformGraphQLRead(loadSnapshot())
+  `)
+  expect(serverSourceBoundaryViolations(eager)).toContainEqual(
+    expect.stringContaining('read has an executable initializer'),
+  )
+})
+
 describe('feature package dependency allowlists', () => {
   it('accepts only reviewed server dependencies and package-local exports', () => {
     expect(
@@ -997,6 +1012,10 @@ describe('host feature package composition', () => {
         {
           path: 'api/src/generated/platform/installed-module-routes.ts',
           source: "import { routes } from '@eve-space/alpha-server'",
+        },
+        {
+          path: 'api/src/generated/platform/installed-module-graphql.ts',
+          source: "import { alphaGraphQL } from '@eve-space/alpha-server'",
         },
         {
           path: 'generated/platform/installed-nuxt-modules.ts',

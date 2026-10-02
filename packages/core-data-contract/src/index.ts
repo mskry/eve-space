@@ -4,6 +4,7 @@ export const CORE_DATA_CONTRIBUTION_CONTEXTS = [
   'route',
   'resource-projection',
   'activity-provider',
+  'graphql-read',
 ] as const
 
 export const CORE_DATA_PRODUCT_IDS = [
@@ -44,9 +45,12 @@ export interface MarketCatalogueType {
   name: string
 }
 
-export type MarketCatalogueRequest =
+export type MarketCatalogueRequest = MarketCatalogueSelector & { readonly signal?: AbortSignal }
+
+type MarketCatalogueSelector =
+  | { kind: 'revision' }
   | { kind: 'tree' }
-  | { kind: 'group-types'; groupId: number; cursor?: string }
+  | { kind: 'group-types'; groupId: number; cursor?: string; pageSize?: number }
   | { kind: 'search-index' }
   | { kind: 'type-by-id'; typeId: number }
 
@@ -80,6 +84,7 @@ export interface MarketCatalogueTypeByIdResult {
 }
 
 export type MarketCatalogueResult =
+  | { kind: 'revision'; revision: SdeProjectionRevision }
   | MarketCatalogueTreeResult
   | MarketCatalogueGroupTypesResult
   | MarketCatalogueSearchIndexResult
@@ -146,6 +151,7 @@ export interface PublishedTypeDetailsResult {
 }
 
 export interface StaticLocationLabelsRequest {
+  readonly signal?: AbortSignal
   locationIds: readonly number[]
 }
 
@@ -288,7 +294,7 @@ export const CORE_DATA_PRODUCT_CONTRACTS = {
     dtoVersion: 1,
     id: 'market-catalogue',
     method: 'marketCatalogue',
-    permittedContexts: ['route'],
+    permittedContexts: ['route', 'graphql-read'],
     requestBound: MARKET_CATALOGUE_MAX_TYPES,
     sensitivity: 'public',
   },
@@ -333,7 +339,7 @@ export const CORE_DATA_PRODUCT_CONTRACTS = {
     dtoVersion: 2,
     id: 'static-location-labels',
     method: 'staticLocationLabels',
-    permittedContexts: ['route', 'resource-projection'],
+    permittedContexts: ['route', 'resource-projection', 'graphql-read'],
     requestBound: 500,
     sensitivity: 'public',
   },

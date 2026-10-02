@@ -196,6 +196,7 @@ async function writeConsumerFixture(consumerRoot: string) {
 import { projectAssetSnapshot } from '@eve-space/core-eve-projections/assets'
 import type { PlatformPersistenceMethodsFor } from '@eve-space/platform-module-contract/persistence'
 import type { PlatformModuleRouteCapabilities } from '@eve-space/platform-module-contract/server'
+import { definePlatformGraphQLRead, type PlatformGraphQLReadCapabilities, type PlatformGraphQLDefinition } from '@eve-space/platform-module-contract/graphql'
 import { definePlatformPersistenceOperation } from '@eve-space/platform-module-server'
 import { Hono } from 'hono'
 import { z } from 'zod'
@@ -213,6 +214,20 @@ export const readOperation = definePlatformPersistenceOperation({
 
 const operations = { 'read-smoke': readOperation } as const
 type Persistence = PlatformPersistenceMethodsFor<typeof operations, readonly ['read-smoke']>
+
+export const smokeGraphQL = {
+  typeDefs: 'extend type Query { smoke: SmokeRead } type SmokeRead { value: String }',
+  reads: {
+    'Query.smoke': () => ({}),
+    'SmokeRead.value': definePlatformGraphQLRead<PlatformGraphQLReadCapabilities<readonly [], Persistence>>(async ({ capabilities }) => {
+      // @ts-expect-error exact GraphQL grants contain no profile configuration method
+      void capabilities.persistence.configureProfile
+      // @ts-expect-error no undeclared core-data capability is available
+      void capabilities.coreData.marketCatalogue
+      return (await capabilities.persistence.readSmoke({ id: 'smoke' })).value
+    }),
+  },
+} satisfies PlatformGraphQLDefinition
 
 export function smokeRoutes(capabilities: PlatformModuleRouteCapabilities<Persistence>) {
   return new Hono().get('/', async (context) =>
@@ -407,6 +422,7 @@ export default defineNuxtModule({ meta: { name: '@example/smoke-nuxt' } })
     join(consumerRoot, 'runtime-smoke.mjs'),
     `import { projectAssetSnapshot } from '@eve-space/core-eve-projections/assets'
 import { platformModuleHostContractVersion } from '@eve-space/platform-module-contract/manifest'
+import { definePlatformGraphQLRead } from '@eve-space/platform-module-contract/graphql'
 import { definePlatformPersistenceOperation } from '@eve-space/platform-module-server'
 import platformNuxtModule from '@eve-space/platform-module-nuxt'
 import { z } from 'zod'
@@ -431,9 +447,12 @@ const operation = definePlatformPersistenceOperation({
   maximumOutputBytes: 16,
 })
 if (asset.itemId !== 1) throw new Error('Core projection package failed at runtime')
-if (platformModuleHostContractVersion !== '1.0.0') throw new Error('Contract package failed at runtime')
+if (platformModuleHostContractVersion !== '1.1.0') throw new Error('Contract package failed at runtime')
 if (operation.id !== 'runtime-smoke') throw new Error('Server package failed at runtime')
 if (typeof platformNuxtModule !== 'function') throw new Error('Nuxt package failed at runtime')
+const read = definePlatformGraphQLRead(({ capabilities }) => capabilities.persistence.readValue())
+const value = await read({ parent: {}, args: {}, subject: null, capabilities: { persistence: { readValue: async () => 'graphql-public-contract' } } })
+if (value !== 'graphql-public-contract') throw new Error('GraphQL contract package failed at runtime')
 `,
   )
 }
@@ -449,9 +468,9 @@ async function runInstalledConformance(consumerRoot: string) {
     join(consumerRoot, 'conformance.json'),
     `${JSON.stringify(
       {
-        manifest: { path: 'release/manifest/manifest.json' },
-        nuxt: { sourceRoot: 'release/nuxt/dist' },
-        server: { sourceRoot: 'release/server/dist' },
+        manifest: { path: 'release/manifest/manifest.json', packageRoot: 'release/manifest' },
+        nuxt: { sourceRoot: 'release/nuxt/dist', packageRoot: 'release/nuxt' },
+        server: { sourceRoot: 'release/server/dist', packageRoot: 'release/server' },
       },
       null,
       2,

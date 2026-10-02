@@ -61,6 +61,21 @@ describe('static location cache', () => {
     expect(mocks.readStaticLocationRevision).not.toHaveBeenCalled()
   })
 
+  test('detaches a canceled waiter while another still needs the shared snapshot', async () => {
+    const loading = deferred<StaticLocationSnapshot>()
+    mocks.loadStaticLocationSnapshot.mockReturnValue(loading.promise)
+    const controller = new AbortController()
+    const first = getStaticLocations([{ id: 30000001, type: 'solar_system' }], {
+      signal: controller.signal,
+    })
+    const second = getStaticLocations([{ id: 30000001, type: 'solar_system' }])
+    controller.abort(new Error('Disconnected'))
+    await expect(first).rejects.toThrow('Disconnected')
+    loading.resolve(staticSnapshot(revision(), [system(30000001, 0.5)], []))
+    await expect(second).resolves.toMatchObject([{ id: 30000001, solarSystemSecurityStatus: 0.5 }])
+    expect(mocks.loadStaticLocationSnapshot).toHaveBeenCalledOnce()
+  })
+
   test('collapses concurrent cold initialization', async () => {
     const loading = deferred<StaticLocationSnapshot>()
     const snapshot = staticSnapshot(

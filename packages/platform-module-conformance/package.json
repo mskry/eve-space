@@ -11,6 +11,14 @@
     "eve-space-module-conformance": "./bin/conformance.mjs"
   },
   "exports": {
+    "./graphql": {
+      "types": "./dist/graphql.d.ts",
+      "import": "./dist/graphql.js"
+    },
+    "./graphql-artifact": {
+      "types": "./dist/graphql-artifact.d.ts",
+      "import": "./dist/graphql-artifact.js"
+    },
     ".": {
       "types": "./dist/conformance.d.ts",
       "import": "./dist/conformance.js"
@@ -43,6 +51,7 @@
     "typecheck": "tsc6 --noEmit && tsc6 --project tsconfig.scripts.json && tsc6 --project test/fixtures/tsconfig.json --noEmit"
   },
   "dependencies": {
+    "graphql": "catalog:",
     "@eve-space/platform-module-contract": "workspace:*",
     "@eve-space/platform-module-persistence-policy": "workspace:*",
     "@vue/compiler-sfc": "catalog:",

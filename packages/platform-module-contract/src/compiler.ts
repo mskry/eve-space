@@ -1,4 +1,6 @@
 import { CORE_DATA_PRODUCT_IDS } from '@eve-space/core-data-contract'
+import type { PlatformGraphQLContribution, PlatformGraphQLReadDeclaration } from './graphql.js'
+import { validateGraphQLContributions } from './graphql-validation.js'
 import type { PlatformActivityProviderContribution } from './activity.js'
 import type {
   PlatformModuleManifest,
@@ -48,6 +50,154 @@ import {
   validatePlatformModuleCandidates,
   type PlatformModuleValidationAuthorities,
 } from './validation.js'
+
+const parseGraphQLList = (
+  value: PlatformModuleCandidate['declaration'],
+  path: string,
+  issues: string[],
+) => {
+  if (value === undefined) return undefined
+  const record = readRecord(value, path, ['argument', 'defaultSize', 'maximum'], issues)
+  if (!record) return undefined
+  const argument = readOptionalString(record.argument, `${path}.argument`, issues)
+  const defaultSize = readNumber(record.defaultSize, `${path}.defaultSize`, issues)
+  const maximum = readNumber(record.maximum, `${path}.maximum`, issues)
+  if (defaultSize === undefined || maximum === undefined) return undefined
+  return { argument, defaultSize, maximum }
+}
+
+const parseGraphQLOrganization = (
+  value: PlatformModuleCandidate['declaration'],
+  path: string,
+  issues: string[],
+) => {
+  if (value === undefined) return undefined
+  const record = readRecord(
+    value,
+    path,
+    ['audience', 'requiredPermission', 'additionalRequiredPermissions'],
+    issues,
+  )
+  if (!record) return undefined
+  const audience = readDeclaredMember(
+    record.audience,
+    platformOrganizationAudiences,
+    `${path}.audience`,
+    issues,
+  )
+  const requiredPermission = readString(
+    record.requiredPermission,
+    `${path}.requiredPermission`,
+    issues,
+  )
+  const additionalRequiredPermissions = readOptionalArray(
+    record.additionalRequiredPermissions,
+    `${path}.additionalRequiredPermissions`,
+    issues,
+    readString,
+  )
+  if (audience === undefined || requiredPermission === undefined) return undefined
+  return { audience, requiredPermission, additionalRequiredPermissions }
+}
+
+const parseGraphQLRead = (
+  value: PlatformModuleCandidate['declaration'],
+  path: string,
+  issues: string[],
+): PlatformGraphQLReadDeclaration | undefined => {
+  const record = readRecord(
+    value,
+    path,
+    [
+      'id',
+      'field',
+      'strategy',
+      'subjectArgument',
+      'requiredScope',
+      'organization',
+      'sectionId',
+      'cost',
+      'sourceCost',
+      'list',
+      'persistenceOperations',
+      'coreDataProducts',
+    ],
+    issues,
+  )
+  if (!record) return undefined
+  const id = readString(record.id, `${path}.id`, issues)
+  const field = readString(record.field, `${path}.field`, issues)
+  const strategy = readDeclaredMember(
+    record.strategy,
+    ['public', 'authenticated-session', 'owned-character', 'organization-member'] as const,
+    `${path}.strategy`,
+    issues,
+  )
+  const cost = readNumber(record.cost, `${path}.cost`, issues)
+  const sourceCost = readNumber(record.sourceCost, `${path}.sourceCost`, issues)
+  const persistence = parsePersistenceReferences(record, path, issues)
+  const coreDataProducts = readMembers(
+    record.coreDataProducts,
+    CORE_DATA_PRODUCT_IDS,
+    `${path}.coreDataProducts`,
+    issues,
+  )
+  const subjectArgument = readOptionalString(
+    record.subjectArgument,
+    `${path}.subjectArgument`,
+    issues,
+  )
+  const requiredScope = readOptionalString(record.requiredScope, `${path}.requiredScope`, issues)
+  const sectionId = readOptionalString(record.sectionId, `${path}.sectionId`, issues)
+  const organization = parseGraphQLOrganization(record.organization, `${path}.organization`, issues)
+  const list = parseGraphQLList(record.list, `${path}.list`, issues)
+  if (
+    id === undefined ||
+    field === undefined ||
+    strategy === undefined ||
+    cost === undefined ||
+    sourceCost === undefined ||
+    !persistence ||
+    !coreDataProducts
+  )
+    return undefined
+  return {
+    id,
+    field,
+    strategy,
+    cost,
+    sourceCost,
+    coreDataProducts,
+    ...persistence,
+    subjectArgument,
+    requiredScope,
+    sectionId,
+    organization,
+    list,
+  }
+}
+
+const parseGraphQLContribution = (
+  value: PlatformModuleCandidate['declaration'],
+  path: string,
+  issues: string[],
+): PlatformGraphQLContribution | undefined => {
+  const record = readRecord(
+    value,
+    path,
+    ['id', 'exportName', 'rootField', 'types', 'reads'],
+    issues,
+  )
+  if (!record) return undefined
+  const id = readString(record.id, `${path}.id`, issues)
+  const exportName = readString(record.exportName, `${path}.exportName`, issues)
+  const rootField = readString(record.rootField, `${path}.rootField`, issues)
+  const types = readStringArray(record.types, `${path}.types`, issues)
+  const reads = readArray(record.reads, `${path}.reads`, issues, parseGraphQLRead)
+  if (id === undefined || exportName === undefined || rootField === undefined || !types || !reads)
+    return undefined
+  return { id, exportName, rootField, types, reads }
+}
 
 const compiledPlatformModulesBrand: unique symbol = Symbol('compiled-platform-modules')
 
@@ -156,6 +306,7 @@ export function compilePlatformModules(
   }
 
   const validated = validatedCandidates.map(({ manifest }) => manifest)
+  issues.push(...validateGraphQLContributions(validated, authorities.coreDataProductContracts))
   const policyContext = { manifests: validated } satisfies PlatformModulePolicyContext
   const policies = authorities.policies.toSorted((left, right) =>
     compareStable(left.moduleId, right.moduleId),
@@ -187,9 +338,35 @@ export function readCompiledPlatformModules(
   return compiled.modules
 }
 
+const normalizeGraphQLRead = (
+  read: PlatformGraphQLReadDeclaration,
+): PlatformGraphQLReadDeclaration => ({
+  ...read,
+  coreDataProducts: read.coreDataProducts.toSorted(compareStable),
+  persistenceOperations: read.persistenceOperations.toSorted((left, right) =>
+    compareStable(left.operationId, right.operationId),
+  ),
+})
+
+const normalizeGraphQLContribution = (
+  contribution: PlatformGraphQLContribution,
+): PlatformGraphQLContribution => ({
+  ...contribution,
+  types: contribution.types.toSorted(compareStable),
+  reads: contribution.reads
+    .map(normalizeGraphQLRead)
+    .toSorted((left, right) => compareStable(left.field, right.field)),
+})
+
 function normalizeManifest(manifest: PlatformModuleManifest): PlatformModuleManifest {
   return {
     ...manifest,
+    server: {
+      ...manifest.server,
+      graphql: (manifest.server.graphql ?? [])
+        .map(normalizeGraphQLContribution)
+        .toSorted((left, right) => compareStable(left.id, right.id)),
+    },
     permissionProfiles: manifest.permissionProfiles
       ?.map((profile) => ({
         ...profile,
@@ -250,6 +427,7 @@ function parseManifest(
       'resources',
       'esiOperations',
       'activityProviders',
+      'graphql',
     ],
     issues,
   )
@@ -316,6 +494,12 @@ function parseManifest(
     issues,
     parseActivityProvider,
   )
+  const graphql = readOptionalArray(
+    server.graphql,
+    `${path} server.graphql`,
+    issues,
+    parseGraphQLContribution,
+  )
   const nuxtPackage = readString(nuxt.package, `${path} nuxt.package`, issues)
   const pages = readArray(nuxt.pages, `${path} nuxt.pages`, issues, parsePage)
   const navigation = readArray(nuxt.navigation, `${path} nuxt.navigation`, issues, parseNavigation)
@@ -347,6 +531,7 @@ function parseManifest(
     sections,
     server: {
       activityProviders,
+      graphql: graphql ?? [],
       esiOperations,
       migrations,
       package: serverPackage,

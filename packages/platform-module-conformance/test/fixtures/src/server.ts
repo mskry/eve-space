@@ -8,6 +8,11 @@ import type { PlatformModuleRouteCapabilities } from '@eve-space/platform-module
 import { definePlatformPersistenceOperation } from '@eve-space/platform-module-server'
 import { Hono } from 'hono'
 import { z } from 'zod'
+import {
+  definePlatformGraphQLRead,
+  type PlatformGraphQLDefinition,
+  type PlatformGraphQLReadCapabilities,
+} from '@eve-space/platform-module-contract/graphql'
 
 export const readFixtureOperation = definePlatformPersistenceOperation({
   id: 'read-fixture',
@@ -25,6 +30,19 @@ type FixturePersistence = PlatformPersistenceMethodsFor<
   typeof operations,
   readonly ['read-fixture']
 >
+
+export const fixtureGraphQL = {
+  typeDefs: `extend type Query { fixture: FixtureRead } type FixtureRead { value: String }`,
+  reads: {
+    'Query.fixture': () => ({}),
+    'FixtureRead.value': definePlatformGraphQLRead<
+      PlatformGraphQLReadCapabilities<readonly [], FixturePersistence>
+    >(
+      async ({ capabilities }) =>
+        (await capabilities.persistence.readFixture({ id: 'fixture' })).value,
+    ),
+  },
+} satisfies PlatformGraphQLDefinition
 
 export function fixtureRoutes(capabilities: PlatformModuleRouteCapabilities<FixturePersistence>) {
   return new Hono().get('/', async (context) =>

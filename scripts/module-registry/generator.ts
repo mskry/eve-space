@@ -1,10 +1,19 @@
 import { readFileSync } from 'node:fs'
+import {
+  composeContributionSDL,
+  type GraphQLSchemaContribution,
+} from '@eve-space/platform-module-conformance/graphql'
+import { readGraphQLArtifactContributions } from '@eve-space/platform-module-conformance/graphql-artifact'
 import { dirname, relative, resolve, sep } from 'node:path'
 import {
   readCompiledPlatformModules,
   type CompiledPlatformModules,
 } from '@eve-space/platform-module-contract/compiler'
 import type { PlatformModuleManifest } from '@eve-space/platform-module-contract/manifest'
+import type {
+  PlatformGraphQLContribution,
+  PlatformGraphQLReadDeclaration,
+} from '@eve-space/platform-module-contract/graphql'
 import type {
   PlatformInstalledModuleDefinition,
   PlatformInstalledModuleMigrationDescriptor,
@@ -59,6 +68,8 @@ export const generatedRegistryPaths = [
   'api/src/generated/platform/installed-reviewer-contributions.ts',
   'api/src/generated/platform/installed-module-resource-declarations.ts',
   'api/src/generated/platform/installed-module-on-demand.ts',
+  'api/src/generated/platform/installed-module-graphql.ts',
+  'api/src/generated/platform/installed-module-graphql.graphql',
 ] as const
 
 interface ReviewedPersistenceRoutine extends CanonicalPersistenceRoutine {
@@ -69,6 +80,8 @@ export interface InstalledModuleRegistryInput {
   readonly compiled: CompiledPlatformModules
   readonly persistenceRoutines: readonly ReviewedPersistenceRoutine[]
   readonly releases: readonly ResolvedInstalledModuleRelease[]
+  readonly graphqlSDL: string
+  readonly graphqlContributions: readonly GraphQLSchemaContribution[]
 }
 
 const generatedHeader =
@@ -100,7 +113,27 @@ export async function loadInstalledModuleManifests(root: string) {
       }),
     ),
   )
-  return { compiled, persistenceRoutines, releases } satisfies InstalledModuleRegistryInput
+  const contributions = (
+    await Promise.all(
+      releases.map((release) =>
+        readGraphQLArtifactContributions(
+          {
+            read: async (path) => readFileSync(resolve(release.packages.server.root, path), 'utf8'),
+          },
+          relative(release.packages.server.root, release.packages.server.entryPath),
+          release.manifest.server.graphql ?? [],
+        ),
+      ),
+    )
+  ).flat()
+  const graphqlSDL = composeContributionSDL(contributions)
+  return {
+    compiled,
+    persistenceRoutines,
+    releases,
+    graphqlSDL,
+    graphqlContributions: contributions,
+  } satisfies InstalledModuleRegistryInput
 }
 
 async function verifyReleaseArtifacts(release: ResolvedInstalledModuleRelease) {
@@ -127,11 +160,89 @@ async function verifyReleaseArtifacts(release: ResolvedInstalledModuleRelease) {
   }
 }
 
+const renderGraphQLContributions = (compiled: CompiledPlatformModules) => {
+  const contributions = readCompiledPlatformModules(compiled).flatMap((manifest) =>
+    (manifest.server.graphql ?? []).map((contribution) => ({ manifest, contribution })),
+  )
+  const imports = renderServerImports(
+    contributions.map(({ manifest, contribution }, index) => ({
+      exportName: contribution.exportName,
+      localName: `moduleGraphQL${index}`,
+      packageName: manifest.server.package,
+    })),
+  )
+  const entries = contributions.map(({ manifest, contribution }, index) => {
+    const descriptor = JSON.stringify({
+      ...contribution,
+      moduleId: manifest.id,
+      publisherPackage: manifest.release.publisherPackage,
+    })
+    return `{ ...${descriptor}, definition: moduleGraphQL${index} }`
+  })
+  return `${generatedHeader}import type { PlatformInstalledGraphQLContribution } from '@eve-space/platform-module-contract/graphql'\n${imports}\nexport const installedGraphQLContributions = [${entries.join(',\n')}] as const satisfies readonly PlatformInstalledGraphQLContribution[]\n`
+}
+
+const canonicalGraphQLRead = (read: PlatformGraphQLReadDeclaration) => ({
+  id: read.id,
+  field: read.field,
+  strategy: read.strategy,
+  subjectArgument: read.subjectArgument,
+  requiredScope: read.requiredScope,
+  sectionId: read.sectionId,
+  cost: read.cost,
+  sourceCost: read.sourceCost,
+  list: read.list
+    ? {
+        argument: read.list.argument,
+        defaultSize: read.list.defaultSize,
+        maximum: read.list.maximum,
+      }
+    : undefined,
+  organization: read.organization
+    ? {
+        audience: read.organization.audience,
+        requiredPermission: read.organization.requiredPermission,
+        additionalRequiredPermissions: read.organization.additionalRequiredPermissions?.toSorted(
+          (left, right) => left.localeCompare(right),
+        ),
+      }
+    : undefined,
+  persistenceOperations: read.persistenceOperations
+    .map(({ operationId }) => operationId)
+    .toSorted((left, right) => left.localeCompare(right)),
+  coreDataProducts: read.coreDataProducts.toSorted((left, right) => left.localeCompare(right)),
+})
+
+const canonicalGraphQLInventory = (contributions: readonly PlatformGraphQLContribution[]) =>
+  JSON.stringify(
+    contributions
+      .toSorted((left, right) => left.rootField.localeCompare(right.rootField))
+      .map((contribution) => ({
+        id: contribution.id,
+        exportName: contribution.exportName,
+        rootField: contribution.rootField,
+        types: contribution.types.toSorted((left, right) => left.localeCompare(right)),
+        reads: contribution.reads
+          .toSorted((left, right) => left.field.localeCompare(right.field))
+          .map(canonicalGraphQLRead),
+      })),
+  )
+
 export const generateRegistryFiles = function generateRegistryFiles(
   compiled: CompiledPlatformModules,
   persistenceRoutines: InstalledModuleRegistryInput['persistenceRoutines'] = [],
   releases: InstalledModuleRegistryInput['releases'] = [],
+  graphqlContributions: readonly GraphQLSchemaContribution[] = [],
 ) {
+  const declared = readCompiledPlatformModules(compiled).flatMap(
+    (manifest) => manifest.server.graphql ?? [],
+  )
+  const definitions = graphqlContributions.map(
+    ({ definition: _definition, ...descriptor }) => descriptor,
+  )
+  if (canonicalGraphQLInventory(declared) !== canonicalGraphQLInventory(definitions))
+    throw new Error('GraphQL registry output requires matching validated executable artifacts')
+  const graphqlSDL = composeContributionSDL(graphqlContributions)
   return new Map<string, string>([
     [generatedRegistryPaths[0], renderApiRoutes(compiled)],
     [generatedRegistryPaths[1], renderActivityProviders(compiled)],
@@ -148,6 +259,8 @@ export const generateRegistryFiles = function generateRegistryFiles(
     [generatedRegistryPaths[12], renderInstalledReviewerContributions(compiled)],
     [generatedRegistryPaths[13], renderResourceDeclarations(compiled)],
     [generatedRegistryPaths[14], renderOnDemandResources(compiled)],
+    [generatedRegistryPaths[15], renderGraphQLContributions(compiled)],
+    [generatedRegistryPaths[16], graphqlSDL],
   ])
 } satisfies PlatformRegistryRenderer
 
@@ -702,6 +815,15 @@ function renderPersistenceCapabilityFactories(
       name: `createModule${moduleIndex}ActivityProvider${providerIndex}Persistence`,
       references: provider.persistenceOperations,
     })),
+    ...(manifest.server.graphql ?? []).flatMap((contribution, contributionIndex) =>
+      contribution.reads.map((read, readIndex) => ({
+        group: 'graphqlReads' as const,
+        key: `${manifest.id}/${contribution.id}/${read.id}`,
+        manifest,
+        name: `createModule${moduleIndex}GraphQL${contributionIndex}Read${readIndex}Persistence`,
+        references: read.persistenceOperations,
+      })),
+    ),
     ...manifest.server.resources.flatMap((resource, resourceIndex) => [
       {
         group: 'resourceProjections' as const,
@@ -741,6 +863,7 @@ function renderPersistenceCapabilityFactories(
     'activityProviders',
     'resourceProjections',
     'resourceMaterializations',
+    'graphqlReads',
   ] as const
   const catalogs = groups
     .map((group) => {
@@ -757,7 +880,13 @@ function renderPersistenceCapabilityFactories(
 function persistenceOperationGrants(manifest: PlatformModuleManifest, operationId: string) {
   const referencesOperation = (references: readonly { readonly operationId: string }[]) =>
     references.some((reference) => reference.operationId === operationId)
+  const graphqlReads = (manifest.server.graphql ?? []).flatMap((contribution) =>
+    contribution.reads
+      .filter((read) => referencesOperation(read.persistenceOperations))
+      .map((read) => `${contribution.id}/${read.id}`),
+  )
   return {
+    ...(graphqlReads.length && { graphqlReads }),
     activityProviders: manifest.server.activityProviders
       .filter((provider) => referencesOperation(provider.persistenceOperations))
       .map(({ id }) => id),

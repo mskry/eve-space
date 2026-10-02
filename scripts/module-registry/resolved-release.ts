@@ -527,6 +527,7 @@ function resolveNuxtPages(
 
 function assertExecutableInventory(manifest: PlatformModuleManifest, entryPath: string) {
   const expected = [
+    ...(manifest.server.graphql ?? []),
     ...manifest.server.routes,
     ...manifest.server.persistenceOperations,
     ...manifest.server.resources,

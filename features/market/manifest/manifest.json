@@ -35,10 +35,18 @@
         "authorization": "deployment-administrator",
         "coreDataProducts": ["market-station-regions"],
         "persistenceOperations": [
-          { "operationId": "list-market-profiles" },
-          { "operationId": "save-market-profile" },
-          { "operationId": "list-due-market-profiles" },
-          { "operationId": "read-market-observation" }
+          {
+            "operationId": "list-market-profiles"
+          },
+          {
+            "operationId": "save-market-profile"
+          },
+          {
+            "operationId": "list-due-market-profiles"
+          },
+          {
+            "operationId": "read-market-observation"
+          }
         ]
       },
       {
@@ -48,12 +56,24 @@
         "authorization": "public",
         "coreDataProducts": ["static-location-labels"],
         "persistenceOperations": [
-          { "operationId": "list-market-profiles" },
-          { "operationId": "read-market-observation" },
-          { "operationId": "read-market-replacement-status" },
-          { "operationId": "read-market-order-rows" },
-          { "operationId": "read-market-quote-rows" },
-          { "operationId": "read-market-metrics" }
+          {
+            "operationId": "list-market-profiles"
+          },
+          {
+            "operationId": "read-market-observation"
+          },
+          {
+            "operationId": "read-market-replacement-status"
+          },
+          {
+            "operationId": "read-market-order-rows"
+          },
+          {
+            "operationId": "read-market-quote-rows"
+          },
+          {
+            "operationId": "read-market-metrics"
+          }
         ]
       },
       {
@@ -61,14 +81,22 @@
         "namespace": "/market/reference-prices",
         "exportName": "marketReferenceRoutes",
         "authorization": "public",
-        "persistenceOperations": [{ "operationId": "read-market-reference-prices" }]
+        "persistenceOperations": [
+          {
+            "operationId": "read-market-reference-prices"
+          }
+        ]
       },
       {
         "id": "daily-history",
         "namespace": "/market/history",
         "exportName": "marketHistoryRoutes",
         "authorization": "public",
-        "persistenceOperations": [{ "operationId": "read-market-history" }]
+        "persistenceOperations": [
+          {
+            "operationId": "read-market-history"
+          }
+        ]
       },
       {
         "id": "daily-history-demand",
@@ -78,9 +106,15 @@
         "onDemandProfileResourceId": "daily-history",
         "coreDataProducts": ["market-catalogue"],
         "persistenceOperations": [
-          { "operationId": "list-market-profiles" },
-          { "operationId": "read-market-history" },
-          { "operationId": "request-market-history-demand" }
+          {
+            "operationId": "list-market-profiles"
+          },
+          {
+            "operationId": "read-market-history"
+          },
+          {
+            "operationId": "request-market-history-demand"
+          }
         ]
       },
       {
@@ -92,9 +126,15 @@
         "requiredPermission": "market.structure.read",
         "onDemandResourceId": "structure-orders",
         "persistenceOperations": [
-          { "operationId": "read-structure-book" },
-          { "operationId": "reserve-structure-demand" },
-          { "operationId": "release-structure-demand" }
+          {
+            "operationId": "read-structure-book"
+          },
+          {
+            "operationId": "reserve-structure-demand"
+          },
+          {
+            "operationId": "release-structure-demand"
+          }
         ]
       },
       {
@@ -103,8 +143,12 @@
         "exportName": "marketQuoteRoutes",
         "authorization": "public-mutation",
         "persistenceOperations": [
-          { "operationId": "read-market-observation" },
-          { "operationId": "read-market-quote-rows" }
+          {
+            "operationId": "read-market-observation"
+          },
+          {
+            "operationId": "read-market-quote-rows"
+          }
         ]
       }
     ],
@@ -408,7 +452,9 @@
         "id": "orders",
         "exportName": "marketOrdersResource",
         "subjectKind": "deployment",
-        "eligibility": { "kind": "current-deployment" },
+        "eligibility": {
+          "kind": "current-deployment"
+        },
         "scheduled": false,
         "profileKeyed": true,
         "operationId": "market-region-orders",
@@ -416,9 +462,15 @@
         "coreDataProducts": ["market-station-regions"],
         "persistence": {
           "projection": [
-            { "operationId": "list-due-market-profiles" },
-            { "operationId": "list-market-profiles" },
-            { "operationId": "list-market-derivation-types" }
+            {
+              "operationId": "list-due-market-profiles"
+            },
+            {
+              "operationId": "list-market-profiles"
+            },
+            {
+              "operationId": "list-market-derivation-types"
+            }
           ],
           "materialization": [
             { "operationId": "begin-market-observation" },
@@ -436,34 +488,56 @@
         "id": "reference-prices",
         "exportName": "marketReferencePricesResource",
         "subjectKind": "deployment",
-        "eligibility": { "kind": "current-deployment" },
+        "eligibility": {
+          "kind": "current-deployment"
+        },
         "operationId": "market-reference-prices",
         "materializationIntervalSeconds": 3600,
         "persistence": {
           "projection": [],
-          "materialization": [{ "operationId": "upsert-market-reference-prices" }]
+          "materialization": [
+            {
+              "operationId": "upsert-market-reference-prices"
+            }
+          ]
         }
       },
       {
         "id": "daily-history",
         "exportName": "marketHistoryResource",
         "subjectKind": "deployment",
-        "eligibility": { "kind": "current-deployment" },
+        "eligibility": {
+          "kind": "current-deployment"
+        },
         "scheduled": false,
         "profileKeyed": true,
         "operationId": "market-region-history",
         "materializationIntervalSeconds": 60,
         "persistence": {
           "projection": [
-            { "operationId": "list-due-market-history-profiles" },
-            { "operationId": "list-due-market-history-types" },
-            { "operationId": "read-market-history" },
-            { "operationId": "list-market-profiles" }
+            {
+              "operationId": "list-due-market-history-profiles"
+            },
+            {
+              "operationId": "list-due-market-history-types"
+            },
+            {
+              "operationId": "read-market-history"
+            },
+            {
+              "operationId": "list-market-profiles"
+            }
           ],
           "materialization": [
-            { "operationId": "upsert-market-history" },
-            { "operationId": "record-market-history-failure" },
-            { "operationId": "cleanup-market-history-demands" }
+            {
+              "operationId": "upsert-market-history"
+            },
+            {
+              "operationId": "record-market-history-failure"
+            },
+            {
+              "operationId": "cleanup-market-history-demands"
+            }
           ]
         }
       },
@@ -471,30 +545,297 @@
         "id": "structure-orders",
         "exportName": "marketStructureResource",
         "subjectKind": "character",
-        "eligibility": { "kind": "current-owned-character" },
+        "eligibility": {
+          "kind": "current-owned-character"
+        },
         "scheduled": false,
         "operationId": "market-structure-orders",
         "materializationIntervalSeconds": 300,
         "persistence": {
           "projection": [],
           "materialization": [
-            { "operationId": "begin-structure-observation" },
-            { "operationId": "stage-structure-page" },
-            { "operationId": "publish-structure-observation" },
-            { "operationId": "cleanup-structure-observations" },
-            { "operationId": "cleanup-structure-demands" }
+            {
+              "operationId": "begin-structure-observation"
+            },
+            {
+              "operationId": "stage-structure-page"
+            },
+            {
+              "operationId": "publish-structure-observation"
+            },
+            {
+              "operationId": "cleanup-structure-observations"
+            },
+            {
+              "operationId": "cleanup-structure-demands"
+            }
           ]
         }
       }
     ],
     "esiOperations": [
-      { "id": "market-region-orders", "exportName": "regionOrdersOperation" },
-      { "id": "market-region-types", "exportName": "regionTypesOperation" },
-      { "id": "market-region-history", "exportName": "regionHistoryOperation" },
-      { "id": "market-reference-prices", "exportName": "referencePricesOperation" },
-      { "id": "market-structure-orders", "exportName": "structureOrdersOperation" }
+      {
+        "id": "market-region-orders",
+        "exportName": "regionOrdersOperation"
+      },
+      {
+        "id": "market-region-types",
+        "exportName": "regionTypesOperation"
+      },
+      {
+        "id": "market-region-history",
+        "exportName": "regionHistoryOperation"
+      },
+      {
+        "id": "market-reference-prices",
+        "exportName": "referencePricesOperation"
+      },
+      {
+        "id": "market-structure-orders",
+        "exportName": "structureOrdersOperation"
+      }
     ],
-    "activityProviders": []
+    "activityProviders": [],
+    "graphql": [
+      {
+        "id": "public-market",
+        "exportName": "marketGraphQL",
+        "rootField": "market",
+        "types": [
+          "MarketRead",
+          "MarketCatalogueRevision",
+          "MarketCatalogueType",
+          "MarketCatalogueTypeResult",
+          "MarketCatalogueGroupPage",
+          "MarketProfile",
+          "MarketBook",
+          "MarketReplacement",
+          "MarketObservation",
+          "MarketOrderSide",
+          "MarketOrderPage",
+          "MarketOrder",
+          "MarketHistory",
+          "MarketHistoryDay",
+          "MarketReferencePrices",
+          "MarketReferencePrice"
+        ],
+        "reads": [
+          {
+            "id": "root",
+            "field": "Query.market",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": []
+          },
+          {
+            "id": "catalogue-revision",
+            "field": "MarketRead.catalogueRevision",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 1,
+            "persistenceOperations": [],
+            "coreDataProducts": ["market-catalogue"]
+          },
+          {
+            "id": "catalogue-type",
+            "field": "MarketRead.catalogueType",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 1,
+            "persistenceOperations": [],
+            "coreDataProducts": ["market-catalogue"]
+          },
+          {
+            "id": "catalogue-group-types",
+            "field": "MarketRead.catalogueGroupTypes",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 100,
+            "persistenceOperations": [],
+            "coreDataProducts": ["market-catalogue"],
+            "list": {
+              "defaultSize": 100,
+              "maximum": 100,
+              "argument": "first"
+            }
+          },
+          {
+            "id": "profiles",
+            "field": "MarketRead.profiles",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 1,
+            "persistenceOperations": [
+              {
+                "operationId": "list-market-profiles"
+              }
+            ],
+            "coreDataProducts": [],
+            "list": {
+              "defaultSize": 4,
+              "maximum": 4
+            }
+          },
+          {
+            "id": "book",
+            "field": "MarketRead.book",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 3,
+            "persistenceOperations": [
+              {
+                "operationId": "list-market-profiles"
+              },
+              {
+                "operationId": "read-market-observation"
+              },
+              {
+                "operationId": "read-market-replacement-status"
+              }
+            ],
+            "coreDataProducts": []
+          },
+          {
+            "id": "orders",
+            "field": "MarketRead.orders",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 4,
+            "persistenceOperations": [
+              {
+                "operationId": "list-market-profiles"
+              },
+              {
+                "operationId": "read-market-observation"
+              },
+              {
+                "operationId": "read-market-order-rows"
+              }
+            ],
+            "coreDataProducts": ["static-location-labels"],
+            "list": {
+              "defaultSize": 100,
+              "maximum": 100,
+              "argument": "first"
+            }
+          },
+          {
+            "id": "history",
+            "field": "MarketRead.history",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 365,
+            "persistenceOperations": [
+              {
+                "operationId": "list-market-profiles"
+              },
+              {
+                "operationId": "read-market-history"
+              }
+            ],
+            "coreDataProducts": []
+          },
+          {
+            "id": "reference-prices",
+            "field": "MarketRead.referencePrices",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 1,
+            "persistenceOperations": [
+              {
+                "operationId": "read-market-reference-prices"
+              }
+            ],
+            "coreDataProducts": [],
+            "list": {
+              "defaultSize": 100,
+              "maximum": 100,
+              "argument": "typeIds"
+            }
+          },
+          {
+            "id": "catalogue-items",
+            "field": "MarketCatalogueGroupPage.items",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "list": {
+              "defaultSize": 100,
+              "maximum": 100
+            }
+          },
+          {
+            "id": "profile-stations",
+            "field": "MarketProfile.stationIds",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "list": {
+              "defaultSize": 100,
+              "maximum": 100
+            }
+          },
+          {
+            "id": "profile-watched-types",
+            "field": "MarketProfile.watchedTypeIds",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "list": {
+              "defaultSize": 16,
+              "maximum": 16
+            }
+          },
+          {
+            "id": "order-rows",
+            "field": "MarketOrderPage.rows",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "list": {
+              "defaultSize": 100,
+              "maximum": 100
+            }
+          },
+          {
+            "id": "history-days",
+            "field": "MarketHistory.days",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "list": {
+              "defaultSize": 365,
+              "maximum": 365
+            }
+          },
+          {
+            "id": "reference-rows",
+            "field": "MarketReferencePrices.rows",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "list": {
+              "defaultSize": 100,
+              "maximum": 100
+            }
+          }
+        ]
+      }
+    ]
   },
   "nuxt": {
     "package": "@eve-space/market-nuxt",

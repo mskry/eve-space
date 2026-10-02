@@ -1029,7 +1029,7 @@ function validateResourceEligibility(
   }
 }
 
-function validateCoreDataProducts(
+export function validateCoreDataProducts(
   contribution: { readonly coreDataProducts?: unknown },
   identity: string,
   context: CoreDataContributionContext,

@@ -11,6 +11,7 @@ import { PiniaColadaRetry } from '@pinia/colada-plugin-retry'
 import { createPinia, disposePinia } from 'pinia'
 import { createApp, h, nextTick, ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import {
   applyVerifiedQueryIdentity,
   awaitQueryPersistenceRestoration,
@@ -52,6 +53,8 @@ import type { CacheAdmissionContext } from '../../app/queries/auth'
 import { invalidateRemovedCharacter, prefetchProtectedQuery } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { ApiQueryError } from '../../app/utils/query-error'
+import { ownedAssetsGraphQLQuery } from '../../app/queries/graphql'
+import { queryServer } from '../support/query-server'
 
 type OrganizationDataReader = () => { name: string } | undefined
 
@@ -87,6 +90,50 @@ afterEach(() => {
   vi.clearAllTimers()
   vi.useRealTimers()
   vi.restoreAllMocks()
+})
+
+describe('GraphQL private query lifecycle', () => {
+  it('purges retained partitions on a GraphQL field authentication denial and preserves public data', async () => {
+    const storage = new MemoryQueryPersistenceStorage(envelopeWithPrivatePartitions())
+    const notifications = new TestNotifications()
+    const runtime = createRuntime(storage, notifications, () => NOW)
+    await readyRuntime(runtime)
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
+      admission(),
+    )
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Character' })
+    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toBeDefined()
+    const result = {
+      data: { ownedCharacter: null },
+      errors: [{ message: 'Log in.', extensions: { code: 'AUTH_REQUIRED', status: 401 } }],
+    }
+    queryServer.use(http.post('http://localhost/api/graphql', () => HttpResponse.json(result)))
+    const options = ownedAssetsGraphQLQuery(
+      {
+        baseUrl: 'http://localhost',
+        queryCache: runtime.queryCache,
+        ownerUserId: 'user-1',
+        characterId: '7',
+        admissionKey: 'character-revision-1',
+        canRun: () => true,
+      },
+      { characterId: '7', first: 25 },
+    )
+
+    const query = vi.fn(options.query)
+    const entry = runtime.queryCache.ensure({ ...options, query })
+    await runtime.queryCache.fetch(entry)
+    expect(await query.mock.results[0]?.value).toEqual(result)
+    expect(runtime.queryCache.getQueryData(options.key)).toBeUndefined()
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
+    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toBeUndefined()
+    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Public' })
+    await vi.waitFor(() => {
+      expect(storage.snapshot()).toMatchObject({ characters: {}, organizations: {} })
+      expect(notifications.published).toEqual([{ generation: 1, scope: { kind: 'all' } }])
+    })
+    runtime.dispose()
+  })
 })
 
 describe('query persistence runtime', () => {

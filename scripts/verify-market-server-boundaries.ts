@@ -5,15 +5,32 @@ import { findDependencyCycles } from './dependency-cycles.js'
 import { typescriptModuleSpecifiers } from './typescript-module-specifiers.js'
 
 const directory = new URL('../features/market/server/src/', import.meta.url)
-type MarketTier = 'route' | 'collection' | 'entry' | 'representation' | 'declaration' | 'resource'
+type MarketTier =
+  | 'route'
+  | 'graphql'
+  | 'read'
+  | 'collection'
+  | 'entry'
+  | 'representation'
+  | 'declaration'
+  | 'resource'
 
 const tiers = {
   'book-routes': 'route',
+  'book-reads': 'read',
   'catalogue-routes': 'route',
+  'catalogue-reads': 'read',
   'collect-orders': 'collection',
   'collect-structure-orders': 'collection',
   'history-resource': 'resource',
   'history-routes': 'route',
+  'history-reads': 'read',
+  graphql: 'graphql',
+  'graphql-catalogue': 'graphql',
+  'graphql-book': 'graphql',
+  'graphql-statistics': 'graphql',
+  'order-cursor': 'representation',
+  'read-input': 'representation',
   index: 'entry',
   'market-bounds': 'representation',
   'market-derived': 'representation',
@@ -30,6 +47,7 @@ const tiers = {
   'quote-routes': 'route',
   profiles: 'representation',
   'reference-price-routes': 'route',
+  'reference-price-reads': 'read',
   'reference-prices-resource': 'resource',
   'structure-resource': 'resource',
   'structure-routes': 'route',
@@ -38,10 +56,12 @@ const tiersByModule = new Map<string, MarketTier>(Object.entries(tiers))
 const allowed = {
   collection: ['representation', 'collection'],
   declaration: ['representation'],
-  entry: ['representation', 'declaration', 'collection', 'resource', 'route'],
+  entry: ['representation', 'declaration', 'collection', 'resource', 'read', 'route', 'graphql'],
+  graphql: ['representation', 'declaration', 'read', 'graphql'],
   representation: ['representation'],
   resource: ['representation', 'declaration', 'collection'],
-  route: ['representation', 'declaration', 'collection'],
+  route: ['representation', 'declaration', 'collection', 'read'],
+  read: ['representation', 'declaration', 'read'],
 } satisfies Record<MarketTier, readonly string[]>
 
 const sources = await Promise.all(

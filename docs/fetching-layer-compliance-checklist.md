@@ -6,7 +6,7 @@ Use this checklist to review an end-to-end fetching path: Vue consumer, query de
 
 1. Record the review scope, commit, and relevant working-tree changes. Read root and applicable scoped `AGENTS.md` files. Preserve existing work.
 2. Inventory the request paths in scope using the table below. Include prefetch, imperative cache fetches, recovery hooks, and mutations, not only `useQuery` calls.
-3. Trace each path through the final route mount in `api/src/index.ts`. Read the implementation and tests supporting each applicable check.
+3. Trace each path through the final route mount in `api/src/index.ts`. For GraphQL, continue through the selected root and nested read bindings, each field's declared capabilities and subject admission, and the registered source or persistence read. Read the implementation and tests supporting each applicable check.
 4. Record each check as `PASS`, `FAIL`, `BLOCKED`, or `N/A`. A pass requires concrete evidence; `N/A` requires a reason. Missing runtime evidence is blocked, not passed. An unchecked box means unreviewed.
 5. Run the applicable checks in the verification section. A static verifier passing does not prove lifecycle behavior.
 6. Produce the report at the end of this document. When asked only to audit, report defects and proposed fixes; implementation requires a task that authorizes changes.
@@ -23,6 +23,14 @@ Create one row per distinct request and access policy; split rows when execution
 | --------------------------- | ------------------------------ | -------------------------------- | -------------------- | -------------------------- | ------------------------------------------------- | --------------------------------------- |
 | `path:line`                 | Subject, page, filters         | Mount, event, prefetch, recovery | Method and full path | Middleware + subject check | Registered representation / operation ID, or none | Policy reference and partition, or none |
 
+For GraphQL, split inventory rows by selected field/access strategy even when all requests use
+`/api/graphql`. Include introspection, generic viewer execution, curated generated operations,
+and direct client examples. Record operation/schema identity and result-changing variables,
+including explicit subjects, revisions, observations and cursors. A public endpoint mount or
+visible schema does not establish that every selected field is public. Trace execution and
+retained-result presentation separately; memory-only GraphiQL is distinct from an application
+query-cache consumer.
+
 ## 1. Responsibility and module interfaces
 
 - [ ] **MOD-01** — Browser feature code requests application DTOs through the established query/client infrastructure. EVE token resolution, refresh, encryption, ESI caching, and upstream coordination stay server-owned.
@@ -36,10 +44,10 @@ Starting points: `api/src/esi-gateway/AGENTS.md`, `api/src/esi-gateway/`, `app/q
 
 ## 2. Request authorization and SSR
 
-- [ ] **AUTH-01** — Every request's access classification comes from its final Hono route mount and middleware, not from the publicity of the underlying ESI endpoint or a feature-router comment.
+- [ ] **AUTH-01** — Every request's access classification comes from its final Hono route mount and middleware, not from the publicity of the underlying ESI endpoint or a feature-router comment. For GraphQL, inspect the mounted endpoint plus every selected root/nested read's admission strategy; a mixed operation has the most restrictive selected privacy classification, including skipped private selections for cache policy.
 - [ ] **AUTH-02** — Protected SSR-capable queries are either disabled during SSR with the applicable client/authentication/ownership gate, or intentionally forward only the incoming cookie. `credentials: 'include'` alone is not cookie forwarding on the server.
 - [ ] **AUTH-03** — Prefetch, recovery, reconnect, and imperative fetch paths obey the same access requirements as mounted queries. A browser-event mutation that cannot execute during SSR is classified accordingly.
-- [ ] **AUTH-04** — Character routes validate the explicit character ID and load ownership through the established middleware before tokens or private resources are read. Character IDs and SDK principals are not ownership evidence.
+- [ ] **AUTH-04** — Character routes validate the explicit character ID and load ownership through the established middleware before tokens or private resources are read. GraphQL uses the shared transport-independent admission owner for each exact subject, then binds nested reads and reuse to the admitted owner, lifecycle and authorization revision with before-reuse and before-release checks. Test aliases, mixed subjects, scope loss and authority changes during asynchronous work. Character IDs, cursor tokens and SDK principals are not ownership evidence.
 - [ ] **AUTH-05** — Organization requests enforce current organization version, compliance, audience, and required permission before private reads. Deployment-administrator authority does not substitute for organization authority.
 - [ ] **AUTH-06** — Query execution and cached-data presentation are both gated. A disabled query or a route redirect alone does not prove that retained private data cannot render.
 - [ ] **AUTH-07** — Browser requests use the established credentialed application client. CORS remains restricted to `WEB_ORIGIN`; secrets and EVE tokens never enter browser payloads, persistence, query keys, or diagnostics.
@@ -51,11 +59,20 @@ Starting points: `api/src/index.ts`, `api/src/middleware/`, `app/queries/protect
 - [ ] **QUERY-01** — Keys distinguish every input that changes the result, including subject, pagination cursor/page, filters, and applicable organization version. Set-like inputs are normalized without changing order-sensitive inputs.
 - [ ] **QUERY-02** — Private data is owner-isolated through verified partition binding and lifecycle clearing, with owner-bearing keys where the design uses them. A particular key tuple shape is not required; equivalent isolation needs evidence.
 - [ ] **QUERY-03** — Changing character, owner, or organization context cannot expose the prior context's result through placeholder data, computed state, component-local copies, or an obsolete request completion.
-- [ ] **QUERY-04** — ESI wire schemas remain SDK-owned, application request validation remains Hono-owned, and application response DTOs remain inferred through `AppType`. Browser RPC typing is not described as runtime response validation.
-- [ ] **QUERY-05** — Chained Hono route definitions preserve inference; validation uses the repository wrapper and typed failure outcomes retain explicit JSON statuses.
+- [ ] **QUERY-04** — ESI wire schemas remain SDK-owned. Hono inputs use the application validation wrapper and REST response DTOs remain inferred through `AppType`. GraphQL owns its intentional application schema and runtime input/selection validation; curated operation/result/variable types are generated from the deterministic composed schema with strict lossless scalar mappings and drift checks. Domain representations retain their existing owners. Neither RPC nor generated operation typing is browser runtime response validation; arbitrary viewer edits are server-validated.
+- [ ] **QUERY-05** — Chained Hono route definitions preserve inference; validation uses the repository wrapper and typed failure outcomes retain explicit JSON statuses. The mounted GraphQL adapter distinguishes host rejection, HTTP 400 parse/validation/budget errors, and HTTP 200 executed field errors/partial data. Clients must recognize authorization denials in field errors, rather than relying on HTTP status alone.
 - [ ] **QUERY-06** — Mutations invalidate the affected resource and dependent summaries. Authorization-changing mutations also use the private lifecycle invalidation interface. Optimistic state cannot masquerade as a newly validated persistent snapshot.
 
 Starting points: `app/queries/query-keys.ts`, `app/queries/query-cache.ts`, feature query files, `api/src/http/validation.ts`, `packages/platform-module-nuxt/src/runtime/app/composables/usePlatformProtectedQuery.ts`.
+
+GraphQL starting points: `app/graphql/`, `app/queries/graphql.ts`,
+`api/src/graphql/routes.ts`, `api/src/graphql/core-character-reads.ts`,
+`api/src/graphql/request-execution.ts`, installed contribution inventories, and each
+contribution's manifest and reusable reads. Verify bounded operation-wide selection/source cost,
+backend work, concurrency, serialization and cancellation, as well as per-field page bounds.
+Public GET caching requires every selected backend freshness verdict; private/mixed, POST,
+introspection, error, stale and incomplete results use `no-store`. Selecting a read must not
+create collection intent or acquire a write/scheduling capability.
 
 ## 4. Freshness, retention, and stale presentation
 

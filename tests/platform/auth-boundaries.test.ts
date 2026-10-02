@@ -9,9 +9,11 @@ import {
 describe('authentication module boundaries', () => {
   test('declares every focused authentication module', () => {
     expect(declaredAuthModules).toStrictEqual([
+      'admitted-read',
       'character-disclosure-store',
       'character-lifecycle',
       'character-lock',
+      'character-selection',
       'character-token-store',
       'character-transfer',
       'character-transfer-approvals',
@@ -19,6 +21,9 @@ describe('authentication module boundaries', () => {
       'oauth-state-store',
       'pending-character-token-store',
       'pending-recovery-state',
+      'read-admission',
+      'read-policy',
+      'read-work',
       'routes',
       'security',
       'session-store',
@@ -28,6 +33,19 @@ describe('authentication module boundaries', () => {
       'tokens',
     ])
   })
+
+  test.each(['admitted-read', 'read-admission', 'read-policy', 'read-work'])(
+    'rejects transport imports from %s',
+    (module) => {
+      expect(
+        authImportViolations(authSources({ [module]: "import { Context } from 'hono'" })),
+      ).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('cannot import transport dependency hono'),
+        ]),
+      )
+    },
+  )
 
   test.each([
     ['sso-errors', 'policy', 'security', 'primitive'],

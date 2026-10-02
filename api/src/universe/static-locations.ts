@@ -1,3 +1,4 @@
+import { waitForRead } from '../read-wait.js'
 import { performance } from 'node:perf_hooks'
 import {
   staticLocationCacheState,
@@ -18,11 +19,19 @@ export interface StaticLocationRequest {
   type: 'station' | 'solar_system'
 }
 
-export async function getStaticLocations(locations: readonly StaticLocationRequest[]) {
+export const getStaticLocations = async (
+  locations: readonly StaticLocationRequest[],
+  options: { readonly signal?: AbortSignal } = {},
+) => {
+  options.signal?.throwIfAborted()
   if (locations.length === 0) {
     return []
   }
-  const snapshot = await getStaticLocationSnapshot(staticLocationCacheState)
+  const snapshot = await waitForRead(
+    getStaticLocationSnapshot(staticLocationCacheState),
+    options.signal,
+  )
+  options.signal?.throwIfAborted()
   return locations.map((location) => locationResult(snapshot, location))
 }
 

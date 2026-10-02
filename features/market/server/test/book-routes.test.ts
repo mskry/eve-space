@@ -1,6 +1,7 @@
 import { testClient } from 'hono/testing'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { marketBookRoutes } from '../src/book-routes.js'
+import { readMarketOrderPage } from '../src/book-reads.js'
 
 const profileId = '00000000-0000-4000-8000-000000000001'
 const observationId = '00000000-0000-4000-8000-000000000002'
@@ -175,6 +176,71 @@ test('pins both sides to one complete observation with source times and safe lab
   )
   expect(JSON.stringify(body)).not.toContain('is_buy_order')
   expect(JSON.stringify(body)).not.toContain('volume_remain')
+})
+
+test('shares bounded public location and expiry mapping between order reads and HTTP', async () => {
+  const locationId = 1000000000001
+  persistence.readMarketOrderRows.mockResolvedValue({
+    rows: [
+      {
+        orderId: 1,
+        side: 'sell',
+        price: '6.42',
+        volumeRemain: 10,
+        locationId,
+        solarSystemId: 30000142,
+        issuedAt: now.toISOString(),
+        durationDays: 90,
+        minimumVolume: 1,
+        range: 'station',
+      },
+    ],
+    hasMore: false,
+  })
+  coreData.staticLocationLabels.mockResolvedValue({
+    rows: [
+      {
+        locationId: 30000142,
+        name: 'Jita',
+        kind: 'solar_system',
+        solarSystemId: 30000142,
+        solarSystemName: 'Jita',
+        solarSystemSecurityStatus: 0.945913,
+      },
+    ],
+    complete: false,
+    revision: { buildNumber: 1, ingestVersion: 6, ingestedAt: now.toISOString() },
+  })
+  const shared = await readMarketOrderPage(persistence, coreData, profileId, {
+    observationId,
+    typeId: 34,
+    side: 'sell',
+    limit: 100,
+    cursorPrice: null,
+    cursorIssuedAt: null,
+    cursorOrderId: null,
+  })
+  const response = await app.request(
+    `/profiles/${profileId}/types/34/observations/${observationId}/orders?side=sell`,
+  )
+  const body = await response.json()
+  expect(response.status).toBe(200)
+  expect(body.rows).toEqual(shared?.rows)
+  expect(body.rows).toMatchObject([
+    {
+      locationId,
+      locationName: `Jita · Location ${locationId}`,
+      solarSystemSecurityStatus: 0.945913,
+      expiryAt: new Date(Date.parse(now.toISOString()) + 90 * 86_400_000).toISOString(),
+    },
+  ])
+  expect(coreData.staticLocationLabels).toHaveBeenCalledTimes(2)
+  expect(coreData.staticLocationLabels).toHaveBeenNthCalledWith(1, {
+    locationIds: [locationId, 30000142],
+  })
+  expect(coreData.staticLocationLabels).toHaveBeenNthCalledWith(2, {
+    locationIds: [locationId, 30000142],
+  })
 })
 
 test('distinguishes uncollected, observed-empty, and unavailable identities', async () => {

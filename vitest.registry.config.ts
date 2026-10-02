@@ -22,6 +22,8 @@ export default defineConfig({
     environment: 'node',
     include: [
       'tests/platform/auth-boundaries.test.ts',
+      'tests/platform/graphql-boundaries.test.ts',
+      'tests/platform/graphql-contributions.test.ts',
       'tests/platform/character-boundaries.test.ts',
       'tests/platform/core-data-boundaries.test.ts',
       'tests/platform/esi-gateway-boundaries.test.ts',

@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => {
     encryptTokens: vi.fn(),
     enqueueInstalledResourceLifecyclePurges: vi.fn(),
     findCharacterCacheAuthorizationForLifecycle: vi.fn(),
+    findOwnedCharacter: vi.fn(),
     findCharacterTokenForLifecycle: vi.fn(),
     findPendingCharacterToken: vi.fn(),
     invalidateCharacterAuthoritySourcesInTransaction: vi.fn(),
@@ -45,6 +46,9 @@ vi.mock('../../src/auth/character-token-store.js', () => ({
   findCharacterTokenForLifecycle: mocks.findCharacterTokenForLifecycle,
   updateCharacterToken: mocks.updateCharacterToken,
   withCharacterTokenLifecycleLock: mocks.withCharacterTokenLifecycleLock,
+}))
+vi.mock('../../src/auth/character-lifecycle.js', () => ({
+  findOwnedCharacter: mocks.findOwnedCharacter,
 }))
 
 vi.mock('../../src/auth/pending-character-token-store.js', () => ({
@@ -99,6 +103,9 @@ import {
   SsoTransportError,
 } from '../../src/auth/sso-errors.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/token-errors.js'
+import { admitOwnedRead } from '../../src/auth/read-admission.js'
+import type { verifyAccessToken } from '../../src/auth/sso.js'
+import { createDeferred } from '../support/deferred.js'
 
 const characterId = 1_404_328_063
 const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
@@ -218,6 +225,61 @@ beforeEach(() => {
 })
 
 describe('token refresh', () => {
+  test('owned admission schedules pending recovery and stays denied until verification promotes it', async () => {
+    const character = {
+      characterId,
+      subjectLifecycleId,
+      name: 'Test',
+      corporationId: 1,
+      allianceId: null,
+      isMain: true,
+    }
+    const session = { userId, mainCharacter: character }
+    const verification = createDeferred<Awaited<ReturnType<typeof verifyAccessToken>>>()
+    pendingTokens.set(characterId, {
+      characterId,
+      userId,
+      subjectLifecycleId,
+      baseTokenVersion: 1,
+      attemptId: '12892e04-c424-446d-abef-19bef4d6ef5b',
+      encryptedTokens: 'enc:pending-access:pending-refresh',
+      accessTokenExpiresAt: new Date(Date.now() + 120_000),
+    })
+    mocks.findOwnedCharacter.mockResolvedValue(character)
+    mocks.findCharacterCacheAuthorizationForLifecycle.mockImplementation(async () => ({
+      scopes: [scope],
+      tokenVersion: pendingTokens.has(characterId) ? 1 : 2,
+      pendingAttemptId: pendingTokens.get(characterId)?.attemptId ?? null,
+    }))
+    mocks.verifyAccessToken.mockImplementation(() => verification.promise)
+    expect(await admitOwnedRead(session, characterId, scope)).toMatchObject({
+      admitted: false,
+      status: 503,
+    })
+    await vi.waitFor(() =>
+      expect(mocks.verifyAccessToken).toHaveBeenCalledExactlyOnceWith('pending-access'),
+    )
+    expect(await admitOwnedRead(session, characterId, scope)).toMatchObject({
+      admitted: false,
+      status: 503,
+    })
+    expect(pendingTokens.has(characterId)).toBe(true)
+    expect(mocks.updateCharacterToken).not.toHaveBeenCalled()
+    verification.resolve({
+      characterId,
+      characterName: 'Test',
+      ownerHash: 'test-owner',
+      scopes: [scope],
+    })
+    await vi.waitFor(() => expect(pendingTokens.has(characterId)).toBe(false))
+    expect(await admitOwnedRead(session, characterId, scope)).toMatchObject({
+      admitted: true,
+      binding: { authorizationRevision: 2 },
+    })
+    expect(mocks.verifyAccessToken).toHaveBeenCalledOnce()
+    expect(mocks.updateCharacterToken).toHaveBeenCalledOnce()
+    expect(mocks.refreshAccessToken).not.toHaveBeenCalled()
+  })
   test('reads direct and lifecycle cache authorization without token material', async () => {
     await expect(getCharacterCacheAuthorization(characterId, scope)).resolves.toStrictEqual({
       scopes: [scope],

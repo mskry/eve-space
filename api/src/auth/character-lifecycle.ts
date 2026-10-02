@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, lte, or } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, isNull, lte, or } from 'drizzle-orm'
 import { db, type DatabaseTransaction } from '../db/client.js'
 import { characters, eveTokens, platformSubjectLifecycles, users } from '../db/schema.js'
 import { appendDomainEvent } from '../domain-events/store.js'
@@ -676,4 +676,30 @@ async function lockUserRow(transaction: DatabaseTransaction, userId: string) {
 
 function ownedCharacterFilter(userId: string, characterId: number) {
   return and(eq(characters.userId, userId), eq(characters.characterId, characterId))
+}
+
+export const pageUserCharacterIdentities = async (
+  userId: string,
+  first: number,
+  after: number = 0,
+) => {
+  if (
+    !Number.isSafeInteger(first) ||
+    first < 1 ||
+    first > 50 ||
+    !Number.isSafeInteger(after) ||
+    after < 0
+  )
+    throw new Error('Invalid character page')
+  const rows = await db
+    .select({
+      characterId: characters.characterId,
+      name: characters.name,
+      isMain: characters.isMain,
+    })
+    .from(characters)
+    .where(and(eq(characters.userId, userId), gt(characters.characterId, after)))
+    .orderBy(asc(characters.characterId))
+    .limit(first + 1)
+  return { items: rows.slice(0, first), hasNextPage: rows.length > first }
 }

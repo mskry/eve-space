@@ -8,6 +8,7 @@ const publicModules = new Set([
   'activity',
   'compiler',
   'esi',
+  'graphql',
   'identifiers',
   'installed',
   'manifest',
@@ -19,12 +20,14 @@ const publicModules = new Set([
   'reviewer-directory',
   'server',
 ])
-const internalModules = new Set([...publicModules, 'validation'])
+const internalModules = new Set([...publicModules, 'validation', 'graphql-validation'])
 const allowedInternalImports = new Map(
   Object.entries({
     activity: new Set(['installed', 'persistence', 'server']),
     compiler: new Set([
       'activity',
+      'graphql',
+      'graphql-validation',
       'manifest',
       'nuxt',
       'permissions',
@@ -33,10 +36,20 @@ const allowedInternalImports = new Map(
       'server',
       'validation',
     ]),
+    graphql: new Set(['persistence', 'server']),
+    'graphql-validation': new Set(['graphql', 'manifest', 'identifiers', 'server', 'validation']),
     esi: new Set(),
     identifiers: new Set(),
     installed: new Set(['nuxt', 'permissions', 'server']),
-    manifest: new Set(['activity', 'nuxt', 'permissions', 'persistence', 'resources', 'server']),
+    manifest: new Set([
+      'graphql',
+      'activity',
+      'nuxt',
+      'permissions',
+      'persistence',
+      'resources',
+      'server',
+    ]),
     nuxt: new Set(['server']),
     permissions: new Set(['server']),
     persistence: new Set(),
@@ -45,6 +58,7 @@ const allowedInternalImports = new Map(
     'reviewer-directory': new Set(['server']),
     server: new Set(),
     validation: new Set([
+      'graphql',
       'identifiers',
       'manifest',
       'nuxt',
@@ -82,6 +96,7 @@ const ignoredDirectories = new Set([
 const featureServerModules = new Set([
   'activity',
   'esi',
+  'graphql',
   'identifiers',
   'persistence',
   'resources',
@@ -91,6 +106,7 @@ const platformNuxtModules = new Set(['nuxt', 'server'])
 const hostApiModules = new Set([
   'activity',
   'esi',
+  'graphql',
   'identifiers',
   'installed',
   'nuxt',
@@ -309,6 +325,7 @@ function testContractCallerRole(normalizedPath: string) {
   if (
     normalizedPath.startsWith('packages/platform-module-contract/test/') ||
     normalizedPath.startsWith('tests/fixtures/platform-module-registry-types/') ||
+    normalizedPath === 'tests/platform/graphql-contributions.test.ts' ||
     /^tests\/platform\/platform-module-(?:conformance|registry)\.test\.ts$/.test(normalizedPath)
   ) {
     return { allowed: publicModules, name: 'contract compiler tests' }
