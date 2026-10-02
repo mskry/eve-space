@@ -20,6 +20,7 @@ const paths = {
 <template>
   <button
     type="button"
+    data-sortable-no-drag
     class="market-quickbar-row-action"
     :class="{ 'market-quickbar-row-action--danger': tone === 'danger' }"
     :aria-label="label"

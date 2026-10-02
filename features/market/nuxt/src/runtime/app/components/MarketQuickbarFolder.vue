@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import MarketQuickbarItem from './MarketQuickbarItem.vue'
 import MarketQuickbarMoveTargets from './MarketQuickbarMoveTargets.vue'
 import MarketQuickbarRow from './MarketQuickbarRow.vue'
 import MarketQuickbarRowAction from './MarketQuickbarRowAction.vue'
@@ -62,17 +61,15 @@ const move = (destinationId: string) => {
 </script>
 
 <template>
-  <UiDraggableTreeItem
+  <UiSortableTreeItem
     v-slot="{ isExpanded }"
     class="market-quickbar-folder"
     :style="{ '--market-quickbar-indent': indent }"
-    :drag-data="{ kind: 'folder', id: node.id }"
-    drag-scope="market-quickbar"
-    :drop-id="node.id"
+    :item-key="key"
+    :disabled="editing"
     :level="level"
     :value="node"
     @select="selectFolder"
-    @drop="panel.drop"
   >
     <MarketQuickbarRow :actions-visible="moveOpen">
       <UiDisclosureChevron :open="isExpanded" />
@@ -123,13 +120,7 @@ const move = (destinationId: string) => {
       :targets="targets"
       @pick="move"
     />
-    <ul v-if="isExpanded" role="group" :aria-label="`${node.name} contents`">
-      <template v-for="child in node.children" :key="marketQuickbarNodeKey(child)">
-        <MarketQuickbarFolder v-if="child.kind === 'folder'" :level="level + 1" :node="child" />
-        <MarketQuickbarItem v-else :folder-id="node.id" :level="level + 1" :node="child" />
-      </template>
-    </ul>
-  </UiDraggableTreeItem>
+  </UiSortableTreeItem>
 </template>
 
 <style scoped>

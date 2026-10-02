@@ -1000,6 +1000,7 @@ watch(
 .market-catalogue-page__market-select select {
   min-width: 0;
   max-width: 100%;
+  padding-inline-end: 1.75rem;
   border: 0;
   outline: 0;
   background: transparent;

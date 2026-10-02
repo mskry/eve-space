@@ -22,6 +22,7 @@ import {
 } from './market-quickbar'
 import { exportMarketQuickbarText, importMarketQuickbarText } from './market-quickbar-transfer'
 import { buildMarketQuickbarTree, type MarketQuickbarNode } from './market-quickbar-tree'
+import { sortMarketQuickbar } from './market-quickbar-sort'
 
 type QuickbarRejection =
   | 'catalogue-unavailable'
@@ -215,6 +216,10 @@ const createQuickbarChanges = (
     expanded.value = []
     return apply(emptyMarketQuickbar())
   }
+  const canSort = (key: string, parentKey: string | null, beforeKey: string | null) =>
+    sortMarketQuickbar(state.value, key, parentKey, beforeKey) !== state.value
+  const sort = (key: string, parentKey: string | null, beforeKey: string | null) =>
+    apply(sortMarketQuickbar(state.value, key, parentKey, beforeKey))
   return {
     addItem,
     removeItem,
@@ -228,6 +233,8 @@ const createQuickbarChanges = (
     dropOnFolder,
     toggleFolder,
     clear,
+    canSort,
+    sort,
   }
 }
 

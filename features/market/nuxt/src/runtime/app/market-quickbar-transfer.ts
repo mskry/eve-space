@@ -3,6 +3,7 @@ import {
   addMarketQuickbarItem,
   createMarketQuickbarFolder,
   emptyMarketQuickbar,
+  marketQuickbarChildKeys,
   maxMarketQuickbarFolders,
   maxMarketQuickbarItems,
   rootQuickbarFolderId,
@@ -12,36 +13,36 @@ import {
 const validLineName = (name: string): boolean =>
   Boolean(name.trim()) && !name.includes('\n') && !name.includes('\r')
 
+const exportTypeLine = (name: string | undefined, depth: number): string | null => {
+  if (!name || !validLineName(name)) return null
+  if (depth === 0 && (name.startsWith('+') || name.startsWith('-'))) return null
+  const prefix = depth ? `${'-'.repeat(depth)} ` : ''
+  return `${prefix}${name}`
+}
+
 export const exportMarketQuickbarText = (
   state: MarketQuickbarState,
   types: readonly MarketType[],
 ): string | null => {
   const names = new Map(types.map((type) => [type.id, type.name]))
   const lines: string[] = []
-  const writeFolder = (id: string, depth: number): boolean => {
-    const folder = state[id]
-    if (!folder || !validLineName(folder.name)) return false
-    lines.push(`${'+'.repeat(depth)} ${folder.name}`)
-    for (const childId of folder.childFolders) {
-      if (!writeFolder(childId, depth + 1)) return false
+  const writeNode = (key: string, depth: number): boolean => {
+    if (key.startsWith('folder:')) {
+      const folder = state[key.slice(7)]
+      if (!folder || !validLineName(folder.name)) return false
+      lines.push(`${'+'.repeat(depth + 1)} ${folder.name}`)
+      return marketQuickbarChildKeys(folder).every((child) => writeNode(child, depth + 1))
     }
-    for (const typeId of folder.types) {
-      const name = names.get(typeId)
-      if (!name || !validLineName(name)) return false
-      lines.push(`${'-'.repeat(depth)} ${name}`)
-    }
+    const line = exportTypeLine(names.get(Number(key.slice(5))), depth)
+    if (line === null) return false
+    lines.push(line)
     return true
   }
 
-  for (const id of state[rootQuickbarFolderId].childFolders) {
-    if (!writeFolder(id, 1)) return null
-  }
-  for (const typeId of state[rootQuickbarFolderId].types) {
-    const name = names.get(typeId)
-    if (!name || !validLineName(name) || name.startsWith('+') || name.startsWith('-')) return null
-    lines.push(name)
-  }
-  return lines.join('\n')
+  const complete = marketQuickbarChildKeys(state[rootQuickbarFolderId]).every((key) =>
+    writeNode(key, 0),
+  )
+  return complete ? lines.join('\n') : null
 }
 
 const typeIdsByName = (types: readonly MarketType[]): Map<string, number[]> => {
@@ -79,6 +80,7 @@ const appendImportedFolder = (
   const id = createFolderId()
   const updated = createMarketQuickbarFolder(state, id, line.name, parentId)
   if (updated === state) return null
+  updated[parentId]!.order = [...marketQuickbarChildKeys(state[parentId]!), `folder:${id}`]
   folderStack.length = line.depth
   folderStack.push(id)
   return updated
@@ -95,6 +97,8 @@ const appendImportedItem = (
   const typeId = typeIds?.[0]
   if (!parentId || typeIds?.length !== 1 || typeId === undefined) return null
   const updated = addMarketQuickbarItem(state, typeId, parentId)
+  if (updated !== state)
+    updated[parentId]!.order = [...marketQuickbarChildKeys(state[parentId]!), `item:${typeId}`]
   return updated === state ? null : updated
 }
 

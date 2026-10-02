@@ -1,5 +1,3 @@
-import type { MarketType } from './market-catalogue-types'
-
 interface MarketQuickbarJsonRecord {
   [key: string]: MarketQuickbarJsonValue
 }
@@ -21,6 +19,7 @@ interface MarketQuickbarFolder {
   name: string
   types: number[]
   childFolders: string[]
+  order?: string[]
 }
 
 export interface MarketQuickbarState {
@@ -51,6 +50,42 @@ const validTypeId = (value: MarketQuickbarJsonValue): value is number =>
 
 const validFolderName = (name: string): boolean =>
   Boolean(name.trim()) && name.length <= 80 && !name.includes('\n') && !name.includes('\r')
+
+export const marketQuickbarChildKeys = (folder: MarketQuickbarFolder): string[] => {
+  const keys = [
+    ...folder.childFolders.map((id) => `folder:${id}`),
+    ...folder.types.map((id) => `item:${id}`),
+  ]
+  const remaining = new Set(keys)
+  const ordered = (folder.order ?? []).filter((key) => remaining.delete(key))
+  return [...ordered, ...keys.filter((key) => remaining.has(key))]
+}
+
+const decodeFolderOrder = (
+  value: MarketQuickbarJsonValue | undefined,
+  folder: MarketQuickbarFolder,
+): string[] | null => {
+  if (value === undefined) return marketQuickbarChildKeys(folder)
+  if (!Array.isArray(value)) return null
+  const keys = new Set(marketQuickbarChildKeys(folder))
+  if (value.length !== keys.size) return null
+  const order: string[] = []
+  for (const key of value) {
+    if (typeof key !== 'string' || !keys.delete(key)) return null
+    order.push(key)
+  }
+  return order
+}
+
+const decodeOrderedFolder = (
+  value: MarketQuickbarJsonValue | undefined,
+  folder: MarketQuickbarFolder,
+): MarketQuickbarFolder | null => {
+  const order = decodeFolderOrder(value, folder)
+  if (!order) return null
+  if (value !== undefined) folder.order = order
+  return folder
+}
 
 export const parseMarketQuickbarIds = (raw: string | null): number[] => {
   if (raw === null) return []
@@ -91,7 +126,7 @@ const decodeFolder = (value: MarketQuickbarJsonValue): MarketQuickbarFolder | nu
     if (typeof id !== 'string' || !id || id.length > 64) return null
     childFolders.push(id)
   }
-  return { name: value.name, types, childFolders }
+  return decodeOrderedFolder(value.order, { name: value.name, types, childFolders })
 }
 
 const validHierarchy = (state: MarketQuickbarState): boolean => {
@@ -149,32 +184,31 @@ export const restoreMarketQuickbar = (raw: string | null): MarketQuickbarState =
   return decodeMarketQuickbar(value) ?? emptyMarketQuickbar()
 }
 
-const copyMarketQuickbar = (state: MarketQuickbarState): MarketQuickbarState => {
+export const copyMarketQuickbar = (state: MarketQuickbarState): MarketQuickbarState => {
   const copy = emptyMarketQuickbar()
   for (const [id, folder] of Object.entries(state)) {
-    copy[id] = {
+    const copied: MarketQuickbarFolder = {
       name: folder.name,
       types: [...folder.types],
       childFolders: [...folder.childFolders],
     }
+    if (folder.order) copied.order = marketQuickbarChildKeys(folder)
+    copy[id] = copied
   }
   return copy
+}
+
+const reconcileMarketQuickbarOrder = (state: MarketQuickbarState): MarketQuickbarState => {
+  for (const folder of Object.values(state)) {
+    if (folder.order) folder.order = marketQuickbarChildKeys(folder)
+  }
+  return state
 }
 
 export const marketQuickbarTypeIds = (state: MarketQuickbarState): number[] =>
   Object.values(state).flatMap((folder) => folder.types)
 
-export const marketQuickbarItems = (
-  state: MarketQuickbarState,
-  folderId: string,
-  typesById: ReadonlyMap<number, MarketType>,
-): MarketType[] =>
-  (state[folderId]?.types ?? [])
-    .map((id) => typesById.get(id))
-    .filter((item): item is MarketType => item !== undefined)
-    .toSorted((left, right) => left.name.localeCompare(right.name, 'en') || left.id - right.id)
-
-export const compareMarketQuickbarFolders = (
+const compareMarketQuickbarFolders = (
   state: MarketQuickbarState,
   left: string,
   right: string,
@@ -226,7 +260,7 @@ export const addMarketQuickbarItem = (
   if (parentFolderId(state, typeId, 'types')) return state
   const next = copyMarketQuickbar(state)
   next[destinationId]?.types.unshift(typeId)
-  return next
+  return reconcileMarketQuickbarOrder(next)
 }
 
 export const removeMarketQuickbarItem = (
@@ -238,7 +272,7 @@ export const removeMarketQuickbarItem = (
   const next = copyMarketQuickbar(state)
   const parent = next[parentId]
   if (parent) parent.types = parent.types.filter((id) => id !== typeId)
-  return next
+  return reconcileMarketQuickbarOrder(next)
 }
 
 export const moveMarketQuickbarItem = (
@@ -254,7 +288,7 @@ export const moveMarketQuickbarItem = (
   if (!source || !destination) return state
   source.types = source.types.filter((id) => id !== typeId)
   destination.types.unshift(typeId)
-  return next
+  return reconcileMarketQuickbarOrder(next)
 }
 
 export const createMarketQuickbarFolder = (
@@ -270,7 +304,7 @@ export const createMarketQuickbarFolder = (
   const next = copyMarketQuickbar(state)
   next[id] = { name: label, types: [], childFolders: [] }
   next[destinationId]?.childFolders.unshift(id)
-  return validHierarchy(next) ? next : state
+  return validHierarchy(next) ? reconcileMarketQuickbarOrder(next) : state
 }
 
 export const renameMarketQuickbarFolder = (
@@ -296,12 +330,15 @@ export const removeMarketQuickbarFolder = (
   const parent = next[parentId]
   const folder = next[id]
   if (!parent || !folder) return state
+  parent.order = marketQuickbarChildKeys(parent).flatMap((key) =>
+    key === `folder:${id}` ? marketQuickbarChildKeys(folder) : [key],
+  )
   parent.childFolders = parent.childFolders.flatMap((childId) =>
     childId === id ? folder.childFolders : [childId],
   )
   parent.types.push(...folder.types)
   delete next[id]
-  return next
+  return reconcileMarketQuickbarOrder(next)
 }
 
 const containsFolder = (state: MarketQuickbarState, ancestorId: string, candidateId: string) => {
@@ -337,7 +374,7 @@ export const moveMarketQuickbarFolder = (
   if (!source || !destination) return state
   source.childFolders = source.childFolders.filter((childId) => childId !== id)
   destination.childFolders.unshift(id)
-  return validHierarchy(next) ? next : state
+  return validHierarchy(next) ? reconcileMarketQuickbarOrder(next) : state
 }
 
 export const mergeMarketQuickbars = (
@@ -351,7 +388,13 @@ export const mergeMarketQuickbars = (
     if (next[id]) return current
     const types = folder.types.filter((typeId) => !pinned.has(typeId))
     types.forEach((typeId) => pinned.add(typeId))
-    next[id] = { name: folder.name, types, childFolders: [...folder.childFolders] }
+    const merged: MarketQuickbarFolder = {
+      name: folder.name,
+      types,
+      childFolders: [...folder.childFolders],
+    }
+    if (folder.order) merged.order = [...folder.order]
+    next[id] = merged
   }
   next[rootQuickbarFolderId].childFolders.push(...incoming[rootQuickbarFolderId].childFolders)
   for (const typeId of incoming[rootQuickbarFolderId].types) {
@@ -359,5 +402,9 @@ export const mergeMarketQuickbars = (
     next[rootQuickbarFolderId].types.push(typeId)
     pinned.add(typeId)
   }
-  return validHierarchy(next) ? next : current
+  next[rootQuickbarFolderId].order = [
+    ...marketQuickbarChildKeys(current[rootQuickbarFolderId]),
+    ...marketQuickbarChildKeys(incoming[rootQuickbarFolderId]),
+  ]
+  return validHierarchy(next) ? reconcileMarketQuickbarOrder(next) : current
 }
