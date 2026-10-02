@@ -123,3 +123,19 @@ describe('core-data capabilities', () => {
     expect(mocks.loadMarketStationRegionsProduct).toHaveBeenCalledWith({ stationIds: [60003760] })
   })
 })
+
+test('binds the host signal into both GraphQL core-data products', async () => {
+  const signal = new AbortController().signal
+  const reads = createCoreDataCapability(
+    ['market-catalogue', 'static-location-labels'],
+    'graphql-read',
+    signal,
+  )
+  await reads.marketCatalogue({ kind: 'revision' })
+  await reads.staticLocationLabels({ locationIds: [60003760] })
+  expect(mocks.loadMarketCatalogueProduct).toHaveBeenCalledWith({ kind: 'revision', signal })
+  expect(mocks.loadStaticLocationLabelsProduct).toHaveBeenCalledWith({
+    locationIds: [60003760],
+    signal,
+  })
+})

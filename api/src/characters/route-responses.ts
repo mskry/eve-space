@@ -2,117 +2,44 @@ import type { Context } from 'hono'
 import { env } from '../env.js'
 import type { EsiReadResultMetadata } from '../esi-gateway/feature-execution.js'
 import type { CharacterResourceFailure } from './resource-failure.js'
+import {
+  characterCooldownResponse,
+  characterReadAdmissionResponse,
+  characterReauthorizationUrlFor,
+  characterResourceResponse,
+  type OwnedCharacterResourceErrorOptions,
+} from './resource-response.js'
+import type { ReadAdmissionDenial } from '../auth/read-policy.js'
 
-interface OwnedCharacterResourceErrorOptions {
-  scopeMessage: string
-  unavailableMessage: string
-  returnTo?: string
-  cooldownMessage?: string
+export const ownedCharacterReadAdmissionError = (
+  context: Context,
+  denial: ReadAdmissionDenial,
+  characterId: number,
+  options: OwnedCharacterResourceErrorOptions,
+) => {
+  const result = characterReadAdmissionResponse(denial, characterId, env.EVE_CALLBACK_URL, options)
+  return context.json(result.body, result.status)
 }
 
-export function ownedCharacterResourceError(
+export const ownedCharacterResourceError = (
   context: Context,
   failure: CharacterResourceFailure,
   characterId: number,
   options: OwnedCharacterResourceErrorOptions,
-) {
-  switch (failure.kind) {
-    case 'cooldown':
-      return options.cooldownMessage
-        ? financeCooldown(context, failure.retryAfterSeconds, options.cooldownMessage)
-        : esiCooldown(context, failure)
-    case 'token-refresh-unavailable':
-      return tokenRefreshUnavailable(context)
-    case 'scope-required':
-      return scopeRequired(context, characterId, options.scopeMessage, {
-        requiredScope: failure.requiredScope,
-        returnTo: options.returnTo,
-      })
-    case 'authorization-rejected':
-      return reauthorizationRequired(context, characterId, {
-        requiredScope: failure.requiredScope,
-        returnTo: options.returnTo,
-      })
-    case 'unavailable':
-      return context.json({ code: 'ESI_UNAVAILABLE', message: options.unavailableMessage }, 502)
-  }
+) => {
+  const result = characterResourceResponse(failure, characterId, env.EVE_CALLBACK_URL, options)
+  if (failure.kind === 'cooldown') context.header('Retry-After', String(failure.retryAfterSeconds))
+  return context.json(result.body, result.status)
 }
 
-function tokenRefreshUnavailable(context: Context) {
-  return context.json(
-    {
-      code: 'EVE_TOKEN_REFRESH_UNAVAILABLE',
-      message: 'EVE token refresh is temporarily unavailable. Try again shortly.',
-    },
-    503,
-  )
-}
-
-export function esiCooldown(context: Context, error: { readonly retryAfterSeconds: number }) {
+export const esiCooldown = (context: Context, error: { readonly retryAfterSeconds: number }) => {
+  const result = characterCooldownResponse(error.retryAfterSeconds)
   context.header('Retry-After', String(error.retryAfterSeconds))
-  return context.json(
-    {
-      code: 'ESI_COOLDOWN',
-      message: 'EVE Online ESI is temporarily rate limited.',
-      retryAfterSeconds: error.retryAfterSeconds,
-    },
-    429,
-  )
+  return context.json(result.body, result.status)
 }
 
-export function toCharacterEsiResponse<Data extends EsiReadResultMetadata>(result: Data): Data {
-  return result
-}
+export const toCharacterEsiResponse = <Data extends EsiReadResultMetadata>(result: Data): Data =>
+  result
 
-export function characterReauthorizationUrl(characterId: number, returnTo?: string) {
-  const url = new URL(`/auth/eve/reauthorize/${characterId}`, env.EVE_CALLBACK_URL)
-  if (returnTo) {
-    url.searchParams.set('returnTo', returnTo)
-  }
-  return url.toString()
-}
-
-function scopeRequired(
-  context: Context,
-  characterId: number,
-  message: string,
-  options: { requiredScope: string; returnTo?: string },
-) {
-  return context.json(
-    {
-      authorizeUrl: characterReauthorizationUrl(characterId, options.returnTo),
-      code: 'EVE_SCOPE_REQUIRED',
-      message,
-      requiredScope: options.requiredScope,
-    },
-    403,
-  )
-}
-
-function financeCooldown(context: Context, retryAfterSeconds: number, message: string) {
-  context.header('Retry-After', String(retryAfterSeconds))
-  return context.json(
-    {
-      code: 'ESI_QUOTA_EXHAUSTED',
-      message,
-      retryAfterSeconds,
-    },
-    429,
-  )
-}
-
-function reauthorizationRequired(
-  context: Context,
-  characterId: number,
-  options: { requiredScope: string; returnTo?: string },
-) {
-  return context.json(
-    {
-      authorizeUrl: characterReauthorizationUrl(characterId, options.returnTo),
-      code: 'EVE_REAUTH_REQUIRED',
-      message: 'EVE authorization is no longer valid.',
-      requiredScope: options.requiredScope,
-    },
-    403,
-  )
-}
+export const characterReauthorizationUrl = (characterId: number, returnTo?: string) =>
+  characterReauthorizationUrlFor(env.EVE_CALLBACK_URL, characterId, returnTo)

@@ -73,3 +73,11 @@ This subsystem uses support, representation, contract, infrastructure, execution
 ## Change Ownership
 
 `deepen-esi-module-interface` owns this gateway seam. `deepen-queue-modules` owns neutral coordination Redis, `harden-codebase-quality` owns permit-loss and shutdown policy, and `deepen-character-modules` owns character-domain interfaces. Do not duplicate those responsibilities here.
+
+## Collapsed Read Cancellation
+
+Same-process read waiters share only an in-flight source with the same representation, source
+revision and authorization lifecycle/generation. Caller cancellation detaches that waiter; the
+last waiter aborts the source. Every private caller still verifies its own authorization before
+release. Track the shared source through finalization during runtime close, retain SDK attempt
+deadlines, and keep waiter state separate from result caches and mutation execution.

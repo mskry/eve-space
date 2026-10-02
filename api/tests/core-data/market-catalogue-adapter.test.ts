@@ -223,3 +223,73 @@ test('refuses orphaned or over-bound type results instead of publishing partial 
     'Market group is missing',
   )
 })
+
+test('owns short-page continuation and uses the requested database limit', async () => {
+  const first = catalogueDatabase({
+    types: [
+      { type_id: '34', market_group_id: '614', name: 'Tritanium' },
+      { type_id: '35', market_group_id: '614', name: 'Pyerite' },
+    ],
+  })
+  const result = await loadWithDatabase({ kind: 'group-types', groupId: 614, pageSize: 1 }, first)
+  expect(result).toMatchObject({ items: [{ id: 34 }], nextCursor: 't_y' })
+  if (result.kind !== 'group-types') throw new Error('Expected a group page')
+  expect(result.items).toHaveLength(1)
+  expect(first.transaction).toHaveBeenCalledWith(
+    expect.arrayContaining([expect.stringContaining('types.type_id > '), expect.any(String)]),
+    614,
+    0,
+    2,
+  )
+  const next = catalogueDatabase({
+    types: [{ type_id: '35', market_group_id: '614', name: 'Pyerite' }],
+  })
+  await expect(
+    loadWithDatabase(
+      { kind: 'group-types', groupId: 614, cursor: result.nextCursor!, pageSize: 1 },
+      next,
+    ),
+  ).resolves.toMatchObject({ items: [{ id: 35 }], nextCursor: null })
+  expect(next.transaction).toHaveBeenCalledWith(
+    expect.arrayContaining([expect.stringContaining('types.type_id > '), expect.any(String)]),
+    614,
+    34,
+    2,
+  )
+})
+
+test.each([0, -1, 101, 1.5, Number.NaN])(
+  'rejects page size %s before opening a transaction',
+  (pageSize) => {
+    const database = catalogueDatabase()
+    expect(() =>
+      loadWithDatabase({ kind: 'group-types', groupId: 614, pageSize }, database),
+    ).toThrow('Invalid market group page size')
+    expect(database.begin).not.toHaveBeenCalled()
+  },
+)
+
+test('rejects a canceled caller before opening a catalogue transaction', () => {
+  const database = catalogueDatabase()
+  const signal = AbortSignal.abort(new Error('Caller canceled'))
+  expect(() => loadWithDatabase({ kind: 'revision', signal }, database)).toThrow('Caller canceled')
+  expect(database.begin).not.toHaveBeenCalled()
+})
+
+test('cancels a catalogue SQL query without admitting another query', async () => {
+  const { createDeferred } = await import('../support/deferred.js')
+  const pending = createDeferred<never[]>()
+  const canceled = new Error('Caller disconnected')
+  const cancel = vi.fn(() => pending.reject(canceled))
+  const query = Object.assign(pending.promise, { cancel })
+  const database = catalogueDatabase()
+  database.transaction.mockImplementation(() => query)
+  const controller = new AbortController()
+  const read = loadWithDatabase({ kind: 'revision', signal: controller.signal }, database)
+  const result = read.catch((error: Error) => error)
+  await vi.waitFor(() => expect(database.transaction).toHaveBeenCalledOnce())
+  controller.abort(canceled)
+  expect(await result).toBe(canceled)
+  expect(cancel).toHaveBeenCalledOnce()
+  expect(database.transaction).toHaveBeenCalledOnce()
+})

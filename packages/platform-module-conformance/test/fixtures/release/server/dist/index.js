@@ -2,6 +2,14 @@ import { Hono } from 'hono'
 import { definePlatformPersistenceOperation } from '@eve-space/platform-module-server'
 import { z } from 'zod'
 
+export const fixtureGraphQL = {
+  typeDefs: `extend type Query { fixture: FixtureRead } type FixtureRead { value: String }`,
+  reads: {
+    'Query.fixture': () => ({}),
+    'FixtureRead.value': async ({ capabilities }) => (await capabilities.persistence.readFixture({ id: 'fixture' })).value,
+  },
+}
+
 export const readFixtureOperation = definePlatformPersistenceOperation({
   id: 'read-fixture',
   method: 'readFixture',

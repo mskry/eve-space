@@ -1,12 +1,16 @@
 import { posix } from 'node:path'
 import { findDependencyCycles } from '../dependency-cycles.js'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
+import { isTransportDependency } from '../transport-dependency.js'
 
 const modulesByTier = {
   application: [
+    'admitted-read',
     'character-lifecycle',
+    'character-selection',
     'character-transfer',
     'character-transfer-approvals',
+    'read-admission',
     'tokens',
   ],
   persistence: [
@@ -18,7 +22,7 @@ const modulesByTier = {
     'pending-character-token-store',
     'session-store',
   ],
-  policy: ['sso-errors', 'token-errors'],
+  policy: ['read-policy', 'read-work', 'sso-errors', 'token-errors'],
   primitive: ['security'],
   provider: ['sso'],
   state: ['pending-recovery-state'],
@@ -194,6 +198,10 @@ function violationsForImport(
   specifier: string,
   model: AuthBoundaryModel,
 ) {
+  if (sourceTier !== 'transport' && isTransportDependency(specifier))
+    return [
+      `${path}: ${sourceTier} module ${module} cannot import transport dependency ${specifier}`,
+    ]
   const dependency = dependencyIdentity(path, specifier)
   const importedModule = authModuleName(dependency)
   if (importedModule) {

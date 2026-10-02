@@ -7,6 +7,16 @@ import { loadPlatformSources } from '../../scripts/platform/sources'
 
 describe('platform module boundaries', () => {
   it.each([
+    'read-admission',
+    'read-enablement',
+    'module-context-capabilities',
+    'guarded-read-capabilities',
+  ])('keeps %s below transport adapters', (module) => {
+    expect(platformImportViolations([source(module, "import { Context } from 'hono'")])).toEqual([
+      expect.stringContaining('cannot import transport dependency hono'),
+    ])
+  })
+  it.each([
     ['collection-state', 'representation', 'core-resources', 'declaration'],
     ['collection-state', 'representation', 'module-runtime-cache', 'state'],
     ['core-resources', 'declaration', 'module-settings', 'adapter'],

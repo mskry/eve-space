@@ -12,6 +12,19 @@ export default defineConfig({
   jsPlugins: ['oxlint-plugin-complexity'],
   overrides: [
     {
+      // GraphQL passes schema-coerced arguments and opaque DTO parents across an erased schema boundary.
+      files: [
+        'api/src/graphql/contribution-resolvers.ts',
+        'api/src/graphql/request-execution.ts',
+        'packages/platform-module-contract/src/graphql.ts',
+      ],
+      rules: {
+        'anti-slop/no-unknown-parameters': 'off',
+        'anti-slop/no-unknown-returns': 'off',
+        'anti-slop/no-unsafe-dictionary-type': 'off',
+      },
+    },
+    {
       // Tests deliberately inspect malformed values and assert boundary behavior.
       files: [
         '**/*.test.ts',
@@ -69,6 +82,11 @@ export default defineConfig({
       // Keep those checks where an external contract cannot supply a discriminant or parser.
       files: [
         'api/src/auth/character-token-store.ts',
+        'api/src/graphql/contribution-resolvers.ts',
+        'api/src/graphql/request-execution.ts',
+        'packages/platform-module-conformance/src/graphql.ts',
+        'packages/platform-module-conformance/src/graphql-artifact.ts',
+        'api/src/graphql/scalars.ts',
         'api/src/auth/character-transfer-store.ts',
         'api/src/cache-admission/service.ts',
         'api/src/corporations/public-data.ts',

@@ -97,6 +97,7 @@ describe('platform ESI execution', () => {
       characterId,
       lifecycleId,
       'esi-characters.read_freelance_jobs.v1',
+      expect.any(AbortSignal),
     )
     expect(mocks.clientOptions).toHaveBeenCalledWith({
       fetch: expect.any(Function),

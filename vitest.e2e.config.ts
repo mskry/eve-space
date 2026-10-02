@@ -1,6 +1,12 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      graphql: fileURLToPath(new URL('./api/node_modules/graphql/index.js', import.meta.url)),
+    },
+  },
   test: {
     // These specs boot the production build created by `pnpm test:e2e`, so they
     // are kept out of the default unit run (see vitest.config.ts).

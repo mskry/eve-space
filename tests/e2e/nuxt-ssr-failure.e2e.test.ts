@@ -371,6 +371,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     await installPersistenceWriteObserver(firstPage)
     await installPersistenceWriteObserver(secondPage)
     await observeTextOnNextDocument(firstPage, obsoleteResponseText)
+    await observeInvalidationChannelOnNextDocument(firstPage)
 
     await navigateAndWaitForHydration(firstPage, '/characters/7')
     await firstPage.getByText(privateText, { exact: true }).waitFor()
@@ -380,23 +381,33 @@ describe('Nuxt anonymous SSR boundary', async () => {
       firstPage.getByText(privateText, { exact: true }).waitFor(),
       secondPage.getByText(privateText, { exact: true }).waitFor(),
     ])
-    await observeInvalidationChannel(firstPage)
     const writesBeforeLogout = await readPersistenceWriteCount(firstPage)
 
+    await firstPage.evaluate(() => window.dispatchEvent(new Event('focus')))
+    await expect
+      .poll(
+        async () => (await readPersistenceWritesAfter(firstPage, writesBeforeLogout)).join('\n'),
+        {
+          timeout: 5000,
+        },
+      )
+      .toContain(privateText)
+
     await secondPage.bringToFront()
-    await logoutThroughAuthPage(secondPage)
+    await logoutThroughAccountMenu(secondPage)
 
     await expect.poll(() => readInvalidationNotificationCount(firstPage)).toBeGreaterThan(0)
+    const writesAtInvalidation = await readPersistenceWriteCountAtInvalidation(firstPage)
     await expectPage(firstPage.getByText(privateText, { exact: true })).toHaveCount(0)
     overviewGate.resolve()
     await expect
       .poll(() => readPersistenceWriteCount(firstPage), { timeout: 5000 })
-      .toBeGreaterThan(writesBeforeLogout)
+      .toBeGreaterThan(writesAtInvalidation)
 
     await expectPage(firstPage.getByText(privateText, { exact: true })).toHaveCount(0)
     await expectPage(firstPage.getByText(obsoleteResponseText, { exact: true })).toHaveCount(0)
     expect(await textWasObserved(firstPage)).toBe(false)
-    await expectPersistenceWritesAfterToExclude(firstPage, writesBeforeLogout, [
+    await expectPersistenceWritesAfterToExclude(firstPage, writesAtInvalidation, [
       privateText,
       obsoleteResponseText,
     ])
@@ -422,6 +433,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     const secondPage = trackPage(await firstPage.context().newPage())
     await installPersistenceWriteObserver(firstPage)
     await observeTextOnNextDocument(firstPage, obsoleteResponseText)
+    await observeInvalidationChannelOnNextDocument(firstPage)
 
     await navigateAndWaitForHydration(firstPage, '/characters/7')
     await firstPage.getByText(privateText, { exact: true }).waitFor()
@@ -431,25 +443,23 @@ describe('Nuxt anonymous SSR boundary', async () => {
       firstPage.getByText(privateText, { exact: true }).waitFor(),
       secondPage.getByText(privateText, { exact: true }).waitFor(),
     ])
-    await observeInvalidationChannel(firstPage)
-    const writesBeforeSwitch = await readPersistenceWriteCount(firstPage)
-
     currentUserId = 'next-user'
     rosterCharacters = []
     await secondPage.reload({ waitUntil: 'domcontentloaded' })
     await waitForNuxtHydration(secondPage)
 
     await expect.poll(() => readInvalidationNotificationCount(firstPage)).toBeGreaterThan(0)
+    const writesAtInvalidation = await readPersistenceWriteCountAtInvalidation(firstPage)
     await expectPage(firstPage.getByText(privateText, { exact: true })).toHaveCount(0)
     overviewGate.resolve()
     await expect
       .poll(() => readPersistenceWriteCount(firstPage), { timeout: 5000 })
-      .toBeGreaterThan(writesBeforeSwitch)
+      .toBeGreaterThan(writesAtInvalidation)
 
     await expectPage(firstPage.getByText(privateText, { exact: true })).toHaveCount(0)
     await expectPage(firstPage.getByText(obsoleteResponseText, { exact: true })).toHaveCount(0)
     expect(await textWasObserved(firstPage)).toBe(false)
-    await expectPersistenceWritesAfterToExclude(firstPage, writesBeforeSwitch, [
+    await expectPersistenceWritesAfterToExclude(firstPage, writesAtInvalidation, [
       privateText,
       obsoleteResponseText,
     ])
@@ -1382,12 +1392,8 @@ async function waitForPersistenceWritesToSettle(page: Page) {
   expect(await readPersistenceWriteCount(page)).toBe(settledCount)
 }
 
-async function expectPersistenceWritesAfterToExclude(
-  page: Page,
-  startIndex: number,
-  obsoleteTexts: readonly string[],
-) {
-  const writes = await page.evaluate(
+const readPersistenceWritesAfter = (page: Page, startIndex: number) =>
+  page.evaluate(
     (index) =>
       (
         globalThis as typeof globalThis & {
@@ -1396,6 +1402,13 @@ async function expectPersistenceWritesAfterToExclude(
       ).e2ePersistenceWrites?.slice(index) ?? [],
     startIndex,
   )
+
+const expectPersistenceWritesAfterToExclude = async (
+  page: Page,
+  startIndex: number,
+  obsoleteTexts: readonly string[],
+) => {
+  const writes = await readPersistenceWritesAfter(page, startIndex)
   expect(writes.length).toBeGreaterThan(0)
   for (const write of writes) {
     for (const obsoleteText of obsoleteTexts) {
@@ -1404,20 +1417,45 @@ async function expectPersistenceWritesAfterToExclude(
   }
 }
 
-async function observeInvalidationChannel(page: Page) {
-  await page.evaluate(() => {
+const observeInvalidationChannelOnNextDocument = async (page: Page) => {
+  await page.addInitScript(() => {
+    // SAFETY: The optional properties belong to this page's test-only persistence observers.
     const browserState = globalThis as typeof globalThis & {
-      e2eInvalidationChannel?: BroadcastChannel
       e2eInvalidationNotificationCount?: number
+      e2ePersistenceWriteCount?: number
+      e2ePersistenceWriteCountAtInvalidation?: number
     }
     browserState.e2eInvalidationNotificationCount = 0
-    browserState.e2eInvalidationChannel = new BroadcastChannel(
-      'eve-space-esi-query-cache-invalidation',
-    )
-    browserState.e2eInvalidationChannel.addEventListener('message', () => {
-      browserState.e2eInvalidationNotificationCount! += 1
+    browserState.e2ePersistenceWriteCountAtInvalidation = undefined
+    const NativeBroadcastChannel = globalThis.BroadcastChannel
+    class ObservedBroadcastChannel extends NativeBroadcastChannel {
+      constructor(name: string) {
+        super(name)
+        if (name !== 'eve-space-esi-query-cache-invalidation') return
+        // Observe the application's channel before it subscribes; sibling channels dispatch later.
+        this.addEventListener('message', () => {
+          browserState.e2ePersistenceWriteCountAtInvalidation ??=
+            browserState.e2ePersistenceWriteCount ?? 0
+          browserState.e2eInvalidationNotificationCount! += 1
+        })
+      }
+    }
+    Object.defineProperty(globalThis, 'BroadcastChannel', {
+      configurable: true,
+      value: ObservedBroadcastChannel,
+      writable: true,
     })
   })
+}
+
+const readPersistenceWriteCountAtInvalidation = async (page: Page) => {
+  const count = await page.evaluate(() => {
+    // SAFETY: The test's observed native channel installs this optional checkpoint in the page.
+    return (globalThis as typeof globalThis & { e2ePersistenceWriteCountAtInvalidation?: number })
+      .e2ePersistenceWriteCountAtInvalidation
+  })
+  if (count === undefined) throw new Error('No persistence invalidation has been observed.')
+  return count
 }
 
 async function readInvalidationNotificationCount(page: Page) {
@@ -1501,11 +1539,9 @@ async function advanceDurableInvalidationGeneration(page: Page) {
   })
 }
 
-async function logoutThroughAuthPage(page: Page) {
-  await navigateAndWaitForHydration(page, '/auth')
-  const logout = page.getByRole('button', { name: 'LOG OUT' })
-  await logout.waitFor({ state: 'visible' })
-  await logout.evaluate((button) => button.click())
+async function logoutThroughAccountMenu(page: Page) {
+  await page.getByLabel('Open account menu for Persistent Pilot', { exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Log out', exact: true }).click()
   await expect.poll(() => currentUserId).toBeNull()
 }
 

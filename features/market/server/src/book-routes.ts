@@ -6,17 +6,19 @@ import { zValidator } from '@eve-space/platform-module-server'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { MarketBookReads } from './persistence.js'
-import { marketOrderExpiryAt } from './market-order-expiry.js'
-import { globalPlexMarketRegionId } from './market-bounds.js'
+import {
+  labelMarketRows,
+  marketLocationIdsForRows,
+  marketSourceStatus,
+  readEnabledMarketProfiles,
+  readMarketBookState,
+  readMarketOrderPage,
+} from './book-reads.js'
 
 type BookCapabilities = PlatformPublicRouteCapabilities<
   readonly ['static-location-labels'],
   MarketBookReads
 >
-type BookOrderRows = Awaited<ReturnType<MarketBookReads['readMarketOrderRows']>>['rows']
-type LocationLabels = Awaited<
-  ReturnType<BookCapabilities['coreData']['staticLocationLabels']>
->['rows']
 
 const profileParams = z.strictObject({
   profileId: z.uuid(),
@@ -57,55 +59,14 @@ const metricsQuery = z
     message: 'Market metric cursor is incomplete',
   })
 
-const sourceStatus = (freshUntil: string) =>
-  new Date(freshUntil).getTime() > Date.now() ? ('current' as const) : ('stale' as const)
-const collectionStatus = (failure: string | null) =>
-  failure === null ? ('ready' as const) : ('profile-failed' as const)
-
-const locationIdsForRows = (rows: BookOrderRows) => [
-  ...new Set(
-    rows.flatMap((row) =>
-      [row.locationId, row.solarSystemId].filter((id): id is number => id !== null),
-    ),
-  ),
-]
-
-const labelMarketRows = (rows: BookOrderRows, labels: LocationLabels) => {
-  const byId = new Map(labels.map((label) => [label.locationId, label]))
-  return rows.map((row) => {
-    const location = byId.get(row.locationId)
-    const system = location ?? (row.solarSystemId ? byId.get(row.solarSystemId) : undefined)
-    return {
-      ...row,
-      locationName:
-        location?.name ?? (system ? `${system.name} · Location ${row.locationId}` : null),
-      solarSystemSecurityStatus: system?.solarSystemSecurityStatus ?? null,
-      expiryAt: marketOrderExpiryAt(row.issuedAt, row.durationDays),
-    }
-  })
-}
-
 export const marketBookRoutes = ({ coreData, persistence }: BookCapabilities) =>
   new Hono<PlatformPublicRouteEnv>()
     .get('/profiles', async (context) => {
-      const profiles = await persistence.listMarketProfiles({ enabledOnly: true })
+      const profiles = await readEnabledMarketProfiles(persistence)
       context.header('Cache-Control', 'public, max-age=30, must-revalidate')
       return context.json(
         {
-          profiles: profiles.map(
-            ({ profileId, revision, regionId, mode, stationIds, watchedTypeIds }) => ({
-              profileId,
-              revision,
-              regionId,
-              marketScope:
-                regionId === globalPlexMarketRegionId
-                  ? ('global-plex' as const)
-                  : ('region' as const),
-              mode,
-              stationIds,
-              watchedTypeIds,
-            }),
-          ),
+          profiles,
         },
         200,
       )
@@ -115,28 +76,19 @@ export const marketBookRoutes = ({ coreData, persistence }: BookCapabilities) =>
       zValidator('param', profileParams),
       async (context) => {
         const { profileId, typeId } = context.req.valid('param')
-        const profiles = await persistence.listMarketProfiles({ enabledOnly: true })
-        const profile = profiles.find((entry) => entry.profileId === profileId)
-        if (!profile) {
+        const state = await readMarketBookState(persistence, profileId, typeId)
+        if (!state) {
           context.header('Cache-Control', 'no-store')
           return context.json({ code: 'MARKET_PROFILE_UNAVAILABLE' }, 404)
         }
-        const observation = await persistence.readMarketObservation({
-          profileId,
-          typeId,
-          observationId: null,
-        })
-        const replacement = await persistence.readMarketReplacementStatus({ profileId, typeId })
-        const replacementStatus = replacement
-          ? { status: 'incomplete' as const, attemptedAt: replacement.attemptedAt }
-          : null
+        const { observation, replacement, collectionStatus } = state
         if (!observation) {
           context.header('Cache-Control', 'no-store')
           return context.json(
             {
               status: 'uncollected' as const,
-              collectionStatus: collectionStatus(profile.lastFailureClass),
-              replacement: replacementStatus,
+              collectionStatus,
+              replacement,
             },
             200,
           )
@@ -161,9 +113,9 @@ export const marketBookRoutes = ({ coreData, persistence }: BookCapabilities) =>
             cursorOrderId: null,
           }),
         ])
-        const locationIds = locationIdsForRows([...sellers.rows, ...buyers.rows])
+        const locationIds = marketLocationIdsForRows([...sellers.rows, ...buyers.rows])
         const labels = await coreData.staticLocationLabels({ locationIds })
-        const status = sourceStatus(observation.freshUntil)
+        const status = marketSourceStatus(observation.freshUntil)
         context.header(
           'Cache-Control',
           status === 'current' && !replacement ? 'public, max-age=10, must-revalidate' : 'no-store',
@@ -171,8 +123,8 @@ export const marketBookRoutes = ({ coreData, persistence }: BookCapabilities) =>
         return context.json(
           {
             status,
-            collectionStatus: collectionStatus(profile.lastFailureClass),
-            replacement: replacementStatus,
+            collectionStatus,
+            replacement,
             observation,
             sellers: { ...sellers, rows: labelMarketRows(sellers.rows, labels.rows) },
             buyers: { ...buyers, rows: labelMarketRows(buyers.rows, labels.rows) },
@@ -189,16 +141,7 @@ export const marketBookRoutes = ({ coreData, persistence }: BookCapabilities) =>
         const { profileId, typeId, observationId } = context.req.valid('param')
         const { side, limit, cursorPrice, cursorIssuedAt, cursorOrderId } =
           context.req.valid('query')
-        const observation = await persistence.readMarketObservation({
-          profileId,
-          typeId,
-          observationId,
-        })
-        if (!observation) {
-          context.header('Cache-Control', 'no-store')
-          return context.json({ code: 'MARKET_OBSERVATION_UNAVAILABLE' }, 404)
-        }
-        const page = await persistence.readMarketOrderRows({
+        const page = await readMarketOrderPage(persistence, coreData, profileId, {
           observationId,
           typeId,
           side,
@@ -207,13 +150,15 @@ export const marketBookRoutes = ({ coreData, persistence }: BookCapabilities) =>
           cursorIssuedAt: cursorIssuedAt ?? null,
           cursorOrderId: cursorOrderId ?? null,
         })
-        const locationIds = locationIdsForRows(page.rows)
-        const labels = await coreData.staticLocationLabels({ locationIds })
+        if (!page) {
+          context.header('Cache-Control', 'no-store')
+          return context.json({ code: 'MARKET_OBSERVATION_UNAVAILABLE' }, 404)
+        }
         context.header('Cache-Control', 'public, max-age=10, must-revalidate')
         return context.json(
           {
             observationId,
-            rows: labelMarketRows(page.rows, labels.rows),
+            rows: page.rows,
             hasMore: page.hasMore,
           },
           200,

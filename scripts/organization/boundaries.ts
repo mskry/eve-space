@@ -1,6 +1,7 @@
 import { basename, extname } from 'node:path'
 import { findDependencyCycles } from '../dependency-cycles.js'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
+import { isTransportDependency } from '../transport-dependency.js'
 
 const modulesByTier = {
   adapter: [
@@ -56,6 +57,7 @@ const modulesByTier = {
     'reviewer-commands',
     'role-store',
     'session-context',
+    'read-admission',
   ],
   entry: ['alliance-executor-repair', 'compliance-repair', 'group-rule-repair'],
   observability: [
@@ -139,6 +141,10 @@ function violationsForSource(source: OrganizationSource) {
   }
 
   return typescriptModuleSpecifiers(source.path, source.source).flatMap((specifier) => {
+    if (sourceTier !== 'transport' && isTransportDependency(specifier))
+      return [
+        `${source.path}: ${sourceTier} module ${module} cannot import transport dependency ${specifier}`,
+      ]
     if (sourceTier === 'policy' && !specifier.startsWith('./')) {
       return [
         `${source.path}: policy module ${module} cannot import outside organization: ${specifier}`,

@@ -24,6 +24,12 @@ describe('character module boundaries', () => {
     expect(declaredCharacterModules).toStrictEqual([
       'affiliation-planning',
       'affiliation-sync',
+      'asset-batches',
+      'asset-connection',
+      'asset-cursor',
+      'asset-enrichment',
+      'asset-pages',
+      'asset-work',
       'assets',
       'assets-routes',
       'attributes',
@@ -48,6 +54,7 @@ describe('character module boundaries', () => {
       'progression-routes',
       'public-routes',
       'resource-failure',
+      'resource-response',
       'route-responses',
       'routes',
       'skill-catalogue',
@@ -83,6 +90,16 @@ describe('character module boundaries', () => {
     expect(
       characterBoundaryViolations(characterSources({ assets: "import { Hono } from 'hono'" })),
     ).toContain('api/src/characters/assets.ts: read-projection module assets cannot import Hono')
+  })
+
+  it('keeps shared safe resource DTOs independent of Hono', () => {
+    expect(
+      characterBoundaryViolations(
+        characterSources({ 'resource-response': "import { Context } from 'hono'" }),
+      ),
+    ).toContain(
+      'api/src/characters/resource-response.ts: pure-leaf module resource-response cannot import Hono',
+    )
   })
 
   it.each([
@@ -173,7 +190,7 @@ describe('character module dependency declarations', () => {
   it.each([
     ['profile', '../alliances/public-data.js'],
     ['profile', '../corporations/public-data.js'],
-    ['assets', '../universe/static-locations.js'],
+    ['asset-enrichment', '../universe/static-locations.js'],
     ['clones', '../universe/implant-attributes.js'],
     ['finance-location-names', '../universe/names.js'],
     ['history', '../universe/names.js'],

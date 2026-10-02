@@ -1,7 +1,11 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import { apiCoverageThresholdScopes } from './vitest.coverage-thresholds.js'
 
 export default defineConfig({
+  resolve: {
+    alias: { graphql: fileURLToPath(new URL('./node_modules/graphql/index.js', import.meta.url)) },
+  },
   test: {
     clearMocks: true,
     coverage: {

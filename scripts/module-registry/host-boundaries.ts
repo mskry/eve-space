@@ -19,6 +19,7 @@ const platformNuxtPackage = '@eve-space/platform-module-nuxt'
 const generatedServerRegistries = new Set([
   'api/src/generated/platform/installed-module-activity-providers.ts',
   'api/src/generated/platform/installed-module-esi.ts',
+  'api/src/generated/platform/installed-module-graphql.ts',
   'api/src/generated/platform/installed-module-persistence.ts',
   'api/src/generated/platform/installed-module-routes.ts',
   'api/src/generated/platform/installed-module-worker.ts',

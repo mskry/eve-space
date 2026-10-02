@@ -75,6 +75,7 @@ describe.sequential('external module archives', () => {
       registry.compiled,
       registry.persistenceRoutines,
       registry.releases,
+      registry.graphqlContributions,
     )
     const release = registry.releases[0]!
     const inventory = files.get('api/src/generated/platform/installed-module-inventory.ts') ?? ''
@@ -106,6 +107,10 @@ describe.sequential('external module archives', () => {
       expect(artifact.integrity).toMatch(/^sha512-/)
     }
     expect(serverModule.syntheticRoutes()).toStrictEqual({ source: 'external-server' })
+    expect(files.get('api/src/generated/platform/installed-module-graphql.ts')).toContain(
+      'syntheticGraphQL',
+    )
+    expect(registry.graphqlSDL).toContain('synthetic: SyntheticRead')
     expect(nuxtModule.default).toBeTypeOf('function')
     expect(files.get('api/src/generated/platform/installed-module-routes.ts')).toContain(
       `from '${packageNames.server}'`,
@@ -547,7 +552,7 @@ async function createPackedRelease(root: string) {
       },
     ],
     release: {
-      hostContractRange: '^1.0.0',
+      hostContractRange: '^1.1.0',
       publisherPackage: packageNames.manifest,
       version,
     },
@@ -566,6 +571,25 @@ async function createPackedRelease(root: string) {
       },
     ],
     server: {
+      graphql: [
+        {
+          id: 'public-read',
+          rootField: 'synthetic',
+          exportName: 'syntheticGraphQL',
+          types: ['SyntheticRead'],
+          reads: [
+            {
+              id: 'root',
+              field: 'Query.synthetic',
+              strategy: 'public',
+              cost: 1,
+              sourceCost: 0,
+              coreDataProducts: [],
+              persistenceOperations: [],
+            },
+          ],
+        },
+      ],
       activityProviders: [],
       esiOperations: [],
       migrations: [{ name: 'synthetic-001.sql' }],
@@ -603,8 +627,9 @@ async function createPackedRelease(root: string) {
   })
   await writeFiles(roots.server, {
     'dist/index.d.ts':
-      "export declare function syntheticRoutes(): { readonly source: 'external-server' }\n",
-    'dist/index.js': "export function syntheticRoutes() { return { source: 'external-server' } }\n",
+      "export declare function syntheticRoutes(): { readonly source: 'external-server' }\nexport declare const syntheticGraphQL: { readonly typeDefs: string; readonly reads: object }\n",
+    'dist/index.js':
+      "export function syntheticRoutes() { return { source: 'external-server' } }\nexport const syntheticGraphQL = { typeDefs: 'extend type Query { synthetic: SyntheticRead } type SyntheticRead { source: String! }', reads: { 'Query.synthetic': () => ({ source: 'external-graphql' }) } }\n",
     'migrations/synthetic-001.sql': 'select 1;\n',
     'package.json': json({
       name: packageNames.server,

@@ -176,7 +176,12 @@ describe('callable ESI feature execution', () => {
     expect(skills.requiredScope).toBe(
       contract.authorization.kind === 'oauth' ? contract.authorization.scope : undefined,
     )
-    expect(mocks.authorize).toHaveBeenCalledWith(7, lifecycleId, skills.requiredScope)
+    expect(mocks.authorize).toHaveBeenCalledWith(
+      7,
+      lifecycleId,
+      skills.requiredScope,
+      expect.any(AbortSignal),
+    )
   })
 
   test('rejects character authorization before acquiring a request permit', async () => {

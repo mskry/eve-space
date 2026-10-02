@@ -1,0 +1,125 @@
+query ExplorerMarket {
+  market {
+    catalogueRevision {
+      key
+      buildNumber
+      ingestedAt
+    }
+    profiles {
+      profileId
+      revision
+      regionId
+      marketScope
+      mode
+    }
+    referencePrices(typeIds: ["34"]) {
+      kind
+      rows {
+        typeId
+        averagePriceIsk
+        adjustedPriceIsk
+        sourceHour
+        validatedAt
+      }
+    }
+  }
+}
+
+query ExplorerMarketBook($profileId: UUID!, $typeId: EveId!) {
+  market {
+    book(profileId: $profileId, typeId: $typeId) {
+      profileId
+      profileRevision
+      typeId
+      status
+      collectionStatus
+      observation {
+        observationId
+        observedAt
+        validatedAt
+        freshUntil
+        expectedPages
+        totalBookOrders
+      }
+      replacement {
+        attemptedAt
+        status
+      }
+    }
+    history(profileId: $profileId, typeId: $typeId) {
+      status
+      freshness
+      validatedAt
+      freshUntil
+      days {
+        date
+        averageIsk
+        highIsk
+        lowIsk
+        volume
+        orderCount
+      }
+    }
+  }
+}
+
+query ExplorerOwnedCharacters($first: Int! = 50, $after: String) {
+  ownedCharacters(first: $first, after: $after) {
+    items {
+      characterId
+      name
+      isMain
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+      restartRequired
+    }
+  }
+}
+
+query ExplorerOwnedAssets($characterId: EveId!, $first: Int! = 25, $after: String) {
+  ownedCharacter(characterId: $characterId) {
+    characterId
+    name
+    assets(first: $first, after: $after) {
+      characterId
+      sourcePage
+      totalSourcePages
+      anchor
+      completeness
+      anchorSource {
+        validatedAt
+        cachedUntil
+        stale
+      }
+      source {
+        validatedAt
+        cachedUntil
+        stale
+        retryAt
+        refreshFailureClass
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+        restartRequired
+      }
+      enrichment {
+        types
+        names
+        locations
+      }
+      assets {
+        itemId
+        typeId
+        quantity
+        typeName
+        customName
+        locationId
+        locationName
+        locationFlag
+      }
+    }
+  }
+}

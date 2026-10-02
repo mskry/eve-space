@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { createFeatureExecutionMock } from '../support/mock-feature-execution.js'
 
 const mocks = vi.hoisted(() => {
@@ -25,8 +25,15 @@ vi.mock('../../src/universe/static-locations.js', () => ({
   getStaticLocations: mocks.getStaticLocations,
 }))
 
-import { CharacterAssetsPaginationError, getCharacterAssets } from '../../src/characters/assets.js'
+import { getCharacterAssets } from '../../src/characters/assets.js'
+import { CharacterAssetsPaginationError } from '../../src/characters/asset-pages.js'
 import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
+import { readCharacterAssetConnection } from '../../src/characters/asset-connection.js'
+import {
+  AssetCursorRestartError,
+  decodeAssetCursor,
+  encodeAssetCursor,
+} from '../../src/characters/asset-cursor.js'
 
 const characterId = 1_404_328_063
 const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
@@ -149,11 +156,13 @@ describe('complete character asset collection', () => {
       characterId,
       page: 1,
       subjectLifecycleId,
+      signal: expect.any(AbortSignal),
     })
     expect(mocks.executeRepresentation.mock.calls[1]?.[1]).toStrictEqual({
       body: [22],
       path: { character_id: characterId },
       subjectLifecycleId,
+      signal: expect.any(AbortSignal),
     })
   })
 
@@ -164,6 +173,7 @@ describe('complete character asset collection', () => {
       if (definition.operation === 'character-asset-names') {
         return result([])
       }
+      // SAFETY: The operation branch selects the validated character-assets-page input in this gateway double.
       const pageNumber = (input as { page: number }).page
       if (pageNumber > 1) {
         active += 1
@@ -187,6 +197,7 @@ describe('complete character asset collection', () => {
       if (definition.operation === 'character-asset-names') {
         return Promise.resolve(result([]))
       }
+      // SAFETY: The operation branch selects the validated character-assets-page input in this gateway double.
       const pageNumber = (input as { page: number }).page
       return Promise.resolve({
         ...result(page(pageNumber, 2)),
@@ -342,6 +353,7 @@ describe('bounded character asset enrichment', () => {
       body: [10, 20, 30],
       path: { character_id: characterId },
       subjectLifecycleId,
+      signal: expect.any(AbortSignal),
     })
     expect(
       resultValue.assets.map(({ itemId, customName }) => ({ customName, itemId })),
@@ -498,3 +510,220 @@ function mapAssetPage(definition: unknown, input: unknown, totalPages: number) {
   ).map
   return map({ data: [], meta: { pagination: { pages: totalPages } } }, input)
 }
+
+const createAssetWindowWork = (signal = new AbortController().signal) => ({
+  signal,
+  run: async <Result>(read: () => Promise<Result>): Promise<Result> => {
+    signal.throwIfAborted()
+    return read()
+  },
+})
+
+describe('bounded asset connection through registered reads', () => {
+  const binding = {
+    userId: 'user-a',
+    authorizationRevision: 3,
+    character: {
+      characterId,
+      subjectLifecycleId,
+      name: 'Owner',
+      isMain: true,
+      corporationId: 1,
+      allianceId: null,
+    },
+  }
+
+  const read = (first = 1, after: string | null = null) =>
+    readCharacterAssetConnection(binding, first, after, createAssetWindowWork())
+
+  beforeEach(() => {
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-03T11:30:00Z'))
+    mocks.executeRepresentation.mockImplementation((definition, input) => {
+      if (definition.operation === 'character-asset-names') return Promise.resolve(result([]))
+      // SAFETY: The operation branch selects the validated character-assets-page input in this gateway double.
+      const pageNumber = (input as { page: number }).page
+      return Promise.resolve(
+        result({
+          assets: Array.from({ length: 1000 }, (_, index) =>
+            asset({ itemId: pageNumber * 1000 + index }),
+          ),
+          page: pageNumber,
+          totalPages: 1000,
+        }),
+      )
+    })
+  })
+  afterEach(() => vi.restoreAllMocks())
+
+  test.each([1, 100])(
+    'reads only its source window of %s rows from a million-row inventory',
+    async (first) => {
+      const selected = await read(first)
+      expect(selected.assets).toHaveLength(first)
+      expect(mocks.executeRepresentation).toHaveBeenCalledOnce()
+      expect(mocks.query.limit).toHaveBeenCalledWith(1)
+      const cursor = decodeAssetCursor(selected.pageInfo.endCursor!)
+      expect(cursor).toMatchObject({ page: 1, offset: first, pages: 1000, revision: 3 })
+      await read(100, encodeAssetCursor({ ...cursor, page: 17, offset: 0, selected: null }))
+      expect(mocks.executeRepresentation.mock.calls.map(([, input]) => input.page)).toEqual([
+        1, 1, 17,
+      ])
+    },
+  )
+
+  test.each([0, 101, 1.5])('rejects page size %s before registered reads', async (first) => {
+    await expect(read(first)).rejects.toBeInstanceOf(AssetCursorRestartError)
+    expect(mocks.executeRepresentation).not.toHaveBeenCalled()
+  })
+
+  test.each(['?', 'x'.repeat(2049), Buffer.from('{}').toString('base64url')])(
+    'rejects malformed cursor before reads',
+    async (after) => {
+      await expect(read(1, after)).rejects.toBeInstanceOf(AssetCursorRestartError)
+      expect(mocks.executeRepresentation).not.toHaveBeenCalled()
+    },
+  )
+
+  test.each(['owner', 'characterId', 'lifecycle', 'revision', 'expiresAt'] as const)(
+    'denies obsolete cursor binding %s without feature work',
+    async (field) => {
+      const initial = await read()
+      const cursor = decodeAssetCursor(initial.pageInfo.endCursor!)
+      const changes = {
+        owner: 'other',
+        characterId: 99,
+        lifecycle: '22222222-2222-4222-8222-222222222222',
+        revision: 4,
+        expiresAt: '2026-09-03T11:00:00.000Z',
+      }
+      const changed = { ...cursor, [field]: changes[field] }
+      mocks.executeRepresentation.mockClear()
+      await expect(read(1, encodeAssetCursor(changed))).rejects.toBeInstanceOf(
+        AssetCursorRestartError,
+      )
+      expect(mocks.executeRepresentation).not.toHaveBeenCalled()
+    },
+  )
+
+  test.each(['anchor', 'pages', 'selected'] as const)(
+    'restarts when the %s changes',
+    async (field) => {
+      const initial = await read()
+      const cursor = decodeAssetCursor(initial.pageInfo.endCursor!)
+      const changes = { anchor: 'a'.repeat(64), selected: 'a'.repeat(64), pages: 999 }
+      await expect(
+        read(1, encodeAssetCursor({ ...cursor, [field]: changes[field] })),
+      ).rejects.toBeInstanceOf(AssetCursorRestartError)
+    },
+  )
+
+  test.each(['validatedAt', 'cachedUntil'] as const)(
+    'restarts after anchor %s changes even if rows match',
+    async (field) => {
+      const initial = await read()
+      const execute = mocks.executeRepresentation.getMockImplementation()!
+      mocks.executeRepresentation.mockImplementation(async (...args) => ({
+        ...(await execute(...args)),
+        [field]: '2026-09-03T11:50:00.000Z',
+      }))
+      await expect(read(1, initial.pageInfo.endCursor!)).rejects.toBeInstanceOf(
+        AssetCursorRestartError,
+      )
+    },
+  )
+
+  test('checks a selected-page replacement and its independent page count', async () => {
+    const initial = decodeAssetCursor((await read()).pageInfo.endCursor!)
+    const pageTwo = encodeAssetCursor({ ...initial, page: 2, offset: 0, selected: null })
+    const selected = await read(25, pageTwo)
+    expect(selected.sourcePage).toBe(2)
+    expect(selected.assets[0]).toMatchObject({ itemId: 2000 })
+    const execute = mocks.executeRepresentation.getMockImplementation()!
+    mocks.executeRepresentation.mockImplementation(async (definition, input) => {
+      const loaded = await execute(definition, input)
+      if (input.page === 2) loaded.data.assets[0].quantity = 2
+      return loaded
+    })
+    await expect(read(25, selected.pageInfo.endCursor!)).rejects.toBeInstanceOf(
+      AssetCursorRestartError,
+    )
+    mocks.executeRepresentation.mockImplementation(async (definition, input) => {
+      const loaded = await execute(definition, input)
+      if (input.page === 2) loaded.data.totalPages = 999
+      return loaded
+    })
+    await expect(read(25, pageTwo)).rejects.toBeInstanceOf(AssetCursorRestartError)
+  })
+
+  test('returns a short page at the source boundary then advances to the next source', async () => {
+    const initial = decodeAssetCursor((await read()).pageInfo.endCursor!)
+    const selected = await read(100, encodeAssetCursor({ ...initial, offset: 995 }))
+    expect(selected.assets).toHaveLength(5)
+    expect(decodeAssetCursor(selected.pageInfo.endCursor!)).toMatchObject({
+      page: 2,
+      offset: 0,
+      selected: null,
+    })
+    expect((await read(25, selected.pageInfo.endCursor!)).sourcePage).toBe(2)
+  })
+
+  test('retains base rows when every optional enrichment source fails', async () => {
+    mocks.query.limit.mockRejectedValue(new Error('types unavailable'))
+    mocks.resolveUniverseNamesBestEffort.mockRejectedValue(new Error('names unavailable'))
+    mocks.getStaticLocations.mockRejectedValue(new Error('locations unavailable'))
+    mocks.executeRepresentation.mockImplementation(async (definition) => {
+      if (definition.operation === 'character-asset-names')
+        throw new Error('singleton names unavailable')
+      return result({
+        assets: [asset({ isSingleton: true, locationType: 'station', locationId: 60000001 })],
+        page: 1,
+        totalPages: 1,
+      })
+    })
+    const selected = await read()
+    expect(selected.enrichment).toEqual({
+      types: 'unavailable',
+      names: 'unavailable',
+      locations: 'unavailable',
+    })
+    expect(selected.assets[0]).toMatchObject({
+      itemId: 1,
+      typeName: 'Unknown type 34',
+      customName: null,
+      locationId: 60000001,
+    })
+  })
+
+  test('expires continuation while enrichment is pending', async () => {
+    const initial = await read()
+    mocks.query.limit.mockImplementation(async () => {
+      vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-03T12:01:00Z'))
+      return []
+    })
+    await expect(read(25, initial.pageInfo.endCursor!)).rejects.toBeInstanceOf(
+      AssetCursorRestartError,
+    )
+  })
+
+  test('retains stale first-page rows but grants no continuation authority', async () => {
+    mocks.executeRepresentation.mockResolvedValue({ ...result(page(1, 2)), stale: true })
+    expect(await read()).toMatchObject({
+      assets: [{ itemId: 1 }],
+      pageInfo: { hasNextPage: false, endCursor: null, restartRequired: true },
+    })
+  })
+
+  test('rejects unsupported source size and cancels before new source/name work', async () => {
+    mocks.executeRepresentation.mockResolvedValue(
+      result({ ...page(1, 1), assets: Array.from({ length: 1001 }, () => asset()) }),
+    )
+    await expect(read()).rejects.toBeInstanceOf(AssetCursorRestartError)
+    const controller = new AbortController()
+    controller.abort(new Error('Disconnected'))
+    mocks.executeRepresentation.mockClear()
+    await expect(
+      readCharacterAssetConnection(binding, 1, null, createAssetWindowWork(controller.signal)),
+    ).rejects.toThrow('Disconnected')
+    expect(mocks.executeRepresentation).not.toHaveBeenCalled()
+  })
+})

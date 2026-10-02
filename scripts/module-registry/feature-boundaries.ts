@@ -61,6 +61,7 @@ const definitionCalls = new Set([
   'definePlatformExecutableEsiOperation',
   'definePlatformBoundedCollectionResource',
   'definePlatformPersistenceOperation',
+  'definePlatformGraphQLRead',
   'definePlatformSingleRequestResource',
 ])
 

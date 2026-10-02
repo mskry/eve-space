@@ -81,7 +81,8 @@ const decodeCursor = (cursor: string | undefined) => {
 }
 
 const validateRequest = (request: MarketCatalogueRequest) => {
-  if (request.kind === 'tree' || request.kind === 'search-index') return
+  if (request.kind === 'revision' || request.kind === 'tree' || request.kind === 'search-index')
+    return
   if (request.kind === 'type-by-id') {
     if (!Number.isSafeInteger(request.typeId) || request.typeId <= 0) {
       throw new TypeError('Invalid market type ID')
@@ -93,6 +94,9 @@ const validateRequest = (request: MarketCatalogueRequest) => {
     throw new TypeError('Invalid market group ID')
   }
   decodeCursor(request.cursor)
+  const pageSize = request.pageSize ?? MARKET_CATALOGUE_GROUP_PAGE_SIZE
+  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > MARKET_CATALOGUE_GROUP_PAGE_SIZE)
+    throw new TypeError('Invalid market group page size')
 }
 
 const loadTypeById = async (
@@ -198,20 +202,20 @@ const loadGroupTypes = async (
   )
   if (!group) throw new CoreDataProductUnavailableError('Market group is missing')
   const afterId = decodeCursor(request.cursor)
+  const pageSize = request.pageSize ?? MARKET_CATALOGUE_GROUP_PAGE_SIZE
   const rows = await executeUniverseQuery(
     transaction<MarketTypeRow[]>`
       select type_id::text, market_group_id::text, name
       from sde_types as types
       where types.published = true and types.market_group_id = ${request.groupId} and types.type_id > ${afterId}
       order by types.type_id
-      limit ${MARKET_CATALOGUE_GROUP_PAGE_SIZE + 1}
+      limit ${pageSize + 1}
     `,
     signal,
   )
-  const items = rows.slice(0, MARKET_CATALOGUE_GROUP_PAGE_SIZE).map(typeFromRow)
+  const items = rows.slice(0, pageSize).map(typeFromRow)
   const lastId = items.at(-1)?.id
-  const nextCursor =
-    rows.length > MARKET_CATALOGUE_GROUP_PAGE_SIZE && lastId ? `t_${lastId.toString(36)}` : null
+  const nextCursor = rows.length > pageSize && lastId ? `t_${lastId.toString(36)}` : null
   return { kind: 'group-types', groupId: request.groupId, items, nextCursor, revision }
 }
 
@@ -262,6 +266,7 @@ export const loadMarketCatalogueProduct = (
       if (revision.ingestVersion < minimumMarketProjectionVersion) {
         throw new CoreDataProductUnavailableError('Market catalogue projection is not published')
       }
+      if (request.kind === 'revision') return { kind: 'revision', revision }
       if (request.kind === 'tree') return loadTree(transaction, signal, revision)
       if (request.kind === 'search-index') return loadSearchIndex(transaction, signal, revision)
       if (request.kind === 'type-by-id') {
@@ -269,5 +274,6 @@ export const loadMarketCatalogueProduct = (
       }
       return loadGroupTypes(transaction, signal, revision, request)
     },
+    request.signal,
   )
 }

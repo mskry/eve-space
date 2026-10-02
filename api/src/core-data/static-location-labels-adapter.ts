@@ -63,6 +63,7 @@ export function loadStaticLocationLabelsProduct(
           : await selectStaticLocationLabels(transaction, signal, locationIds)
       return { complete: true, revision, rows: sourceRows.map(mapStaticLocationLabel) }
     },
+    request.signal,
   )
 }
 

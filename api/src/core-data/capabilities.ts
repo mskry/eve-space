@@ -6,10 +6,16 @@ import type {
 } from '@eve-space/core-data-contract'
 import { getCoreDataProductDefinition, isCoreDataProductId } from './product-catalog.js'
 
-export function createCoreDataCapability<const ProductIds extends readonly CoreDataProductId[]>(
+const bindReadSignal = <Request extends { readonly signal?: AbortSignal }, Result>(
+  read: (request: Request) => Promise<Result>,
+  signal?: AbortSignal,
+) => (signal ? (request: Request) => read({ ...request, signal }) : read)
+
+export const createCoreDataCapability = <const ProductIds extends readonly CoreDataProductId[]>(
   productIds: ProductIds,
   context: CoreDataContributionContext,
-): CoreDataMethodsFor<ProductIds> {
+  signal?: AbortSignal,
+): CoreDataMethodsFor<ProductIds> => {
   assertCoreDataProductDeclarations(productIds, context)
   const methods: Partial<CoreDataMethods> = {}
   for (const productId of productIds) {
@@ -19,7 +25,10 @@ export function createCoreDataCapability<const ProductIds extends readonly CoreD
       ).adapter
     }
     if (productId === 'market-catalogue') {
-      methods.marketCatalogue = getCoreDataProductDefinition('market-catalogue').adapter
+      methods.marketCatalogue = bindReadSignal(
+        getCoreDataProductDefinition('market-catalogue').adapter,
+        signal,
+      )
     }
     if (productId === 'market-station-regions') {
       methods.marketStationRegions = getCoreDataProductDefinition('market-station-regions').adapter
@@ -36,7 +45,10 @@ export function createCoreDataCapability<const ProductIds extends readonly CoreD
       methods.publishedTypeDetails = getCoreDataProductDefinition('published-type-details').adapter
     }
     if (productId === 'static-location-labels') {
-      methods.staticLocationLabels = getCoreDataProductDefinition('static-location-labels').adapter
+      methods.staticLocationLabels = bindReadSignal(
+        getCoreDataProductDefinition('static-location-labels').adapter,
+        signal,
+      )
     }
   }
   return methods as CoreDataMethodsFor<ProductIds>

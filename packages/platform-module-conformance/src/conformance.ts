@@ -16,6 +16,7 @@ import {
   modulePersistenceRoutineName,
 } from '@eve-space/platform-module-persistence-policy/persistence-policy'
 import ts from 'typescript'
+import { readGraphQLArtifactContributions } from './graphql-artifact.js'
 import {
   platformModulePackageManifestIssues,
   platformModuleRelativeImportIssues,
@@ -341,14 +342,98 @@ async function validateSourceRoot(
   }
 }
 
-async function validateRuntimeArtifact(
+const validateArtifactSource = async (
+  environment: PlatformModuleEnvironment,
+  manifest: PlatformModuleManifest,
+  view: PackageView,
+  dependencies: ReadonlySet<string>,
+  issues: PlatformModuleConformanceIssue[],
+) => {
+  for (const path of view.files) {
+    if (!inspectableExtensions.has(extname(path))) continue
+    // oxlint-disable-next-line no-await-in-loop -- Preserve artifact diagnostic order.
+    const source = await view.read(path)
+    if (source === undefined) continue
+    const sourceInput = {
+      boundaryRoot: environment,
+      environment,
+      moduleId: manifest.id,
+      path: `${environment}/${path}`,
+      scope: 'artifact',
+      source,
+    } as const
+    issues.push(
+      ...platformModuleSourceIssues(sourceInput, dependencies),
+      ...platformModuleRelativeImportIssues(sourceInput, new Set(view.files)),
+    )
+  }
+}
+
+const validateExecutableInventory = async (
+  manifest: PlatformModuleManifest,
+  environment: PlatformModuleEnvironment,
+  view: PackageView,
+  rootEntry: string,
+  issues: PlatformModuleConformanceIssue[],
+) => {
+  const expectedExports =
+    environment === 'server'
+      ? [
+          ...(manifest.server.graphql ?? []),
+          ...manifest.server.routes,
+          ...manifest.server.persistenceOperations,
+          ...manifest.server.resources,
+          ...manifest.server.esiOperations,
+          ...manifest.server.activityProviders,
+        ].map(({ exportName }) => exportName)
+      : ['default']
+  const actual = await collectRuntimeExports(view, rootEntry, issues)
+  const missing = expectedExports
+    .filter((name) => !actual.has(name))
+    .toSorted((left, right) => left.localeCompare(right))
+  const extra = [...actual]
+    .filter((name) => !expectedExports.includes(name))
+    .toSorted((left, right) => left.localeCompare(right))
+  if (missing.length || extra.length)
+    issues.push(
+      issue(
+        'EXECUTABLE_INVENTORY_MISMATCH',
+        'artifact',
+        `${environment}/${rootEntry}`,
+        `Executable inventory differs (missing: ${missing.join(', ') || 'none'}; extra: ${extra.join(', ') || 'none'}).`,
+      ),
+    )
+}
+
+const validateGraphQLArtifact = async (
+  manifest: PlatformModuleManifest,
+  view: PackageView,
+  rootEntry: string | undefined,
+  issues: PlatformModuleConformanceIssue[],
+) => {
+  if (!rootEntry || !manifest.server.graphql?.length) return
+  try {
+    await readGraphQLArtifactContributions(view, rootEntry, manifest.server.graphql)
+  } catch {
+    issues.push(
+      issue(
+        'GRAPHQL_INVENTORY_MISMATCH',
+        'artifact',
+        `server/${rootEntry}`,
+        'GraphQL descriptor, SDL and executable read inventories must match exactly.',
+      ),
+    )
+  }
+}
+
+const validateRuntimeArtifact = async (
   manifest: PlatformModuleManifest,
   environment: PlatformModuleEnvironment,
   packageManifest: PlatformModulePackageManifest,
   view: PackageView,
   allowLocalDependencySpecifiers: boolean,
   issues: PlatformModuleConformanceIssue[],
-) {
+) => {
   const expectedName = manifest[environment].package
   issues.push(
     ...platformModulePackageManifestIssues({
@@ -375,55 +460,15 @@ async function validateRuntimeArtifact(
         ),
       )
   }
-  for (const path of view.files) {
-    if (inspectableExtensions.has(extname(path))) {
-      // oxlint-disable-next-line no-await-in-loop -- Preserve artifact diagnostic order.
-      const source = await view.read(path)
-      if (source !== undefined) {
-        const sourceInput = {
-          boundaryRoot: environment,
-          environment,
-          moduleId: manifest.id,
-          path: `${environment}/${path}`,
-          scope: 'artifact',
-          source,
-        } as const
-        issues.push(
-          ...platformModuleSourceIssues(sourceInput, dependencies),
-          ...platformModuleRelativeImportIssues(sourceInput, new Set(view.files)),
-        )
-      }
-    }
-  }
+  await validateArtifactSource(environment, manifest, view, dependencies, issues)
 
   const rootEntry = resolveExportTarget(packageManifest.exports, '.')
   if (rootEntry) {
-    const expectedExports =
-      environment === 'server'
-        ? [
-            ...manifest.server.routes,
-            ...manifest.server.persistenceOperations,
-            ...manifest.server.resources,
-            ...manifest.server.esiOperations,
-            ...manifest.server.activityProviders,
-          ].map(({ exportName }) => exportName)
-        : ['default']
-    const actual = await collectRuntimeExports(view, rootEntry, issues)
-    const missing = expectedExports.filter((name) => !actual.has(name)).toSorted()
-    const extra = [...actual].filter((name) => !expectedExports.includes(name)).toSorted()
-    if (missing.length > 0 || extra.length > 0) {
-      issues.push(
-        issue(
-          'EXECUTABLE_INVENTORY_MISMATCH',
-          'artifact',
-          `${environment}/${rootEntry}`,
-          `Executable inventory differs (missing: ${missing.join(', ') || 'none'}; extra: ${extra.join(', ') || 'none'}).`,
-        ),
-      )
-    }
+    await validateExecutableInventory(manifest, environment, view, rootEntry, issues)
   }
 
   if (environment === 'server') {
+    await validateGraphQLArtifact(manifest, view, rootEntry, issues)
     await validateMigrations(manifest, packageManifest, view, issues)
   } else {
     await validateNuxtInventory(manifest, packageManifest, view, issues)

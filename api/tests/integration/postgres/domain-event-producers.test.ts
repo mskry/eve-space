@@ -91,6 +91,43 @@ beforeEach(async () => {
   ssoMocks.verifyAccessToken.mockReset()
 })
 
+test('pages only the live owner identities with a fifty-character database bound', async () => {
+  await saveLogin(authorizationInput(mainCharacterId, []), 'selector-session')
+  const userId = await findCharacterUserId(mainCharacterId)
+  const [other] = await dbClient.sql<
+    { id: string }[]
+  >`insert into users default values returning id`
+  await dbClient.sql`
+    insert into characters (character_id, user_id, name, corporation_id, is_main, owner_hash)
+    select 91000000 + n, ${userId}, 'Alt ' || n, 1000166, false, 'selector-owner'
+    from generate_series(1, 55) n
+  `
+  await dbClient.sql`
+    insert into characters (character_id, user_id, name, corporation_id, is_main, owner_hash)
+    values (91999999, ${other!.id}, 'Other owner', 1000166, true, 'other-owner')
+  `
+  const first = await characterLifecycle.pageUserCharacterIdentities(userId, 50)
+  expect(first.items).toHaveLength(50)
+  expect(first.hasNextPage).toBe(true)
+  expect(Object.keys(first.items[0]!).toSorted((a, b) => a.localeCompare(b))).toEqual([
+    'characterId',
+    'isMain',
+    'name',
+  ])
+  const last = first.items.at(-1)!.characterId
+  const next = await characterLifecycle.pageUserCharacterIdentities(userId, 50, last)
+  expect(next.items).toHaveLength(6)
+  expect(next.hasNextPage).toBe(false)
+  expect(next.items.every((item) => item.characterId > last)).toBe(true)
+  expect([...first.items, ...next.items].some((item) => item.name === 'Other owner')).toBe(false)
+  await dbClient.sql`update characters set user_id = ${other!.id} where character_id = 91000001`
+  const current = await characterLifecycle.pageUserCharacterIdentities(userId, 50)
+  expect(current.items.some((item) => item.characterId === 91000001)).toBe(false)
+  await expect(characterLifecycle.pageUserCharacterIdentities(userId, 51)).rejects.toThrow(
+    'Invalid character page',
+  )
+})
+
 describe('transactional domain event producers', () => {
   test('does not retain player-controlled display names', async () => {
     const characterName = 'Bearer of Top Secret Sessions'

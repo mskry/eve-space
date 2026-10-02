@@ -1,8 +1,8 @@
 import { createMiddleware } from 'hono/factory'
 import { z } from 'zod'
-import { findOwnedCharacter, type OwnedCharacterSummary } from '../auth/character-lifecycle.js'
+import type { OwnedCharacterSummary } from '../auth/character-lifecycle.js'
+import { admitOwnedCharacter } from '../auth/read-admission.js'
 import type { SessionAccount } from '../auth/session-store.js'
-import { authRequiredBody } from '../http/contracts.js'
 
 export const characterIdParams = z.object({
   characterId: z
@@ -20,19 +20,14 @@ export type OwnedCharacterEnv = {
 }
 
 export const loadOwnedCharacter = createMiddleware<OwnedCharacterEnv>(async (context, next) => {
-  const session = context.var.session
-  if (!session) {
-    return context.json(authRequiredBody, 401)
-  }
-
-  const character = await findOwnedCharacter(
-    session.userId,
+  const admission = await admitOwnedCharacter(
+    context.var.session,
     Number(context.req.param('characterId')),
   )
-  if (!character) {
-    return context.json({ code: 'CHARACTER_NOT_FOUND', message: 'Character not found.' }, 404)
+  if (!admission.admitted) {
+    return context.json(admission.body, admission.status)
   }
 
-  context.set('ownedCharacter', character)
+  context.set('ownedCharacter', admission.character)
   await next()
 })

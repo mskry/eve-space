@@ -1,12 +1,42 @@
 import type { CoreDataProductId } from '@eve-space/core-data-contract'
+import type { ReadAdmissionWork } from '../auth/read-work.js'
 import type { PlatformInstalledReviewerContributionDescriptor } from '@eve-space/platform-module-contract/installed'
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 import { createCoreDataCapability } from '../core-data/capabilities.js'
 import { createPlatformModuleLogger } from './module-logging.js'
 import {
+  createPlatformModuleReadPersistence,
   createPlatformModuleRoutePersistence,
   createPlatformResourceProjectionPersistence,
+  type ModuleReadPersistenceDeclaration,
 } from './module-persistence-capabilities.js'
+import { guardReadCapabilities, type ReadCapabilityGuard } from './guarded-read-capabilities.js'
+
+export const createPlatformModuleReadCapabilities = <
+  const ProductIds extends readonly CoreDataProductId[],
+>(
+  declaration: ModuleReadPersistenceDeclaration,
+  productIds: ProductIds,
+  guard: ReadCapabilityGuard,
+  signal?: AbortSignal,
+  work?: ReadAdmissionWork,
+) =>
+  Object.freeze({
+    coreData: guardReadCapabilities(
+      createCoreDataCapability(
+        productIds,
+        declaration.grant === 'graphqlReads' ? 'graphql-read' : 'route',
+        signal,
+      ),
+      guard,
+      work,
+    ),
+    persistence: guardReadCapabilities(
+      createPlatformModuleReadPersistence(declaration, signal),
+      guard,
+      work,
+    ),
+  })
 
 export const createPlatformPublicRouteCapabilities = <
   const ModuleId extends string,

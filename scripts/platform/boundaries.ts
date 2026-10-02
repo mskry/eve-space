@@ -1,9 +1,11 @@
 import { posix } from 'node:path'
 import { findDependencyCycles } from '../dependency-cycles.js'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
+import { isTransportDependency } from '../transport-dependency.js'
 
 const modulesByTier = {
   adapter: [
+    'guarded-read-capabilities',
     'collection-state-store',
     'core-read-capabilities',
     'core-resource-materialization',
@@ -42,6 +44,9 @@ const modulesByTier = {
     'resource-subject',
   ],
   service: [
+    'module-context-capabilities',
+    'read-enablement',
+    'read-admission',
     'collection-status',
     'module-activity-provider-capabilities',
     'module-collection-status-capabilities',
@@ -114,6 +119,10 @@ function violationsForSource(source: PlatformSource) {
   }
 
   return typescriptModuleSpecifiers(source.path, source.source).flatMap((specifier) => {
+    if (sourceTier !== 'transport' && isTransportDependency(specifier))
+      return [
+        `${source.path}: ${sourceTier} module ${module} cannot import transport dependency ${specifier}`,
+      ]
     const importedPath = relativeImportPath(source.path, specifier)
     if (importedPath?.startsWith('api/src/queue/')) {
       return [`${source.path}: Platform module ${module} cannot import queue module ${specifier}`]

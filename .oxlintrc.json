@@ -25,7 +25,8 @@
     "packages/esi-client/src/generated/**",
     "packages/esi-client/tests/generated/**",
     "packages/esi-client/examples/generated/**",
-    "sde-ingest/target/**"
+    "sde-ingest/target/**",
+    "app/generated/**"
   ],
   "options": {
     "denyWarnings": true,

@@ -18,6 +18,10 @@ These rules refine the repository module-organization requirements for this dire
   and organization-compliance transitions. They depend on lower tiers; lower tiers never import
   them.
 - Transport modules own Hono routing and may depend on every lower tier.
+- Shared read admission is application-owned and transport-independent. It snapshots exact member
+  ownership, lifecycle, token authorization revision and required scope. Admitted reads reverify the
+  live member session and the original binding before reuse and before releasing asynchronous results.
+  Safe denial contracts are policy leaves; cookie lookup and response headers remain transport-owned.
 
 Dependencies point from transport through application workflows toward provider, persistence,
 primitive, and policy modules. Keep the directory flat and do not add an aggregate facade or barrel.

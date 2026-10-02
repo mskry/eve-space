@@ -2,6 +2,7 @@ import { operationRegistry } from '@evespace/esi-client/operations'
 import type { PostUniverseIdsResponse } from '@evespace/esi-client/types'
 import { z } from 'zod'
 import { createPublicEsiRead } from '../esi-gateway/feature-execution.js'
+import { immediateReadWork, type ReadAdmissionWork } from '../auth/read-work.js'
 import { errorStatus } from '../error-status.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
 import {
@@ -29,6 +30,11 @@ const universeIdCategories = {
   stations: 'station',
   systems: 'solar_system',
 } as const
+
+export interface UniverseNameReadOptions {
+  readonly signal?: AbortSignal
+  readonly work?: ReadAdmissionWork
+}
 
 export interface UniverseName {
   id: number
@@ -97,9 +103,9 @@ const universeIdsRead = createPublicEsiRead({
 
 export async function resolveUniverseNames(
   ids: readonly number[],
-  options: { readonly signal?: AbortSignal } = {},
+  options: UniverseNameReadOptions = {},
 ) {
-  const result = await resolveUniverseNameResults(ids, options.signal)
+  const result = await resolveUniverseNameResults(ids, options)
   if (result.failure !== undefined) {
     throw result.failure
   }
@@ -108,16 +114,21 @@ export async function resolveUniverseNames(
 
 export async function resolveUniverseNamesBestEffort(
   ids: readonly number[],
-  options: { readonly signal?: AbortSignal } = {},
+  options: UniverseNameReadOptions = {},
 ) {
-  const result = await resolveUniverseNameResults(ids, options.signal)
+  const result = await resolveUniverseNameResults(ids, options)
   return { complete: result.failure === undefined, names: result.names }
 }
 
-async function resolveUniverseNameResults(ids: readonly number[], signal?: AbortSignal) {
+async function resolveUniverseNameResults(
+  ids: readonly number[],
+  { signal, work = immediateReadWork }: UniverseNameReadOptions,
+) {
+  signal?.throwIfAborted()
   const names = new Map<number, UniverseName>()
   const uniqueIds = [...new Set(ids)]
-  const cached = await readUniverseNames(uniqueIds)
+  const cached = await work.run(() => readUniverseNames(uniqueIds))
+  signal?.throwIfAborted()
   for (const [id, entry] of [...cached.stale, ...cached.fresh]) {
     names.set(id, entry)
   }
@@ -137,10 +148,14 @@ async function resolveUniverseNameResults(ids: readonly number[], signal?: Abort
   )
   const results = await mapBoundedSettled(chunks, (chunk) =>
     resolveChunkWithSplitting(chunk, splitState, missingIds, (currentChunk) =>
-      loadUniverseNameChunk(currentChunk, names, missingIds, signal),
+      work.run(() => {
+        signal?.throwIfAborted()
+        return loadUniverseNameChunk(currentChunk, names, missingIds, signal)
+      }),
     ),
   )
-  await suppressUniverseNameIds(missingIds)
+  signal?.throwIfAborted()
+  if (missingIds.length > 0) await work.run(() => suppressUniverseNameIds(missingIds))
   const failure = results.find((result) => result.status === 'rejected')
   return { failure: failure?.reason, names }
 }
@@ -185,7 +200,9 @@ async function loadUniverseNameChunk(
   missingIds: number[],
   signal?: AbortSignal,
 ) {
+  signal?.throwIfAborted()
   const response = await universeNamesRead.execute({ body: chunk, ...(signal && { signal }) })
+  signal?.throwIfAborted()
   for (const entry of response.data) {
     names.set(entry.id, entry)
   }

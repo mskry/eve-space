@@ -9,6 +9,9 @@ These rules refine the repository-level module organization requirements for thi
 - Observability modules append or project audit records. Recorder leaves must not depend on adapters, services, or application orchestration.
 - Services own focused authorization, assignment, compliance-group, and evidence workflows. They may depend on policy, adapters, observability, and other acyclic services.
 - Application modules coordinate complete organization use cases and mutations. They may depend on lower tiers and other acyclic application modules.
+- Transport-independent read admission maps the existing contribution decision into safe outcomes.
+  Platform reads load current-version session context through the organization owner and repeat the
+  same compliance, block, audience and exact-permission policy before private result release.
 - Entry modules run scheduled maintenance. Transport modules own Hono routing. Neither may be imported by a lower tier, and transport must not import scheduled entry points.
 
 Dependencies point from transport and entry points through application workflows and focused services toward adapters, recorders, and pure policy. Same-tier dependencies must remain acyclic.

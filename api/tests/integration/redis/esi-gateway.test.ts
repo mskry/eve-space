@@ -4,6 +4,7 @@ import { TestClock } from 'effect/testing'
 import { GenericContainer, Wait, type StartedTestContainer } from 'testcontainers'
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
 import { z } from 'zod'
+import { createDeferred } from '../../support/deferred.js'
 import {
   acquireEsiRequestLease,
   commitEsiFence,
@@ -140,6 +141,31 @@ afterAll(async () => {
   cache.disconnect()
   coordination.disconnect()
   await Promise.all([cacheContainer.stop(), coordinationContainer.stop()])
+})
+
+test('keeps a registered asset page alive for an independent admitted waiter', async () => {
+  const response = createDeferred<Response>()
+  let sourceSignal: AbortSignal | undefined
+  const fetch = vi.fn((_url, init: RequestInit) => {
+    sourceSignal = init.signal ?? undefined
+    return response.promise
+  })
+  vi.stubGlobal('fetch', fetch)
+  const { loadCharacterAssetPage } = await import('../../../src/characters/asset-pages.js')
+  const controller = new AbortController()
+  const first = loadCharacterAssetPage(90000001, subjectLifecycleId, 1, controller.signal)
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+  const second = loadCharacterAssetPage(90000001, subjectLifecycleId, 1)
+  await vi.waitFor(() => expect(lifecycleCacheAuthorizationResolutions).toBeGreaterThanOrEqual(2))
+  await new Promise((resolve) => setTimeout(resolve, 100))
+  controller.abort(new Error('Disconnected'))
+  await expect(first).rejects.toThrow('Disconnected')
+  expect(sourceSignal?.aborted).toBe(false)
+  const upstream = esiResponse([])
+  upstream.headers.set('X-Pages', '1')
+  response.resolve(upstream)
+  await expect(second).resolves.toMatchObject({ data: { page: 1, totalPages: 1, assets: [] } })
+  expect(fetch).toHaveBeenCalledOnce()
 })
 
 describe('ESI resilience Redis coordination', () => {
@@ -1571,5 +1597,83 @@ test('uses a mail owner publication when its lease ends before the follower TTL 
     expect.objectContaining({ data: { body: 'owner' }, source: 'esi' }),
     expect.objectContaining({ data: { body: 'owner' }, source: 'cache' }),
   ])
+  expect(fetch).toHaveBeenCalledOnce()
+})
+
+test('propagates a GraphQL disconnect through a registered asset body and releases its permit once', async () => {
+  const { Hono } = await import('hono')
+  const { createSchema } = await import('graphql-yoga')
+  const { createGraphQLHostAdapter } = await import('../../../src/graphql/host-adapter.js')
+  const { loadCharacterAssetPage } = await import('../../../src/characters/asset-pages.js')
+  let sourceSignal: AbortSignal | undefined
+  const bodyStarted = createDeferred<void>()
+  const fetch = vi.fn((_url, init: RequestInit) => {
+    sourceSignal = init.signal ?? undefined
+    return Promise.resolve(
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            sourceSignal?.addEventListener('abort', () => controller.error(sourceSignal?.reason), {
+              once: true,
+            })
+            bodyStarted.resolve()
+          },
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Pages': '1',
+            Expires: new Date(Date.now() + 30000).toUTCString(),
+          },
+        },
+      ),
+    )
+  })
+  vi.stubGlobal('fetch', fetch)
+  const evaluations = vi.spyOn(coordination, 'eval')
+  const next = vi.fn()
+  const schema = createSchema<{ signal: AbortSignal }>({
+    typeDefs: 'type Query { page: Int }',
+    resolvers: {
+      Query: {
+        page: async (_parent, _args, context) => {
+          await loadCharacterAssetPage(90000001, subjectLifecycleId, 1, context.signal)
+          next()
+          return 1
+        },
+      },
+    },
+  })
+  const app = new Hono().route(
+    '/api/graphql',
+    createGraphQLHostAdapter(schema, (_request, { work }) => ({ signal: work.signal }), [
+      { field: 'Query.page', protected: true, cost: 1, sourceCost: 1000 },
+    ]),
+  )
+  const controller = new AbortController()
+  const response = app.fetch(
+    new Request('http://localhost/api/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: '{ page }' }),
+      signal: controller.signal,
+    }),
+  )
+  await Promise.race([
+    bodyStarted.promise,
+    Promise.resolve(response).then((result) => {
+      throw new Error(`GraphQL returned before the source body: ${result.status}`)
+    }),
+  ])
+  controller.abort()
+  expect(await (await response).json()).toMatchObject({
+    data: null,
+    errors: [{ extensions: { code: 'OPERATION_CANCELED' } }],
+  })
+  await vi.waitFor(() => expect(sourceSignal?.aborted).toBe(true))
+  const releases = () =>
+    evaluations.mock.calls.filter(([script]) => String(script).startsWith("redis.call('zrem',"))
+  await vi.waitFor(() => expect(releases()).toHaveLength(1))
+  expect(next).not.toHaveBeenCalled()
   expect(fetch).toHaveBeenCalledOnce()
 })

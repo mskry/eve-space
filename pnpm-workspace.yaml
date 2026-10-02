@@ -11,6 +11,8 @@ pmOnFail: ignore
 # Single source of truth for external dependency versions. Packages reference these with
 # `catalog:` so a version is declared once and inherited, never pinned per package.
 catalog:
+  graphql: 16.14.2
+  graphql-yoga: 5.24.1
   '@arethetypeswrong/cli': 0.18.5
   '@arethetypeswrong/core': 0.18.5
   '@bybrave/fast-json-patch2': 4.0.0

@@ -84,6 +84,12 @@ export const installedModulePersistenceOperations = [
       'read'
     >,
     grants: {
+      graphqlReads: [
+        'public-market/book',
+        'public-market/history',
+        'public-market/orders',
+        'public-market/profiles',
+      ],
       activityProviders: [],
       resourceMaterializations: [],
       resourceProjections: ['orders', 'daily-history'],
@@ -337,6 +343,7 @@ export const installedModulePersistenceOperations = [
       'read'
     >,
     grants: {
+      graphqlReads: ['public-market/book', 'public-market/orders'],
       activityProviders: [],
       resourceMaterializations: [],
       resourceProjections: [],
@@ -360,6 +367,7 @@ export const installedModulePersistenceOperations = [
       'read'
     >,
     grants: {
+      graphqlReads: ['public-market/orders'],
       activityProviders: [],
       resourceMaterializations: [],
       resourceProjections: [],
@@ -406,6 +414,7 @@ export const installedModulePersistenceOperations = [
       'read'
     >,
     grants: {
+      graphqlReads: ['public-market/reference-prices'],
       activityProviders: [],
       resourceMaterializations: [],
       resourceProjections: [],
@@ -544,6 +553,7 @@ export const installedModulePersistenceOperations = [
       'read'
     >,
     grants: {
+      graphqlReads: ['public-market/history'],
       activityProviders: [],
       resourceMaterializations: [],
       resourceProjections: ['daily-history'],
@@ -889,6 +899,7 @@ export const installedModulePersistenceOperations = [
       'read'
     >,
     grants: {
+      graphqlReads: ['public-market/book'],
       activityProviders: [],
       resourceMaterializations: [],
       resourceProjections: [],
@@ -1331,7 +1342,7 @@ export const installedModulePersistenceOperations = [
 ] as const satisfies readonly PlatformInstalledPersistenceOperationDescriptor[]
 
 export const installedModulePersistenceContractFingerprint =
-  '4200da49bdec0a40df95b9a4c77de547697d716b948717872a359ba5fd8cd617'
+  '2f15fc73d4042ae47fbf360829f77bb05f1a47616304b10a28d59ec10f365bdc'
 
 export const installedModulePersistenceOperationCatalog = {
   'market/list-market-profiles': installedModulePersistenceOperations[0]!,
@@ -1507,6 +1518,137 @@ export function createModule0Route7Persistence(invoke: PlatformPersistenceOperat
       invoke,
     ),
   }
+}
+
+export function createModule0GraphQL0Read0Persistence(
+  _invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {}
+}
+
+export function createModule0GraphQL0Read1Persistence(
+  _invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {}
+}
+
+export function createModule0GraphQL0Read2Persistence(
+  _invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {}
+}
+
+export function createModule0GraphQL0Read3Persistence(
+  _invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {}
+}
+
+export function createModule0GraphQL0Read4Persistence(
+  _invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {}
+}
+
+export function createModule0GraphQL0Read5Persistence(invoke: PlatformPersistenceOperationInvoker) {
+  return {
+    listMarketProfiles: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[0]!,
+      invoke,
+    ),
+    readMarketObservation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[11]!,
+      invoke,
+    ),
+    readMarketReplacementStatus: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[35]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0GraphQL0Read6Persistence(
+  _invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {}
+}
+
+export function createModule0GraphQL0Read7Persistence(
+  _invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {}
+}
+
+export function createModule0GraphQL0Read8Persistence(
+  _invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {}
+}
+
+export function createModule0GraphQL0Read9Persistence(invoke: PlatformPersistenceOperationInvoker) {
+  return {
+    listMarketProfiles: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[0]!,
+      invoke,
+    ),
+    readMarketHistory: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[20]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0GraphQL0Read10Persistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    listMarketProfiles: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[0]!,
+      invoke,
+    ),
+    readMarketObservation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[11]!,
+      invoke,
+    ),
+    readMarketOrderRows: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[12]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0GraphQL0Read11Persistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    listMarketProfiles: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[0]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0GraphQL0Read12Persistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    readMarketReferencePrices: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[14]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0GraphQL0Read13Persistence(
+  _invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {}
+}
+
+export function createModule0GraphQL0Read14Persistence(
+  _invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {}
 }
 
 export function createModule0Resource0ProjectionPersistence(
@@ -2205,6 +2347,23 @@ export const installedModulePersistenceCapabilityFactories = {
     'organization-activity/character-jobs': createModule2Resource4MaterializationPersistence,
     'organization-activity/character-campaigns': createModule2Resource5MaterializationPersistence,
     'organization-activity/character-projects': createModule2Resource6MaterializationPersistence,
+  },
+  graphqlReads: {
+    'market/public-market/catalogue-items': createModule0GraphQL0Read0Persistence,
+    'market/public-market/history-days': createModule0GraphQL0Read1Persistence,
+    'market/public-market/order-rows': createModule0GraphQL0Read2Persistence,
+    'market/public-market/profile-stations': createModule0GraphQL0Read3Persistence,
+    'market/public-market/profile-watched-types': createModule0GraphQL0Read4Persistence,
+    'market/public-market/book': createModule0GraphQL0Read5Persistence,
+    'market/public-market/catalogue-group-types': createModule0GraphQL0Read6Persistence,
+    'market/public-market/catalogue-revision': createModule0GraphQL0Read7Persistence,
+    'market/public-market/catalogue-type': createModule0GraphQL0Read8Persistence,
+    'market/public-market/history': createModule0GraphQL0Read9Persistence,
+    'market/public-market/orders': createModule0GraphQL0Read10Persistence,
+    'market/public-market/profiles': createModule0GraphQL0Read11Persistence,
+    'market/public-market/reference-prices': createModule0GraphQL0Read12Persistence,
+    'market/public-market/reference-rows': createModule0GraphQL0Read13Persistence,
+    'market/public-market/root': createModule0GraphQL0Read14Persistence,
   },
 } as const
 

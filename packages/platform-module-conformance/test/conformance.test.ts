@@ -14,6 +14,7 @@ import {
   fixtureProvider,
   fixtureResource,
   fixtureRoutes,
+  fixtureGraphQL,
   readFixtureOperation,
 } from './fixtures/src/server.js'
 import fixtureNuxtModule, { fixturePanel, fixturePanelModule } from './fixtures/src/nuxt.js'
@@ -104,6 +105,19 @@ describe('public conformance fixtures', () => {
     const provider = fixtureProvider()
 
     expect(await response.json()).toStrictEqual({ value: 'public-contract' })
+    expect(
+      await fixtureGraphQL.reads['FixtureRead.value']!({
+        parent: {},
+        args: {},
+        capabilities: {
+          coreData: {},
+          persistence: { readFixture },
+          signal: new AbortController().signal,
+          cache: { publicUntil() {}, noStore() {} },
+        },
+        subject: null,
+      }),
+    ).toBe('public-contract')
     expect(fixtureResource.operation).toBe('fixture-status')
     expect(readFixtureOperation.id).toBe('read-fixture')
     expect(fixturePanel.contributionId).toBe('fixture-review')
@@ -137,6 +151,73 @@ describe('public conformance fixtures', () => {
 })
 
 describe('installed and packed artifact verification', () => {
+  it.each([
+    ['routes', 'graphql'],
+    ['graphql', 'routes'],
+  ])(
+    'finds GraphQL descriptors through wildcard barrels in %s / %s order',
+    async (first, second) => {
+      const root = await copyFixture()
+      const entry = join(root, 'server/dist/index.js')
+      const source = await readFile(entry, 'utf8')
+      const start = source.indexOf('export const fixtureGraphQL')
+      const end = source.indexOf('export const readFixtureOperation')
+      await writeFile(join(root, 'server/dist/graphql.js'), source.slice(start, end))
+      await writeFile(
+        join(root, 'server/dist/routes.js'),
+        source.slice(0, start) + source.slice(end),
+      )
+      await writeFile(entry, `export * from './${first}.js'\nexport * from './${second}.js'\n`)
+      const report = await verifyInstalledModuleArtifacts(directoryInput(), { baseDirectory: root })
+      expect(report.ok).toBe(true)
+    },
+  )
+  it.each([
+    ['', 'undefined'],
+    ['const invalidRead = undefined', 'invalidRead'],
+    ['const invalidRead = 42', 'invalidRead'],
+    ['const invalidRead = "not callable"', 'invalidRead'],
+    ['const invalidRead = {}', 'invalidRead'],
+  ])('rejects packaged non-callable GraphQL read %s / %s', async (prefix, replacement) => {
+    const root = await copyFixture()
+    const path = join(root, 'server/dist/index.js')
+    const source = await readFile(path, 'utf8')
+    const resolver =
+      "async ({ capabilities }) => (await capabilities.persistence.readFixture({ id: 'fixture' })).value"
+    expect(source).toContain(resolver)
+    await writeFile(path, `${prefix}\n${source.replace(resolver, replacement)}`)
+    const report = await verifyInstalledModuleArtifacts(directoryInput(), { baseDirectory: root })
+    expect(report.ok).toBe(false)
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: 'GRAPHQL_INVENTORY_MISMATCH' }),
+    )
+  })
+  it('rejects undeclared nested GraphQL reads in installed artifacts', async () => {
+    const root = await copyFixture()
+    const path = join(root, 'server/dist/index.js')
+    const source = await readFile(path, 'utf8')
+    await writeFile(path, source.replace("'FixtureRead.value':", "'FixtureRead.hidden':"))
+    const report = await verifyInstalledModuleArtifacts(directoryInput(), { baseDirectory: root })
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: 'GRAPHQL_INVENTORY_MISMATCH' }),
+    )
+  })
+
+  it('keeps legacy artifacts compatible when the optional contribution is absent', async () => {
+    const root = await copyFixture()
+    const path = join(root, 'manifest/manifest.json')
+    const manifest = JSON.parse(await readFile(path, 'utf8'))
+    delete manifest.server.graphql
+    manifest.release.hostContractRange = '^1.0.0'
+    await writeFile(path, JSON.stringify(manifest))
+    const entry = join(root, 'server/dist/index.js')
+    const source = await readFile(entry, 'utf8')
+    const start = source.indexOf('export const fixtureGraphQL')
+    const end = source.indexOf('export const readFixtureOperation')
+    await writeFile(entry, source.slice(0, start) + source.slice(end))
+    const report = await verifyInstalledModuleArtifacts(directoryInput(), { baseDirectory: root })
+    expect(report.ok).toBe(true)
+  })
   it('validates installed package directories and every orphan artifact', async () => {
     const report = await verifyInstalledModuleArtifacts(directoryInput(), {
       baseDirectory: fixtureRoot,

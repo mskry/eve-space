@@ -84,12 +84,12 @@ describe('core-data contract', () => {
     }>()
   })
 
-  it('declares a route-only bounded market catalogue', () => {
+  it('declares a bounded market catalogue for routes and GraphQL reads', () => {
     const contract = CORE_DATA_PRODUCT_CONTRACTS['market-catalogue']
     expect(MARKET_CATALOGUE_MAX_GROUPS).toBe(4_000)
     expect(MARKET_CATALOGUE_MAX_TYPES).toBe(32_000)
     expect(MARKET_CATALOGUE_GROUP_PAGE_SIZE).toBe(100)
-    expect(contract.permittedContexts).toStrictEqual(['route'])
+    expect(contract.permittedContexts).toStrictEqual(['route', 'graphql-read'])
     expect(contract.requestBound).toBe(MARKET_CATALOGUE_MAX_TYPES)
     expectTypeOf<CoreDataProductResult<'market-catalogue'>>().toEqualTypeOf<MarketCatalogueResult>()
     expectTypeOf<CoreDataMethodsFor<readonly ['market-catalogue']>>().toHaveProperty(

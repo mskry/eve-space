@@ -1,4 +1,5 @@
 import type postgres from 'postgres'
+import { waitForRead } from '../read-wait.js'
 import { executeCancellableQuery } from '../query-cancellation.js'
 
 export const universeDatabaseTimeoutMilliseconds = 2000
@@ -9,13 +10,18 @@ export type UniverseQuery = postgres.Sql | postgres.TransactionSql
 export type BoundedReadDatabase = Pick<postgres.Sql, 'begin'>
 export const executeUniverseQuery = executeCancellableQuery
 
-export function runBoundedReadTransaction<Result>(
+export const runBoundedReadTransaction = <Result>(
   database: BoundedReadDatabase,
   options: string,
   timeoutError: Error,
   load: (transaction: postgres.TransactionSql, signal: AbortSignal) => Promise<Result>,
-) {
+  callerSignal?: AbortSignal,
+) => {
+  callerSignal?.throwIfAborted()
   const controller = new AbortController()
+  const signal = callerSignal
+    ? AbortSignal.any([callerSignal, controller.signal])
+    : controller.signal
   let timer: ReturnType<typeof setTimeout>
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(() => {
@@ -25,18 +31,18 @@ export function runBoundedReadTransaction<Result>(
     timer.unref()
   })
   const operation = database.begin(options, async (transaction) => {
-    controller.signal.throwIfAborted()
+    signal.throwIfAborted()
     await executeUniverseQuery(
       transaction.unsafe(
         `set local statement_timeout = '${universeDatabaseTimeoutMilliseconds}ms'`,
       ),
-      controller.signal,
+      signal,
     )
     await executeUniverseQuery(
       transaction.unsafe(`set local lock_timeout = '${universeDatabaseTimeoutMilliseconds}ms'`),
-      controller.signal,
+      signal,
     )
-    return load(transaction, controller.signal)
+    return load(transaction, signal)
   })
-  return Promise.race([operation, timeout]).finally(() => clearTimeout(timer))
+  return waitForRead(Promise.race([operation, timeout]), signal).finally(() => clearTimeout(timer))
 }

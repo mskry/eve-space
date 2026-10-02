@@ -8,6 +8,10 @@ operation methods and named persistence methods; routes consume declared capabil
 and may call the pure quote collector. The package root exports contributions but owns
 no execution.
 
+Shared public reads depend on representations and injected named read capabilities.
+Hono and GraphQL adapters depend on these reads. GraphQL declarations import only the
+role contract and shared reads; they receive no collection or scheduling capabilities.
+
 The host owns gateway authorization, caching, rate coordination, queue admission, and
 current-character lifecycle checks. Market owns profile bounds, complete-observation
 validation, price-time quotation, safe DTOs, and module SQL routines. Public profile

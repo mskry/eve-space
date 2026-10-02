@@ -25,6 +25,7 @@ const files = new Map(
         manifests.compiled,
         manifests.persistenceRoutines,
         manifests.releases,
+        manifests.graphqlContributions,
       ),
     ].map(async ([path, source]) => {
       const result = await format(path, source, formatOptions)

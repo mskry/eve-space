@@ -1,4 +1,9 @@
-import type { PlatformPersistenceOperationInvoker } from '@eve-space/platform-module-server'
+import {
+  bindPlatformPersistenceOperation,
+  type PlatformInstalledPersistenceOperationDescriptor,
+  type PlatformPersistenceOperationInvoker,
+} from '@eve-space/platform-module-server'
+import type { PlatformPersistenceOperationReference } from '@eve-space/platform-module-contract/persistence'
 import type postgres from 'postgres'
 import { sql } from '../db/client.js'
 import {
@@ -11,8 +16,18 @@ import {
 } from '../generated/platform/installed-module-persistence.js'
 
 const resourcePersistenceTimeoutMilliseconds = 2000
+const installedReadOperations: readonly PlatformInstalledPersistenceOperationDescriptor[] =
+  installedModulePersistenceOperations
+
+export interface ModuleReadPersistenceDeclaration {
+  readonly moduleId: string
+  readonly contributionId: string
+  readonly grant: 'routes' | 'graphqlReads'
+  readonly operations: readonly PlatformPersistenceOperationReference[]
+}
 
 type PersistenceCapabilityFactory = (invoke: PlatformPersistenceOperationInvoker) => object
+type PersistenceRead = ReturnType<typeof bindPlatformPersistenceOperation>
 type PersistenceCapabilityFactories = typeof installedModulePersistenceCapabilityFactories
 type PersistenceCapabilityGroup = keyof PersistenceCapabilityFactories
 type PersistenceCapabilityResult<
@@ -26,6 +41,41 @@ type PersistenceCapabilityResult<
     ? Result
     : never
   : object
+
+export const createPlatformModuleReadPersistence = (
+  declaration: ModuleReadPersistenceDeclaration,
+  signal?: AbortSignal,
+) => {
+  const methods: Record<string, PersistenceRead> = {}
+  const names = new Set<string>()
+  const selected = declaration.operations.map((reference) => {
+    const operation = installedReadOperations.find(
+      (candidate) =>
+        candidate.moduleId === declaration.moduleId &&
+        candidate.operationId === reference.operationId &&
+        candidate.mode === 'read' &&
+        candidate.grants[declaration.grant]?.includes(declaration.contributionId),
+    )
+    if (!operation || names.has(operation.method)) {
+      throw new Error('Missing or duplicate installed read-only persistence grant')
+    }
+    names.add(operation.method)
+    return operation
+  })
+  const invoke = createStandaloneModulePersistenceOperationInvoker(
+    sql,
+    declaration.moduleId,
+    selected,
+    {
+      readOnly: true,
+      signal,
+      statementTimeoutMilliseconds: resourcePersistenceTimeoutMilliseconds,
+    },
+  )
+  for (const operation of selected)
+    methods[operation.method] = bindPlatformPersistenceOperation(operation, invoke)
+  return Object.freeze(methods)
+}
 
 export function createPlatformModuleRoutePersistence<
   const ModuleId extends string,

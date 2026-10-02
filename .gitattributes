@@ -1,1 +1,3 @@
 api/migrations/*.sql text eol=lf
+*.graphql text eol=lf
+app/generated/graphql-*.ts text eol=lf

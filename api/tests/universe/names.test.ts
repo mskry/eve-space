@@ -53,6 +53,34 @@ afterEach(() => {
 })
 
 describe('universe name resolver', () => {
+  test('charges recursive invalid-ID splits and stops new work after caller cancellation', async () => {
+    const { resolveUniverseNamesBestEffort } = await import('../../src/universe/names.js')
+    const signal = new AbortController()
+    let reads = 0
+    const work = {
+      run: async <Result>(load: () => Promise<Result>) => {
+        signal.signal.throwIfAborted()
+        reads += 1
+        return load()
+      },
+    }
+    mocks.resolveNames.mockImplementation(async (ids: number[]) => {
+      if (ids.length === 1) return ids.map((id) => ({ id, name: 'Station', category: 'station' }))
+      throw Object.assign(new Error('invalid ids'), { status: 404 })
+    })
+    await resolveUniverseNamesBestEffort([1, 2], { signal: signal.signal, work })
+    expect(reads).toBe(4)
+    mocks.getPublic.mockClear()
+    mocks.resolveNames.mockImplementation(async () => {
+      signal.abort(new Error('Disconnected'))
+      throw Object.assign(new Error('invalid ids'), { status: 404 })
+    })
+    await expect(
+      resolveUniverseNamesBestEffort([3, 4], { signal: signal.signal, work }),
+    ).rejects.toThrow('Disconnected')
+    expect(mocks.getPublic).toHaveBeenCalledOnce()
+  })
+
   test('deduplicates canonical set inputs and passes conditional validators', async () => {
     mocks.resolveNames.mockResolvedValue([
       { category: 'corporation', id: 2, name: 'Second' },
@@ -232,7 +260,7 @@ describe('universe name resolver', () => {
       new Map([[1, { category: 'character', id: 1, name: 'Stale' }]]),
     )
     expect(mocks.writeUniverseNames).not.toHaveBeenCalled()
-    expect(mocks.suppressUniverseNameIds).toHaveBeenCalledWith([])
+    expect(mocks.suppressUniverseNameIds).not.toHaveBeenCalled()
   })
 })
 

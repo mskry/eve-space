@@ -1,4 +1,5 @@
 export { catalogueRoutes } from './catalogue-routes.js'
+export { marketGraphQL } from './graphql.js'
 export { profileRoutes } from './profile-routes.js'
 export { marketOrdersResource } from './profile-collection.js'
 export { marketBookRoutes } from './book-routes.js'

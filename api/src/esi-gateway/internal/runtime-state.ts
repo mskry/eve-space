@@ -1,3 +1,4 @@
+import { EsiReadWaiters } from './read-waiters.js'
 import { BoundedEsiL1Cache } from './l1-cache.js'
 import type { BoundedStringSetPort, RuntimeLocalQuotaStatePort } from './runtime-ports.js'
 
@@ -8,6 +9,7 @@ export function createEsiExecutionRuntimeState(l1Capacity: number) {
 }
 
 class EsiExecutionRuntimeState {
+  readonly readWaiters = new EsiReadWaiters()
   readonly l1: BoundedEsiL1Cache
   namespace = 'unavailable'
   namespaceValidatedAt = 0

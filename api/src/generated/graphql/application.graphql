@@ -1,0 +1,229 @@
+type Asset {
+  categoryId: EveId
+  categoryName: String
+  customName: String
+  groupId: EveId
+  groupName: String
+  isBlueprintCopy: Boolean
+  isSingleton: Boolean!
+  itemId: EveId!
+  locationFlag: String!
+  locationId: EveId!
+  locationName: String
+  locationType: String!
+  parentItemId: EveId
+  quantity: BigInteger!
+  solarSystemId: EveId
+  solarSystemSecurityStatus: Float
+  totalVolume: Float
+  typeId: EveId!
+  typeName: String!
+  unitVolume: Float
+}
+
+type AssetConnection {
+  anchor: String!
+  anchorSource: AssetSource!
+  assets: [Asset!]!
+  characterId: EveId!
+  completeness: String!
+  enrichment: AssetEnrichment!
+  pageInfo: PageInfo!
+  source: AssetSource!
+  sourcePage: Int!
+  totalSourcePages: Int!
+}
+
+type AssetEnrichment {
+  locations: String!
+  names: String!
+  types: String!
+}
+
+type AssetSource {
+  cachedUntil: UTCTime!
+  refreshFailureClass: String
+  retryAt: UTCTime
+  stale: Boolean!
+  validatedAt: UTCTime!
+}
+
+scalar BigInteger
+
+scalar Decimal
+
+scalar EveId
+
+type MarketBook {
+  collectionStatus: String!
+  observation: MarketObservation
+  profileId: UUID!
+  profileRevision: BigInteger!
+  replacement: MarketReplacement
+  status: String!
+  typeId: EveId!
+}
+
+type MarketCatalogueGroupPage {
+  groupId: EveId!
+  items: [MarketCatalogueType!]!
+  nextCursor: String
+  revision: String!
+}
+
+type MarketCatalogueRevision {
+  buildNumber: BigInteger!
+  ingestVersion: Int!
+  ingestedAt: UTCTime!
+  key: String!
+}
+
+type MarketCatalogueType {
+  groupId: EveId!
+  id: EveId!
+  name: String!
+}
+
+type MarketCatalogueTypeResult {
+  item: MarketCatalogueType!
+  revision: String!
+}
+
+type MarketHistory {
+  days: [MarketHistoryDay!]!
+  freshUntil: UTCTime
+  freshness: String!
+  profileId: UUID!
+  profileRevision: BigInteger!
+  regionId: EveId!
+  status: String!
+  typeId: EveId!
+  validatedAt: UTCTime
+}
+
+type MarketHistoryDay {
+  averageIsk: Decimal!
+  date: UTCDate!
+  highIsk: Decimal!
+  lowIsk: Decimal!
+  orderCount: BigInteger!
+  volume: BigInteger!
+}
+
+type MarketObservation {
+  expectedPages: Int!
+  freshUntil: UTCTime!
+  observationId: UUID!
+  observedAt: UTCTime!
+  profileId: UUID!
+  regionId: EveId!
+  totalBookOrders: BigInteger!
+  typeId: EveId!
+  validatedAt: UTCTime!
+}
+
+type MarketOrder {
+  durationDays: Int!
+  expiryAt: UTCTime!
+  issuedAt: UTCTime!
+  locationId: EveId!
+  locationName: String
+  minimumVolume: BigInteger!
+  orderId: EveId!
+  price: Decimal!
+  range: String!
+  side: MarketOrderSide!
+  solarSystemId: EveId
+  solarSystemSecurityStatus: Float
+  volumeRemain: BigInteger!
+}
+
+type MarketOrderPage {
+  hasMore: Boolean!
+  labelsComplete: Boolean!
+  nextCursor: String
+  observation: MarketObservation!
+  observationId: UUID!
+  profileRevision: BigInteger!
+  rows: [MarketOrder!]!
+}
+
+enum MarketOrderSide {
+  buy
+  sell
+}
+
+type MarketProfile {
+  marketScope: String!
+  mode: String!
+  profileId: UUID!
+  regionId: EveId!
+  revision: BigInteger!
+  stationIds: [EveId!]!
+  watchedTypeIds: [EveId!]!
+}
+
+type MarketRead {
+  book(profileId: UUID!, typeId: EveId!): MarketBook
+  catalogueGroupTypes(after: String, first: Int = 100, groupId: EveId!, revision: String!): MarketCatalogueGroupPage
+  catalogueRevision: MarketCatalogueRevision
+  catalogueType(revision: String!, typeId: EveId!): MarketCatalogueTypeResult
+  history(profileId: UUID!, typeId: EveId!): MarketHistory
+  orders(after: String, first: Int = 100, observationId: UUID!, profileId: UUID!, side: MarketOrderSide!, typeId: EveId!): MarketOrderPage
+  profiles: [MarketProfile!]
+  referencePrices(typeIds: [EveId!]!): MarketReferencePrices
+}
+
+type MarketReferencePrice {
+  adjustedPriceIsk: Decimal
+  averagePriceIsk: Decimal
+  sourceHour: UTCTime!
+  typeId: EveId!
+  validatedAt: UTCTime!
+}
+
+type MarketReferencePrices {
+  kind: String!
+  rows: [MarketReferencePrice!]!
+}
+
+type MarketReplacement {
+  attemptedAt: UTCTime!
+  status: String!
+}
+
+type OwnedCharacter {
+  assets(after: String, first: Int! = 25): AssetConnection
+  characterId: EveId!
+  isMain: Boolean!
+  name: String!
+}
+
+type OwnedCharacterConnection {
+  items: [OwnedCharacterIdentity!]!
+  pageInfo: PageInfo!
+}
+
+type OwnedCharacterIdentity {
+  characterId: EveId!
+  isMain: Boolean!
+  name: String!
+}
+
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+  restartRequired: Boolean!
+}
+
+type Query {
+  market: MarketRead
+  ownedCharacter(characterId: EveId!): OwnedCharacter
+  ownedCharacters(after: String, first: Int! = 50): OwnedCharacterConnection
+}
+
+scalar UTCDate
+
+scalar UTCTime
+
+scalar UUID

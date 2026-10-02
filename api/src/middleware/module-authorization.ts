@@ -8,21 +8,19 @@ import type {
   PlatformReviewerTargetRouteEnv,
 } from '@eve-space/platform-module-contract/server'
 import type { PlatformInstalledOrganizationContributionAuthorization } from '@eve-space/platform-module-contract/installed'
-import type { Context } from 'hono'
 import { createMiddleware } from 'hono/factory'
 import { authRequiredBody } from '../http/contracts.js'
-import { createOwnedCharacterCoreReads } from '../platform/core-read-capabilities.js'
-import { createPlatformModuleCollectionStatusReads } from '../platform/module-collection-status-capabilities.js'
+import {
+  createAuthenticatedSessionModuleContext,
+  createOwnedCharacterModuleContext,
+} from '../platform/module-context-capabilities.js'
 import { createPlatformReviewerCollectionStatusReads } from '../platform/module-reviewer-collection-status-capabilities.js'
 import { createPlatformReviewerEvidenceSummaryReads } from '../platform/module-reviewer-evidence-summary-capabilities.js'
 import { createPlatformReviewerEvidenceReads } from '../platform/module-reviewer-evidence-capabilities.js'
 import { createPlatformOrganizationCommandCapabilities } from '../platform/module-organization-command-capabilities.js'
 import { createPlatformReviewerAccountSearch } from '../platform/reviewer-search-capabilities.js'
-import {
-  authorizeOrganizationContribution,
-  authorizeOrganizationReviewerContribution,
-  type OrganizationContributionAuthorizationResult,
-} from '../organization/module-authorization.js'
+import type { OrganizationContributionAuthorizationResult } from '../organization/module-authorization.js'
+import { admitOrganizationRead } from '../organization/read-admission.js'
 import type { OrganizationSessionEnv } from './organization-session.js'
 import type { OwnedCharacterEnv } from './owned-character.js'
 import type { OrganizationReviewerTargetEnv } from './reviewer-target.js'
@@ -60,124 +58,36 @@ type ReviewerSearchModuleEnv = {
     PlatformReviewerSearchRouteEnv['Variables']
 }
 
-export function requireModuleOrganizationAuthorization(
-  declaration: PlatformInstalledOrganizationContributionAuthorization,
-) {
-  return requireOrganizationAuthorization(declaration, false)
-}
-
-export function requireModuleReviewerAuthorization(
-  declaration: PlatformInstalledOrganizationContributionAuthorization,
-) {
-  return requireOrganizationAuthorization(declaration, true)
-}
-
-function requireOrganizationAuthorization(
+const requireOrganizationAuthorization = (
   declaration: PlatformInstalledOrganizationContributionAuthorization,
   reviewer: boolean,
-) {
+) => {
   return createMiddleware<ModuleOrganizationAuthorizationEnv>(async (context, next) => {
-    const session = context.var.session
-    if (!session) {
-      return context.json(authRequiredBody, 401)
-    }
-    const organization = context.var.organization
-    if (!organization) {
-      return context.json(
-        {
-          code: 'ORGANIZATION_COMPLIANCE_REQUIRED',
-          message: 'Current organization compliance is required.',
-          reviewDeadline: null,
-          state: 'pending',
-        },
-        403,
-      )
-    }
-
-    const authorization = reviewer
-      ? await authorizeOrganizationReviewerContribution(session.userId, organization, declaration)
-      : await authorizeOrganizationContribution(session.userId, organization, declaration)
-    if (!authorization.authorized) {
+    const authorization = await admitOrganizationRead(
+      context.var.session,
+      context.var.organization ?? null,
+      declaration,
+      reviewer,
+    )
+    if (!authorization.admitted) {
       context.set('moduleOrganizationAuthorizationDenialReason', authorization.reason)
-      return organizationAuthorizationDenied(
-        context,
-        organization,
-        declaration,
-        authorization,
-        reviewer,
-      )
+      return context.json(authorization.body, authorization.status)
     }
 
-    context.set('moduleOrganizationAuthorization', authorization.context)
+    context.set('moduleOrganizationAuthorization', authorization.organization)
     await next()
   })
 }
 
-function organizationAuthorizationDenied(
-  context: Context<ModuleOrganizationAuthorizationEnv>,
-  organization: NonNullable<ModuleOrganizationAuthorizationEnv['Variables']['organization']>,
+export const requireModuleOrganizationAuthorization = (
   declaration: PlatformInstalledOrganizationContributionAuthorization,
-  authorization: Extract<OrganizationContributionAuthorizationResult, { authorized: false }>,
-  reviewer: boolean,
-) {
-  if (authorization.reason === 'blocked') {
-    return context.json(
-      {
-        code: 'ORGANIZATION_MEMBER_BLOCKED',
-        message: 'Organization access is blocked.',
-        reviewDeadline: organization.reviewDeadline?.toISOString() ?? null,
-        state: organization.state,
-      },
-      403,
-    )
-  }
-  if (authorization.reason === 'compliance') {
-    return context.json(
-      {
-        code: 'ORGANIZATION_COMPLIANCE_REQUIRED',
-        message: 'Current organization compliance is required.',
-        reviewDeadline: organization.reviewDeadline?.toISOString() ?? null,
-        state: organization.state,
-      },
-      403,
-    )
-  }
-  if (authorization.reason === 'audience') {
-    if (reviewer) {
-      return context.json(
-        {
-          code: 'ORGANIZATION_REVIEWER_REQUIRED',
-          message: 'Organization reviewer authority is required.',
-        },
-        403,
-      )
-    }
-    return declaration.audience === 'hr'
-      ? context.json(
-          {
-            code: 'ORGANIZATION_HR_REQUIRED',
-            message: 'Organization HR authority is required.',
-          },
-          403,
-        )
-      : context.json(
-          {
-            code: 'ORGANIZATION_MANAGER_REQUIRED',
-            message: 'Organization management is required.',
-          },
-          403,
-        )
-  }
-  return context.json(
-    {
-      code: 'ORGANIZATION_PERMISSION_REQUIRED',
-      message: 'The required organization permission is not granted.',
-    },
-    403,
-  )
-}
+) => requireOrganizationAuthorization(declaration, false)
 
-export function exposeAuthenticatedSessionModuleContext(moduleId: string, sectionId?: string) {
+export const requireModuleReviewerAuthorization = (
+  declaration: PlatformInstalledOrganizationContributionAuthorization,
+) => requireOrganizationAuthorization(declaration, true)
+
+export const exposeAuthenticatedSessionModuleContext = (moduleId: string, sectionId?: string) => {
   return createMiddleware<AuthenticatedSessionModuleEnv>(async (context, next) => {
     const session = context.var.session
     if (!session) {
@@ -185,27 +95,19 @@ export function exposeAuthenticatedSessionModuleContext(moduleId: string, sectio
     }
     const organization = context.var.moduleOrganizationAuthorization!
 
-    context.set('platform', {
-      authorization: {
-        strategy: 'authenticated-session',
-        userId: session.userId,
-      },
-      collectionStatus: createPlatformModuleCollectionStatusReads({
-        moduleId,
-        organizationVersion: organization.organizationVersion,
-        sectionId,
-      }),
-      organization,
-    })
+    context.set(
+      'platform',
+      createAuthenticatedSessionModuleContext(moduleId, session.userId, organization, sectionId),
+    )
     await next()
   })
 }
 
-export function exposeOwnedCharacterModuleContext(
+export const exposeOwnedCharacterModuleContext = (
   moduleId: string,
   sectionId?: string,
   onDemand?: PlatformOnDemandStructureRequester,
-) {
+) => {
   return createMiddleware<OwnedCharacterModuleEnv>(async (context, next) => {
     const session = context.var.session
     if (!session) {
@@ -214,38 +116,16 @@ export function exposeOwnedCharacterModuleContext(
 
     const { characterId, subjectLifecycleId } = context.var.ownedCharacter
     const organization = context.var.moduleOrganizationAuthorization!
-    const authority = {
-      userId: session.userId,
-      characterId,
-      subjectLifecycleId,
-      organizationVersion: organization.organizationVersion,
-    }
-    context.set('platform', {
-      authorization: {
-        characterId,
-        strategy: 'owned-character',
-        subjectLifecycleId,
-        userId: session.userId,
-      },
-      collectionStatus: createPlatformModuleCollectionStatusReads({
+    context.set(
+      'platform',
+      createOwnedCharacterModuleContext(
         moduleId,
+        { userId: session.userId, characterId, subjectLifecycleId },
+        organization,
         sectionId,
-        organizationVersion: organization.organizationVersion,
-        characters: [{ characterId, subjectLifecycleId }],
-      }),
-      organization,
-      coreReads: createOwnedCharacterCoreReads({
-        userId: session.userId,
-        characterId,
-        subjectLifecycleId,
-      }),
-      ...(onDemand && {
-        onDemandStructure: {
-          currentGeneration: () => onDemand.currentGeneration(authority),
-          request: (structureId: number) => onDemand.request(authority, structureId),
-        },
-      }),
-    })
+        onDemand,
+      ),
+    )
     await next()
   })
 }

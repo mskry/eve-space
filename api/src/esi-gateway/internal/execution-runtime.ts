@@ -110,6 +110,7 @@ interface EsiExecutionResource<Data> {
   load(
     authority: { accessToken: string; principal: string } | undefined,
     revalidation: EsiRevalidation,
+    signal?: AbortSignal,
   ): Promise<EsiCanonicalLoad<Data>>
 }
 
@@ -125,7 +126,7 @@ interface DirectInternalEsiResource<Data> {
   authorization?: EsiCacheAuthorization
   resourceRevisionPrincipal?: string
   signal?: AbortSignal
-  load(revalidation: EsiRevalidation): Promise<EsiCanonicalLoad<Data>>
+  load(revalidation: EsiRevalidation, signal?: AbortSignal): Promise<EsiCanonicalLoad<Data>>
   resolveAuthorization?: undefined
 }
 
@@ -139,9 +140,9 @@ interface LazyInternalEsiResource<Data> {
   resourceRevisionPrincipal?: string
   signal?: AbortSignal
   load?: undefined
-  resolveAuthorization(): Promise<{
+  resolveAuthorization(signal?: AbortSignal): Promise<{
     authorization: EsiCacheAuthorization
-    load(revalidation: EsiRevalidation): Promise<EsiCanonicalLoad<Data>>
+    load(revalidation: EsiRevalidation, signal?: AbortSignal): Promise<EsiCanonicalLoad<Data>>
   }>
 }
 
@@ -305,14 +306,14 @@ class EsiExecutionRuntimeImplementation {
     const resource: EsiCachedExecutionResource<Result> = {
       cacheSchema: representation.cacheSchemaForInput?.(input) ?? representation.cacheSchema,
       inputs: representation.cacheIdentity?.(input) ?? request,
-      load: (authorization, revalidation) =>
+      load: (authorization, revalidation, sourceSignal = signal) =>
         this.#dispatchRepresentation(
           representation,
           input,
           request,
           revalidation,
           authorization,
-          signal,
+          sourceSignal,
         ),
       operation: representation.operation,
       signal,
@@ -323,7 +324,8 @@ class EsiExecutionRuntimeImplementation {
           representation.operation,
           this.#get({
             ...resource,
-            load: (revalidation) => resource.load(undefined, revalidation),
+            load: (revalidation, sourceSignal) =>
+              resource.load(undefined, revalidation, sourceSignal),
             representationName: representation.name,
           }),
           signal,
@@ -415,14 +417,14 @@ class EsiExecutionRuntimeImplementation {
           this.#get({
             cacheSchema: definition.descriptor.responseSchema,
             inputs,
-            load: (revalidation) =>
+            load: (revalidation, sourceSignal = request.signal) =>
               this.#dispatchPlatformOperation(
                 request.operation,
                 definition,
                 inputs,
                 revalidation,
                 undefined,
-                request.signal,
+                sourceSignal,
               ),
             operation: request.operation,
             signal: request.signal,
@@ -444,7 +446,7 @@ class EsiExecutionRuntimeImplementation {
           {
             cacheSchema: definition.descriptor.responseSchema,
             inputs,
-            load: (authority, revalidation) => {
+            load: (authority, revalidation, sourceSignal = request.signal) => {
               if (!authority) {
                 throw new Error('Character ESI authorization is required')
               }
@@ -454,7 +456,7 @@ class EsiExecutionRuntimeImplementation {
                 inputs,
                 revalidation,
                 authority,
-                request.signal,
+                sourceSignal,
               )
             },
             operation: request.operation,
@@ -842,22 +844,23 @@ class EsiExecutionRuntimeImplementation {
       inputs: resource.inputs,
       operation: resource.operation,
       representationName,
-      resolveAuthorization: async () => {
-        const resolved = await authorization.resolve(resource.signal)
-        resource.signal?.throwIfAborted()
+      resolveAuthorization: async (sourceSignal = resource.signal) => {
+        const resolved = await authorization.resolve(sourceSignal)
+        sourceSignal?.throwIfAborted()
         authorizationGeneration = resolved.tokenVersion
         return {
           authorization: {
             ...cacheAuthorization,
             generation: resolved.tokenVersion,
           },
-          load: (revalidation) =>
+          load: (revalidation, attemptSignal) =>
             resource.load(
               {
                 accessToken: resolved.accessToken,
                 principal: authorization.transportPrincipal,
               },
               revalidation,
+              attemptSignal,
             ),
         }
       },
@@ -976,7 +979,27 @@ class EsiExecutionRuntimeImplementation {
     return l2Envelope
   }
 
-  async #loadWithRequestCollapse<Data>(
+  #loadWithRequestCollapse<Data>(
+    context: EsiRequestContext<Data>,
+    stale: EsiCacheEnvelope<Data> | undefined,
+  ): Promise<EsiCachedResult<Data>> {
+    if (context.policy.cache.kind !== 'shared' || !context.policy.cache.collapse)
+      return this.#loadCollapsedSource(context, stale)
+    const key = JSON.stringify([context.key, context.resource.authorization ?? null])
+    return this.state.readWaiters.read(key, context.resource.signal, (signal) =>
+      this.#track(
+        this.#loadCollapsedSource(
+          {
+            ...context,
+            resource: { ...context.resource, signal },
+          },
+          stale,
+        ),
+      ),
+    )
+  }
+
+  async #loadCollapsedSource<Data>(
     context: EsiRequestContext<Data>,
     stale: EsiCacheEnvelope<Data> | undefined,
   ): Promise<EsiCachedResult<Data>> {
@@ -1138,7 +1161,7 @@ class EsiExecutionRuntimeImplementation {
       resource.signal?.throwIfAborted()
       try {
         // oxlint-disable-next-line no-await-in-loop
-        return await resource.load(revalidation)
+        return await resource.load(revalidation, resource.signal)
       } catch (error) {
         resource.signal?.throwIfAborted()
         if (
@@ -1197,7 +1220,7 @@ class EsiExecutionRuntimeImplementation {
     if (!resource.resolveAuthorization) {
       return resource
     }
-    const { authorization, load } = await resource.resolveAuthorization()
+    const { authorization, load } = await resource.resolveAuthorization(resource.signal)
     return {
       authorization,
       cacheSchema: resource.cacheSchema,

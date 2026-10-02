@@ -21,6 +21,9 @@ registered ESI execution seam    pure/shared leaf modules
 - Route adapters own Hono route composition, validation and middleware order, response privacy, DTO shaping, and failure translation.
 - Hono belongs only in this tier. Reads, projections, observation use cases, and pure leaves must not import route adapters or Hono.
 - Keep each method and path owned by one route adapter. Do not introduce a character facade or barrel.
+- Core owned-assets admission uses the member session and exact subject, lifecycle, revision and
+  asset scope without an organization-membership gate. Safe failure and reauthorization DTOs live
+  beneath the transport adapter; HTTP status serialization and private cache headers stay here.
 
 ## Observation Use Cases
 
@@ -49,3 +52,8 @@ registered ESI execution seam    pure/shared leaf modules
 - Promote shared behavior to a leaf when a second production caller needs it; keep one-caller helpers private.
 
 Exact module membership and reviewed cross-subsystem imports are maintained by the character dependency verifier under `scripts/characters`.
+
+Asset page/name representations are shared by the full-inventory collector and bounded cursor
+reader. Enrichment consumes only its supplied window and charges each backend seam through the
+caller's work admission. Cursor validation and page fingerprints cannot grant ownership; the
+transport-independent admitted-read binding owns before-use and before-release authority checks.
