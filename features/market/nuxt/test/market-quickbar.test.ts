@@ -5,6 +5,7 @@ import {
   decodeMarketQuickbar,
   emptyMarketQuickbar,
   marketQuickbarTypeIds,
+  marketQuickbarChildKeys,
   maxMarketQuickbarItems,
   mergeMarketQuickbars,
   moveMarketQuickbarFolder,
@@ -20,6 +21,11 @@ import {
   exportMarketQuickbarText,
   importMarketQuickbarText,
 } from '../src/runtime/app/market-quickbar-transfer'
+import { sortMarketQuickbar } from '../src/runtime/app/market-quickbar-sort'
+import {
+  buildMarketQuickbarTree,
+  marketQuickbarNodeKey,
+} from '../src/runtime/app/market-quickbar-tree'
 
 test('restores only bounded, distinct, positive type IDs from browser storage', () => {
   expect(parseMarketQuickbarIds(null)).toEqual([])
@@ -97,4 +103,111 @@ test('imports and exports EVE Quickbar text with nested folders and merges disti
   ])
   expect(importMarketQuickbarText('+ Ships\n--- Rifter', types, () => 'bad')).toBeNull()
   expect(importMarketQuickbarText('Unknown item', types, () => 'bad')).toBeNull()
+})
+
+test('persists mixed sibling order through catalogue changes, removal and text transfer', () => {
+  const types = [
+    { id: 587, groupId: 1, name: 'Rifter' },
+    { id: 34, groupId: 3, name: 'Tritanium' },
+  ]
+  let state = createMarketQuickbarFolder(emptyMarketQuickbar(), 'ships', 'Ships')
+  state = addMarketQuickbarItem(addMarketQuickbarItem(state, 34), 587)
+  const sorted = sortMarketQuickbar(state, 'item:34', null, 'folder:ships')
+  expect(marketQuickbarChildKeys(sorted[rootQuickbarFolderId])).toEqual([
+    'item:34',
+    'folder:ships',
+    'item:587',
+  ])
+  expect(state[rootQuickbarFolderId].types).toEqual([587, 34])
+  const restored = restoreMarketQuickbar(JSON.stringify(sorted))
+  expect(
+    buildMarketQuickbarTree(restored, new Map(types.map((type) => [type.id, type]))).map(
+      marketQuickbarNodeKey,
+    ),
+  ).toEqual(['item:34', 'folder:ships', 'item:587'])
+  expect(
+    buildMarketQuickbarTree(restored, new Map([[587, types[0]!]])).map(marketQuickbarNodeKey),
+  ).toEqual(['folder:ships', 'item:587'])
+  const text = exportMarketQuickbarText(restored, types)
+  expect(text).toBe('Tritanium\n+ Ships\nRifter')
+  const imported = importMarketQuickbarText(text!, types, () => 'ships')!
+  expect(exportMarketQuickbarText(imported, types)).toBe(text)
+  expect(
+    restoreMarketQuickbar(JSON.stringify(removeMarketQuickbarItem(restored, 34)))[
+      rootQuickbarFolderId
+    ].order,
+  ).toEqual(['folder:ships', 'item:587'])
+  expect(
+    decodeMarketQuickbar({
+      ...restored,
+      __root__: {
+        ...restored[rootQuickbarFolderId],
+        order: ['item:34', 'item:34', 'folder:ships'],
+      },
+    }),
+  ).toBeNull()
+})
+
+test.each([
+  {
+    parentOrder: 'fallback',
+    expected: [
+      'folder:before',
+      'item:587',
+      'folder:frigates',
+      'item:34',
+      'folder:after',
+      'item:44992',
+    ],
+  },
+  {
+    parentOrder: 'mixed',
+    expected: [
+      'folder:before',
+      'item:44992',
+      'item:587',
+      'folder:frigates',
+      'item:34',
+      'folder:after',
+    ],
+  },
+])(
+  'preserves promoted mixed child order at the deleted folder’s position in a $parentOrder parent',
+  ({ parentOrder, expected }) => {
+    let state = createMarketQuickbarFolder(emptyMarketQuickbar(), 'after', 'After')
+    state = createMarketQuickbarFolder(state, 'ships', 'Ships')
+    state = createMarketQuickbarFolder(state, 'before', 'Before')
+    state = createMarketQuickbarFolder(state, 'frigates', 'Frigates', 'ships')
+    state = addMarketQuickbarItem(state, 44992)
+    state = addMarketQuickbarItem(addMarketQuickbarItem(state, 34, 'ships'), 587, 'ships')
+    state = sortMarketQuickbar(state, 'item:587', 'folder:ships', 'folder:frigates')
+    if (parentOrder === 'mixed') {
+      state = sortMarketQuickbar(state, 'item:44992', null, 'folder:ships')
+    }
+
+    const flattened = removeMarketQuickbarFolder(state, 'ships')
+
+    expect(marketQuickbarChildKeys(flattened[rootQuickbarFolderId])).toEqual(expected)
+    expect(
+      marketQuickbarChildKeys(
+        restoreMarketQuickbar(JSON.stringify(flattened))[rootQuickbarFolderId],
+      ),
+    ).toEqual(expected)
+    expect(flattened.ships).toBeUndefined()
+    expect(state[rootQuickbarFolderId].childFolders).toEqual(['before', 'ships', 'after'])
+  },
+)
+
+test('rejects sorting cycles, missing anchors and excessive depth without changing the saved tree', () => {
+  let state = createMarketQuickbarFolder(emptyMarketQuickbar(), 'ships', 'Ships')
+  state = createMarketQuickbarFolder(state, 'frigates', 'Frigates', 'ships')
+  expect(sortMarketQuickbar(state, 'folder:ships', 'folder:frigates', null)).toBe(state)
+  expect(sortMarketQuickbar(state, 'folder:frigates', null, 'item:404')).toBe(state)
+  let parent = rootQuickbarFolderId
+  for (let depth = 1; depth <= 8; depth += 1) {
+    const id = `depth-${depth}`
+    state = createMarketQuickbarFolder(state, id, id, parent)
+    parent = id
+  }
+  expect(sortMarketQuickbar(state, 'folder:ships', `folder:${parent}`, null)).toBe(state)
 })

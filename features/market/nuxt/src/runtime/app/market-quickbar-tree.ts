@@ -1,7 +1,6 @@
 import type { MarketType } from './market-catalogue-types'
 import {
-  compareMarketQuickbarFolders,
-  marketQuickbarItems,
+  marketQuickbarChildKeys,
   rootQuickbarFolderId,
   type MarketQuickbarState,
 } from './market-quickbar'
@@ -42,14 +41,15 @@ export const buildMarketQuickbarTree = (
     const folder = state[folderId]
     if (!folder) return []
     const nodes: MarketQuickbarNode[] = []
-    for (const id of folder.childFolders.toSorted((left, right) =>
-      compareMarketQuickbarFolders(state, left, right),
-    )) {
-      const child = state[id]
-      if (child) nodes.push({ kind: 'folder', id, name: child.name, children: buildChildren(id) })
-    }
-    for (const item of marketQuickbarItems(state, folderId, typesById)) {
-      nodes.push({ kind: 'item', id: item.id, item })
+    for (const key of marketQuickbarChildKeys(folder)) {
+      if (key.startsWith('folder:')) {
+        const id = key.slice(7)
+        const child = state[id]
+        if (child) nodes.push({ kind: 'folder', id, name: child.name, children: buildChildren(id) })
+      } else {
+        const item = typesById.get(Number(key.slice(5)))
+        if (item) nodes.push({ kind: 'item', id: item.id, item })
+      }
     }
     return nodes
   }

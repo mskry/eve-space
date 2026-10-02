@@ -3,7 +3,11 @@ import MarketQuickbarFolder from './MarketQuickbarFolder.vue'
 import MarketQuickbarItem from './MarketQuickbarItem.vue'
 import { rootQuickbarFolderId } from '../market-quickbar'
 import { marketQuickbarPanelKey } from '../market-quickbar-panel-context'
-import { marketQuickbarNodeChildren, marketQuickbarNodeKey } from '../market-quickbar-tree'
+import {
+  marketQuickbarNodeChildren,
+  marketQuickbarNodeKey,
+  type MarketQuickbarNode,
+} from '../market-quickbar-tree'
 import { marketTypeImageSources } from '../useMarketTypeImage'
 import type { MarketGroup, MarketType } from '../market-catalogue-types'
 import type { MarketQuickbar } from '../useMarketQuickbar'
@@ -39,6 +43,11 @@ const summary = computed(() => {
   return `${items} · ${folderCount.value} ${folderCount.value === 1 ? 'folder' : 'folders'}`
 })
 const waitingForIndex = computed(() => itemCount.value > 0 && !props.indexReady)
+const nodeLabel = (node: MarketQuickbarNode) =>
+  node.kind === 'folder' ? node.name : node.item.name
+const itemFolderId = (id: number) =>
+  Object.keys(quickbar.state.value).find((key) => quickbar.state.value[key]?.types.includes(id)) ??
+  rootQuickbarFolderId
 
 provide(marketQuickbarPanelKey, {
   state: quickbar.state,
@@ -130,27 +139,34 @@ const confirmClear = () => {
       <output v-else-if="waitingForIndex" class="market-quickbar-panel__status">
         Loading Quickbar items
       </output>
-      <UiTreeDropZone
+      <UiSortableTreeRoot
         v-else
+        v-slot="{ flattenItems }"
+        v-model:expanded="expanded"
         class="market-quickbar-panel__drop-zone"
-        drag-scope="market-quickbar"
-        :drop-id="rootQuickbarFolderId"
-        @drop="dropOnFolder"
+        aria-label="Quickbar folders and items"
+        :items="nodes"
+        :get-key="marketQuickbarNodeKey"
+        :get-children="marketQuickbarNodeChildren"
+        :get-label="nodeLabel"
+        :model-value="selectedNode"
+        :can-move="quickbar.canSort"
+        @move="quickbar.sort"
       >
-        <UiTreeRoot
-          v-model:expanded="expanded"
-          aria-label="Quickbar folders and items"
-          :items="nodes"
-          :get-key="marketQuickbarNodeKey"
-          :get-children="marketQuickbarNodeChildren"
-          :model-value="selectedNode"
-        >
-          <template v-for="node in nodes" :key="marketQuickbarNodeKey(node)">
-            <MarketQuickbarFolder v-if="node.kind === 'folder'" :level="1" :node="node" />
-            <MarketQuickbarItem v-else :folder-id="rootQuickbarFolderId" :level="1" :node="node" />
-          </template>
-        </UiTreeRoot>
-      </UiTreeDropZone>
+        <template v-for="entry in flattenItems" :key="entry._id">
+          <MarketQuickbarFolder
+            v-if="entry.value.kind === 'folder'"
+            :level="entry.level"
+            :node="entry.value"
+          />
+          <MarketQuickbarItem
+            v-else
+            :folder-id="itemFolderId(entry.value.id)"
+            :level="entry.level"
+            :node="entry.value"
+          />
+        </template>
+      </UiSortableTreeRoot>
       <ul
         v-if="unavailablePinnedIds.length"
         class="market-quickbar-panel__unavailable"

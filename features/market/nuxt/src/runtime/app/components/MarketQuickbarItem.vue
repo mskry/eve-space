@@ -31,11 +31,10 @@ const move = (destinationId: string) => {
 </script>
 
 <template>
-  <UiDraggableTreeItem
+  <UiSortableTreeItem
     class="market-quickbar-item"
     :style="{ '--market-quickbar-indent': indent }"
-    :drag-data="{ kind: 'item', id: String(node.id) }"
-    drag-scope="market-quickbar"
+    :item-key="key"
     :level="level"
     :value="node"
     @select="panel.select(node.item)"
@@ -59,6 +58,7 @@ const move = (destinationId: string) => {
             height="20"
             loading="lazy"
             decoding="async"
+            draggable="false"
           />
         </span>
         <span class="market-quickbar-item__name">{{ node.item.name }}</span>
@@ -84,7 +84,7 @@ const move = (destinationId: string) => {
       :targets="targets"
       @pick="move"
     />
-  </UiDraggableTreeItem>
+  </UiSortableTreeItem>
 </template>
 
 <style scoped>
