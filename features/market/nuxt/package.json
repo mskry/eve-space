@@ -17,8 +17,10 @@
     "src/runtime/app"
   ],
   "scripts": {
-    "build": "tsc6",
-    "typecheck": "tsc6 --noEmit",
+    "build": "pnpm typecheck:graphql && tsc6",
+    "typecheck": "tsc6 --noEmit && pnpm typecheck:graphql",
+    "typecheck:graphql": "tsc6 --noEmit --project tsconfig.graphql.json",
+    "typecheck:runtime": "vue-tsc --noEmit --project tsconfig.runtime.json",
     "test": "vitest run --passWithNoTests",
     "test:coverage": "vitest run --coverage --passWithNoTests",
     "test:fixtures": "vitest run --passWithNoTests"

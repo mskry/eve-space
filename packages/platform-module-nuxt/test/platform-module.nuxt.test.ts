@@ -5,21 +5,28 @@ import { startCorsJsonApi } from '../../../tests/support/cors-json-api'
 
 let alphaEnabled = true
 let dashboardOrderComplete = true
-const apiServer = await startCorsJsonApi((request) => ({
-  body: request.url?.startsWith('/api/alpha/')
-    ? { characterId: 7, name: 'Alpha Seven' }
-    : {
-        enabledModuleIds: alphaEnabled ? ['alpha'] : [],
-        enabledSections: [],
-        shellNavigationOrder: {
-          character: alphaEnabled ? [{ ownerId: 'alpha', navigationId: 'alpha-default-icon' }] : [],
-          dashboard:
-            alphaEnabled && dashboardOrderComplete
-              ? [{ ownerId: 'alpha', navigationId: 'alpha-icon-override' }]
-              : [],
-        },
+let graphqlRequests = 0
+const apiServer = await startCorsJsonApi((request) => {
+  if (request.url === '/api/graphql') {
+    graphqlRequests += 1
+    return { body: { data: { publicValue: 'Public platform value' } } }
+  }
+  if (request.url?.startsWith('/api/alpha/'))
+    return { body: { characterId: 7, name: 'Alpha Seven' } }
+  return {
+    body: {
+      enabledModuleIds: alphaEnabled ? ['alpha'] : [],
+      enabledSections: [],
+      shellNavigationOrder: {
+        character: alphaEnabled ? [{ ownerId: 'alpha', navigationId: 'alpha-default-icon' }] : [],
+        dashboard:
+          alphaEnabled && dashboardOrderComplete
+            ? [{ ownerId: 'alpha', navigationId: 'alpha-icon-override' }]
+            : [],
       },
-}))
+    },
+  }
+})
 process.env.NUXT_PUBLIC_API_BASE = apiServer.origin
 
 afterAll(apiServer.close)
@@ -39,6 +46,16 @@ describe('platform Nuxt module fixture', async () => {
 
     expect(html).toContain('data-testid="character-shell"')
     expect(html).toContain('data-testid="alpha-page"')
+  })
+
+  it('registers a configured GraphQL client without fetching during setup or hydration', async () => {
+    apiServer.setAllowedOrigin(useTestContext().url)
+    const previousRequests = graphqlRequests
+    const page = await createPage('/')
+    expect(graphqlRequests).toBe(previousRequests)
+    await page.getByRole('button', { name: 'Load public value' }).click()
+    await page.getByText('Public platform value', { exact: true }).waitFor({ state: 'visible' })
+    expect(graphqlRequests).toBe(previousRequests + 1)
   })
 
   it('keeps route-derived invalid subjects inert', async () => {

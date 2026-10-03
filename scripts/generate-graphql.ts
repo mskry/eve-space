@@ -2,7 +2,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { format } from 'oxfmt'
-import { generateGraphQLArtifacts } from './graphql-generation.js'
+import { generateGraphQLArtifacts, graphqlArtifactPaths } from './graphql-generation.js'
+import { generateFeatureGraphQL } from './graphql-feature-generation.js'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const [installedSDL, operationSource] = await Promise.all([
@@ -10,6 +11,15 @@ const [installedSDL, operationSource] = await Promise.all([
   readFile(resolve(root, 'app/graphql/operations.graphql'), 'utf8'),
 ])
 const artifacts = await generateGraphQLArtifacts(installedSDL, operationSource)
+const marketDirectory = 'features/market/nuxt/src/runtime/app'
+const marketSource = await readFile(
+  resolve(root, marketDirectory, 'market-operations.graphql'),
+  'utf8',
+)
+artifacts.set(
+  `${marketDirectory}/market-graphql.ts`,
+  await generateFeatureGraphQL(artifacts.get(graphqlArtifactPaths.sdl)!, marketSource),
+)
 const write = process.argv.includes('--write')
 await Promise.all(
   [...artifacts].map(async ([path, source]) => {

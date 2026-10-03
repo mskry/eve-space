@@ -1,4 +1,4 @@
-import type { MarketBook } from './useMarketOverview'
+import type { MarketBook } from './market-models'
 
 export const marketBookState = (book: MarketBook | null, unavailable: boolean) => {
   if (!book)
@@ -17,6 +17,8 @@ export const marketBookState = (book: MarketBook | null, unavailable: boolean) =
     }
   }
   const empty =
+    book.sellers.kind !== 'unavailable' &&
+    book.buyers.kind !== 'unavailable' &&
     book.sellers.rows.length === 0 &&
     book.buyers.rows.length === 0 &&
     !book.sellers.hasMore &&

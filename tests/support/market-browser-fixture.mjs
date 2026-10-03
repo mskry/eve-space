@@ -132,11 +132,7 @@ const days = Array.from({ length: 21 }, (_, index) => ({
   orderCount: 10 + index,
 }))
 
-const app = new Hono()
-app.use('*', async (context, next) => {
-  context.header('Timing-Allow-Origin', webOrigin)
-  await next()
-})
+export const app = new Hono()
 app.use('*', cors({ origin: [webOrigin], credentials: true }))
 app.use('*', compress({ encoding: 'gzip' }))
 app.use('/api/modules/market/*', async (context, next) => {
@@ -283,6 +279,6 @@ app.get('/api/modules/market/history/profiles/:profileId/types/:typeId', (contex
       historyState === 'uncollected' ? [] : historyState === 'one-day' ? days.slice(0, 1) : days,
   })
 })
-app.get('*', (context) => context.json({ code: 'NOT_FOUND' }, 404))
+app.notFound((context) => context.json({ code: 'NOT_FOUND' }, 404))
 
-serve({ fetch: app.fetch, port })
+if (import.meta.main) serve({ fetch: app.fetch, port })

@@ -68,7 +68,7 @@ export const useMarketGroupItems = (
     (page) => {
       if (!page || page.requestedRevision !== revision.value) return
       if (page.requestedGroupId !== groupId.value || page.requestedCursor !== cursor.value) return
-      if (page.requestedCursor === null) items.value = page.result.items
+      if (page.requestedCursor === null) items.value = [...page.result.items]
       else if (loadedCursor !== page.requestedCursor) {
         const seen = new Set(items.value.map(({ id }) => id))
         items.value = [...items.value, ...page.result.items.filter(({ id }) => !seen.has(id))]

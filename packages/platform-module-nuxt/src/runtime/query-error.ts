@@ -1,3 +1,5 @@
+import type { ApplicationGraphQLError } from './graphql-values.js'
+
 interface ApiErrorBody {
   code?: string
   message?: string
@@ -146,4 +148,19 @@ function stringValue(value: unknown) {
 
 function numberValue(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+}
+
+export const toGraphQLFieldError = (
+  error: ApplicationGraphQLError,
+  fallbackStatus = 500,
+  fallbackCode?: string,
+) => {
+  const status = numberValue(error.extensions?.status)
+  return new ApiQueryError(error.message, {
+    status:
+      status !== undefined && Number.isSafeInteger(status) && status >= 100 && status <= 599
+        ? status
+        : fallbackStatus,
+    code: stringValue(error.extensions?.code) ?? fallbackCode,
+  })
 }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { formatMarketIskCompact } from '../market-isk'
 import { marketBookSummary } from '../market-book-summary'
-import type { MarketObservedBook } from '../useMarketOverview'
+import type { MarketObservedBook } from '../market-models'
 
 const props = defineProps<{ book: MarketObservedBook }>()
 const summary = computed(() => marketBookSummary(props.book.sellers, props.book.buyers))

@@ -7,7 +7,7 @@ import MarketBookSummary from '../src/runtime/app/components/MarketBookSummary.v
 import MarketPriceHistory from '../src/runtime/app/components/MarketPriceHistory.vue'
 import MarketHistoryChart from '../src/runtime/app/components/MarketHistoryChart.vue'
 import { marketHistorySeries } from '../src/runtime/app/market-history-presentation'
-import type { MarketObservedBook, MarketDailyHistory } from '../src/runtime/app/useMarketOverview'
+import type { MarketObservedBook, MarketDailyHistory } from '../src/runtime/app/market-models'
 
 const observedAt = '2026-09-01T00:00:00.000Z'
 const row = (orderId: number, side: 'buy' | 'sell', price: string) => ({
@@ -28,6 +28,7 @@ const row = (orderId: number, side: 'buy' | 'sell', price: string) => ({
 const book = {
   status: 'current',
   collectionStatus: 'ready',
+  profileRevision: 1,
   replacement: null,
   observation: {
     observationId: '00000000-0000-4000-8000-000000000002',
@@ -40,8 +41,22 @@ const book = {
     expectedPages: 1,
     totalBookOrders: 3,
   },
-  sellers: { rows: [row(1, 'sell', '5.00'), row(2, 'sell', '2.00')], hasMore: false },
-  buyers: { rows: [row(3, 'buy', '1.00')], hasMore: false },
+  sellers: {
+    kind: 'ready',
+    error: null,
+    labelsComplete: true,
+    rows: [row(1, 'sell', '5.00'), row(2, 'sell', '2.00')],
+    hasMore: false,
+    nextCursor: null,
+  },
+  buyers: {
+    kind: 'ready',
+    error: null,
+    labelsComplete: true,
+    rows: [row(3, 'buy', '1.00')],
+    hasMore: false,
+    nextCursor: null,
+  },
 } satisfies MarketObservedBook
 
 test('separates sortable, labelled order tables and keeps each side within its own scroll area', async () => {
@@ -83,8 +98,8 @@ test('separates sortable, labelled order tables and keeps each side within its o
     book: {
       ...book,
       observation: { ...book.observation, typeId: 35 },
-      sellers: { rows: [], hasMore: false },
-      buyers: { rows: [], hasMore: false },
+      sellers: { ...book.sellers, rows: [], hasMore: false },
+      buyers: { ...book.buyers, rows: [], hasMore: false },
     },
   })
   expect(wrapper.get('section[aria-label="Sellers"]').findAll('tbody tr')).toHaveLength(0)
@@ -106,8 +121,8 @@ test('identifies the best buy and sell with directional marks beside their price
   await wrapper.setProps({
     book: {
       ...book,
-      sellers: { rows: [row(10, 'sell', '1887000000.00')], hasMore: false },
-      buyers: { rows: [row(11, 'buy', '1700000000.00')], hasMore: false },
+      sellers: { ...book.sellers, rows: [row(10, 'sell', '1887000000.00')], hasMore: false },
+      buyers: { ...book.buyers, rows: [row(11, 'buy', '1700000000.00')], hasMore: false },
     },
   })
   const largePrices = wrapper.findAll('.market-book-summary__pair:first-child dd')
@@ -144,8 +159,13 @@ test('dims lowball buy orders without dimming sells or the best buy', async () =
     props: {
       book: {
         ...book,
-        sellers: { rows: [row(1, 'sell', '0.01'), row(2, 'sell', '4934000.00')], hasMore: false },
+        sellers: {
+          ...book.sellers,
+          rows: [row(1, 'sell', '0.01'), row(2, 'sell', '4934000.00')],
+          hasMore: false,
+        },
         buyers: {
+          ...book.buyers,
           rows: [row(3, 'buy', '4667000.00'), row(4, 'buy', '0.01')],
           hasMore: false,
         },
@@ -217,4 +237,47 @@ test('chart keeps keyboard inspection and an overview range without visible date
   expect(chart.attributes('aria-label')).toContain('4.00 ISK')
   expect(wrapper.find('output').exists()).toBe(false)
   wrapper.unmount()
+})
+
+test('keeps successful seller rows and unknown buyer summary values when the buyer field fails', async () => {
+  const wrapper = await mountSuspended(MarketOrderTables, {
+    props: {
+      book: {
+        ...book,
+        buyers: {
+          ...book.buyers,
+          rows: [],
+          hasMore: false,
+          kind: 'unavailable',
+          error: 'MARKET_SIDE_UNAVAILABLE',
+        },
+      },
+    },
+  })
+  const summary = await mountSuspended(MarketBookSummary, {
+    props: {
+      book: {
+        ...book,
+        buyers: {
+          ...book.buyers,
+          rows: [],
+          hasMore: false,
+          kind: 'unavailable',
+          error: 'MARKET_SIDE_UNAVAILABLE',
+        },
+      },
+    },
+  })
+  try {
+    expect(wrapper.get('section[aria-label="Sellers"]').findAll('tbody tr')).toHaveLength(2)
+    expect(wrapper.get('section[aria-label="Buyers"]').text()).toContain('Buyers are unavailable')
+    expect(wrapper.text()).not.toContain('No buy orders observed')
+    expect(summary.findAll('.market-book-summary__pair:first-child dd')[0]?.text()).toContain(
+      '2.00',
+    )
+    expect(summary.findAll('.market-book-summary__pair:first-child dd')[1]?.text()).toContain('—')
+  } finally {
+    wrapper.unmount()
+    summary.unmount()
+  }
 })

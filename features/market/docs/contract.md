@@ -89,7 +89,7 @@ read, including bounded list projections, passes the host's runtime module enabl
 It grants only named persistence reads and the public `market-catalogue` and
 `static-location-labels` products. It has no profile administration, private structure,
 collection demand, quote, ESI dispatch or queue capability. Public selection needs no session.
-The endpoint mount and explorer are delivered in the later host/frontend task sections.
+The application endpoint and its admission policy are described in the host GraphQL guide.
 
 | Field                                                          | Projection                                                                                                                                                                                           |
 | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -227,3 +227,125 @@ restarting the read. Missing or ineligible profiles remain unavailable. The REST
 is unchanged. Catalogue page sizes and continuations are owned by the core catalogue read; Market
 checks the requested revision and classifies unavailable catalogues and missing types before
 transport adapters shape a response.
+
+## Selected-item consumer models and outcomes
+
+The selected-item catalogue, public profiles, book discovery and active daily history use the
+Market-owned generated documents through the platform GraphQL client and Pinia Colada. Catalogue
+tree, group browse, search, Quickbar dependencies and the explicit history-demand command retain
+their REST interfaces. A read failure has no automatic REST fallback.
+
+Resource keys contain the generated schema/document identity, operation name and all applicable
+selectors. Catalogue identity includes its revision and type. Book/history identity includes the
+selected profile ID, profile revision and type. Responses must match both the captured selection
+and their returned selectors before release. PLEX selects only an eligible Global PLEX profile;
+selecting another item restores eligible regional selection without reusing PLEX results.
+
+Catalogue results are immutable within their revision, profiles are fresh for 30 seconds, book
+state for at most 10 seconds, and daily history for at most 60 seconds. Book and history source
+expiry can shorten these windows. Cache reuse never changes a source status, observation time,
+validation time or expiry. Entries remain in memory for five minutes after their consumers detach,
+with no automatic retries or new polling/auto-refetch policy. All pilot entries explicitly declare
+`esiPersistence: { kind: 'none' }` through platform-owned `defineNonPersistentQueryOptions()`; this excludes browser persistence while allowing ordinary Colada
+reuse and Nuxt hydration. History reads activate only for the history tab; book reads activate only
+for the order tab.
+
+| Outcome                               | Consumer meaning                                                                                                                                                                  |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Host/network failure                  | The resource request is unavailable. A previous successful result for the exact selection may remain visible with a refresh-failure notice and its original provenance.           |
+| Rejected GraphQL operation            | Validation, admission or execution-budget rejection is a controlled request failure, never an uncollected or empty successful market.                                             |
+| Executed field error or missing field | Only the selected panel or order alias becomes unavailable. Ancestor and descendant error paths affect that selection; an unrelated successful sibling remains usable.            |
+| Explicit missing catalogue type       | `MARKET_TYPE_UNAVAILABLE` means that type is no longer available in the pinned catalogue. Other lookup failures remain unavailable.                                               |
+| Uncollected / observed-empty          | Uncollected means no complete source observation. A successfully observed empty book or history remains a separate domain outcome. Missing data never establishes empty coverage. |
+| Stale / incomplete replacement        | The prior complete observation remains stale with its own clocks; an incomplete replacement has its own attempt time and never becomes complete coverage.                         |
+
+Adapters derive their inputs from the generated selections. Decimal ISK stays an exact string;
+order prices use the existing two-decimal presenters without conversion to floating point. A
+price precision the presenter cannot support produces an unavailable outcome. Number-backed IDs,
+quantities and counts require canonical nonnegative integer syntax and a safe integer range.
+Volume and order-count totals are checked with bigint before table/chart arithmetic. Unsupported
+history prices/dates fail the resource instead of silently omitting records from a successful
+chart. Unknown domain states also fail intentionally. Source timestamps and opaque continuation
+strings are retained unchanged.
+
+A failed order side is represented explicitly as unavailable, rather than an empty successful side.
+Its best price and listed volume remain unknown, and a spread requiring both sides remains unknown.
+A successful side retains its rows and labels. Local sorting still applies to the displayed bounded
+page. History retains its independent source metadata, daily-average label and existing chart/table
+windows; neither book freshness nor query completion time claims a new history observation.
+
+### Observation-pinned order traversal
+
+The order tab first discovers a complete observation with `MarketBook`, then shares one
+`MarketInitialOrders` operation for the summary and both tables. Its nullable seller/buyer aliases
+request at most 100 rows each. An uncollected book does not trigger order reads. A field failure
+leaves a successful sibling usable; a same-selection refresh failure may retain previous rows
+with a failure notice. `MARKET_OBSERVATION_UNAVAILABLE` always removes the affected side's rows,
+including previously successful initial rows. Operation rejection remains a query failure.
+
+Continuation uses `MarketOrderContinuation` through Colada, keyed by generated contract identity,
+profile ID/revision, type, observation ID, side, page size (100), and the exact returned cursor.
+Opaque cursors are passed unchanged; the browser never decodes them or reconstructs a selector
+from a row. Each side displays one page of at most 100 rows and sorts only that page. Scrolling
+and native First/Previous/Next buttons use the same traversal, including on narrow screens and
+with the keyboard. Loading disables paging controls. A failed continuation retains the current
+valid rows and offers an explicit retry without an automatic retry loop.
+
+Each table retains the latest 50 issued continuation page-start cursors. Previous navigation
+uses those cursors and eligible Colada entries, while page zero reuses the shared initial side.
+At the oldest retained cursor, Previous is disabled; First remains available to return to page
+zero and begin forward traversal again. Detached query pages have five-minute residency, at most
+ten-second freshness capped by their source expiry, and no browser persistence. Cursor history
+and the visible page reset synchronously when type, profile, profile revision or observation
+changes, and on a successful explicit restart. Pending transport work is cancelled, and captured
+selectors are checked again before cache release and table presentation.
+
+An unavailable continuation is never spliced into an existing book or presented as observed-empty.
+The affected table clears its rows and offers “Restart with the latest market observation”.
+Restart rediscovers the selected book before loading its initial sides. Failed discovery does not
+request more order pages. Successful discovery resets traversal even if the complete observation
+ID is unchanged; a new observation receives its own query identity. The other successful side
+remains independently usable during the failure.
+
+### Public rendering and history collection
+
+Anonymous selected-item deep links prefetch the public catalogue revision/tree and profiles,
+selected identity, then the active book or history resource. The order tab loads its initial
+nullable sides only after complete observation discovery. A history deep link reads no inactive
+book or order rows; a browse-only link reads no selected-item resources. Successful eligible
+results transfer through the existing Nuxt/Colada payload and are reused on hydration. Public
+SSR does not forward an incoming cookie or run a history collection command.
+
+The mounted history workflow retains the REST command at
+`POST /api/modules/market/history-intent/profiles/:profileId/types/:typeId/demand`.
+GraphQL history is a read and does not create demand. A ready command result seeds only the
+matching active profile/revision/type history key, retains its original source timestamps,
+and records `history-demand` provenance in the shared presentation resource. It is not shaped
+as a GraphQL response. Cancelled or delayed prior-target work cannot overwrite that resource.
+
+Accepted commands keep their queued, collecting or waiting state. The existing workflow
+revalidates the selected GraphQL history resource every four seconds within a 90-second polling window,
+stops while the tab is inactive or the view is unmounted, and exposes an explicit retry after
+timeout or request failure. Returning to an accepted target within its pending window resumes
+collection checks without posting the same demand again. A collected read ends polling; reads
+and commands retain separate transport and source outcomes.
+
+### Order-book ownership and runtime verification
+
+`useMarketOrderBook` owns discovery, complete-observation eligibility, initial side loading,
+combined presentation status and explicit restart. Its public load action is also the SSR entry.
+An uncollected book renders its collection state without an unavailable-source or retained-observation
+warning. Discovery and initial sides keep separate Colada identities and source freshness internally.
+
+`useMarketOrderPaging` exposes the current page, loading/failure state and next/previous/first/retry
+actions. It owns issued cursor history, selector construction, cancellation, stale completions,
+retained valid rows and observation invalidation. The table owns local sorting and DOM positioning.
+Presentation contracts reuse `MarketOrderPresentation` and `MarketDay`, require observed-book
+revision, and distinguish ready/unavailable sides. A continued ready page requires its opaque cursor.
+
+The feature owns `tsconfig.runtime.json` and `pnpm --filter @eve-space/market-nuxt typecheck:runtime`.
+It checks all Market runtime TypeScript files and SFCs in the prepared host Nuxt environment, plus
+compile-time rejection cases for incomplete presentation states. The host's `pnpm typecheck:nuxt`
+and `pnpm typecheck:nuxt:local` delegate to this feature command through `typecheck:market:runtime`.
+The runtime check requires the host's generated Nuxt types and API augmentation; the independent
+generated-contract check continues to verify packaged GraphQL wire selections without the host API.

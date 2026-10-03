@@ -2,7 +2,7 @@
 import { computed, defineAsyncComponent } from 'vue'
 import { formatMarketIsk } from '../market-isk'
 import { marketHistorySeries } from '../market-history-presentation'
-import type { MarketDailyHistory } from '../useMarketOverview'
+import type { MarketDailyHistory } from '../market-models'
 
 const props = defineProps<{ history: MarketDailyHistory }>()
 const MarketHistoryChart = defineAsyncComponent(() => import('./MarketHistoryChart.vue'))
