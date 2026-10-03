@@ -92,6 +92,29 @@ describe('ESI egress verification', () => {
     }
   })
 
+  test.each(['fetch', '(fetch)'])(
+    'rejects direct %s calls despite a fetch declaration in another scope',
+    async (callee) => {
+      const fixture = await createEgressFixture({
+        'api/src/characters/shadowed-fetch.ts': `
+          export const load = () => ${callee}('https://esi.evetech.net/latest/status')
+          const unrelated = () => {
+            const fetch = wrapper
+            return fetch
+          }
+        `,
+      })
+
+      try {
+        await expect(verifierFailure(fixture)).resolves.toContain(
+          'api/src/characters/shadowed-fetch.ts: direct ESI fetch bypasses the shared transport',
+        )
+      } finally {
+        await rm(fixture, { force: true, recursive: true })
+      }
+    },
+  )
+
   test('reserves SDK construction and generic mutation gates for the execution owner', async () => {
     const fixture = await createEgressFixture({
       'api/src/esi-gateway/internal/execution-runtime.ts': `

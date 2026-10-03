@@ -26,6 +26,10 @@ const sharedOwnerAndPlatformOperations = new Set([
 ])
 
 const isFetchExpression = (expression, declarations) => {
+  const callee = unwrapExpression(expression)
+  if (ts.isIdentifier(callee) && callee.text === 'fetch') {
+    return true
+  }
   const value = resolveInitializer(expression, declarations)
   if (ts.isIdentifier(value)) {
     return value.text === 'fetch'
