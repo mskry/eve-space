@@ -1,9 +1,15 @@
+import type { GraphQLJSONObject } from '@eve-space/platform-module-nuxt/runtime'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { useQueryCache } from '@pinia/colada'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import MarketPage from '../src/runtime/app/pages/MarketPage.vue'
 import UiProvider from '../../../../layers/ui/app/components/ui/UiProvider.vue'
+import {
+  MarketBookDocument,
+  MarketItemDocument,
+  MarketProfilesDocument,
+} from '../src/runtime/app/market-graphql'
 import { clearQueryCache } from '../../../../tests/support/clear-query-cache'
 
 const mocks = vi.hoisted(() => ({ createWorker: vi.fn() }))
@@ -129,6 +135,13 @@ type DirectMarketPageOptions = {
   readonly profiles?: readonly (typeof publicProfiles)[number][]
 }
 
+const marketResponse = (market: GraphQLJSONObject) =>
+  Promise.resolve(
+    new Response(JSON.stringify({ data: { market } }), {
+      headers: { 'Content-Type': 'application/json' },
+    }),
+  )
+
 const mountDirectMarketPage = async (options: DirectMarketPageOptions = {}) => {
   const viewedItem = options.item ?? directItem
   useQueryCache().setQueryData(['market', 'catalogue', 'current-tree'], {
@@ -171,37 +184,44 @@ const mountDirectMarketPage = async (options: DirectMarketPageOptions = {}) => {
         ),
       )
     }
-    if (url.includes(`/market/catalogue/body/revision-a/types/${viewedItem.id}`)) {
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
-            kind: 'type-by-id',
-            complete: true,
-            item: viewedItem,
-            revision: { ...revision, ingestedAt: 'revision-a' },
-          }),
-          { headers: { 'Content-Type': 'application/json' } },
-        ),
-      )
-    }
-    if (url.endsWith('/market/books/profiles')) {
-      return Promise.resolve(
-        new Response(JSON.stringify({ profiles: options.profiles ?? [] }), {
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      )
-    }
-    if (url.endsWith('/observation')) {
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
+    if (url.endsWith('/api/graphql')) {
+      // SAFETY: this intercepts the configured transport’s serialized generated documents and variables.
+      const body = JSON.parse(String(init?.body)) as {
+        query: string
+        variables: { profileId?: string; typeId?: string }
+      }
+      if (body.query === MarketItemDocument.toString())
+        return marketResponse({
+          catalogueType: {
+            revision: 'revision-a',
+            item: { ...viewedItem, id: String(viewedItem.id), groupId: String(viewedItem.groupId) },
+          },
+        })
+      if (body.query === MarketProfilesDocument.toString())
+        return marketResponse({
+          profiles: (options.profiles ?? []).map((profile) =>
+            Object.assign({}, profile, {
+              revision: String(profile.revision),
+              regionId: String(profile.regionId),
+              watchedTypeIds: profile.watchedTypeIds.map(String),
+            }),
+          ),
+        })
+      if (body.query === MarketBookDocument.toString()) {
+        requests.push(`book:${body.variables.profileId}:${body.variables.typeId}`)
+        return marketResponse({
+          book: {
+            profileId: body.variables.profileId,
+            profileRevision: '1',
+            typeId: body.variables.typeId,
             status: 'uncollected',
             collectionStatus: 'ready',
             replacement: null,
-          }),
-          { headers: { 'Content-Type': 'application/json' } },
-        ),
-      )
+            observation: null,
+          },
+        })
+      }
+      throw new Error('Unexpected Market operation')
     }
     return originalFetch(input, init)
   })
@@ -243,11 +263,9 @@ test('opens PLEX only in its global market and hides the market selector', async
     'Global PLEX Market',
   )
   await vi.waitFor(() =>
-    expect(
-      requests.some((url) => url.includes('/books/profiles/global-plex/types/44992/observation')),
-    ).toBe(true),
+    expect(requests.some((url) => url === 'book:global-plex:44992')).toBe(true),
   )
-  expect(requests.some((url) => url.includes('/books/profiles/forge/'))).toBe(false)
+  expect(requests.some((url) => url.startsWith('book:forge:'))).toBe(false)
 })
 
 test('keeps the regional selector available for other items', async () => {

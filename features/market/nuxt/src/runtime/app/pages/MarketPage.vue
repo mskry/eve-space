@@ -13,7 +13,6 @@ import MarketOrderTables from '../components/MarketOrderTables.vue'
 import MarketPriceHistory from '../components/MarketPriceHistory.vue'
 import MarketQuickbarPinIcon from '../components/MarketQuickbarPinIcon.vue'
 import { marketBreadcrumbs } from '../market-breadcrumbs'
-import { marketBookState } from '../market-book-state'
 import { isGlobalPlexItem } from '../market-profile-selection'
 import { maxMarketQuickbarItems } from '../market-quickbar'
 import type { MarketGroup, MarketType } from '../market-catalogue-types'
@@ -124,13 +123,15 @@ const {
   eligibleProfiles,
   profilesQuery,
   profile,
-  book,
-  bookQuery,
+  orders,
   history,
   historyQuery,
   historyRequest,
   retryHistoryRequest,
 } = useMarketOverview(revisionKey, selectedId, requestedProfileId, historyActive)
+const book = orders.book
+const orderPresentation = orders.presentation
+const orderVersion = orders.version
 const historyUncollected = computed(() => !history.value || history.value.status === 'uncollected')
 const historyNotice = computed<keyof typeof historyNoticeCopy | null>(() => {
   if (!profile.value) return null
@@ -147,7 +148,7 @@ onServerPrefetch(async () => {
   await nextTick()
   if (!profile.value) return
   if (historyActive.value) await historyQuery.refresh()
-  else await bookQuery.refresh()
+  else await orders.load()
 })
 const syncProfileUrl = (id: string | undefined) => {
   if (!import.meta.client || !id || id === route.query.profileId) return
@@ -307,7 +308,7 @@ const selectedGroup = computed(() =>
 const selectedPath = computed(() => marketBreadcrumbs(groups.value, selectedGroup.value?.id))
 const selectedIsGlobalPlex = computed(() => isGlobalPlexItem(selectedId.value))
 const selectedImage = useMarketTypeImage(selectedItem, groups)
-const bookState = computed(() => marketBookState(book.value, Boolean(bookQuery.error.value)))
+const bookState = orders.presentation
 const selectProfile = (event: Event) => {
   if (!(event.target instanceof HTMLSelectElement)) return
   const profileId = event.target.value
@@ -516,12 +517,19 @@ watch(
                   {{ selectedPath.join(' / ') }}
                 </p>
                 <h2>{{ selectedItem.name }}</h2>
+                <output v-if="itemQuery.error.value"
+                  >Item lookup is unavailable; showing the last loaded identity.</output
+                >
               </div>
               <div class="market-catalogue-page__item-actions">
                 <div
                   v-if="!selectedIsGlobalPlex || !profile"
                   class="market-catalogue-page__market-choice"
                 >
+                  <output v-if="profilesQuery.error.value && eligibleProfiles.length"
+                    >Supported markets could not be refreshed; showing the last loaded
+                    profiles.</output
+                  >
                   <label
                     v-if="eligibleProfiles.length"
                     class="market-catalogue-page__market-select"
@@ -581,14 +589,14 @@ watch(
               :unmount-on-hide="true"
             >
               <template #data>
-                <output v-if="bookQuery.asyncStatus.value === 'loading' && !book && profile">
+                <output v-if="orderPresentation.loading && !book && profile">
                   Loading market orders
                 </output>
-                <output v-else-if="bookQuery.error.value && !book && profile">
+                <output v-else-if="orderPresentation.unavailable && !book && profile">
                   Market order source is unavailable
                 </output>
                 <template v-if="book">
-                  <output v-if="bookQuery.error.value"
+                  <output v-if="orderPresentation.retained"
                     >Order source is unavailable; showing the last loaded coverage and
                     observation.</output
                   >
@@ -600,7 +608,7 @@ watch(
                     <output v-if="bookState.coverage === 'observed-empty'">
                       No orders in this ESI regional observation.
                     </output>
-                    <MarketOrderTables :book="book" />
+                    <MarketOrderTables :key="orderVersion" :book="book" @restart="orders.restart" />
                   </template>
                 </template>
               </template>
@@ -633,8 +641,7 @@ watch(
                     </template>
                   </UiStatePanel>
                   <output v-else-if="historyQuery.error.value && !history && profile">
-                    Daily price history is unavailable or has not been requested for this market
-                    item.
+                    Daily price history is unavailable for this market item.
                   </output>
                   <output v-if="history && historyQuery.error.value"
                     >History source is unavailable; showing the last loaded daily data.</output

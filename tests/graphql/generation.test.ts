@@ -2,6 +2,7 @@
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { generateFeatureGraphQL } from '../../scripts/graphql-feature-generation'
 import { generateGraphQLArtifacts, graphqlArtifactPaths } from '../../scripts/graphql-generation'
 
 const root = new URL('../..', import.meta.url)
@@ -46,4 +47,36 @@ describe('offline GraphQL generation', () => {
       ),
     ).rejects.toThrow('Unmapped')
   })
+})
+
+const marketDocuments = await readFile(
+  new URL('features/market/nuxt/src/runtime/app/market-operations.graphql', root),
+  'utf8',
+)
+it('generates isolated feature contracts and detects schema/document drift offline', async () => {
+  const artifacts = await generateGraphQLArtifacts(installed, documents)
+  const sdl = artifacts.get(graphqlArtifactPaths.sdl)!
+  const initial = await generateFeatureGraphQL(sdl, marketDocuments)
+  expect(await generateFeatureGraphQL(sdl, marketDocuments)).toBe(initial)
+  expect(
+    await generateFeatureGraphQL(sdl, marketDocuments.replace('groupId', 'group: groupId')),
+  ).not.toBe(initial)
+  expect(
+    await generateFeatureGraphQL(
+      `${sdl}\nextend type MarketRead { future: String }`,
+      marketDocuments,
+    ),
+  ).not.toBe(initial)
+  await expect(generateFeatureGraphQL(sdl, 'query { absent }')).rejects.toThrow(
+    'Cannot query field',
+  )
+  await expect(
+    generateFeatureGraphQL(sdl, '{ market { profiles { profileId } } }'),
+  ).rejects.toThrow('named queries')
+  await expect(
+    generateFeatureGraphQL(
+      `${sdl}\nscalar Unmapped\nextend type MarketRead { future: Unmapped }`,
+      'query Future { market { future } }',
+    ),
+  ).rejects.toThrow('Unmapped')
 })

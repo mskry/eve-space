@@ -1,3 +1,4 @@
+import { defineNonPersistentQueryOptions } from '../src/runtime.js'
 import type { EntryKey, UseQueryEntry } from '@pinia/colada'
 import { describe, expect, it, vi } from 'vitest'
 import { createEveImages } from '../src/runtime/eve-images.js'
@@ -250,3 +251,18 @@ describe('platform module runtime surface', () => {
 function queryEntry(key: EntryKey) {
   return { key } as UseQueryEntry
 }
+
+it('forces nonpersistent classification while retaining finite residency and caller query metadata', () => {
+  const options = defineNonPersistentQueryOptions(() => ({
+    key: ['market', 'graphql'],
+    query: async () => 'selected resource',
+    gcTime: 300_000,
+    esiPersistence: { kind: 'none' },
+    meta: { globalErrorMessage: 'Unavailable', esiPersistence: { kind: 'public-esi' } },
+  }))(undefined)
+  expect(options.meta).toEqual({
+    globalErrorMessage: 'Unavailable',
+    esiPersistence: { kind: 'none' },
+  })
+  expect(options.gcTime).toBe(300_000)
+})

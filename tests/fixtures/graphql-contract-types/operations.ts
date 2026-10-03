@@ -6,7 +6,7 @@ import {
   type ExplorerMarketQuery,
   type ExplorerMarketBookQuery,
 } from '../../../app/generated/graphql-operations.js'
-import { executeTypedGraphQL } from '../../../app/graphql/graphql-client.js'
+import { executeTypedGraphQL } from '@eve-space/platform-module-nuxt/runtime'
 
 const variables: ExplorerOwnedAssetsQueryVariables = {
   characterId: '9007199254740993',

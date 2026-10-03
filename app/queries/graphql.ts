@@ -1,11 +1,14 @@
-import { defineEsiQueryOptions } from '@eve-space/platform-module-nuxt/runtime'
-import type { QueryCache } from '@pinia/colada'
 import {
+  createRequestSignal,
+  defineEsiQueryOptions,
   executeTypedGraphQL,
+  normalizeGraphQLVariables,
   readGraphQLFieldError,
   type ApplicationGraphQLError,
   type GraphQLDocument,
-} from '../graphql/graphql-client'
+  type GraphQLVariables,
+} from '@eve-space/platform-module-nuxt/runtime'
+import type { QueryCache } from '@pinia/colada'
 import {
   ExplorerMarketDocument,
   ExplorerOwnedAssetsDocument,
@@ -14,11 +17,8 @@ import {
   type ExplorerOwnedCharactersQueryVariables,
 } from '../generated/graphql-operations'
 import { graphqlSchemaFingerprint } from '../generated/graphql-schema'
-import type { GraphQLVariables } from '../graphql/graphql-values'
-import { normalizeGraphQLVariables } from '../graphql/variables'
 import { reportPrivateQueryAuthorizationDenial } from '../query-persistence/runtime'
 import { isPositiveSafeInteger } from '../utils/number-guards'
-import { createRequestSignal } from '../utils/request-signal'
 import { PRIVATE_QUERY_KEYS } from './query-keys'
 
 export interface GraphQLQueryContext {

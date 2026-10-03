@@ -57,7 +57,7 @@
     "stack:down": "docker compose down",
     "test:frontend": "vitest run --config vitest.config.ts && vitest run --config vitest.ui.config.ts",
     "test:frontend:coverage": "node -e \"require('node:fs').rmSync('coverage', { recursive: true, force: true })\" && vitest run --config vitest.config.ts --coverage && vitest run --config vitest.ui.config.ts --coverage",
-    "test:modules": "pnpm --filter @eve-space/core-data-contract test && pnpm --filter @eve-space/platform-module-conformance test && pnpm --filter @eve-space/platform-module-server test && pnpm --filter @eve-space/platform-module-nuxt test && tsx scripts/run-installed-module-package-script.ts server test && tsx scripts/run-installed-module-package-script.ts nuxt test && pnpm test:module-conformance && pnpm test:platform-public-packages",
+    "test:modules": "pnpm --filter @eve-space/core-data-contract test && pnpm --filter @eve-space/platform-module-conformance test && pnpm --filter @eve-space/platform-module-server test && pnpm --filter @eve-space/platform-module-nuxt test && tsx scripts/run-installed-module-package-script.ts server test && tsx scripts/run-installed-module-package-script.ts nuxt test && pnpm test:module-conformance && pnpm test:graphql:packages",
     "test:module-conformance": "tsx scripts/verify-module-conformance.ts",
     "test:platform-public-packages": "pnpm --filter @eve-space/platform-module-conformance test:package",
     "test:modules:coverage": "pnpm --filter @eve-space/core-data-contract test:coverage && pnpm --filter @eve-space/platform-module-server test:coverage && pnpm --filter @eve-space/platform-module-nuxt test:coverage && tsx scripts/run-installed-module-package-script.ts server test:coverage && tsx scripts/run-installed-module-package-script.ts nuxt test:coverage",
@@ -76,14 +76,16 @@
     "test:e2e:built": "node -e \"require('node:fs').accessSync('.output-e2e/server/index.mjs')\" && EVE_SPACE_E2E_PERSISTENCE_FIXTURE=1 vitest run --config vitest.e2e.config.ts",
     "typecheck": "pnpm build:nuxt:dependencies && pnpm --filter @eve-space/core-data-contract typecheck && pnpm typecheck:nuxt:local && pnpm --filter @eve-space/api typecheck:local",
     "typecheck:nuxt": "pnpm build:nuxt:dependencies && pnpm typecheck:nuxt:local",
-    "typecheck:nuxt:local": "tsx scripts/run-installed-module-package-script.ts nuxt typecheck && nuxt typecheck",
+    "typecheck:nuxt:local": "tsx scripts/run-installed-module-package-script.ts nuxt typecheck && nuxt typecheck && pnpm typecheck:market:runtime",
+    "typecheck:market:runtime": "pnpm --filter @eve-space/market-nuxt typecheck:runtime",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "start": "node .output/server/index.mjs",
     "postinstall": "pnpm build:nuxt:dependencies && nuxt prepare && lefthook install",
     "graphql:generate": "pnpm registry:generate && tsx scripts/generate-graphql.ts --write",
     "graphql:check": "tsx scripts/generate-graphql.ts --check && pnpm graphql:types",
-    "graphql:types": "pnpm --filter @eve-space/platform-module-contract exec tsc --noEmit --project ../../tests/fixtures/graphql-contract-types/tsconfig.json"
+    "graphql:types": "pnpm --filter @eve-space/platform-module-contract exec tsc --noEmit --project ../../tests/fixtures/graphql-contract-types/tsconfig.json && pnpm --filter @eve-space/market-nuxt typecheck:graphql",
+    "test:graphql:packages": "pnpm graphql:check && pnpm --filter @eve-space/platform-module-conformance build:public-interface && pnpm --filter @eve-space/market-nuxt build && pnpm --filter @eve-space/platform-module-conformance exec node scripts/smoke-public-interface.ts --market-graphql"
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^4.0.0",

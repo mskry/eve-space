@@ -644,8 +644,32 @@ same current-context gate when presenting `data`, including partial results; cac
 cannot open a view. The query options recheck the gate after asynchronous execution and forward
 field authorization denials to the shared private lifecycle. `ExplorerMarketDocument` and
 `ExplorerOwnedAssetsDocument` are the generated documents used by these options. Direct
-`executeTypedGraphQL` calls require the same browser/execution/presentation gates; credentialed
-fetch alone does not forward cookies during SSR.
+`executeTypedGraphQL` calls for protected selections require the same
+browser/execution/presentation gates; credentialed fetch alone does not forward cookies during SSR.
+
+The schema-independent transport is exported from `@eve-space/platform-module-nuxt/runtime`:
+`executeTypedGraphQL`, `GraphQLDocument`, the JSON variable/envelope types,
+`normalizeGraphQLVariables`, and `readGraphQLFieldError`. Feature-owned generated documents can
+use these contracts without importing root application operations, API/schema code, or another
+feature. Root `app/graphql/` helpers re-export the same implementation for existing callers.
+The platform Nuxt module registers `usePlatformGraphQL()` through its normal auto-import strategy.
+It captures `runtimeConfig.public.apiBase` and returns a typed executor; constructing it performs
+no request or startup work.
+
+Both executors send JSON POST requests to the configured `/api/graphql` endpoint with
+`credentials: 'include'`, `cache: 'no-store'`, and a 16-second deadline composed with the caller's
+abort signal. They preserve HTTP 200 partial envelopes and HTTP 400 GraphQL rejection envelopes;
+other HTTP failures use the safe API error contract. Aborted or expired requests cannot release
+a late successful response. They add no retries, query cache, persistence, authentication, or
+admission decisions.
+
+Genuinely public selections may execute during SSR through the host's payload-aware query
+infrastructure and hydrate from that result. The caller still owns selection identities,
+freshness, retries, cache residency, and persistence classification. Protected selections use
+client-only execution gated by a live verified session, exact subject ownership/admission, and
+current authorization revision, with release and presentation checked again after asynchronous
+work. The configured executor does not forward an incoming SSR cookie, so it is not an
+authenticated SSR path. A mixed document must follow the requirements of its protected fields.
 
 Application callers use the established query, browser-only session and exact ownership gates.
 `app/queries/graphql.ts` supplies typed options with owner/subject/admission/schema/operation and
@@ -671,6 +695,54 @@ To extend the typed application contract, declare and validate the contribution 
 procedure above, regenerate the schema, add application selection documents and regenerate
 operations. Run isolated platform/feature typechecks and `graphql:check`. GraphiQL discovers the
 resulting endpoint schema automatically and needs no module-specific changes.
+
+### Feature-owned operation artifacts
+
+The selected-item Market pilot owns `features/market/nuxt/src/runtime/app/market-operations.graphql`.
+Its generated sibling `market-graphql.ts` contains only selected result/variable/fragment types,
+referenced enums, typed document strings, and SHA-256 schema/document identity. Its sole import is
+the generic `GraphQLDocument` type from the public platform runtime. It includes no application SDL,
+root-generated schema contract, API implementation, server runtime, or runtime GraphQL library.
+The common generator scalar mapping keeps EVE IDs, decimal values, big integers, UUIDs and UTC
+values as strings; an unmapped scalar or invalid selection fails generation.
+
+| Operation                 | Contract                                                                 |
+| ------------------------- | ------------------------------------------------------------------------ |
+| `MarketItem`              | Catalogue revision and selected type identity/name                       |
+| `MarketProfiles`          | Enabled public profiles, revisions, modes, stations and watched types    |
+| `MarketBook`              | State, replacement and complete observation discovery without order rows |
+| `MarketInitialOrders`     | Independent seller/buyer aliases, at most 100 rows each                  |
+| `MarketOrderContinuation` | One side, explicit observation and opaque cursor, at most 100 rows       |
+| `MarketHistory`           | History source clocks and at most 365 retained days                      |
+
+Build the installed contract/server prerequisites before changing documents or schema with
+`pnpm build:nuxt:dependencies`. After editing a feature document, run `pnpm graphql:generate`
+and `pnpm graphql:check`. The host-side generator uses the composed application SDL, checks
+named query selections, and writes the Market sibling together with the root example artifacts.
+Generation/checking needs built installed packages, but no running API, database, Redis, EVE
+credentials, or schema discovery request. Artifact drift fails the existing lint/build gates.
+To extend the pilot, add a named query to the same document, regenerate, and exercise it through
+the actual application selection policy before adding a consumer.
+
+`pnpm --filter @eve-space/market-nuxt typecheck:graphql` compiles only the generated consumer
+contract and its feature-owned strict type fixture. The normal Market build/typecheck and root
+`graphql:types` include that check. Invalid IDs, order-side values, missing cursors, lossy numeric
+result assumptions, and unselected fields are compile errors. This contract check does not
+replace runtime/SFC compilation. Host `typecheck:nuxt` includes `typecheck:market:runtime`,
+which delegates to the feature's `typecheck:runtime` script and `tsconfig.runtime.json`.
+That check compiles every Market runtime TypeScript file and SFC with prepared host Nuxt types,
+the host API augmentation and its presentation-contract rejection fixture. Independent package
+wire checks remain host-free.
+The generator emits a safety justification beside each typed document assertion, derived from
+validation and generation against the same schema and operation.
+
+`pnpm test:graphql:packages` checks drift, builds dependencies, packs the actual Market and public
+platform packages, and installs copied tarballs into a temporary consumer outside the checkout.
+It compiles the same type fixture against the installed Market artifact and executes its generated
+document through the installed transport. There are no workspace links or host-source aliases.
+The authoritative `test:modules` runner includes this package check. The Market archive retains
+its document and generated sibling under `src/runtime/app/`, following its existing Nuxt runtime
+packaging strategy; no new feature export facade is required.
 
 ### Section 7 verification (2026-10-02)
 
@@ -706,3 +778,10 @@ The section 8 [fetching and runtime review](graphql-fetching-compliance.md) reco
 checks, deployed identity, acceptance evidence and any remaining blockers. The rollback procedure
 is reviewed against the artifact and persistence boundaries; it does not claim an exercised
 deployment rollback unless that review records one.
+
+Feature queries that explicitly opt out of browser persistence use
+`defineNonPersistentQueryOptions()` from `@eve-space/platform-module-nuxt/runtime`. It accepts only
+`esiPersistence: { kind: 'none' }`, retains the caller's finite Colada residency, and enforces the
+classification even if runtime metadata attempts to override it. The general classification factory
+remains reserved for host queries; protected feature queries retain their existing platform admission
+seam. This options helper grants neither route admission nor permission to execute protected reads.

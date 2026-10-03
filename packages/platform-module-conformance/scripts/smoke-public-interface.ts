@@ -4,10 +4,12 @@ import { tmpdir } from 'node:os'
 import { join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
+import { writeMarketGraphQLConsumerFixture } from './market-graphql-consumer.ts'
 
 const executeFile = promisify(execFile)
 const repositoryRoot = fileURLToPath(new URL('../../..', import.meta.url))
 const packageManager = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+const withMarketGraphQL = process.argv.includes('--market-graphql')
 const publicPackages = [
   'packages/esi-client',
   'packages/core-data-contract',
@@ -40,6 +42,16 @@ try {
       }),
     ),
   )
+
+  if (withMarketGraphQL) {
+    const marketArchiveRoot = join(archiveRoot, 'market-nuxt')
+    await mkdir(marketArchiveRoot)
+    const archive = await packPackage(
+      join(repositoryRoot, 'features/market/nuxt'),
+      marketArchiveRoot,
+    )
+    archives.set('@eve-space/market-nuxt', archive)
+  }
 
   const rootPackageJson = await readPackageJson(join(repositoryRoot, 'package.json'))
   const registryDependencies = await resolveRegistryDependencies()
@@ -79,9 +91,34 @@ try {
   )
   await verifyInstalledPackages(consumerRoot, archives.keys())
   await writeConsumerFixture(consumerRoot)
+  if (withMarketGraphQL) await writeMarketGraphQLConsumerFixture(repositoryRoot, consumerRoot)
   await runPackageManager(['exec', 'tsc6', '--project', 'tsconfig.json'], consumerRoot)
   await runCommand(process.execPath, ['runtime-smoke.mjs'], consumerRoot)
+  if (withMarketGraphQL) {
+    await runPackageManager(
+      [
+        'exec',
+        'tsc6',
+        '--ignoreConfig',
+        '--target',
+        'ES2023',
+        '--module',
+        'NodeNext',
+        '--moduleResolution',
+        'NodeNext',
+        '--strict',
+        '--skipLibCheck',
+        '--outDir',
+        'compiled',
+        'market-generated.ts',
+      ],
+      consumerRoot,
+    )
+    await runCommand(process.execPath, ['market-graphql-smoke.mjs'], consumerRoot)
+  }
   await runInstalledConformance(consumerRoot)
+  console.log('Installed public-package contracts passed')
+  if (withMarketGraphQL) console.log('Installed Market GraphQL contracts passed')
 } finally {
   await rm(temporaryRoot, { force: true, recursive: true })
 }
@@ -190,6 +227,35 @@ async function verifyInstalledPackages(consumerRoot: string, packageNames: Itera
 async function writeConsumerFixture(consumerRoot: string) {
   const sourceRoot = join(consumerRoot, 'src')
   await mkdir(sourceRoot)
+  await writeFile(
+    join(sourceRoot, 'graphql.ts'),
+    `import {
+  executeTypedGraphQL,
+  normalizeGraphQLVariables,
+  readGraphQLFieldError,
+  type ApplicationGraphQLResult,
+  type GraphQLDocument,
+} from '@eve-space/platform-module-nuxt/runtime'
+
+const document: GraphQLDocument<{ value: string }, { id: string }> = {
+  toString: () => 'query Value($id: ID!) { value(id: $id) }',
+}
+
+export const readValue = async (signal: AbortSignal) => {
+  const result: ApplicationGraphQLResult<{ value: string }> = await executeTypedGraphQL(
+    'https://api.example.test', document, { id: '7' }, signal,
+  )
+  const value: string | undefined = result.data?.value
+  // @ts-expect-error EVE ID variables retain their string representation
+  void executeTypedGraphQL('https://api.example.test', document, { id: 7 })
+  // @ts-expect-error required variables cannot be omitted
+  void executeTypedGraphQL('https://api.example.test', document, {})
+  // @ts-expect-error result selections do not gain undeclared fields
+  void result.data?.other
+  return { value, variables: normalizeGraphQLVariables({ id: '7' }), error: await readGraphQLFieldError({ message: 'Unavailable' }) }
+}
+`,
+  )
   await writeFile(
     join(sourceRoot, 'server.ts'),
     `import type { PublishedTypeDetailsResult } from '@eve-space/core-data-contract'
@@ -425,6 +491,7 @@ import { platformModuleHostContractVersion } from '@eve-space/platform-module-co
 import { definePlatformGraphQLRead } from '@eve-space/platform-module-contract/graphql'
 import { definePlatformPersistenceOperation } from '@eve-space/platform-module-server'
 import platformNuxtModule from '@eve-space/platform-module-nuxt'
+import { executeTypedGraphQL } from '@eve-space/platform-module-nuxt/runtime'
 import { z } from 'zod'
 
 const asset = projectAssetSnapshot({
@@ -453,6 +520,19 @@ if (typeof platformNuxtModule !== 'function') throw new Error('Nuxt package fail
 const read = definePlatformGraphQLRead(({ capabilities }) => capabilities.persistence.readValue())
 const value = await read({ parent: {}, args: {}, subject: null, capabilities: { persistence: { readValue: async () => 'graphql-public-contract' } } })
 if (value !== 'graphql-public-contract') throw new Error('GraphQL contract package failed at runtime')
+globalThis.fetch = async (url, init) => {
+  if (url !== 'https://api.example.test/api/graphql' || init.method !== 'POST')
+    throw new Error('Packaged GraphQL transport used the wrong endpoint or method')
+  const request = JSON.parse(init.body)
+  if (request.variables.id !== '7' || init.credentials !== 'include')
+    throw new Error('Packaged GraphQL transport lost variables or credentials')
+  return Response.json({ data: { value: 'packaged-public-value' } })
+}
+const envelope = await executeTypedGraphQL('https://api.example.test', {
+  toString: () => 'query Value($id: ID!) { value(id: $id) }',
+}, { id: '7' })
+if (envelope.data?.value !== 'packaged-public-value')
+  throw new Error('Packaged GraphQL transport failed at runtime')
 `,
   )
 }

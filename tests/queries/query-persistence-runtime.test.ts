@@ -53,6 +53,16 @@ import type { CacheAdmissionContext } from '../../app/queries/auth'
 import { invalidateRemovedCharacter, prefetchProtectedQuery } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { ApiQueryError } from '../../app/utils/query-error'
+import { executeTypedGraphQL } from '@eve-space/platform-module-nuxt/runtime'
+import { MarketProfilesDocument } from '../../features/market/nuxt/src/runtime/app/market-graphql'
+import {
+  marketGraphQLKey,
+  marketQueryOptions,
+} from '../../features/market/nuxt/src/runtime/app/market-query-options'
+import {
+  adaptMarketProfiles,
+  marketField,
+} from '../../features/market/nuxt/src/runtime/app/market-graphql-adapters'
 import { ownedAssetsGraphQLQuery } from '../../app/queries/graphql'
 import { queryServer } from '../support/query-server'
 
@@ -134,6 +144,54 @@ describe('GraphQL private query lifecycle', () => {
     })
     runtime.dispose()
   })
+})
+
+it('excludes a successful Market GraphQL resource from the active persister while retaining in-memory reuse', async () => {
+  const storage = new MemoryQueryPersistenceStorage(emptyEnvelope())
+  const runtime = createRuntime(storage, undefined, Date.now)
+  try {
+    await readyRuntime(runtime)
+    let requests = 0
+    queryServer.use(
+      http.post('http://localhost/api/graphql', () => {
+        requests += 1
+        return HttpResponse.json({ data: { market: { profiles: [] } } })
+      }),
+    )
+    const key = marketGraphQLKey('MarketProfiles', [])
+    const options = marketQueryOptions(key, true, 30_000, async ({ signal }) => {
+      const envelope = await executeTypedGraphQL(
+        'http://localhost',
+        MarketProfilesDocument,
+        {},
+        signal,
+      )
+      return adaptMarketProfiles(
+        marketField(envelope, ['market', 'profiles'], envelope.data?.market?.profiles),
+      )
+    })
+    const entry = runtime.queryCache.ensure(options)
+    await runtime.queryCache.fetch(entry)
+    expect(entry.state.value.status).toBe('success')
+    expect(entry.meta.esiPersistence).toEqual({ kind: 'none' })
+    await runtime.queryCache.refresh(entry)
+    expect(requests).toBe(1)
+    expect(runtime.queryCache.getQueryData(key)).toEqual([])
+    const eligible = runtime.queryCache.ensure({
+      key: PUBLIC_KEY,
+      meta: { esiPersistence: { kind: 'public-esi' } },
+      query: async () => ({ name: 'Persisted positive control' }),
+    })
+    await runtime.queryCache.fetch(eligible)
+    await vi.waitFor(
+      () => expect(storage.snapshot()?.public[JSON.stringify(PUBLIC_KEY)]).toBeDefined(),
+      { timeout: 3000 },
+    )
+    expect(Object.keys(storage.snapshot()!.public)).toEqual([JSON.stringify(PUBLIC_KEY)])
+    expect(runtime.queryCache.getQueryData(key)).toEqual([])
+  } finally {
+    runtime.dispose()
+  }
 })
 
 describe('query persistence runtime', () => {

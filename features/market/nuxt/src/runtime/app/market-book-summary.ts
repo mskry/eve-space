@@ -4,6 +4,7 @@ import { sortMarketOrders, type MarketOrderPresentation } from './market-order-p
 interface MarketBookSide {
   readonly rows: readonly MarketOrderPresentation[]
   readonly hasMore: boolean
+  readonly kind?: 'ready' | 'unavailable'
 }
 
 export interface MarketBookSummary {
@@ -21,6 +22,7 @@ const formatCents = (cents: bigint) => {
 }
 
 const listedUnits = (side: MarketBookSide) => {
+  if (side.kind === 'unavailable') return '—'
   const units = side.rows.reduce((sum, row) => sum + row.volumeRemain, 0).toLocaleString('en-US')
   return side.hasMore ? `${units}+` : units
 }

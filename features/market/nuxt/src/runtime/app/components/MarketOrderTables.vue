@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import MarketOrderTable from './MarketOrderTable.vue'
-import type { MarketObservedBook } from '../useMarketOverview'
+import type { MarketObservedBook } from '../market-models'
 
 defineProps<{ book: MarketObservedBook }>()
+const emit = defineEmits<{ restart: [] }>()
 </script>
 
 <template>
   <div class="market-order-tables">
-    <MarketOrderTable :book="book" side="sell" />
-    <MarketOrderTable :book="book" side="buy" />
+    <MarketOrderTable :book="book" side="sell" @restart="emit('restart')" />
+    <MarketOrderTable :book="book" side="buy" @restart="emit('restart')" />
   </div>
 </template>
 

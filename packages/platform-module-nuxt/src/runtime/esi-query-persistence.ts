@@ -29,6 +29,13 @@ type ClassifiedQueryOptions<TData, TError, TDataInitial extends TData | undefine
   readonly meta?: Omit<QueryMeta, 'esiPersistence'>
 }
 
+type NonPersistentQueryOptions<TData, TError, TDataInitial extends TData | undefined> = Omit<
+  ClassifiedQueryOptions<TData, TError, TDataInitial>,
+  'esiPersistence'
+> & {
+  readonly esiPersistence: { readonly kind: 'none' }
+}
+
 export function defineEsiQueryOptions<
   Params,
   TData,
@@ -46,6 +53,19 @@ export function defineEsiQueryOptions<
     }
   })
 }
+
+export const defineNonPersistentQueryOptions = <
+  Params,
+  TData,
+  TError = Error,
+  TDataInitial extends TData | undefined = undefined,
+>(
+  setupOptions: (params: Params) => NonPersistentQueryOptions<TData, TError, TDataInitial>,
+): ((params: Params) => DefineQueryOptionsTagged<TData, TError, TDataInitial>) =>
+  defineEsiQueryOptions((params: Params) => ({
+    ...setupOptions(params),
+    esiPersistence: { kind: 'none' },
+  }))
 
 export function characterEsiPersistence(characterId: number): EsiPersistence {
   return { characterId, kind: 'character-esi' }

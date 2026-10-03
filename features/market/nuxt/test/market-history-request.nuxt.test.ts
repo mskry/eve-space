@@ -1,6 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, expect, test, vi } from 'vitest'
+import type { GraphQLJSONObject } from '@eve-space/platform-module-nuxt/runtime'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import {
   useMarketHistoryRequest,
@@ -33,7 +34,7 @@ interface DemandResponseBody {
   readonly status?: 'accepted' | 'ready'
   readonly phase?: 'queued' | 'collecting'
   readonly code?: string
-  readonly history?: object
+  readonly history?: GraphQLJSONObject
 }
 
 const json = (body: DemandResponseBody, status: number) =>
@@ -200,24 +201,32 @@ test('applies a ready response without an extra history read or polling', async 
   wrapper.unmount()
 })
 
-test('does not apply a late ready response to a different selected item', async () => {
-  const held = Promise.withResolvers<Response>()
-  let first = true
-  stubDemand(() => {
-    if (first) {
-      first = false
-      return held.promise
-    }
-    return json({ status: 'accepted', phase: 'queued' }, 202)
-  })
-  const { wrapper, request, target, onReady } = await mountRequest()
-  target.value = { ...target.value, typeId: 35 }
-  await vi.waitFor(() => expect(request.status.value).toBe('queued'))
-  held.resolve(json({ status: 'ready', history: { typeId: 34 } }, 200))
-  await flushPromises()
-  expect(onReady).not.toHaveBeenCalled()
-  wrapper.unmount()
-})
+test.each(['type', 'profile', 'revision', 'tab'] as const)(
+  'does not apply a late ready response after changing the %s',
+  async (change) => {
+    const held = Promise.withResolvers<Response>()
+    let first = true
+    stubDemand(() => {
+      if (first) {
+        first = false
+        return held.promise
+      }
+      return json({ status: 'accepted', phase: 'queued' }, 202)
+    })
+    const { wrapper, request, target, active, onReady } = await mountRequest()
+    if (change === 'type') target.value = { ...target.value, typeId: 35 }
+    if (change === 'profile') target.value = { ...target.value, profileId: 'other-profile' }
+    if (change === 'revision') target.value = { ...target.value, profileRevision: 2 }
+    if (change === 'tab') active.value = false
+    await nextTick()
+    await flushPromises()
+    expect(request.status.value).toBe(change === 'tab' ? 'idle' : 'queued')
+    held.resolve(json({ status: 'ready', history: { typeId: 34 } }, 200))
+    await flushPromises()
+    expect(onReady).not.toHaveBeenCalled()
+    wrapper.unmount()
+  },
+)
 
 test('requests again once collected history later goes stale', async () => {
   const demands = stubDemand(() => json({ status: 'accepted', phase: 'collecting' }, 202))

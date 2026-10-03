@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { formatMarketIsk, formatMarketIskCompact } from '../src/runtime/app/market-isk'
 import { marketBookState } from '../src/runtime/app/market-book-state'
 import { marketBookSummary } from '../src/runtime/app/market-book-summary'
-import type { MarketBook } from '../src/runtime/app/useMarketOverview'
+import type { MarketBook } from '../src/runtime/app/market-models'
 import { marketHistorySeries, type MarketDay } from '../src/runtime/app/market-history-presentation'
 import {
   sortMarketOrders,

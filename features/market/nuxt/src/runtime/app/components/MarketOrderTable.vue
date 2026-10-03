@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { readPlatformApiResponse } from '@eve-space/platform-module-nuxt/runtime'
+import { useMarketOrderPaging, type MarketPageDirection } from '../useMarketOrderPaging'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
   formatMarketIsk,
@@ -15,72 +15,45 @@ import {
   formatMarketTimeUtc,
   marketRemainingMinutes,
 } from '../market-time'
-import type { MarketObservedBook } from '../useMarketOverview'
+import type { MarketObservedBook, MarketOrderRow } from '../market-models'
 
-type MarketOrderRow = MarketObservedBook['sellers']['rows'][number]
 interface MarketColumn {
   key: MarketOrderSort
   label: string
   numeric: boolean
-}
-interface PageCursor {
-  price: string
-  issuedAt: string
-  orderId: number
-}
-type PageDirection = 'next' | 'previous'
-interface PageRequest {
-  index: number
-  cursor: PageCursor
-  direction: PageDirection
 }
 const pageSize = 100
 const rowHeight = 34
 const expiringSoonMinutes = 1_440
 
 const props = defineProps<{ book: MarketObservedBook; side: 'sell' | 'buy' }>()
-const api = usePlatformApi()
+const paging = useMarketOrderPaging(
+  computed(() => props.book),
+  computed(() => props.side),
+)
+const { loading, canPrevious: canPreviousPage } = paging
+const rows = computed(() => paging.page.value.rows)
+const hasMore = computed(() => paging.page.value.hasMore)
+const pageIndex = computed(() => paging.page.value.index)
+const observationUnavailable = computed(() => paging.failure.value === 'observation')
+const error = computed(() => paging.failure.value === 'page' || observationUnavailable.value)
+const emit = defineEmits<{ restart: [] }>()
 const clipboard = useUiClipboard()
 const scrollArea = ref<HTMLDivElement | null>(null)
 const heading = computed(() => (props.side === 'sell' ? 'Sellers' : 'Buyers'))
 const title = computed(() => (props.side === 'sell' ? 'Sell orders' : 'Buy orders'))
 const sourcePage = computed(() => (props.side === 'sell' ? props.book.sellers : props.book.buyers))
-const rows = ref<MarketOrderRow[]>([...sourcePage.value.rows])
-const hasMore = ref(sourcePage.value.hasMore)
-const pageIndex = ref(0)
 const bottomSpacerHeight = ref(0)
-const cursors: PageCursor[] = []
 const field = ref<MarketOrderSort>('price')
 const direction = ref<'asc' | 'desc'>(props.side === 'sell' ? 'asc' : 'desc')
-const loading = ref(false)
-const error = ref(false)
 const now = ref<number | null>(null)
-const failedRequest = ref<PageRequest | null>(null)
 const copiedOrderId = ref<number | null>(null)
-let controller: AbortController | null = null
 let clock: ReturnType<typeof setInterval> | undefined
 let copiedTimer: ReturnType<typeof setTimeout> | undefined
-const identity = computed(() =>
-  [
-    props.book.observation.profileId,
-    props.book.observation.typeId,
-    props.book.observation.observationId,
-    props.side,
-  ].join(':'),
-)
-
 watch(
-  identity,
+  paging.identity,
   () => {
-    controller?.abort()
-    rows.value = [...sourcePage.value.rows]
-    hasMore.value = sourcePage.value.hasMore
-    pageIndex.value = 0
     bottomSpacerHeight.value = 0
-    cursors.length = 0
-    loading.value = false
-    error.value = false
-    failedRequest.value = null
     copiedOrderId.value = null
     field.value = 'price'
     direction.value = props.side === 'sell' ? 'asc' : 'desc'
@@ -97,7 +70,6 @@ onMounted(() => {
   }, 60_000)
 })
 onUnmounted(() => {
-  controller?.abort()
   if (clock) clearInterval(clock)
   clearTimeout(copiedTimer)
 })
@@ -170,86 +142,31 @@ const sortDirectionFor = (key: MarketOrderSort) => {
   if (field.value !== key) return undefined
   return direction.value === 'asc' ? 'ascending' : 'descending'
 }
-const requestPage = async (index: number, cursor: PageCursor, pageDirection: PageDirection) => {
-  controller?.abort()
-  const request = new AbortController()
-  controller = request
-  loading.value = true
-  error.value = false
-  failedRequest.value = { index, cursor, direction: pageDirection }
-  const currentIdentity = identity.value
-  try {
-    const page = await readPlatformApiResponse(
-      await api.api.modules.market.books.profiles[':profileId'].types[':typeId'].observations[
-        ':observationId'
-      ].orders.$get(
-        {
-          param: {
-            profileId: props.book.observation.profileId,
-            typeId: String(props.book.observation.typeId),
-            observationId: props.book.observation.observationId,
-          },
-          query: {
-            side: props.side,
-            limit: '100',
-            cursorPrice: cursor.price,
-            cursorIssuedAt: cursor.issuedAt,
-            cursorOrderId: String(cursor.orderId),
-          },
-        },
-        { init: { signal: request.signal } },
-      ),
-      'Market order page is unavailable.',
-    )
-    if (request.signal.aborted || identity.value !== currentIdentity) return
-    rows.value = page.rows
-    hasMore.value = page.hasMore
-    pageIndex.value = index
-    failedRequest.value = null
-    await nextTick()
-    const area = scrollArea.value
-    if (area) {
-      // A short final page needs enough scroll space to avoid immediately reloading its predecessor.
-      bottomSpacerHeight.value =
-        index > 0
-          ? Math.max(0, area.clientHeight - rows.value.length * rowHeight + rowHeight * 2)
-          : 0
-      await nextTick()
-      area.scrollTop =
-        pageDirection === 'next'
-          ? spacerHeight.value + 1
-          : Math.max(0, spacerHeight.value + rows.value.length * rowHeight - area.clientHeight - 1)
-    }
-  } catch {
-    if (!request.signal.aborted && identity.value === currentIdentity) error.value = true
-  } finally {
-    if (controller === request) loading.value = false
-  }
+const positionPage = async (pageDirection: MarketPageDirection) => {
+  await nextTick()
+  const area = scrollArea.value
+  if (!area) return
+  // A short final page needs enough scroll space to avoid immediately reloading its predecessor.
+  bottomSpacerHeight.value =
+    pageIndex.value > 0
+      ? Math.max(0, area.clientHeight - rows.value.length * rowHeight + rowHeight * 2)
+      : 0
+  await nextTick()
+  area.scrollTop =
+    pageDirection === 'next'
+      ? spacerHeight.value + 1
+      : Math.max(0, spacerHeight.value + rows.value.length * rowHeight - area.clientHeight - 1)
 }
+type PageAction = () => MarketPageDirection | null | Promise<MarketPageDirection | null>
+const movePage = async (action: PageAction) => {
+  const movement = await action()
+  if (movement) await positionPage(movement)
+}
+const nextPage = () => movePage(paging.next)
+const previousPage = () => movePage(paging.previous)
+const restoreFirstPage = () => movePage(paging.first)
+const retryPage = () => movePage(paging.retry)
 
-const nextPage = () => {
-  const last = rows.value.at(-1)
-  if (!last || !hasMore.value || loading.value) return
-  const cursor = { price: last.price, issuedAt: last.issuedAt, orderId: last.orderId }
-  cursors[pageIndex.value + 1] = cursor
-  void requestPage(pageIndex.value + 1, cursor, 'next')
-}
-const previousPage = () => {
-  if (loading.value || pageIndex.value === 0) return
-  if (pageIndex.value === 1) {
-    rows.value = [...sourcePage.value.rows]
-    hasMore.value = sourcePage.value.hasMore
-    pageIndex.value = 0
-    bottomSpacerHeight.value = 0
-    void nextTick(() => {
-      const area = scrollArea.value
-      if (area) area.scrollTop = Math.max(0, rows.value.length * rowHeight - area.clientHeight - 1)
-    })
-    return
-  }
-  const cursor = cursors[pageIndex.value - 1]
-  if (cursor) void requestPage(pageIndex.value - 1, cursor, 'previous')
-}
 const onScroll = () => {
   const area = scrollArea.value
   if (!area || loading.value) return
@@ -258,10 +175,6 @@ const onScroll = () => {
     return
   }
   if (hasMore.value && area.scrollTop + area.clientHeight >= area.scrollHeight - 8) nextPage()
-}
-const retryPage = () => {
-  const pending = failedRequest.value
-  if (pending) void requestPage(pending.index, pending.cursor, pending.direction)
 }
 </script>
 
@@ -275,11 +188,15 @@ const retryPage = () => {
       <h3>{{ title }}</h3>
       <span class="market-order-table__hint">{{ sortHint }}</span>
     </header>
-    <output v-if="!rows.length" class="market-order-table__empty"
+    <output v-if="paging.failure.value === 'side'" class="market-order-table__empty">
+      {{ heading }} are unavailable.
+      <button type="button" @click="emit('restart')">Retry market orders</button>
+    </output>
+    <output v-else-if="!rows.length && !observationUnavailable" class="market-order-table__empty"
       >No {{ side === 'sell' ? 'sell' : 'buy' }} orders observed.</output
     >
     <div
-      v-else
+      v-if="rows.length"
       ref="scrollArea"
       class="market-order-table__scroll"
       tabindex="0"
@@ -411,15 +328,37 @@ const retryPage = () => {
       </p>
       <p v-else-if="!hasMore" class="market-order-table__status">End of order book</p>
     </div>
+    <nav
+      v-if="rows.length && (hasMore || pageIndex > 0)"
+      class="market-order-table__pages"
+      :aria-label="`${heading} order pages`"
+    >
+      <button type="button" :disabled="loading || pageIndex === 0" @click="restoreFirstPage">
+        First orders
+      </button>
+      <button type="button" :disabled="loading || !canPreviousPage" @click="previousPage">
+        Previous orders
+      </button>
+      <button type="button" :disabled="loading || !hasMore" @click="nextPage">Next orders</button>
+    </nav>
     <output v-if="rows.length" class="sr-only" aria-live="polite"
       >Showing {{ pageIndex * pageSize + 1 }}–{{ pageIndex * pageSize + rows.length }}
       {{ heading.toLowerCase() }} orders.</output
     >
     <output v-if="copiedOrderId !== null" class="sr-only" aria-live="polite">Price copied.</output>
     <output v-if="loading" class="sr-only">Loading more {{ heading.toLowerCase() }} orders</output>
+    <output v-if="sourcePage.error && sourcePage.kind !== 'unavailable'"
+      >Order refresh failed; showing the previously loaded side.</output
+    >
     <div v-if="error" class="market-order-table__error">
-      <output>More orders are unavailable; the current rows remain visible.</output>
-      <button type="button" @click="retryPage">Retry loading orders</button>
+      <output v-if="observationUnavailable"
+        >This market observation is unavailable. Restart to discover the latest book.</output
+      >
+      <output v-else>More orders are unavailable; the current rows remain visible.</output>
+      <button v-if="observationUnavailable" type="button" @click="emit('restart')">
+        Restart with the latest market observation
+      </button>
+      <button v-else type="button" @click="retryPage">Retry loading orders</button>
     </div>
   </section>
 </template>
@@ -431,6 +370,12 @@ const retryPage = () => {
   max-height: clamp(19rem, 58dvh, 42rem);
   display: flex;
   flex-direction: column;
+}
+.market-order-table__pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
 }
 .market-order-table__header {
   display: flex;

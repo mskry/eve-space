@@ -217,6 +217,34 @@ describe('feature package dependency allowlists', () => {
   })
 })
 
+describe('feature GraphQL transport import allowlists', () => {
+  it('allows schema-independent platform GraphQL transport for Nuxt features', () => {
+    expect(
+      nuxtSourceBoundaryViolations(
+        nuxtRuntimeSource(`
+      import { executeTypedGraphQL, normalizeGraphQLVariables, type GraphQLDocument } from '@eve-space/platform-module-nuxt/runtime'
+      export const read = (document: GraphQLDocument<{ value: string }, { id: string }>) =>
+        executeTypedGraphQL('https://api.example.test', document, { id: '7' })
+    `),
+      ),
+    ).toStrictEqual([])
+  })
+
+  it.each([
+    '../../../../../../../app/graphql/graphql-client',
+    '../../../../../../../api/src/graphql/schema',
+    '@eve-space/market-server',
+  ])('rejects feature GraphQL transport bypass import %s', (specifier) => {
+    expect(
+      nuxtSourceBoundaryViolations(
+        nuxtRuntimeSource(`
+      import { executeTypedGraphQL } from '${specifier}'
+    `),
+      ),
+    ).not.toStrictEqual([])
+  })
+})
+
 describe('feature source import allowlists', () => {
   it('accepts package-local and reviewed server imports', () => {
     expect(

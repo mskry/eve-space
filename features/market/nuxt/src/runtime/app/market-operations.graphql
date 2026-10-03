@@ -1,0 +1,143 @@
+query MarketItem($revision: String!, $typeId: EveId!) {
+  market {
+    catalogueType(revision: $revision, typeId: $typeId) {
+      revision
+      item {
+        id
+        groupId
+        name
+      }
+    }
+  }
+}
+query MarketProfiles {
+  market {
+    profiles {
+      profileId
+      revision
+      regionId
+      marketScope
+      mode
+      stationIds
+      watchedTypeIds
+    }
+  }
+}
+fragment MarketObservationFields on MarketObservation {
+  observationId
+  profileId
+  regionId
+  typeId
+  observedAt
+  validatedAt
+  freshUntil
+  expectedPages
+  totalBookOrders
+}
+fragment MarketOrderPageFields on MarketOrderPage {
+  observationId
+  profileRevision
+  observation {
+    ...MarketObservationFields
+  }
+  hasMore
+  nextCursor
+  labelsComplete
+  rows {
+    orderId
+    side
+    price
+    volumeRemain
+    locationId
+    solarSystemId
+    locationName
+    solarSystemSecurityStatus
+    issuedAt
+    durationDays
+    expiryAt
+    minimumVolume
+    range
+  }
+}
+query MarketBook($profileId: UUID!, $typeId: EveId!) {
+  market {
+    book(profileId: $profileId, typeId: $typeId) {
+      profileId
+      profileRevision
+      typeId
+      status
+      collectionStatus
+      replacement {
+        status
+        attemptedAt
+      }
+      observation {
+        ...MarketObservationFields
+      }
+    }
+  }
+}
+query MarketInitialOrders($profileId: UUID!, $typeId: EveId!, $observationId: UUID!) {
+  market {
+    sellers: orders(
+      profileId: $profileId
+      typeId: $typeId
+      observationId: $observationId
+      side: sell
+      first: 100
+    ) {
+      ...MarketOrderPageFields
+    }
+    buyers: orders(
+      profileId: $profileId
+      typeId: $typeId
+      observationId: $observationId
+      side: buy
+      first: 100
+    ) {
+      ...MarketOrderPageFields
+    }
+  }
+}
+query MarketOrderContinuation(
+  $profileId: UUID!
+  $typeId: EveId!
+  $observationId: UUID!
+  $side: MarketOrderSide!
+  $after: String!
+) {
+  market {
+    orders(
+      profileId: $profileId
+      typeId: $typeId
+      observationId: $observationId
+      side: $side
+      first: 100
+      after: $after
+    ) {
+      ...MarketOrderPageFields
+    }
+  }
+}
+query MarketHistory($profileId: UUID!, $typeId: EveId!) {
+  market {
+    history(profileId: $profileId, typeId: $typeId) {
+      profileId
+      profileRevision
+      regionId
+      typeId
+      status
+      freshness
+      validatedAt
+      freshUntil
+      days {
+        date
+        averageIsk
+        highIsk
+        lowIsk
+        volume
+        orderCount
+      }
+    }
+  }
+}

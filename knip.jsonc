@@ -5,6 +5,7 @@
   // Codegen exports the composed schema types alongside curated operation types.
   "ignoreIssues": {
     "app/generated/graphql-operations.ts": ["types"],
+    "features/market/nuxt/src/runtime/app/market-graphql.ts": ["types"],
   },
   "workspaces": {
     ".": {
@@ -28,6 +29,7 @@
         "scripts/module-registry/source-extensions.d.mts",
         // Standalone fixture server and production-browser smoke runner, invoked directly.
         "tests/support/market-browser-{fixture,smoke}.mjs",
+        "tests/support/market-browser-fixture.d.mts",
         // Source-text fixtures read by the SSR boundary review tests, never executed.
         "tests/fixtures/ssr-boundary-review/**/*.ts",
         // Standalone negative type fixtures invoked through test:registry:types and graphql:types.
@@ -91,6 +93,10 @@
         "test/fixtures/basic/app.vue",
         "test/fixtures/basic/nuxt.config.ts",
       ],
+    },
+    "features/market/nuxt": {
+      // Negative contract fixtures are compiled directly by the feature's typecheck scripts.
+      "entry": ["test/types/*.ts"],
     },
     "packages/esi-client": {
       // Generated artifacts and generator helpers are validated by this package's dedicated suite.

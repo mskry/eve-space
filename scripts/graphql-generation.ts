@@ -13,10 +13,7 @@ import {
   type DefinitionNode,
 } from 'graphql'
 import { coreCharacterTypeDefs } from '../api/src/graphql/core-character-types.js'
-
-const scalars = Object.fromEntries(
-  ['EveId', 'Decimal', 'BigInteger', 'UUID', 'UTCTime', 'UTCDate'].map((name) => [name, 'string']),
-)
+import { applicationGraphQLScalars } from './graphql-scalars.js'
 
 export const graphqlArtifactPaths = {
   sdl: 'api/src/generated/graphql/application.graphql',
@@ -70,7 +67,7 @@ export const generateGraphQLArtifacts = async (installedSDL: string, operationSo
     plugins: [{ typescript: {} }, { operations: {} }, { documents: {} }],
     pluginMap: { typescript, operations, documents },
     config: {
-      scalars,
+      scalars: applicationGraphQLScalars,
       strictScalars: true,
       documentMode: 'string',
       useTypeImports: true,

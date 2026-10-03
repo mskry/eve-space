@@ -8,6 +8,6 @@ export default defineConfig({
       reporter: ['text', 'json-summary', 'lcov'],
     },
     include: ['test/**/*.test.ts'],
-    exclude: ['test/**/*.nuxt.test.ts'],
+    exclude: ['test/**/*.nuxt.test.ts', 'test/**/*.e2e.test.ts'],
   },
 })

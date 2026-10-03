@@ -2,7 +2,7 @@ import { defineComponent, h } from 'vue'
 import { disposePinia } from 'pinia'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { executeTypedGraphQL } from '../../app/graphql/graphql-client'
+import { executeTypedGraphQL } from '@eve-space/platform-module-nuxt/runtime'
 import { ExplorerMarketDocument } from '../../app/generated/graphql-operations'
 import {
   applicationGraphQLQueryKey,

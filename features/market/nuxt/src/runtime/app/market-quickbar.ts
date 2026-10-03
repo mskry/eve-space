@@ -15,7 +15,7 @@ export const rootQuickbarFolderId = '__root__'
 export const maxMarketQuickbarItems = 100
 export const maxMarketQuickbarFolders = 50
 
-interface MarketQuickbarFolder {
+type MarketQuickbarFolder = {
   name: string
   types: number[]
   childFolders: string[]

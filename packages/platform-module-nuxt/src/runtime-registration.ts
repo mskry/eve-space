@@ -1,8 +1,12 @@
 import { addComponent, addImports, addRouteMiddleware, createResolver } from '@nuxt/kit'
 
-export function registerPlatformRuntime() {
+export const registerPlatformRuntime = () => {
   const resolver = createResolver(import.meta.url)
   addImports([
+    {
+      from: resolver.resolve('./runtime/app/composables/usePlatformGraphQL'),
+      name: 'usePlatformGraphQL',
+    },
     {
       from: resolver.resolve('./runtime/character-profile'),
       name: 'usePlatformCharacterProfile',
