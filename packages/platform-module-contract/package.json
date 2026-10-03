@@ -27,6 +27,10 @@
       "types": "./dist/identifiers.d.ts",
       "import": "./dist/identifiers.js"
     },
+    "./inventory": {
+      "types": "./dist/inventory.d.ts",
+      "import": "./dist/inventory.js"
+    },
     "./installed": {
       "types": "./dist/installed.d.ts",
       "import": "./dist/installed.js"

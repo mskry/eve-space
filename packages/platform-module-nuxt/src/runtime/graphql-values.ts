@@ -6,7 +6,14 @@ export type GraphQLJSONValue =
 export interface GraphQLJSONObject {
   readonly [key: string]: GraphQLJSONValue
 }
-export type GraphQLVariables = Readonly<Record<string, GraphQLJSONValue | undefined>>
+export type GraphQLInputValue =
+  | GraphQLJSONPrimitive
+  | readonly GraphQLInputValue[]
+  | GraphQLInputObject
+interface GraphQLInputObject {
+  readonly [key: string]: GraphQLInputValue | undefined
+}
+export type GraphQLVariables = GraphQLInputObject
 
 export interface ApplicationGraphQLError {
   readonly message: string

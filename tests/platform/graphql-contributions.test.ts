@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   compilePlatformModules,
@@ -16,8 +17,16 @@ import {
 import { readGraphQLArtifactContributions } from '@eve-space/platform-module-conformance/graphql-artifact'
 import { coreModuleValidationAuthorities } from '../../scripts/module-registry/authorities'
 import { canonicalizePersistenceRoutineSql } from '@eve-space/platform-module-persistence-policy/persistence-policy'
-import { generateRegistryFiles } from '../../scripts/module-registry/generator'
+import {
+  generateRegistryFiles,
+  loadInstalledModuleManifests,
+} from '../../scripts/module-registry/generator'
 import { platformModuleContractImportViolations } from '../../scripts/verify-platform-module-contract-boundaries'
+import type {
+  PlatformInventoryConsumerDeclaration,
+  PlatformInventoryProviderDeclaration,
+} from '@eve-space/platform-module-contract/inventory'
+import { tradingGraphQL } from '../../features/trading/server/src/graphql'
 
 const fixturePath = new URL(
   '../../packages/platform-module-conformance/test/fixtures/release/manifest/manifest.json',
@@ -75,6 +84,327 @@ const reviewedRoutine = async (declaration: PlatformModuleManifest) => {
     migration: operation.migration,
   }
 }
+
+const personalConsumer: PlatformInventoryConsumerDeclaration = {
+  id: 'personal',
+  contractVersion: 1,
+  scope: 'personal',
+  provider: 'core.character-assets',
+  maximumSubjects: 20,
+  maximumPageSize: 100,
+}
+const corporationConsumer: PlatformInventoryConsumerDeclaration = {
+  id: 'corporation',
+  contractVersion: 1,
+  scope: 'corporation',
+  provider: { moduleId: 'source', providerId: 'assets-inventory', optional: true },
+  requiredPermission: 'fixture.inventory.corporation.read',
+  sourcePermission: 'source.assets.read',
+  maximumSubjects: 250,
+  maximumPageSize: 100,
+}
+const inventoryProvider: PlatformInventoryProviderDeclaration = {
+  id: 'assets-inventory',
+  exportName: 'sourceInventory',
+  contractVersion: 1,
+  scope: 'corporation',
+  sectionId: 'assets',
+  requiredPermission: 'source.assets.read',
+  maximumSubjects: 250,
+  maximumPageSize: 100,
+  persistenceOperations: [{ operationId: 'read-source' }],
+}
+const inventoryManifest = () => {
+  const value = manifest()
+  Object.assign(value.release, { hostContractRange: '^1.2.0' })
+  Object.assign(value, {
+    permissions: [
+      ...value.permissions!,
+      {
+        key: 'fixture.inventory.corporation.read',
+        label: 'Inventory',
+        purpose: 'Review corporation inventory',
+        audiences: ['hr', 'director'],
+        sensitivity: 'sensitive',
+        reviewAllowed: true,
+      },
+    ],
+  })
+  Object.assign(value.server, {
+    inventoryConsumers: [structuredClone(personalConsumer), structuredClone(corporationConsumer)],
+  })
+  Object.assign(value.server.graphql![0]!, {
+    reads: [
+      descriptor().reads[0]!,
+      {
+        id: 'personal',
+        field: 'FixtureRead.personal',
+        strategy: 'personal-inventory',
+        inventoryConsumerId: 'personal',
+        subjectArgument: 'characterIds',
+        requiredScope: 'esi-assets.read_assets.v1',
+        cost: 1,
+        sourceCost: 20,
+        persistenceOperations: [],
+        coreDataProducts: [],
+      },
+      {
+        id: 'corporation',
+        field: 'FixtureRead.corporation',
+        strategy: 'reviewer-corporation-inventory',
+        inventoryConsumerId: 'corporation',
+        subjectArgument: 'corporationId',
+        organization: {
+          audience: 'director',
+          requiredPermission: 'fixture.inventory.corporation.read',
+          additionalRequiredPermissions: ['source.assets.read'],
+        },
+        cost: 1,
+        sourceCost: 250,
+        persistenceOperations: [],
+        coreDataProducts: [],
+      },
+    ],
+  })
+  return value
+}
+const sourceManifest = (): PlatformModuleManifest => {
+  const value: PlatformModuleManifest = JSON.parse(
+    JSON.stringify(manifest())
+      .replaceAll('fixture', 'source')
+      .replaceAll('FixtureRead', 'SourceRead'),
+  )
+  Object.assign(value.release, { hostContractRange: '^1.2.0' })
+  Object.assign(value, {
+    permissions: [
+      {
+        key: 'source.assets.read',
+        label: 'Assets',
+        purpose: 'Review assets',
+        audiences: ['hr', 'director'],
+        sensitivity: 'sensitive',
+        reviewAllowed: true,
+      },
+    ],
+    sections: [
+      { id: 'assets', kind: 'sensitive-evidence', defaultEnabled: false, disclosureRevision: 1 },
+    ],
+  })
+  Object.assign(value.server, {
+    routes: [],
+    activityProviders: [],
+    graphql: [],
+    inventoryProviders: [structuredClone(inventoryProvider)],
+  })
+  Object.assign(value.nuxt, { pages: [], navigation: [] })
+  return value
+}
+const inventoryDefinition = (): PlatformGraphQLDefinition => ({
+  typeDefs:
+    'extend type Query { fixture: FixtureRead } type FixtureRead { personal(characterIds: [EveId!]): String corporation(corporationId: EveId!): String }',
+  reads: {
+    'Query.fixture': () => ({}),
+    'FixtureRead.personal': () => null,
+    'FixtureRead.corporation': () => null,
+  },
+})
+
+describe('inventory installed contracts', () => {
+  it('emits independent personal and optional corporation bindings deterministically', async () => {
+    const consumer = inventoryManifest()
+    const source = sourceManifest()
+    const contribution = { ...consumer.server.graphql![0]!, definition: inventoryDefinition() }
+    const routines = [await reviewedRoutine(consumer), await reviewedRoutine(source)]
+    const files = generateRegistryFiles(compile([consumer, source]), routines, [], [contribution])
+    expect(
+      generateRegistryFiles(compile([source, consumer]), routines, [], [contribution]),
+    ).toEqual(files)
+    const bindings = files.get(
+      'api/src/generated/platform/installed-module-inventory-providers.ts',
+    )!
+    expect(bindings).toContain('definition: inventoryProvider0')
+    expect(bindings).toContain('"providerAvailable":true')
+    expect(files.get('api/src/generated/platform/installed-module-persistence.ts')).toContain(
+      '"inventoryProviders":["assets-inventory"]',
+    )
+    const absent = generateRegistryFiles(
+      compile([consumer]),
+      [routines[0]!],
+      [],
+      [contribution],
+    ).get('api/src/generated/platform/installed-module-inventory-providers.ts')!
+    expect(absent).toContain('"providerAvailable":false')
+    expect(absent).toContain('"scope":"personal"')
+    expect(absent).toContain('"provider":"core.character-assets"')
+  })
+
+  it.each(['1.2.0', '>=1.2.0 <2.0.0', '1.2.x'])(
+    'accepts an equivalent minimum host range: %s',
+    (hostContractRange) => {
+      const value = inventoryManifest()
+      Object.assign(value.release, { hostContractRange })
+      expect(() => compile([value])).not.toThrow()
+    },
+  )
+
+  it.each(['>=1.1.1 <2.0.0', '^1.2.0 || ^1.1.5', '*'])(
+    'rejects inventory releases allowing an older host: %s',
+    (hostContractRange) => {
+      const value = inventoryManifest()
+      Object.assign(value.release, { hostContractRange })
+      expect(() => compile([value])).toThrow('host contract 1.2.0')
+    },
+  )
+
+  it.each([
+    [
+      'old host range',
+      (value: PlatformModuleManifest) =>
+        Object.assign(value.release, { hostContractRange: '^1.1.0' }),
+      'host contract 1.2.0',
+    ],
+    [
+      'duplicate consumer',
+      (value: PlatformModuleManifest) =>
+        Object.assign(value.server, { inventoryConsumers: [personalConsumer, personalConsumer] }),
+      'duplicate inventory',
+    ],
+    [
+      'excess grant',
+      (value: PlatformModuleManifest) =>
+        Object.assign(value.server.inventoryConsumers![0]!, { dispatch: '*' }),
+      'is not allowed',
+    ],
+    [
+      'incompatible version',
+      (value: PlatformModuleManifest) =>
+        Object.assign(value.server.inventoryConsumers![0]!, { contractVersion: 2 }),
+      'incompatible inventory',
+    ],
+    [
+      'unbounded subjects',
+      (value: PlatformModuleManifest) =>
+        Object.assign(value.server.inventoryConsumers![0]!, { maximumSubjects: 21 }),
+      'invalid inventory bounds',
+    ],
+    [
+      'missing mandatory provider',
+      (value: PlatformModuleManifest) =>
+        Object.assign(
+          corporationConsumer.scope === 'corporation' &&
+            value.server.inventoryConsumers![1]!.provider,
+          { optional: false },
+        ),
+      'missing declared inventory provider',
+    ],
+  ] as const)('rejects %s', (_name, mutate, error) => {
+    const value = inventoryManifest()
+    mutate(value)
+    expect(() => compile([value])).toThrow(error)
+  })
+})
+
+describe('inventory source and GraphQL authority', () => {
+  it('accepts HR/director inventory permissions while viewer compliance-review access stays disabled', () => {
+    const consumer = inventoryManifest()
+    const source = sourceManifest()
+    for (const permission of [...consumer.permissions!, ...source.permissions!])
+      Object.assign(permission, { reviewAllowed: false })
+    expect(() => compile([consumer, source])).not.toThrow()
+  })
+
+  it.each([
+    [
+      'duplicate provider',
+      (value: PlatformModuleManifest) =>
+        Object.assign(value.server, { inventoryProviders: [inventoryProvider, inventoryProvider] }),
+      'duplicate inventory',
+    ],
+    [
+      'cross-schema operation',
+      (value: PlatformModuleManifest) =>
+        Object.assign(value.server.inventoryProviders![0]!, {
+          persistenceOperations: [{ operationId: 'read-fixture' }],
+        }),
+      'cross-schema',
+    ],
+    [
+      'write operation',
+      (value: PlatformModuleManifest) =>
+        Object.assign(value.server.persistenceOperations[0]!, { mode: 'write' }),
+      'non-read',
+    ],
+    [
+      'wrong source permission',
+      (value: PlatformModuleManifest) =>
+        Object.assign(value.server.inventoryProviders![0]!, {
+          requiredPermission: 'source.other.read',
+        }),
+      'source permission',
+    ],
+    [
+      'undersized provider',
+      (value: PlatformModuleManifest) =>
+        Object.assign(value.server.inventoryProviders![0]!, { maximumSubjects: 249 }),
+      'incompatible inventory provider',
+    ],
+    [
+      'missing declared provider',
+      (value: PlatformModuleManifest) => Object.assign(value.server, { inventoryProviders: [] }),
+      'missing declared inventory provider',
+    ],
+  ] as const)('rejects %s at installation', (_name, mutate, error) => {
+    const source = sourceManifest()
+    mutate(source)
+    expect(() => compile([inventoryManifest(), source])).toThrow(error)
+  })
+
+  it.each([
+    { strategy: 'authenticated-session' },
+    { strategy: 'organization-reviewer' },
+    { strategy: 'deployment-administrator' },
+    { strategy: 'public-mutation' },
+    { strategy: 'subscription' },
+    { inventoryConsumerId: 'personal' },
+    { subjectArgument: undefined },
+    { sourceCost: 1 },
+    { persistenceOperations: [{ operationId: 'read-fixture' }] },
+    { organization: { audience: 'member', requiredPermission: 'fixture.view' } },
+    {
+      organization: {
+        audience: 'hr',
+        requiredPermission: 'fixture.inventory.corporation.read',
+        additionalRequiredPermissions: ['source.other.read'],
+      },
+    },
+  ])('rejects widened corporation GraphQL authority %j', (mutation) => {
+    const value = inventoryManifest()
+    Object.assign(value.server.graphql![0]!.reads[2]!, mutation)
+    expect(() => compile([value])).toThrow('Invalid platform module declarations')
+  })
+
+  it('checks scope selectors in executable SDL without running providers', () => {
+    const value = inventoryManifest()
+    const contribution = { ...value.server.graphql![0]!, definition: inventoryDefinition() }
+    expect(composeContributionSDL([contribution])).toContain('corporationId: EveId!')
+    for (const [before, after] of [
+      ['characterIds: [EveId!]', 'characterIds: EveId!'],
+      ['corporationId: EveId!', 'corporationId: [EveId!]'],
+    ] as const) {
+      expect(() =>
+        composeContributionSDL([
+          {
+            ...contribution,
+            definition: {
+              ...contribution.definition,
+              typeDefs: contribution.definition.typeDefs.replace(before, after),
+            },
+          },
+        ]),
+      ).toThrow('argument')
+    }
+  })
+})
 
 it.each(['compiler', 'manifest'])(
   'authorizes the GraphQL compiler fixture to import %s',
@@ -393,4 +723,42 @@ describe('GraphQL executable and SDL composition', () => {
       ),
     ).rejects.toThrow('inventory')
   })
+})
+
+describe('Trading package composition', () => {
+  const trading: PlatformModuleManifest = JSON.parse(
+    readFileSync(new URL('../../features/trading/manifest/manifest.json', import.meta.url), 'utf8'),
+  )
+  const memberAudit: PlatformModuleManifest = JSON.parse(
+    readFileSync(
+      new URL('../../features/member-audit/manifest/manifest.json', import.meta.url),
+      'utf8',
+    ),
+  )
+  it.each([false, true])(
+    'composes Trading with the optional corporation provider present: %s',
+    async (present) => {
+      const compiled = compile(present ? [trading, memberAudit] : [trading])
+      expect(
+        readCompiledPlatformModules(compiled).find((item) => item.id === 'trading')?.server
+          .inventoryConsumers,
+      ).toHaveLength(2)
+      const routines = present
+        ? (
+            await loadInstalledModuleManifests(fileURLToPath(new URL('../..', import.meta.url)))
+          ).persistenceRoutines.filter((routine) => routine.identity.moduleId === 'member-audit')
+        : []
+      const output = generateRegistryFiles(
+        compiled,
+        routines,
+        [],
+        [{ ...trading.server.graphql![0]!, definition: tradingGraphQL }],
+      )
+      const inventory = output.get(
+        'api/src/generated/platform/installed-module-inventory-providers.ts',
+      )!
+      expect(inventory).toContain(`"providerAvailable":${present}`)
+      expect(inventory).toContain('"provider":"core.character-assets"')
+    },
+  )
 })

@@ -1,0 +1,88 @@
+import { EsiTransportError } from '@evespace/esi-client'
+import { operationRegistry } from '@evespace/esi-client/operations'
+import { expect, test, vi } from 'vitest'
+import { z } from 'zod'
+import { createCharacterEsiMutation, createCharacterEsiRead, createPublicEsiRead } from '../../src/esi-gateway/feature-execution.js'
+import { createRuntimeTestExecution, createRuntimeTestPorts } from './runtime-test-adapters.js'
+
+const mocks = vi.hoisted(() => ({ runtime: vi.fn() }))
+vi.mock('../../src/esi-gateway/internal/production-runtime.js', () => ({ getProductionEsiExecutionRuntime: mocks.runtime }))
+const lifecycle = '11111111-1111-4111-8111-111111111111'
+const mutation = createCharacterEsiMutation({
+  descriptor: operationRegistry.DeleteCharactersCharacterIdMailMailId.transport,
+  encodeRequest: (input: { characterId: number; subjectLifecycleId: string; signal?: AbortSignal }) => ({ path: { character_id: input.characterId, mail_id: 50 } }),
+  map: () => 50,
+  name: 'architecture-adversarial-delete', operation: 'mail-delete',
+})
+const status = createPublicEsiRead({
+  cacheSchema: z.number(), descriptor: operationRegistry.GetStatus.transport,
+  encodeRequest: (_input: Record<string, never>) => ({}), map: ({data}) => data.players,
+  name: 'architecture-adversarial-status', operation: 'status',
+})
+const labels = createCharacterEsiRead({
+  cacheSchema: z.number(), descriptor: operationRegistry.GetCharactersCharacterIdMailLabels.transport,
+  encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({ path: { character_id: input.characterId } }),
+  map: ({data}) => data.total_unread_count ?? 0,
+  name: 'architecture-adversarial-labels', operation: 'mail-labels',
+})
+const lease = { fence: 1, key: 'probe', ownerToken: 'probe', ttlMs: 30000 }
+
+test('post-dispatch cancellation masks uncertainty and suppresses mailbox invalidation', async () => {
+  let rejectResponse!: (error: unknown) => void
+  const fetch = vi.fn(() => new Promise<Response>((_resolve, reject) => { rejectResponse = reject }))
+  const incrementResourceRevision = vi.fn(async () => 1)
+  const runtime = createRuntimeTestExecution(createRuntimeTestPorts({ fetch, response: undefined, overrides: { coordination: { incrementResourceRevision } } }))
+  mocks.runtime.mockResolvedValue(runtime)
+  const controller = new AbortController()
+  const canceled = new Error('caller canceled after dispatch')
+  const execution = mutation.execute({ characterId: 7, subjectLifecycleId: lifecycle, signal: controller.signal }).catch(error => error)
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+  controller.abort(canceled)
+  rejectResponse(new EsiTransportError({ operationId: 'DeleteCharactersCharacterIdMailMailId', reason: 'network', phase: 'response', status: 204 }))
+  expect(await execution).toBe(canceled)
+  expect(incrementResourceRevision).not.toHaveBeenCalled()
+  await runtime.close()
+})
+
+test('close completes while an issued request-lease renewal remains unsettled', async () => {
+  let finishFetch!: (response: Response) => void
+  let finishRenewal!: (value: boolean) => void
+  let renewTick!: () => void
+  const renewal = new Promise<boolean>(resolve => { finishRenewal = resolve })
+  const renewRequestLease = vi.fn(() => renewal)
+  const fetch = vi.fn(() => new Promise<Response>(resolve => { finishFetch = resolve }))
+  const runtime = createRuntimeTestExecution(createRuntimeTestPorts({ fetch, response: undefined, overrides: {
+    coordination: { initializeCacheNamespace: async () => 'probe', acquireRequestLease: async () => lease, commitFence: async () => true, renewRequestLease },
+    timing: { repeat: (operation) => { renewTick = operation; return () => {} } },
+  }}))
+  mocks.runtime.mockResolvedValue(runtime)
+  const execution = status.execute({})
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+  renewTick()
+  expect(renewRequestLease).toHaveBeenCalledOnce()
+  const close = runtime.close()
+  finishFetch(new Response(JSON.stringify({ players: 5, server_version: 'test', start_time: '2026-09-11T00:00:00Z', vip: false }), { headers: { 'Content-Type': 'application/json' } }))
+  await execution
+  await close
+  finishRenewal(true)
+})
+
+test('losing disposable repair marker lets another live replica reuse pre-mutation L1', async () => {
+  const cache = new Map<string,string>()
+  const cachePorts = { get: async (key: string) => cache.get(key) ?? null, set: async (key: string,value: string) => { cache.set(key,value) }, delete: async (key: string) => { cache.delete(key) } }
+  const coordination = { initializeCacheNamespace: async () => 'probe', acquireRequestLease: async () => lease, commitFence: async () => true, getResourceRevision: async () => 0, incrementResourceRevision: vi.fn(async () => { throw new Error('increment unavailable') }) }
+  const readerFetch = vi.fn()
+  const reader = createRuntimeTestExecution(createRuntimeTestPorts({ fetch: readerFetch, response: { labels: [], total_unread_count: 3 }, overrides: { cache: cachePorts, coordination } }))
+  const writer = createRuntimeTestExecution(createRuntimeTestPorts({ fetch: vi.fn(() => new Response(null,{status:204})), response: undefined, overrides: { cache: cachePorts, coordination } }))
+  mocks.runtime.mockResolvedValue(reader)
+  await labels.execute({ characterId: 7, subjectLifecycleId: lifecycle })
+  mocks.runtime.mockResolvedValue(writer)
+  await expect(mutation.execute({ characterId: 7, subjectLifecycleId: lifecycle })).rejects.toThrow('resource revision is temporarily unavailable')
+  expect([...cache.keys()].some(key => key.includes(':revision-repair:'))).toBe(true)
+  cache.clear()
+  mocks.runtime.mockResolvedValue(reader)
+  expect(await labels.execute({ characterId: 7, subjectLifecycleId: lifecycle })).toMatchObject({ data: 3, source: 'cache' })
+  expect(readerFetch).toHaveBeenCalledOnce()
+  expect(coordination.incrementResourceRevision).toHaveBeenCalledTimes(3)
+  await Promise.all([reader.close(),writer.close()])
+})

@@ -6,13 +6,15 @@ GraphQL increment. The endpoint, generated operations and explorer are implement
 
 ## Admission strategies
 
-| Strategy                             | Required authority                                                                                                                                                              |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public module read                   | Installed module and declared section enabled. No member session or organization membership.                                                                                    |
-| Authenticated-session read           | Live member session. An organization policy is applied only when declared.                                                                                                      |
-| Core owned-character read            | Explicit validated character ID, live member session, exact current ownership and subject lifecycle, current EVE authorization revision and the resource's required scope.      |
-| Organization-member module read      | Enabled module/section plus current-version organization compliance, block, audience and every declared permission. An owned-character read may additionally carry this policy. |
-| Reviewer or deployment administrator | Separate existing Hono authority. Neither substitutes for member identity or ownership; GraphQL support is outside this read increment.                                         |
+| Strategy                             | Required authority                                                                                                                                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public module read                   | Installed module and declared section enabled. No member session or organization membership.                                                                                                                              |
+| Authenticated-session read           | Live member session. An organization policy is applied only when declared.                                                                                                                                                |
+| Core owned-character read            | Explicit validated character ID, live member session, exact current ownership and subject lifecycle, current EVE authorization revision and the resource's required scope.                                                |
+| Organization-member module read      | Enabled module/section plus current-version organization compliance, block, audience and every declared permission. An owned-character read may additionally carry this policy.                                           |
+| Personal inventory declaration       | `personal-inventory`, an exact personal consumer, owned assets scope and a bounded optional character selection. Requires aggregate runtime admission before installation.                                                |
+| Corporation inventory declaration    | `reviewer-corporation-inventory`, an exact corporation consumer, one corporation selector, HR/director audience and the exact aggregate and source permissions. Requires aggregate runtime admission before installation. |
+| Reviewer or deployment administrator | Separate existing Hono authority. Neither substitutes for member identity or ownership; GraphQL support is outside this read increment.                                                                                   |
 
 Core assets remain available to their owner without organization membership. A main-character
 session identifies the account; it never changes the explicitly selected subject. Unknown and
@@ -106,11 +108,35 @@ URL explicitly and never reads cookies, tokens or environment configuration. The
 ## Authoring a module contribution
 
 GraphQL is an optional `server.graphql` inventory. Omission normalizes to an empty inventory and
-keeps existing modules compatible. The additive host contract is **1.1.0**; a new release using
-GraphQL should declare `hostContractRange: '^1.1.0'`. Existing `^1.0.0` releases without the inventory
+keeps existing modules compatible. Ordinary GraphQL contributions require host contract **1.1.0**;
+the current host supplies **1.2.0**. A release using only ordinary GraphQL can retain
+`hostContractRange: '^1.1.0'`. Existing `^1.0.0` releases without the inventory
 remain compatible. This is the host protocol version, separate from public package release
 versions. Publish matching manifest/server/Nuxt release artifacts and regenerate the installed
 registries together; do not rely on an older host understanding a new manifest property.
+
+Inventory declarations require `hostContractRange: '^1.2.0'` (or an equivalent range
+that excludes 1.1.0). Declare an exact `inventoryConsumerId` on each aggregate read
+and a matching `server.inventoryConsumers` entry. `personal-inventory` requires the
+assets scope and permits an optional nullable `[EveId!]` selection argument;
+`reviewer-corporation-inventory` requires one `EveId!` corporation selector and exactly
+the consumer's aggregate and source permissions for an HR/director audience. The
+authenticated-session strategy grants neither aggregate capability.
+
+Aggregate declarations cannot request persistence operations, core-data products or
+a source section directly. Their `sourceCost` must cover the declared subject ceiling,
+and any list policy must stay within the consumer's page ceiling. Resolvers author
+their capability as `PlatformGraphQLReadCapabilities<readonly [], object, 'personal'>`
+or the corresponding `'corporation'` specialization. Only the declared scope method
+is available under `capabilities.inventory`; no provider selection, subject replacement
+or source persistence method is exposed. See the
+[inventory interface](platform-module-foundation.md#inventory-interface-host-contract-120)
+for DTOs, binding and source ownership.
+
+This first inventory increment supports declarations and installed composition. The
+runtime composition rejects aggregate strategies until their dedicated admission is
+installed; it never falls back to ordinary session or owned-character admission.
+Other reviewer, administrator, write and subscription declarations remain unsupported.
 
 Use `@eve-space/platform-module-contract/graphql` for pure declaration types and the typed
 `definePlatformGraphQLRead` helper. It imports neither Yoga nor the GraphQL runtime. Persistence
@@ -433,7 +459,7 @@ Detailed logs are in `/tmp/graphql-section5-{coverage,postgres,registry,lint,for
 
 ## Guarded HTTP execution (section 6)
 
-`/api/graphql` is mounted in the chained Hono app. It accepts one GET query or POST
+`/graphql` is mounted in the chained Hono app. It accepts one GET query or POST
 `application/json` envelope. Yoga uses the original request, with its CORS, landing page,
 HTTP batching, uploads, parser cache and response cache disabled. Responses are non-streaming
 JSON even if the caller advertises streaming media. Mutations, subscriptions, `@defer` and
@@ -597,8 +623,8 @@ Logs use `/tmp/graphql-section6-{coverage,postgres,redis,registry,core-contract,
 
 ## Generated frontend contract and API explorer
 
-`/api-explorer` is a public dashboard destination linking to the standard GraphiQL viewer at
-`/api/graphql`. The viewer discovers the endpoint's schema through introspection. It has no
+The standard GraphiQL viewer is available directly at the API's `/graphql` endpoint.
+The viewer discovers the endpoint's schema through introspection. It has no
 module inventory, Market-specific UI, character selector, custom result adapter or installation
 logic. Schema composition controls which fields exist; the API's per-field admission controls
 which data a request may read. Visible schema fields confer no authority.
@@ -656,7 +682,7 @@ The platform Nuxt module registers `usePlatformGraphQL()` through its normal aut
 It captures `runtimeConfig.public.apiBase` and returns a typed executor; constructing it performs
 no request or startup work.
 
-Both executors send JSON POST requests to the configured `/api/graphql` endpoint with
+Both executors send JSON POST requests to the configured `/graphql` endpoint with
 `credentials: 'include'`, `cache: 'no-store'`, and a 16-second deadline composed with the caller's
 abort signal. They preserve HTTP 200 partial envelopes and HTTP 400 GraphQL rejection envelopes;
 other HTTP failures use the safe API error contract. Aborted or expired requests cannot release
@@ -758,7 +784,7 @@ standalone viewer's memory/reset semantics. The comprehensive integration review
 Build and check the installed registry, composed SDL/fingerprint and generated operation artifacts
 before building API and Nuxt. Release the API, installed module packages/registry, frontend and
 dependency lockfile as one compatible artifact set. Check schema drift, startup persistence
-attestation, `/health`, representative existing Hono routes and `/api/graphql`; a successful
+attestation, `/health`, representative existing Hono routes and `/graphql`; a successful
 source test is not a successful deployment probe. The worker consumes the same installed server
 inventory, so verify its health when that inventory changes.
 
@@ -785,3 +811,19 @@ Feature queries that explicitly opt out of browser persistence use
 classification even if runtime metadata attempts to override it. The general classification factory
 remains reserved for host queries; protected feature queries retain their existing platform admission
 seam. This options helper grants neither route admission nor permission to execute protected reads.
+
+## Trading aggregate inventory execution
+
+The optional installed Trading contribution adds distinct `TradingRead.personalInventory` and `TradingRead.corporationInventory` strategies at `/graphql`. The host resolves exact generated inventory consumers, obtains a bounded immutable core admission and supplies only the matching typed inventory method. Root discovery and list projections grant no source authority. Read-only provider persistence uses the provider's own `inventoryProviders` grants and existing confined, timed transactions; consumer resolvers never receive those methods.
+
+The host checks cursor authority/query digests before evidence work, fences each queued source slot and rechecks authority before reuse and release. Corporation observation fencing remains source-owned. Required aggregate/holder audit failure refuses release. Personal reductions are request-local and must still be fresh before reuse. Per-source work shares the existing request ceilings; default all-character selection has an explicit 20-source declared cost and corporation reads reserve 250 regardless of output size. No GraphQL budgets have changed.
+
+Private classification resolves full GraphQL parent-type/field identities, including skipped protected selections; an unrelated public field named `rows` retains its public cache classification. Trading operations are generated and independently typechecked with the ordinary schema drift check. See [the Trading contract](../features/trading/docs/contract.md) for fields, bounds, source clocks and cursor restart, and [the interaction contract](../features/trading/docs/experience.md) for the private page. EVE-16 deployment acceptance remains an independent corporation release blocker.
+
+## Private aggregate presentation
+
+The platform Nuxt aggregate inventory surface runs after client mount and uses core's metadata-only `POST /api/inventory/admission` before GraphQL. The input selects personal characters or exactly one corporation. The response contains owner identity, the full admitted authority fingerprint and a bounded 60-second presentation window; it contains no evidence, source rows or subject vector. It grants neither server authorization for a later read nor a persistence category. Every GraphQL execution repeats its own authoritative admission and release checks.
+
+`GET /api/inventory/corporations` discovers at most 250 current managed corporation IDs after exact live reviewer permission and module/section/provider checks. The organization owner reads only the current organization snapshot with a bounded statement timeout; excess or stale scope is refused rather than truncated. Metadata endpoints use the shared session middleware and private no-store response policy. HR/director roles and exact permissions apply organization-wide across every current managed corporation, including all current alliance member corporations. Inventory admission still binds one selected corporation per request.
+
+The host supplies verified owner/status and roster/organization revision state through the public platform identity adapter. The platform suspends retained presentation on unknown verification, refreshes admission on focus/reconnect and live identity revisions, and renews within its admission deadline. Owner, selected scope/filter or known authority changes invalidate values and in-flight generations. Results remain in component memory, absent from persisted queries and SSR payloads. Group, holder and coverage pages must share the complete source-view fingerprint; source changes require restart. See [Trading interactions](../features/trading/docs/experience.md) for page and accessibility behavior. Local fixtures do not establish deployment acceptance or remote push revocation.

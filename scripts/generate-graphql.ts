@@ -20,6 +20,19 @@ artifacts.set(
   `${marketDirectory}/market-graphql.ts`,
   await generateFeatureGraphQL(artifacts.get(graphqlArtifactPaths.sdl)!, marketSource),
 )
+const tradingDirectory = 'features/trading/nuxt/src/runtime/app'
+const tradingSource = await readFile(
+  resolve(root, tradingDirectory, 'trading-operations.graphql'),
+  'utf8',
+)
+artifacts.set(
+  `${tradingDirectory}/trading-graphql.ts`,
+  await generateFeatureGraphQL(
+    artifacts.get(graphqlArtifactPaths.sdl)!,
+    tradingSource,
+    'tradingGraphQLIdentity',
+  ),
+)
 const write = process.argv.includes('--write')
 await Promise.all(
   [...artifacts].map(async ([path, source]) => {

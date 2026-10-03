@@ -6,6 +6,7 @@ import { isTransportDependency } from '../transport-dependency.js'
 const modulesByTier = {
   application: [
     'admitted-read',
+    'inventory-admission',
     'character-lifecycle',
     'character-selection',
     'character-transfer',
@@ -14,6 +15,7 @@ const modulesByTier = {
     'tokens',
   ],
   persistence: [
+    'inventory-subject-store',
     'character-disclosure-store',
     'character-lock',
     'character-token-store',
@@ -69,6 +71,11 @@ const allowedExternalImportsByTier: Partial<Record<AuthTier, ReadonlySet<string>
 
 const persistenceImports = new Map(
   Object.entries({
+    'inventory-subject-store': new Set([
+      'drizzle-orm',
+      'api/src/db/client.js',
+      'api/src/db/schema.js',
+    ]),
     'character-disclosure-store': new Set([
       'drizzle-orm',
       'api/src/db/client.js',

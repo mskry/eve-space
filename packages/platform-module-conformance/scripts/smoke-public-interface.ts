@@ -5,6 +5,7 @@ import { join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { writeMarketGraphQLConsumerFixture } from './market-graphql-consumer.ts'
+import { verifyInventoryReleaseFixture } from './inventory-release-fixture.ts'
 
 const executeFile = promisify(execFile)
 const repositoryRoot = fileURLToPath(new URL('../../..', import.meta.url))
@@ -227,6 +228,13 @@ async function verifyInstalledPackages(consumerRoot: string, packageNames: Itera
 async function writeConsumerFixture(consumerRoot: string) {
   const sourceRoot = join(consumerRoot, 'src')
   await mkdir(sourceRoot)
+  await writeFile(
+    join(sourceRoot, 'inventory.ts'),
+    await readFile(
+      join(repositoryRoot, 'tests/fixtures/platform-module-registry-types/inventory.ts'),
+      'utf8',
+    ),
+  )
   await writeFile(
     join(sourceRoot, 'graphql.ts'),
     `import {
@@ -488,6 +496,7 @@ export default defineNuxtModule({ meta: { name: '@example/smoke-nuxt' } })
     join(consumerRoot, 'runtime-smoke.mjs'),
     `import { projectAssetSnapshot } from '@eve-space/core-eve-projections/assets'
 import { platformModuleHostContractVersion } from '@eve-space/platform-module-contract/manifest'
+import { definePlatformInventoryProvider } from '@eve-space/platform-module-contract/inventory'
 import { definePlatformGraphQLRead } from '@eve-space/platform-module-contract/graphql'
 import { definePlatformPersistenceOperation } from '@eve-space/platform-module-server'
 import platformNuxtModule from '@eve-space/platform-module-nuxt'
@@ -514,14 +523,18 @@ const operation = definePlatformPersistenceOperation({
   maximumOutputBytes: 16,
 })
 if (asset.itemId !== 1) throw new Error('Core projection package failed at runtime')
-if (platformModuleHostContractVersion !== '1.1.0') throw new Error('Contract package failed at runtime')
+if (platformModuleHostContractVersion !== '1.2.0') throw new Error('Contract package failed at runtime')
+const invalidInventoryFactory = definePlatformInventoryProvider(() => ({}))
+let inventoryRejected = false
+try { invalidInventoryFactory({ persistence: {}, signal: new AbortController().signal }) } catch (error) { inventoryRejected = error instanceof TypeError }
+if (!inventoryRejected) throw new Error('Packaged inventory contract accepted a non-callable provider')
 if (operation.id !== 'runtime-smoke') throw new Error('Server package failed at runtime')
 if (typeof platformNuxtModule !== 'function') throw new Error('Nuxt package failed at runtime')
 const read = definePlatformGraphQLRead(({ capabilities }) => capabilities.persistence.readValue())
 const value = await read({ parent: {}, args: {}, subject: null, capabilities: { persistence: { readValue: async () => 'graphql-public-contract' } } })
 if (value !== 'graphql-public-contract') throw new Error('GraphQL contract package failed at runtime')
 globalThis.fetch = async (url, init) => {
-  if (url !== 'https://api.example.test/api/graphql' || init.method !== 'POST')
+  if (url !== 'https://api.example.test/graphql' || init.method !== 'POST')
     throw new Error('Packaged GraphQL transport used the wrong endpoint or method')
   const request = JSON.parse(init.body)
   if (request.variables.id !== '7' || init.credentials !== 'include')
@@ -563,11 +576,14 @@ async function runInstalledConformance(consumerRoot: string) {
       ? 'eve-space-module-conformance.cmd'
       : 'eve-space-module-conformance',
   )
-  const { stdout } = await runCommand(binary, ['--json', 'conformance.json'], consumerRoot)
-  const report = JSON.parse(stdout) as { readonly ok?: boolean; readonly version?: number }
-  if (report.ok !== true || report.version !== 1) {
-    throw new Error('Installed conformance CLI did not accept the clean-project fixture')
+  const verify = async () => {
+    const { stdout } = await runCommand(binary, ['--json', 'conformance.json'], consumerRoot)
+    const report = JSON.parse(stdout) as { readonly ok?: boolean; readonly version?: number }
+    if (report.ok !== true || report.version !== 1)
+      throw new Error('Installed conformance CLI did not accept the clean-project fixture')
   }
+  await verify()
+  await verifyInventoryReleaseFixture(consumerRoot, verify)
 }
 
 async function runPackageManager(arguments_: readonly string[], cwd: string) {

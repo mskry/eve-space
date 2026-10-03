@@ -37,9 +37,9 @@ const createFixture = (cost = 1) => {
     })
     .use('*', secureHeaders())
     .use('*', csrf({ origin }))
-    .use('/api/*', cors({ credentials: true, origin }))
+    .use('/graphql', cors({ credentials: true, origin }))
     .route(
-      '/api/graphql',
+      '/graphql',
       createGraphQLHostAdapter(
         schema,
         (request) => {
@@ -56,7 +56,7 @@ describe('GraphQL host adapter', () => {
   it('retains host security, logging, CORS and original cancellation', async () => {
     const fixture = createFixture()
     const controller = new AbortController()
-    const request = new Request('http://localhost/api/graphql', {
+    const request = new Request('http://localhost/graphql', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Origin: origin },
       body: JSON.stringify({ query: '{ status }' }),
@@ -77,18 +77,18 @@ describe('GraphQL host adapter', () => {
 
   it('uses host CSRF rejection and rejects unsupported methods/media', async () => {
     const { app, read } = createFixture()
-    const rejected = await app.request('/api/graphql', {
+    const rejected = await app.request('/graphql', {
       method: 'POST',
       headers: { Origin: 'http://untrusted', 'Content-Type': 'text/plain' },
       body: '{}',
     })
     expect(rejected.status).toBe(403)
     expect(
-      (await app.request('/api/graphql', { method: 'PUT', headers: { Origin: origin } })).status,
+      (await app.request('/graphql', { method: 'PUT', headers: { Origin: origin } })).status,
     ).toBe(405)
     expect(
       (
-        await app.request('/api/graphql', {
+        await app.request('/graphql', {
           method: 'POST',
           headers: { Origin: origin, 'Content-Type': 'text/plain' },
           body: '{}',
@@ -101,14 +101,14 @@ describe('GraphQL host adapter', () => {
   it('rejects HTTP batches, oversized envelopes and invalid documents before reads', async () => {
     const { app, read } = createFixture()
     for (const body of ['[{"query":"{ status }"}]', JSON.stringify({ query: '{ unknown }' })]) {
-      const response = await app.request('/api/graphql', {
+      const response = await app.request('/graphql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body,
       })
       expect(response.status).toBe(400)
     }
-    const response = await app.request('/api/graphql', {
+    const response = await app.request('/graphql', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: ' '.repeat(65_537),
@@ -126,7 +126,7 @@ describe('GraphQL host adapter', () => {
     it.each(['GET', 'POST'])('returns non-streaming JSON for a valid %s query', async (method) => {
       const { app, read } = createFixture()
       const query = '{ status }'
-      const path = `/api/graphql?query=${encodeURIComponent(query)}`
+      const path = `/graphql?query=${encodeURIComponent(query)}`
       const response = await app.request(path, {
         method,
         headers: { Accept: accept, 'Content-Type': 'application/json' },
@@ -144,7 +144,7 @@ describe('GraphQL host adapter', () => {
       async (method) => {
         const { app, read } = createFixture()
         const query = '{ unknown }'
-        const path = `/api/graphql?query=${encodeURIComponent(query)}`
+        const path = `/graphql?query=${encodeURIComponent(query)}`
         const response = await app.request(path, {
           method,
           headers: { Accept: accept, 'Content-Type': 'application/json' },
@@ -163,7 +163,7 @@ describe('GraphQL host adapter', () => {
     'rejects non-read operation %s before execution',
     async (query) => {
       const { app, read, write, stream } = createFixture()
-      const response = await app.request('/api/graphql', {
+      const response = await app.request('/graphql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Origin: origin },
         body: JSON.stringify({ query }),
@@ -180,7 +180,7 @@ describe('GraphQL host adapter', () => {
 
   it('enforces field costs against the schema used for execution', async () => {
     const { app, read } = createFixture(5_000)
-    const response = await app.request('/api/graphql', {
+    const response = await app.request('/graphql', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Origin: origin },
       body: JSON.stringify({ query: '{ status }' }),
@@ -201,12 +201,12 @@ it('bounds the entire operation even when a resolver ignores its deadline', asyn
       resolvers: { Query: { slow: () => pending.promise } },
     })
     const app = new Hono().route(
-      '/api/graphql',
+      '/graphql',
       createGraphQLHostAdapter(schema, (_request, { work }) => ({ signal: work.signal }), [
         { field: 'Query.slow', protected: false, cost: 1, sourceCost: 1 },
       ]),
     )
-    const response = await app.request('/api/graphql?query=%7Bslow%7D')
+    const response = await app.request('/graphql?query=%7Bslow%7D')
     expect(await response.json()).toMatchObject({
       data: null,
       errors: [{ extensions: { code: 'OPERATION_CANCELED' } }],

@@ -10,6 +10,7 @@ const failures = {
   ORGANIZATION_COMPLIANCE_REQUIRED: [403, 'Organization compliance is required.'],
   ORGANIZATION_PERMISSION_REQUIRED: [403, 'Organization permission is required.'],
   ORGANIZATION_HR_REQUIRED: [403, 'Organization access denied.'],
+  ORGANIZATION_REVIEWER_REQUIRED: [403, 'Organization access denied.'],
   ORGANIZATION_MANAGER_REQUIRED: [403, 'Organization access denied.'],
   MARKET_CATALOGUE_REVISION_MISSING: [404, 'Market catalogue revision is unavailable.'],
   MARKET_TYPE_UNAVAILABLE: [404, 'Market type is unavailable.'],
@@ -40,6 +41,11 @@ const failures = {
   MARKET_CATALOGUE_REVISION_UNAVAILABLE: [409, 'Market catalogue revision is unavailable.'],
   MARKET_CATALOGUE_TYPE_NOT_FOUND: [404, 'Market catalogue type was not found.'],
   INVALID_MARKET_READ_INPUT: [400, 'Invalid Market read input.'],
+  INVENTORY_SCOPE_DENIED: [403, 'Inventory scope is unavailable.'],
+  INVENTORY_AUTHORIZATION_CHANGED: [409, 'Inventory authorization changed. Restart this read.'],
+  INVENTORY_SOURCE_CHANGED: [409, 'Inventory source changed. Restart pagination.'],
+  INVENTORY_RESTART_REQUIRED: [409, 'Inventory changed. Restart pagination.'],
+  INVENTORY_LIMIT: [400, 'Inventory exceeds supported bounds. Narrow the selected scope.'],
 } satisfies Readonly<Record<string, readonly [number, string]>>
 
 const failureByCode = new Map<string, readonly [number, string]>(Object.entries(failures))

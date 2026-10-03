@@ -3,7 +3,7 @@
   "release": {
     "publisherPackage": "@eve-space/member-audit-manifest",
     "version": "0.1.0",
-    "hostContractRange": "^1.0.0"
+    "hostContractRange": "^1.2.0"
   },
   "icon": "corporation",
   "defaultEnabled": false,
@@ -322,13 +322,23 @@
         "authorization": "authenticated-session",
         "audience": "hr",
         "requiredPermission": "member-audit.current-observation.read",
-        "persistenceOperations": [{ "operationId": "read-current-observation" }],
+        "persistenceOperations": [
+          {
+            "operationId": "read-current-observation"
+          }
+        ],
         "sectionId": "current-observation",
         "target": "managed-organization-character",
         "exposure": "sensitive-evidence",
         "reviewerEvidenceResources": [
-          { "resourceId": "current-ship", "field": "currentShip" },
-          { "resourceId": "current-location", "field": "currentLocation" }
+          {
+            "resourceId": "current-ship",
+            "field": "currentShip"
+          },
+          {
+            "resourceId": "current-location",
+            "field": "currentLocation"
+          }
         ]
       },
       {
@@ -346,7 +356,12 @@
         "sectionId": "skills",
         "target": "managed-organization-character",
         "exposure": "sensitive-evidence",
-        "reviewerEvidenceResources": [{ "resourceId": "trained-skills", "field": "trainedSkills" }]
+        "reviewerEvidenceResources": [
+          {
+            "resourceId": "trained-skills",
+            "field": "trainedSkills"
+          }
+        ]
       },
       {
         "id": "assets-detail",
@@ -363,7 +378,12 @@
         "sectionId": "assets",
         "target": "managed-organization-character",
         "exposure": "sensitive-evidence",
-        "reviewerEvidenceResources": [{ "resourceId": "assets", "field": null }]
+        "reviewerEvidenceResources": [
+          {
+            "resourceId": "assets",
+            "field": null
+          }
+        ]
       },
       {
         "id": "wallet-detail",
@@ -381,9 +401,18 @@
         "target": "managed-organization-character",
         "exposure": "sensitive-evidence",
         "reviewerEvidenceResources": [
-          { "resourceId": "wallet-balance", "field": "balance" },
-          { "resourceId": "wallet-journal", "field": "journal" },
-          { "resourceId": "wallet-transactions", "field": "transactions" }
+          {
+            "resourceId": "wallet-balance",
+            "field": "balance"
+          },
+          {
+            "resourceId": "wallet-journal",
+            "field": "journal"
+          },
+          {
+            "resourceId": "wallet-transactions",
+            "field": "transactions"
+          }
         ]
       },
       {
@@ -402,8 +431,14 @@
         "target": "managed-organization-character",
         "exposure": "sensitive-evidence",
         "reviewerEvidenceResources": [
-          { "resourceId": "mail-headers", "field": "headers" },
-          { "resourceId": "mail-details", "field": "contents" }
+          {
+            "resourceId": "mail-headers",
+            "field": "headers"
+          },
+          {
+            "resourceId": "mail-details",
+            "field": "contents"
+          }
         ]
       },
       {
@@ -439,6 +474,9 @@
       },
       {
         "name": "member-audit-002-current-observation.sql"
+      },
+      {
+        "name": "member-audit-003-asset-inventory.sql"
       }
     ],
     "persistenceOperations": [
@@ -553,6 +591,38 @@
         "mode": "write",
         "exportName": "purgeCurrentObservationOperation",
         "migration": "member-audit-002-current-observation.sql"
+      },
+      {
+        "id": "backfill-asset-inventory",
+        "method": "backfillAssetInventory",
+        "mode": "write",
+        "revision": 1,
+        "exportName": "backfillAssetInventoryOperation",
+        "migration": "member-audit-003-asset-inventory.sql"
+      },
+      {
+        "id": "promote-asset-inventory",
+        "method": "promoteAssetInventory",
+        "mode": "write",
+        "revision": 1,
+        "exportName": "promoteAssetInventoryOperation",
+        "migration": "member-audit-003-asset-inventory.sql"
+      },
+      {
+        "id": "read-asset-inventory",
+        "method": "readAssetInventory",
+        "mode": "read",
+        "revision": 1,
+        "exportName": "readAssetInventoryOperation",
+        "migration": "member-audit-003-asset-inventory.sql"
+      },
+      {
+        "id": "read-inventory-sources",
+        "method": "readInventorySources",
+        "mode": "read",
+        "revision": 1,
+        "exportName": "readInventorySourcesOperation",
+        "migration": "member-audit-003-asset-inventory.sql"
       }
     ],
     "resources": [
@@ -598,7 +668,10 @@
               "operationId": "write-evidence-continuation"
             },
             {
-              "operationId": "promote-evidence-observation"
+              "operationId": "backfill-asset-inventory"
+            },
+            {
+              "operationId": "promote-asset-inventory"
             },
             {
               "operationId": "purge-evidence"
@@ -770,12 +843,18 @@
         "persistence": {
           "projection": [],
           "materialization": [
-            { "operationId": "write-current-observation" },
-            { "operationId": "purge-current-observation" }
+            {
+              "operationId": "write-current-observation"
+            },
+            {
+              "operationId": "purge-current-observation"
+            }
           ]
         },
         "subjectKind": "character",
-        "eligibility": { "kind": "current-managed-member-character" },
+        "eligibility": {
+          "kind": "current-managed-member-character"
+        },
         "sectionId": "current-observation"
       },
       {
@@ -789,17 +868,43 @@
         "persistence": {
           "projection": [],
           "materialization": [
-            { "operationId": "write-current-observation" },
-            { "operationId": "purge-current-observation" }
+            {
+              "operationId": "write-current-observation"
+            },
+            {
+              "operationId": "purge-current-observation"
+            }
           ]
         },
         "subjectKind": "character",
-        "eligibility": { "kind": "current-managed-member-character" },
+        "eligibility": {
+          "kind": "current-managed-member-character"
+        },
         "sectionId": "current-observation"
       }
     ],
     "esiOperations": [],
-    "activityProviders": []
+    "activityProviders": [],
+    "inventoryProviders": [
+      {
+        "id": "assets-inventory",
+        "exportName": "memberAssetInventoryProvider",
+        "contractVersion": 1,
+        "scope": "corporation",
+        "sectionId": "assets",
+        "requiredPermission": "member-audit.assets.read",
+        "maximumSubjects": 250,
+        "maximumPageSize": 100,
+        "persistenceOperations": [
+          {
+            "operationId": "read-inventory-sources"
+          },
+          {
+            "operationId": "read-asset-inventory"
+          }
+        ]
+      }
+    ]
   },
   "nuxt": {
     "package": "@eve-space/member-audit-nuxt",

@@ -57,7 +57,8 @@
     "jose": "catalog:",
     "loglayer": "catalog:",
     "postgres": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@eve-space/trading-server": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

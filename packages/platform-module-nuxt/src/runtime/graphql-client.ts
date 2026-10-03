@@ -39,7 +39,7 @@ const executeApplicationGraphQL = async <Result = unknown>(
   const requestSignal = createRequestSignal(16_000, signal)
   requestSignal.throwIfAborted()
   const response = await fetch(
-    `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}/api/graphql`,
+    `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}/graphql`,
     {
       method: 'POST',
       credentials: 'include',

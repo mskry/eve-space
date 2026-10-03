@@ -1,0 +1,10 @@
+{
+  "extends": "../../../.nuxt/tsconfig.app.json",
+  "compilerOptions": { "noEmit": true, "incremental": false, "composite": false },
+  "include": [
+    "../../../.nuxt/nuxt.d.ts",
+    "../../../app/types/platform-api.d.ts",
+    "src/runtime/app/**/*.ts",
+    "src/runtime/app/**/*.vue"
+  ]
+}

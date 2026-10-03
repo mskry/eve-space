@@ -62,7 +62,7 @@ const openPage = async (path: string) => {
   })
   page.on('pageerror', (error) => hydrationWarnings.push(error.message))
   page.on('request', (request) => {
-    if (request.url().endsWith('/api/graphql')) browserReads.push(request.postData() ?? '')
+    if (request.url().endsWith('/graphql')) browserReads.push(request.postData() ?? '')
   })
   resetMarketGraphQLFixture()
   await page.goto(serverUrl(path), { waitUntil: 'hydration' })
@@ -115,7 +115,7 @@ describe('selected Market GraphQL production journey', async () => {
         marketFixtureHttpRequests.every(
           (request) =>
             request.path === '/api/modules' ||
-            request.path === '/api/graphql' ||
+            request.path === '/graphql' ||
             request.path.startsWith('/api/modules/market/catalogue/'),
         ),
       ).toBe(true)
@@ -225,7 +225,7 @@ describe('selected Market GraphQL production journey', async () => {
     }
   })
 
-  it('follows opaque pages with keyboard and mobile controls, returns to first rows, and restarts a retained-observation failure', async () => {
+  it('follows opaque pages with keyboard scrolling on mobile, returns to first rows, and restarts a retained-observation failure', async () => {
     resetMarketGraphQLFixture()
     const page = await createPage(url(40520))
     try {
@@ -233,18 +233,16 @@ describe('selected Market GraphQL production journey', async () => {
       const sellers = page.getByRole('region', { name: 'Sellers' })
       await sellers.getByText('Showing 1–100 sellers orders.').waitFor()
       const scroll = sellers.locator('.market-order-table__scroll')
-      const next = sellers.getByRole('button', { name: 'Next orders' })
-      await next.focus()
-      await next.press('Enter')
+      await scroll.focus()
+      await scroll.press('End')
       await sellers.getByText('Showing 101–103 sellers orders.').waitFor()
       expect(
         marketFixtureRequests.find((request) =>
           request.query.includes('query MarketOrderContinuation'),
         )?.variables.after,
       ).toBe('fixture-opaque-page-two')
-      const previous = sellers.getByRole('button', { name: 'Previous orders' })
-      await previous.focus()
-      await previous.press('Enter')
+      await scroll.focus()
+      await scroll.press('Home')
       await sellers.getByText('Showing 1–100 sellers orders.').waitFor()
       await state({ expiredObservation: true })
       // A new browser page starts without the successful continuation cached by this journey.
@@ -338,7 +336,7 @@ describe('selected Market GraphQL production journey', async () => {
       const domainProfile = '00000000-0000-4000-8000-000000000003'
       const pendingDomain = page.waitForRequest(
         (request) =>
-          request.url().endsWith('/api/graphql') &&
+          request.url().endsWith('/graphql') &&
           request.postData()?.includes(domainProfile) === true,
       )
       await markets.selectOption(domainProfile)

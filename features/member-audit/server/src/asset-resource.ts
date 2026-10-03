@@ -20,10 +20,10 @@ import {
 } from './evidence-collection.js'
 import { maintainEvidence } from './evidence-maintenance.js'
 import { requireEsiPageCount } from './page-count.js'
+import type { InventoryMaterializationPersistence } from './inventory-persistence.js'
 import type {
   EvidenceCollectionPersistence,
   EvidenceMaintenancePersistence,
-  EvidenceMaterializationPersistence,
 } from './persistence.js'
 import { resolveUniverseNamesBestEffort } from './universe-name-resolution.js'
 
@@ -64,7 +64,7 @@ export const assetsResource: PlatformBoundedCollectionResourceImplementation<
   PlatformCharacterResourceSubject,
   AssetProducts,
   EvidenceCollectionPersistence,
-  EvidenceMaterializationPersistence,
+  InventoryMaterializationPersistence,
   EvidenceMaintenancePersistence
 > = {
   async collect(context) {
@@ -103,8 +103,54 @@ export const assetsResource: PlatformBoundedCollectionResourceImplementation<
   maintain(context) {
     return maintainEvidence('assets', context, false)
   },
-  materialize(context) {
-    return materializeEvidenceObservation(context)
+  async materialize(context) {
+    const authority = context.managedAuthority
+    if (
+      context.organizationVersion !== authority?.organizationVersion ||
+      context.authorizationGeneration === null ||
+      authority.sectionId !== 'assets'
+    ) {
+      return { outcome: 'obsolete' }
+    }
+    const persistence = context.capabilities.persistence
+    await persistence.backfillAssetInventory({
+      subjects: [
+        {
+          organizationVersion: authority.organizationVersion,
+          targetUserId: authority.targetUserId,
+          managedMemberLifecycleId: authority.managedMemberLifecycleId,
+          characterId: context.subject.characterId,
+          characterLifecycleId: context.subject.lifecycleId,
+          authorizationGeneration: context.authorizationGeneration,
+          disclosureVersion: authority.disclosureVersion,
+          sectionActivationVersion: authority.sectionActivationVersion,
+          observationId: null,
+        },
+      ],
+    })
+    return materializeEvidenceObservation({
+      ...context,
+      capabilities: {
+        ...context.capabilities,
+        persistence: {
+          writeEvidenceContinuation: persistence.writeEvidenceContinuation,
+          promoteEvidenceObservation: (input) => {
+            if (
+              input.resourceId !== 'assets' ||
+              input.sectionId !== 'assets' ||
+              input.dtoRevision !== 1
+            )
+              return Promise.resolve({ outcome: 'obsolete' as const })
+            return persistence.promoteAssetInventory({
+              ...input,
+              resourceId: 'assets',
+              sectionId: 'assets',
+              dtoRevision: 1,
+            })
+          },
+        },
+      },
+    })
   },
   mode: 'bounded-collection',
   operation: 'character-assets-page',

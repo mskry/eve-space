@@ -5,6 +5,8 @@ import { isTransportDependency } from '../transport-dependency.js'
 
 const modulesByTier = {
   adapter: [
+    'inventory-subject-store',
+    'inventory-corporations',
     'activity-context',
     'alliance-executor-evidence',
     'authority',
@@ -38,6 +40,7 @@ const modulesByTier = {
     'source-role-evidence',
   ],
   application: [
+    'inventory-admission',
     'activity',
     'alliance-executor-convergence',
     'block-store',
@@ -61,6 +64,7 @@ const modulesByTier = {
   ],
   entry: ['alliance-executor-repair', 'compliance-repair', 'group-rule-repair'],
   observability: [
+    'inventory-access-audit',
     'audit',
     'audit-history',
     'entitlement-transitions',

@@ -11,6 +11,7 @@ const publicModules = new Set([
   'graphql',
   'identifiers',
   'installed',
+  'inventory',
   'manifest',
   'nuxt',
   'permissions',
@@ -20,7 +21,14 @@ const publicModules = new Set([
   'reviewer-directory',
   'server',
 ])
-const internalModules = new Set([...publicModules, 'validation', 'graphql-validation'])
+const internalModules = new Set([
+  ...publicModules,
+  'validation',
+  'graphql-validation',
+  'inventory-validation',
+  'inventory-graphql-validation',
+  'semantic-version',
+])
 const allowedInternalImports = new Map(
   Object.entries({
     activity: new Set(['installed', 'persistence', 'server']),
@@ -28,6 +36,8 @@ const allowedInternalImports = new Map(
       'activity',
       'graphql',
       'graphql-validation',
+      'inventory',
+      'inventory-validation',
       'manifest',
       'nuxt',
       'permissions',
@@ -36,12 +46,24 @@ const allowedInternalImports = new Map(
       'server',
       'validation',
     ]),
-    graphql: new Set(['persistence', 'server']),
-    'graphql-validation': new Set(['graphql', 'manifest', 'identifiers', 'server', 'validation']),
+    graphql: new Set(['persistence', 'server', 'inventory']),
+    inventory: new Set(['persistence']),
+    'inventory-validation': new Set(['inventory', 'manifest', 'identifiers']),
+    'inventory-graphql-validation': new Set(['graphql', 'manifest', 'inventory']),
+    'semantic-version': new Set(),
+    'graphql-validation': new Set([
+      'graphql',
+      'manifest',
+      'identifiers',
+      'server',
+      'validation',
+      'inventory-graphql-validation',
+    ]),
     esi: new Set(),
-    identifiers: new Set(),
+    identifiers: new Set(['semantic-version']),
     installed: new Set(['nuxt', 'permissions', 'server']),
     manifest: new Set([
+      'inventory',
       'graphql',
       'activity',
       'nuxt',
@@ -97,6 +119,7 @@ const featureServerModules = new Set([
   'activity',
   'esi',
   'graphql',
+  'inventory',
   'identifiers',
   'persistence',
   'resources',
@@ -107,6 +130,7 @@ const hostApiModules = new Set([
   'activity',
   'esi',
   'graphql',
+  'inventory',
   'identifiers',
   'installed',
   'nuxt',
@@ -122,6 +146,7 @@ const nonCompositionModules = new Set(
 const apiGeneratedRegistryModules = new Map(
   Object.entries({
     'installed-module-activity-providers': new Set(['activity']),
+    'installed-module-inventory-providers': new Set(['inventory']),
     'installed-module-esi': new Set(['esi']),
     'installed-module-migrations': new Set(['installed']),
     'installed-module-runtime': new Set(['installed', 'nuxt']),

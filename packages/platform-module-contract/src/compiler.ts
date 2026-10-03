@@ -1,5 +1,15 @@
 import { CORE_DATA_PRODUCT_IDS } from '@eve-space/core-data-contract'
-import type { PlatformGraphQLContribution, PlatformGraphQLReadDeclaration } from './graphql.js'
+import {
+  platformGraphQLStrategies,
+  type PlatformGraphQLContribution,
+  type PlatformGraphQLReadDeclaration,
+} from './graphql.js'
+import {
+  platformInventoryContractVersion,
+  type PlatformInventoryConsumerDeclaration,
+  type PlatformInventoryProviderDeclaration,
+} from './inventory.js'
+import { validateInventoryDeclarations } from './inventory-validation.js'
 import { validateGraphQLContributions } from './graphql-validation.js'
 import type { PlatformActivityProviderContribution } from './activity.js'
 import type {
@@ -50,6 +60,175 @@ import {
   validatePlatformModuleCandidates,
   type PlatformModuleValidationAuthorities,
 } from './validation.js'
+
+type ParsedManifestRecord = NonNullable<ReturnType<typeof readRecord>>
+
+const parseInventoryBase = (record: ParsedManifestRecord, path: string, issues: string[]) => {
+  const id = readString(record.id, `${path}.id`, issues)
+  const contractVersion = readNumber(record.contractVersion, `${path}.contractVersion`, issues)
+  const maximumSubjects = readNumber(record.maximumSubjects, `${path}.maximumSubjects`, issues)
+  const maximumPageSize = readNumber(record.maximumPageSize, `${path}.maximumPageSize`, issues)
+  if (contractVersion !== platformInventoryContractVersion)
+    issues.push(`${path}: incompatible inventory contract version`)
+  if (
+    id === undefined ||
+    contractVersion !== platformInventoryContractVersion ||
+    maximumSubjects === undefined ||
+    maximumPageSize === undefined
+  )
+    return undefined
+  return {
+    id,
+    contractVersion: platformInventoryContractVersion,
+    maximumSubjects,
+    maximumPageSize,
+  } as const
+}
+
+const parseInventoryProvider = (
+  value: PlatformModuleCandidate['declaration'],
+  path: string,
+  issues: string[],
+): PlatformInventoryProviderDeclaration | undefined => {
+  const record = readRecord(
+    value,
+    path,
+    [
+      'id',
+      'exportName',
+      'contractVersion',
+      'scope',
+      'sectionId',
+      'requiredPermission',
+      'maximumSubjects',
+      'maximumPageSize',
+      'persistenceOperations',
+    ],
+    issues,
+  )
+  if (!record) return undefined
+  const base = parseInventoryBase(record, path, issues)
+  const scope = readDeclaredMember(record.scope, ['corporation'] as const, `${path}.scope`, issues)
+  const exportName = readString(record.exportName, `${path}.exportName`, issues)
+  const sectionId = readString(record.sectionId, `${path}.sectionId`, issues)
+  const requiredPermission = readString(
+    record.requiredPermission,
+    `${path}.requiredPermission`,
+    issues,
+  )
+  const persistence = parsePersistenceReferences(record, path, issues)
+  if (
+    !base ||
+    !scope ||
+    exportName === undefined ||
+    sectionId === undefined ||
+    requiredPermission === undefined ||
+    !persistence
+  )
+    return undefined
+  return { ...base, scope, exportName, sectionId, requiredPermission, ...persistence }
+}
+
+const parseCorporationInventoryConsumer = (
+  record: ParsedManifestRecord,
+  path: string,
+  issues: string[],
+  base: NonNullable<ReturnType<typeof parseInventoryBase>>,
+): PlatformInventoryConsumerDeclaration | undefined => {
+  const provider = readRecord(
+    record.provider,
+    `${path}.provider`,
+    ['moduleId', 'providerId', 'optional'],
+    issues,
+  )
+  if (!provider) return undefined
+  const moduleId = readString(provider.moduleId, `${path}.provider.moduleId`, issues)
+  const providerId = readString(provider.providerId, `${path}.provider.providerId`, issues)
+  const optional = readBoolean(provider.optional, `${path}.provider.optional`, issues)
+  const requiredPermission = readString(
+    record.requiredPermission,
+    `${path}.requiredPermission`,
+    issues,
+  )
+  const sourcePermission = readString(record.sourcePermission, `${path}.sourcePermission`, issues)
+  if (
+    moduleId === undefined ||
+    providerId === undefined ||
+    optional === undefined ||
+    requiredPermission === undefined ||
+    sourcePermission === undefined
+  )
+    return undefined
+  return {
+    ...base,
+    scope: 'corporation',
+    provider: { moduleId, providerId, optional },
+    requiredPermission,
+    sourcePermission,
+  }
+}
+
+const parseInventoryConsumer = (
+  value: PlatformModuleCandidate['declaration'],
+  path: string,
+  issues: string[],
+): PlatformInventoryConsumerDeclaration | undefined => {
+  const record = readRecord(
+    value,
+    path,
+    [
+      'id',
+      'contractVersion',
+      'scope',
+      'provider',
+      'maximumSubjects',
+      'maximumPageSize',
+      'requiredPermission',
+      'sourcePermission',
+    ],
+    issues,
+  )
+  if (!record) return undefined
+  const base = parseInventoryBase(record, path, issues)
+  const scope = readDeclaredMember(
+    record.scope,
+    ['personal', 'corporation'] as const,
+    `${path}.scope`,
+    issues,
+  )
+  if (!base || !scope) return undefined
+  if (scope === 'corporation') return parseCorporationInventoryConsumer(record, path, issues, base)
+  if (record.requiredPermission !== undefined || record.sourcePermission !== undefined)
+    issues.push(`${path}: personal inventory cannot declare corporation permissions`)
+  const provider = readDeclaredMember(
+    record.provider,
+    ['core.character-assets'] as const,
+    `${path}.provider`,
+    issues,
+  )
+  return provider ? { ...base, scope, provider } : undefined
+}
+
+const parseInventoryDeclarations = (
+  server: ParsedManifestRecord,
+  path: string,
+  issues: string[],
+) => ({
+  inventoryProviders:
+    readOptionalArray(
+      server.inventoryProviders,
+      `${path} server.inventoryProviders`,
+      issues,
+      parseInventoryProvider,
+    ) ?? [],
+  inventoryConsumers:
+    readOptionalArray(
+      server.inventoryConsumers,
+      `${path} server.inventoryConsumers`,
+      issues,
+      parseInventoryConsumer,
+    ) ?? [],
+})
 
 const parseGraphQLList = (
   value: PlatformModuleCandidate['declaration'],
@@ -113,6 +292,7 @@ const parseGraphQLRead = (
       'field',
       'strategy',
       'subjectArgument',
+      'inventoryConsumerId',
       'requiredScope',
       'organization',
       'sectionId',
@@ -129,7 +309,7 @@ const parseGraphQLRead = (
   const field = readString(record.field, `${path}.field`, issues)
   const strategy = readDeclaredMember(
     record.strategy,
-    ['public', 'authenticated-session', 'owned-character', 'organization-member'] as const,
+    platformGraphQLStrategies,
     `${path}.strategy`,
     issues,
   )
@@ -170,6 +350,11 @@ const parseGraphQLRead = (
     coreDataProducts,
     ...persistence,
     subjectArgument,
+    inventoryConsumerId: readOptionalString(
+      record.inventoryConsumerId,
+      `${path}.inventoryConsumerId`,
+      issues,
+    ),
     requiredScope,
     sectionId,
     organization,
@@ -306,7 +491,10 @@ export function compilePlatformModules(
   }
 
   const validated = validatedCandidates.map(({ manifest }) => manifest)
-  issues.push(...validateGraphQLContributions(validated, authorities.coreDataProductContracts))
+  issues.push(
+    ...validateInventoryDeclarations(validated),
+    ...validateGraphQLContributions(validated, authorities.coreDataProductContracts),
+  )
   const policyContext = { manifests: validated } satisfies PlatformModulePolicyContext
   const policies = authorities.policies.toSorted((left, right) =>
     compareStable(left.moduleId, right.moduleId),
@@ -358,11 +546,26 @@ const normalizeGraphQLContribution = (
     .toSorted((left, right) => compareStable(left.field, right.field)),
 })
 
+const normalizeInventoryProvider = (
+  provider: PlatformInventoryProviderDeclaration,
+): PlatformInventoryProviderDeclaration => ({
+  ...provider,
+  persistenceOperations: provider.persistenceOperations.toSorted((left, right) =>
+    compareStable(left.operationId, right.operationId),
+  ),
+})
+
 function normalizeManifest(manifest: PlatformModuleManifest): PlatformModuleManifest {
   return {
     ...manifest,
     server: {
       ...manifest.server,
+      inventoryProviders: (manifest.server.inventoryProviders ?? [])
+        .map(normalizeInventoryProvider)
+        .toSorted((left, right) => compareStable(left.id, right.id)),
+      inventoryConsumers: (manifest.server.inventoryConsumers ?? []).toSorted((left, right) =>
+        compareStable(left.id, right.id),
+      ),
       graphql: (manifest.server.graphql ?? [])
         .map(normalizeGraphQLContribution)
         .toSorted((left, right) => compareStable(left.id, right.id)),
@@ -428,6 +631,8 @@ function parseManifest(
       'esiOperations',
       'activityProviders',
       'graphql',
+      'inventoryProviders',
+      'inventoryConsumers',
     ],
     issues,
   )
@@ -532,6 +737,7 @@ function parseManifest(
     server: {
       activityProviders,
       graphql: graphql ?? [],
+      ...parseInventoryDeclarations(server, path, issues),
       esiOperations,
       migrations,
       package: serverPackage,

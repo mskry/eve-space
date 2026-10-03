@@ -22,3 +22,14 @@ Do not import orchestration into the state or database adapter. Keep ESI resolut
 - `route-calculator.ts` dispatches explicit route policies and depends only on topology and route representations.
 
 Keep routing independent from HTTP, characters, assets, ESI, and Redis. Add future route policies behind the calculator rather than branching in consumers.
+
+<!-- bmad:context -->
+<!-- Verified 2026-10-03 against 35bf357129965cbf18751d290bc0b29f1a6c5fe7. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+
+## Universe name resolution
+
+## Known pitfalls
+
+- `PostUniverseNames` can return `404 Ensure all IDs are valid before resolving` for an otherwise valid character that `GetCharactersCharacterId` returns successfully; character ID `90666561` was observed exhibiting this ESI inconsistency. Keep per-item positive caching for `PostUniverseNames` and `PostUniverseIds`, retain a stale successful value during bounded negative suppression, and never let a later `404` overwrite a previously resolved value.
+
+<!-- /bmad:context -->

@@ -18,6 +18,8 @@ describe('authentication module boundaries', () => {
       'character-transfer',
       'character-transfer-approvals',
       'character-transfer-store',
+      'inventory-admission',
+      'inventory-subject-store',
       'oauth-state-store',
       'pending-character-token-store',
       'pending-recovery-state',

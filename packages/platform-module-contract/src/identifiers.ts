@@ -1,3 +1,5 @@
+export { semanticVersionSatisfies, semanticVersionRangeRequires } from './semantic-version.js'
+
 export const platformReservedModuleIds = ['core', 'platform'] as const
 
 const platformModuleIdPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/

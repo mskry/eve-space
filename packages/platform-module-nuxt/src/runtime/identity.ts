@@ -3,6 +3,11 @@ import { inject, provide, type ComputedRef, type InjectionKey } from 'vue'
 const identityKey: InjectionKey<() => PlatformIdentity> = Symbol('platform-identity')
 
 export interface PlatformIdentity {
+  readonly privateIdentity?: ComputedRef<{
+    readonly ownerId: string | null
+    readonly status: 'verified' | 'unavailable' | 'checking'
+    readonly revision: string
+  }>
   readonly authenticated: ComputedRef<boolean>
   readonly organizationAuthorized: ComputedRef<boolean>
   readonly organizationVersion: ComputedRef<number>

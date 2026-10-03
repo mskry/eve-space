@@ -117,7 +117,7 @@ describe('GraphQL private query lifecycle', () => {
       data: { ownedCharacter: null },
       errors: [{ message: 'Log in.', extensions: { code: 'AUTH_REQUIRED', status: 401 } }],
     }
-    queryServer.use(http.post('http://localhost/api/graphql', () => HttpResponse.json(result)))
+    queryServer.use(http.post('http://localhost/graphql', () => HttpResponse.json(result)))
     const options = ownedAssetsGraphQLQuery(
       {
         baseUrl: 'http://localhost',
@@ -153,7 +153,7 @@ it('excludes a successful Market GraphQL resource from the active persister whil
     await readyRuntime(runtime)
     let requests = 0
     queryServer.use(
-      http.post('http://localhost/api/graphql', () => {
+      http.post('http://localhost/graphql', () => {
         requests += 1
         return HttpResponse.json({ data: { market: { profiles: [] } } })
       }),

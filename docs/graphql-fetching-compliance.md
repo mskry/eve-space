@@ -4,7 +4,7 @@
 
 - Review date: 2026-10-02. Base commit: `0a8b3fc453a7ca3fa77a618219ede77a943f2d01`.
 - Working tree: existing GraphQL sections 1–7 and independent edits retained; section 8 updates the checklist, contract/rollback guidance and missing viewer browser journeys, and corrects an existing browser logout helper to use the account menu. This is not an audit of unrelated fetching paths.
-- Reviewed consumers: `/api-explorer`, self-hosted GraphiQL discovery/execution, every generated document in `app/graphql/operations.graphql`, supplied query options, and direct client examples in the contract guide.
+- Reviewed consumers: self-hosted GraphiQL discovery/execution, every generated document in `app/graphql/operations.graphql`, supplied query options, and direct client examples in the contract guide.
 - Governing instructions: root `AGENTS.md`; scoped GraphQL, auth, characters, platform, gateway, universe, core-data, query-persistence and Market guides; the fetching checklist; `introduce-module-aware-graphql-api` proposal/design/specs; [EVE-69](https://linear.app/byteover/issue/EVE-69/introduce-a-module-aware-graphql-application-api).
 - Graph tools are unavailable in this session. Structural evidence comes from bounded source reads and repository verifiers. The OpenSpec directory is a shared symlink; implementation/report artifacts remain in this worktree.
 - Prior section 6/7 results are historical context, not evidence that this working tree or deployment passed section 8.
@@ -13,16 +13,15 @@
 
 All data operations reach `api/src/index.ts:68` → `api/src/graphql/routes.ts:10` → `createGraphQLHostAdapter`. Global logging, security headers, CSRF and credentialed CORS precede this mount. The endpoint has no blanket member requirement: individual reads determine access. Generated contribution composition supplies Market implementations; core never queries Market tables directly.
 
-| Consumer / query definition                                                             | Key and result-changing inputs                                                                              | Trigger / SSR-capable?                                                                  | Final method + route            | Mounted authorization                                                                            | Resource / ESI operation                                      | Persistence eligibility                                      |
-| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------ |
-| `app/pages/api-explorer.vue:1`                                                          | API base                                                                                                    | SSR renders link only; browser navigation                                               | `GET /api/graphql`, HTML Accept | Public viewer shell; no domain read                                                              | Self-hosted Yoga renderer                                     | None                                                         |
-| Standard GraphiQL discovery                                                             | Live schema                                                                                                 | Browser initialization only                                                             | `POST /api/graphql`             | Bounded introspection; no subject authority                                                      | Composed core/installed schema; no source                     | None; `no-store`                                             |
-| GraphiQL edited documents / variables                                                   | Each explicit subject, cursor, revision, profile, observation and argument                                  | Browser execution; no SSR                                                               | `POST /api/graphql`             | Each selected root/nested binding below, independently, including aliases                        | Selected reads below                                          | Memory only; no history, storage or URL document; `no-store` |
-| `marketGraphQLQuery`, `ExplorerMarket` (`app/queries/graphql.ts:116`)                   | Schema fingerprint, operation, normalized variables                                                         | Explicit fetch; disabled by default; caller execution gate                              | `POST /api/graphql`             | `Query.market` and nested public enablement checks                                               | Catalogue revision, profiles, reference prices below          | `esiPersistence: { kind: 'none' }`; zero retries             |
-| `ExplorerMarketBook` / generated direct-client contract                                 | Schema/document, profile UUID, type ID                                                                      | No mounted consumer; browser examples require caller gate                               | `POST /api/graphql`             | Public enabled profile; independent `book`/`history` admission                                   | Book and history reads below                                  | None; direct call creates no query-cache entry               |
-| `ownedCharactersGraphQLQuery`, `ExplorerOwnedCharacters` (`app/queries/graphql.ts:119`) | Private character collection prefix, owner, admission revision, schema, operation, `first`/`after`          | Explicit browser fetch after verified member gate; no protected SSR                     | `POST /api/graphql`             | Live member session; selector owner check and before-release reread                              | `pageUserCharacterIdentities`; ≤50 minimal identities; no ESI | None; private lifecycle invalidation applies to memory       |
-| `ownedAssetsGraphQLQuery`, `ExplorerOwnedAssets` (`app/queries/graphql.ts:131`)         | Private exact character prefix, owner, admission revision, schema, operation, character ID, `first`/`after` | Explicit browser fetch after session/ownership/captured-revision gate; no protected SSR | `POST /api/graphql`             | `ownedCharacter` exact member/subject admission; nested assets scope/lifecycle/revision rechecks | Registered assets/name reads and bounded enrichment below     | None; private lifecycle invalidation applies to memory       |
-| Contract guide direct `executeTypedGraphQL` examples                                    | Generated selection and typed variables                                                                     | No executable mounted consumer; requires same browser/execution/presentation gates      | `POST /api/graphql`             | Same field admission; client credentials alone grant nothing                                     | Corresponding selected reads                                  | None                                                         |
+| Consumer / query definition                                                             | Key and result-changing inputs                                                                              | Trigger / SSR-capable?                                                                  | Final method + route | Mounted authorization                                                                            | Resource / ESI operation                                      | Persistence eligibility                                      |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------ |
+| Standard GraphiQL discovery                                                             | Live schema                                                                                                 | Browser initialization only                                                             | `POST /graphql`      | Bounded introspection; no subject authority                                                      | Composed core/installed schema; no source                     | None; `no-store`                                             |
+| GraphiQL edited documents / variables                                                   | Each explicit subject, cursor, revision, profile, observation and argument                                  | Browser execution; no SSR                                                               | `POST /graphql`      | Each selected root/nested binding below, independently, including aliases                        | Selected reads below                                          | Memory only; no history, storage or URL document; `no-store` |
+| `marketGraphQLQuery`, `ExplorerMarket` (`app/queries/graphql.ts:116`)                   | Schema fingerprint, operation, normalized variables                                                         | Explicit fetch; disabled by default; caller execution gate                              | `POST /graphql`      | `Query.market` and nested public enablement checks                                               | Catalogue revision, profiles, reference prices below          | `esiPersistence: { kind: 'none' }`; zero retries             |
+| `ExplorerMarketBook` / generated direct-client contract                                 | Schema/document, profile UUID, type ID                                                                      | No mounted consumer; browser examples require caller gate                               | `POST /graphql`      | Public enabled profile; independent `book`/`history` admission                                   | Book and history reads below                                  | None; direct call creates no query-cache entry               |
+| `ownedCharactersGraphQLQuery`, `ExplorerOwnedCharacters` (`app/queries/graphql.ts:119`) | Private character collection prefix, owner, admission revision, schema, operation, `first`/`after`          | Explicit browser fetch after verified member gate; no protected SSR                     | `POST /graphql`      | Live member session; selector owner check and before-release reread                              | `pageUserCharacterIdentities`; ≤50 minimal identities; no ESI | None; private lifecycle invalidation applies to memory       |
+| `ownedAssetsGraphQLQuery`, `ExplorerOwnedAssets` (`app/queries/graphql.ts:131`)         | Private exact character prefix, owner, admission revision, schema, operation, character ID, `first`/`after` | Explicit browser fetch after session/ownership/captured-revision gate; no protected SSR | `POST /graphql`      | `ownedCharacter` exact member/subject admission; nested assets scope/lifecycle/revision rechecks | Registered assets/name reads and bounded enrichment below     | None; private lifecycle invalidation applies to memory       |
+| Contract guide direct `executeTypedGraphQL` examples                                    | Generated selection and typed variables                                                                     | No executable mounted consumer; requires same browser/execution/presentation gates      | `POST /graphql`      | Same field admission; client credentials alone grant nothing                                     | Corresponding selected reads                                  | None                                                         |
 
 ### Field-to-capability and source trace
 
@@ -254,3 +253,80 @@ Future mounted application resource views should bind the supplied query options
 ## Conclusion
 
 The reviewed source, mounted API behavior and controlled viewer/client paths pass the executed checks. Target runtime coverage remains inconclusive for authenticated private success/non-owned reads, runtime disablement and cancellation during a registered source body. No source-only check is described as a private deployment pass. OpenSpec tasks 8.1–8.3 and 8.5 are complete; 8.4 remains incomplete for the documented live private probes. This review covers the listed GraphQL paths, not the whole codebase; the remaining deployment blockers are explicit.
+
+## Route and navigation simplification review — 2026-10-03
+
+### Scope
+
+- Base commit: `a2984123fdb65ca782650cf43dd2d995b99c315d`; working-tree endpoint, navigation and order-table changes.
+- User-directed changes: remove `/api-explorer` and its sidebar entry, move the GraphQL endpoint to `/graphql`, and remove the Market First/Previous/Next buttons while retaining scroll traversal.
+- Governing instructions: root and GraphQL/platform Nuxt engineering guides and the fetching-layer compliance checklist. Earlier verification sections above retain their historical scope.
+
+### Request inventory
+
+| Consumer                                           | Inputs and trigger                                                                                              | Final route and admission                                                                                                        | Persistence                                                  |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Standard GraphiQL                                  | Browser navigation, schema discovery and explicit operations                                                    | `GET /graphql` viewer; JSON `POST /graphql` discovery/execution; existing per-field admission                                    | Memory-only viewer; no-store                                 |
+| Platform GraphQL client and Market generated reads | Existing operation, variables, observation and opaque cursor; public Market SSR/hydration and browser scrolling | `POST /graphql` through `executeTypedGraphQL`; mounted `graphqlRoutes` retains schema validation and installed read capabilities | Existing query identities and nonpersistence classifications |
+| Owned GraphQL client options                       | Existing verified owner, subject and caller execution gates                                                     | `POST /graphql`; live session and exact-subject admission remain in `core-character-reads.ts`                                    | Existing private lifecycle; no persisted GraphQL results     |
+
+The final chained mount is `api/src/index.ts` → `graphqlRoutes` → `createGraphQLHostAdapter`.
+Global secure headers and CSRF still precede it. Since `/graphql` is outside `/api/*`, it has
+an explicit credentialed CORS middleware restricted to `env.WEB_ORIGIN`. The early no-store
+middleware, Yoga endpoint configuration, diagnostic path and platform client all use `/graphql`.
+The dashboard page and its shared navigation declaration are removed; generated API navigation
+and the administration fixture no longer contain the retired entry.
+
+### Results
+
+| Check                        | Result                          | Evidence                                                                                                                                                   |
+| ---------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AUTH-01, AUTH-04, QUERY-05   | PASS within changed scope       | Mounted endpoint tests pass at `/graphql`; runtime anonymous owned-character execution returns `AUTH_REQUIRED`; validation remains 400                     |
+| AUTH-02, AUTH-03             | PASS within changed scope       | Existing execution gates remain; Market production journeys prove public SSR/hydration reuse at the new path; the removed dashboard link issues no request |
+| AUTH-07                      | PASS                            | Mounted CORS tests and runtime preflight return the trusted origin and allow credentials; an untrusted plain-text POST returns 403                         |
+| QUERY-01, PERSIST-01, ESI-07 | PASS within changed scope       | Client/package and private-lifecycle suites pass; viewer browser journeys prove no persisted editor state and no retry on field errors                     |
+| ESI-08, QUERY-03             | PASS within changed scope       | Mounted order-table and mobile keyboard-scroll journeys retain opaque forward/backward traversal, retry, bounded rows and expired-observation restart      |
+| ESI-01–06, TIME-01–07        | N/A to the implementation delta | No ESI operation, upstream transport, freshness policy or cache representation changed                                                                     |
+
+### Findings
+
+Moving the route outside `/api/*` required explicit CORS registration. The final implementation
+includes it; trusted preflight and POST probes pass. `/api/graphql` now returns 404.
+No unresolved finding remains in the changed request paths.
+
+### Policy conflicts and missing evidence
+
+The original OpenSpec change describes `/api/graphql` and a dashboard explorer destination.
+The user's current instruction supersedes those presentation and endpoint choices. Historical
+OpenSpec artifacts are retained. Remote production deployment was not performed; the new URL
+requires deploying the updated API and frontend together. Rollback must restore both versions.
+Private-success runtime evidence uses controlled browser fixtures; no production account was used.
+
+### Verification
+
+Logs use `/tmp/eve-remove-navigation-` on this host.
+
+| Command or probe                                                                                    | Result                                                                          | Log suffix                                            |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `pnpm --filter @eve-space/platform-module-contract build`; `pnpm registry:generate`                 | 0                                                                               | `contract-build.log`, `registry.log`                  |
+| `pnpm --filter @eve-space/api build`; `pnpm build`                                                  | 0                                                                               | `api-build.log`, `build.log`                          |
+| `pnpm --filter @eve-space/api typecheck:local`; `pnpm typecheck:nuxt:local` after dependency builds | 0                                                                               | `api-typecheck.log`, `nuxt-typecheck.log`             |
+| `pnpm lint`; `pnpm format:check`                                                                    | 0                                                                               | `lint.log`, `format.log`                              |
+| `pnpm test:frontend`                                                                                | 0; 1,023 unit and 369 mounted tests                                             | `frontend.log`                                        |
+| `pnpm test:registry`                                                                                | 0; 593 tests plus type fixtures                                                 | `registry.log`                                        |
+| Platform Nuxt and Market Nuxt workspace `test` scripts                                              | 0; 107 and 35 tests                                                             | `platform-nuxt.log`, `market-nuxt.log`                |
+| `pnpm test:graphql:packages`                                                                        | 0; packed public and Market GraphQL contracts                                   | `graphql-packages.log`                                |
+| `pnpm test:e2e:build`; affected viewer and Market suites through `vitest.e2e.config.ts`             | 0; 13 browser tests                                                             | `e2e-build.log`, `e2e.log`                            |
+| `pnpm --filter @eve-space/api test:coverage --maxWorkers=2`                                         | 0; 2,954 tests and all thresholds                                               | `api-coverage-retry.log`                              |
+| `pnpm --filter @eve-space/api test:redis --maxWorkers=1`                                            | 0; 66 tests and thresholds                                                      | `redis-retry.log`                                     |
+| `pnpm --filter @eve-space/api test:postgres`                                                        | 0; 443 tests                                                                    | `postgres.log`                                        |
+| `docker compose up -d --build api`; Compose health                                                  | 0; API, worker, PostgreSQL and both Redis services healthy                      | `runtime-build.log`                                   |
+| Local valid/invalid/old-route, preflight, untrusted-form and anonymous private probes               | Expected 200/400/404/204/403 and `AUTH_REQUIRED`; no-store on GraphQL responses | `runtime-probes.json`, `runtime-security-probes.json` |
+
+The initial concurrent API and Redis runs failed with timeout/cascading errors. Reduced-concurrency
+reruns passed without production or test changes. No quality baseline changed.
+
+### Conclusion
+
+Verified within the endpoint/navigation/scroll changes. Remote production rollout and broader
+unchanged private-resource contracts are outside this review.

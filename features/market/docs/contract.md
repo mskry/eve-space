@@ -287,14 +287,13 @@ Continuation uses `MarketOrderContinuation` through Colada, keyed by generated c
 profile ID/revision, type, observation ID, side, page size (100), and the exact returned cursor.
 Opaque cursors are passed unchanged; the browser never decodes them or reconstructs a selector
 from a row. Each side displays one page of at most 100 rows and sorts only that page. Scrolling
-and native First/Previous/Next buttons use the same traversal, including on narrow screens and
-with the keyboard. Loading disables paging controls. A failed continuation retains the current
+loads adjacent pages, including on narrow screens and with the keyboard through the focusable
+scroll area. Loading pauses traversal. A failed continuation retains the current
 valid rows and offers an explicit retry without an automatic retry loop.
 
 Each table retains the latest 50 issued continuation page-start cursors. Previous navigation
 uses those cursors and eligible Colada entries, while page zero reuses the shared initial side.
-At the oldest retained cursor, Previous is disabled; First remains available to return to page
-zero and begin forward traversal again. Detached query pages have five-minute residency, at most
+At the oldest retained cursor, backward traversal stops. Detached query pages have five-minute residency, at most
 ten-second freshness capped by their source expiry, and no browser persistence. Cursor history
 and the visible page reset synchronously when type, profile, profile revision or observation
 changes, and on a successful explicit restart. Pending transport work is cancelled, and captured

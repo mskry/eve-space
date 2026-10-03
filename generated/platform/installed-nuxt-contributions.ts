@@ -371,4 +371,34 @@ export const installedNuxtContributions = [
     reviewerContributions: [],
     sections: [],
   },
+  {
+    defaultIcon: 'market',
+    moduleId: 'trading',
+    navigation: [
+      {
+        audience: 'authenticated',
+        description: 'Observed inventory across your characters',
+        id: 'inventory',
+        label: 'Trading',
+        order: 16,
+        pageName: 'eve-trading-inventory',
+        placement: 'dashboard',
+        to: '/trading',
+      },
+    ],
+    packageName: '@eve-space/trading-nuxt',
+    pages: [
+      {
+        audience: 'authenticated',
+        extensionPoint: 'root',
+        file: 'src/runtime/app/pages/TradingPage.vue',
+        id: 'inventory',
+        name: 'eve-trading-inventory',
+        path: '/trading',
+      },
+    ],
+    queryAdmissionScopes: [],
+    reviewerContributions: [],
+    sections: [],
+  },
 ] as const satisfies readonly PlatformNuxtContributionDescriptor[]

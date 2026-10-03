@@ -112,7 +112,7 @@ const serve = (
   const requests: WireRequest[] = []
   vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : String(input)
-    if (!url.endsWith('/api/graphql')) return original(input, init)
+    if (!url.endsWith('/graphql')) return original(input, init)
     // SAFETY: the configured transport serializes generated Market documents and variables intercepted here.
     const request = JSON.parse(String(init?.body)) as WireRequest
     requests.push(request)
@@ -132,6 +132,15 @@ const button = (wrapper: Awaited<ReturnType<typeof mount>>, label: string) =>
     .get('section[aria-label="Sellers"]')
     .findAll('button')
     .find((item) => item.text() === label)!
+
+const scrollOrders = async (
+  wrapper: Awaited<ReturnType<typeof mount>>,
+  direction: 'next' | 'previous',
+) => {
+  const area = wrapper.get('section[aria-label="Sellers"] .market-order-table__scroll')
+  area.element.scrollTop = direction === 'next' ? Number.MAX_SAFE_INTEGER : 0
+  await area.trigger('scroll')
+}
 
 const mountPaging = async (source: Ref<MarketObservedBook>, side = ref<'sell' | 'buy'>('sell')) => {
   let paging!: ReturnType<typeof useMarketOrderPaging>
@@ -362,7 +371,7 @@ test('uses opaque side pages with fresh backward reuse, local sorting, explicit 
   const wrapper = await mount(
     defineComponent({ setup: () => () => h(MarketOrderTables, { book: observedBook() }) }),
   )
-  await button(wrapper, 'Next orders').trigger('click')
+  await scrollOrders(wrapper, 'next')
   await vi.waitFor(() => expect(wrapper.text()).toContain('Showing 101–200 sellers orders.'))
   expect(rows(wrapper)).toHaveLength(100)
   expect(requests[0]).toMatchObject({
@@ -372,7 +381,7 @@ test('uses opaque side pages with fresh backward reuse, local sorting, explicit 
   await wrapper.get('button[aria-label="Sort visible Sellers orders by Price"]').trigger('click')
   expect(rows(wrapper)[0]?.text()).toContain('200.00')
   failing = true
-  await button(wrapper, 'Next orders').trigger('click')
+  await scrollOrders(wrapper, 'next')
   await vi.waitFor(() => expect(wrapper.text()).toContain('Retry loading orders'))
   expect(rows(wrapper)).toHaveLength(100)
   expect(rows(wrapper)[0]?.text()).toContain('200.00')
@@ -384,10 +393,10 @@ test('uses opaque side pages with fresh backward reuse, local sorting, explicit 
   await vi.waitFor(() => expect(wrapper.text()).toContain('Showing 201–203 sellers orders.'))
   expect(rows(wrapper)).toHaveLength(3)
   expect(requests.at(-1)?.variables.after).toBe('opaque: second with spaces')
-  await button(wrapper, 'Previous orders').trigger('click')
+  await scrollOrders(wrapper, 'previous')
   await vi.waitFor(() => expect(wrapper.text()).toContain('Showing 101–200 sellers orders.'))
   expect(requests).toHaveLength(attempts + 1)
-  await button(wrapper, 'Previous orders').trigger('click')
+  await scrollOrders(wrapper, 'previous')
   await vi.waitFor(() => expect(wrapper.text()).toContain('Showing 1–100 sellers orders.'))
   expect(requests).toHaveLength(attempts + 1)
 })
@@ -558,7 +567,7 @@ test('rediscovery restarts traversal even if the complete observation is unchang
     }),
   )
   await vi.waitFor(() => expect(rows(wrapper)).toHaveLength(100))
-  await button(wrapper, 'Next orders').trigger('click')
+  await scrollOrders(wrapper, 'next')
   await vi.waitFor(() =>
     expect(wrapper.text()).toContain('Restart with the latest market observation'),
   )

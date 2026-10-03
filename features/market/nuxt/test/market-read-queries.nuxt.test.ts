@@ -82,7 +82,7 @@ const serve = (handler: (request: WireRequest) => Promise<Response> | Response) 
   const requests: WireRequest[] = []
   vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : String(input)
-    if (!url.endsWith('/api/graphql')) return original(input, init)
+    if (!url.endsWith('/graphql')) return original(input, init)
     // SAFETY: this intercepts the configured transport’s serialized generated documents and variables.
     const request = JSON.parse(String(init?.body)) as WireRequest
     requests.push(request)

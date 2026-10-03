@@ -160,6 +160,20 @@ describe('module persistence routine canonicalization', () => {
     expect(leftRelation.definitionFingerprint).not.toBe(rightRelation.definitionFingerprint)
   })
 
+  test('normalizes only owning-schema routine calls across PostgreSQL search paths', async () => {
+    const local = await canonicalizeWriteRoutine(
+      'begin atomic select persist_backfill(input); end;',
+    )
+    const owned = await canonicalizeWriteRoutine(
+      'begin atomic select eve_module_alpha.persist_backfill(input); end;',
+    )
+    const foreign = await canonicalizeWriteRoutine(
+      'begin atomic select eve_module_other.persist_backfill(input); end;',
+    )
+    expect(owned).toStrictEqual(local)
+    expect(foreign.definitionFingerprint).not.toBe(local.definitionFingerprint)
+  })
+
   test('requires exactly one canonical routine identity', async () => {
     await expect(
       canonicalizePersistenceRoutineSql({

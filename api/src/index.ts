@@ -18,6 +18,7 @@ import { corporationRoutes } from './corporations/routes.js'
 import { cacheAdmissionRoutes } from './cache-admission/routes.js'
 import { healthRoutes } from './system/health-routes.js'
 import { moduleRuntimeRoutes } from './platform/routes.js'
+import { inventoryBrowserRoutes } from './platform/inventory-routes.js'
 import { organizationReviewerPlatformRoutes } from './platform/organization-review-routes.js'
 import { publicCharacterRoutes } from './characters/public-routes.js'
 import { statusRoutes } from './system/status-routes.js'
@@ -54,18 +55,20 @@ export const app = new Hono<{ Variables: HonoLogLayerVariables }>()
       .info('request completed')
   })
   .use('*', secureHeaders())
-  .use('/api/graphql', async (context, next) => {
+  .use('/graphql', async (context, next) => {
     context.header('Cache-Control', 'no-store')
     await next()
   })
   .use('*', csrf({ origin: isTrustedFormOrigin }))
   .use('/api/*', cors({ credentials: true, origin: env.WEB_ORIGIN }))
   .use('/auth/*', cors({ credentials: true, origin: env.WEB_ORIGIN }))
+  .use('/graphql', cors({ credentials: true, origin: env.WEB_ORIGIN }))
   .route('/health', healthRoutes)
   .route('/api/status', statusRoutes)
   .route('/api/modules', moduleRuntimeRoutes)
+  .route('/api/inventory', inventoryBrowserRoutes)
   .route('/api/modules', installedModuleRoutes)
-  .route('/api/graphql', graphqlRoutes)
+  .route('/graphql', graphqlRoutes)
   .route('/api/universe', universeRoutes)
   .use('/api/characters/*', loadSession, requireSession)
   .use('/api/corporations/*', loadSession, requireSession)

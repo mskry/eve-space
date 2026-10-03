@@ -117,6 +117,16 @@ export const installedPermissionCatalog = [
     reviewAllowed: false,
     sensitivity: 'standard',
   },
+  {
+    audiences: ['director', 'hr'],
+    key: 'trading.inventory.corporation.read',
+    label: 'Read corporation inventory',
+    moduleId: 'trading',
+    publisherPackage: '@eve-space/trading-manifest',
+    purpose: 'Review observed assets for current admitted corporation members.',
+    reviewAllowed: false,
+    sensitivity: 'sensitive',
+  },
 ] as const satisfies readonly PlatformInstalledPermissionDescriptor[]
 export const installedPermissionProfileCatalog = [
   {

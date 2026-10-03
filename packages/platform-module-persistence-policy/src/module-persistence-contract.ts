@@ -17,6 +17,7 @@ interface ModulePersistenceContractOperation {
     readonly resourceProjections: readonly string[]
     readonly resourceMaterializations: readonly string[]
     readonly graphqlReads?: readonly string[]
+    readonly inventoryProviders?: readonly string[]
   }
 }
 
@@ -57,6 +58,9 @@ export function createModulePersistenceContractFingerprint(
                 resourceProjections: grants.resourceProjections,
                 resourceMaterializations: grants.resourceMaterializations,
                 ...(grants.graphqlReads?.length && { graphqlReads: grants.graphqlReads }),
+                ...(grants.inventoryProviders?.length && {
+                  inventoryProviders: grants.inventoryProviders,
+                }),
               }
             : null,
         }),

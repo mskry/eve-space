@@ -101,6 +101,15 @@ const validateSubjectArgument = (
 ) => {
   if (!binding.subjectArgument) return
   const argument = field.arguments?.find(({ name }) => name.value === binding.subjectArgument)
+  if (binding.strategy === 'personal-inventory') {
+    if (
+      argument?.type.kind !== Kind.LIST_TYPE ||
+      argument.type.type.kind !== Kind.NON_NULL_TYPE ||
+      namedType(argument.type) !== 'EveId'
+    )
+      throw new Error(`Invalid GraphQL personal selection argument ${binding.field}`)
+    return
+  }
   if (
     argument?.type.kind !== Kind.NON_NULL_TYPE ||
     argument.type.type.kind !== Kind.NAMED_TYPE ||

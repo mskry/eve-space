@@ -67,7 +67,6 @@
     "packages/platform-module-conformance/src/source-policy.ts:complexity(complexity):c84975d033be51923311d4a6f75ab010971fa5aa2cf08d32b25e6d05817066be": 1,
     "packages/platform-module-conformance/src/source-policy.ts:complexity(complexity):ffdd73a0fc2655d3f92930e4d6a3c7535bd0311afd857724d08901a8412ea1a0": 1,
     "packages/platform-module-persistence-policy/src/module-migration-ast-policy.ts:complexity(complexity):adb11830ce5064d7b3cffc942ca23007a684fe04dc518556d74e7865775112a9": 1,
-    "packages/platform-module-persistence-policy/src/module-persistence-routine.ts:complexity(complexity):ed7f41cbdeaf0178160c7cd828bde22489c239d798347d0319d74bb18323aab3": 1,
     "scripts/characters/boundaries.ts:complexity(complexity):b3899085f385ef980fd8320052e06c7934a2d466e2bea12e99c9332ff0bba227": 1,
     "scripts/domain-event-review/evidence.ts:complexity(complexity):8c2d943099bffa23eb3882508e1518ddb6602ffddbd2f54c0177535f6b0574c2": 1,
     "scripts/mail-composition/boundaries.ts:complexity(complexity):bbc7101709594d029d9619ba69810f949ad93aefe06fb8c37e38bee135f83dd6": 1,
@@ -90,7 +89,7 @@
     "tests/platform/external-module-archives.test.ts:complexity(complexity):3d2385bda1e2235ab5366ba6e788be67176733d9609ccdf9af033884a79d236f": 1,
     "tests/platform/module-package-boundaries.test.ts:complexity(complexity):19bad014b57a73c2339cbf8fc81bdf9777b4e644430f006cf3efbbc427e0da61": 1,
     "tests/platform/module-package-boundaries.test.ts:complexity(complexity):89be93f5cf0301183da1370e8c725d6eadca8c15247d258ec4eeb0724067e0f5": 1,
-    "tests/platform/platform-module-registry.test.ts:complexity(complexity):9f83e9a60aead0d7b795c74a8d3d667147790dcf023d79d8197f2881d1e0bcb8": 1,
+    "tests/platform/platform-module-registry.test.ts:complexity(complexity):398590430a6d59a8d90ced950fc209ab8d27c895a7133b15f9446cca54808841": 1,
     "tests/queries/private-query-lifecycle.test.ts:complexity(complexity):8d679a14e014b3639d798a8322ac75a843205f09199dcb425813c2be7a4321f1": 1,
     "tests/queries/query-persistence-envelope.test.ts:complexity(complexity):0f6fdcacc9b90015e6895bd2f589c623e8ff929a81da1ae4aa35b114d1e80e3a": 1,
     "tests/queries/query-persistence-runtime.test.ts:complexity(complexity):37330031cc0c757646a847400c355f8120691706e3c3ff46e604315b5341d0a1": 1

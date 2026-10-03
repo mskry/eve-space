@@ -1645,14 +1645,14 @@ test('propagates a GraphQL disconnect through a registered asset body and releas
     },
   })
   const app = new Hono().route(
-    '/api/graphql',
+    '/graphql',
     createGraphQLHostAdapter(schema, (_request, { work }) => ({ signal: work.signal }), [
       { field: 'Query.page', protected: true, cost: 1, sourceCost: 1000 },
     ]),
   )
   const controller = new AbortController()
   const response = app.fetch(
-    new Request('http://localhost/api/graphql', {
+    new Request('http://localhost/graphql', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: '{ page }' }),

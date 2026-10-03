@@ -1,5 +1,60 @@
 # Platform Module Foundation
 
+## Inventory Interface (Host Contract 1.2.0)
+
+The additive inventory interface is exported through
+`@eve-space/platform-module-contract/inventory`. Releases declaring
+`server.inventoryProviders` or `server.inventoryConsumers` must require host 1.2.0,
+for example with `hostContractRange: '^1.2.0'`. Older releases without inventory
+declarations remain compatible. The DTO's independent `contractVersion` is `1`.
+
+Personal consumers bind `provider: 'core.character-assets'`. Corporation consumers
+bind an exact `{ moduleId, providerId, optional }` and declare their own aggregate
+permission plus the provider's source permission. An optional absent source sets
+only that corporation consumer's `providerAvailable` to false. An installed source
+with a missing or incompatible declaration is an installation error. Availability
+describes installation, not live section enablement or authorization.
+
+Corporation providers declare an owned sensitive-evidence section, an owned
+HR/director review permission, finite subject/page bounds and exact read-only
+persistence references. Their executable export is a factory accepting only
+`PlatformInventoryProviderCapabilities<Persistence>`; `definePlatformInventoryProvider`
+preserves those exact authoring types and rejects non-callable factory results.
+The generated `installed-module-inventory-providers.ts` registry is the sole host
+entry for provider implementations. Generated persistence factories and attestation
+fingerprints include provider grants under `inventoryProviders`; consumers receive
+no such grants and cannot import another feature's server implementation.
+
+Consumers receive `personalInventory(read)` or `corporationInventory(read)`, with
+filters and bounded group, holder or coverage pagination. These methods accept no
+actor, provider dispatcher or subject vector. Only core constructs the opaque
+admitted set: personal ownership and corporation reviewer admission remain separate.
+The corporation binding distinguishes visible coverage subjects from subjects whose
+evidence is readable, and pins lifecycle, organization, authorization, disclosure,
+section activation and observation identities. Admission and release enforcement
+are implemented in the subsequent admission task group; this declaration increment
+does not enable executable aggregate reads.
+
+`PlatformInventoryView` carries scope, view fingerprint, traversal/source completeness,
+expected visible subjects, coverage counts and separate group, holder and coverage
+pages. Quantities are exact decimal integer strings (`PlatformInventoryQuantity`),
+compatible with the GraphQL `BigInteger` scalar. Current and retained stale quantities
+are separate. Locations retain unknown, restricted or unresolved states; blueprints
+retain copy/original distinctions. Coverage distinguishes included current/stale,
+authorization required, never collected, unavailable, incomplete, beyond retention
+and conflicting sources. A complete empty observation differs from absent evidence.
+
+Declaration ceilings are 20 personal subjects, 250 corporation subjects and 100 rows
+per page. Personal source policy additionally targets 10,000 records per subject
+and 20 pages across a scope. These bounds are implementation targets requiring the
+change's later capacity evidence. Existing asset endpoints retain their own limits.
+
+Both first-party verification and the packaged conformance runner reject role-invalid
+inventory imports, excess declarations, incompatible contracts, cross-schema/write
+grants and non-callable provider artifacts. The public-package smoke fixture compiles
+inventory consumers against packed packages in an independent project, including
+negative type checks for forged admission and widened capabilities.
+
 ## Process Model
 
 Feature server packages are statically linked libraries, not independent services. One API process

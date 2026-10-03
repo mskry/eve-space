@@ -72,7 +72,7 @@ const walletBalanceSnapshotSchema = z.strictObject({
   balance: z.number(),
   kind: z.literal('wallet-balance'),
 })
-const reviewerAuthorityFields = {
+export const reviewerAuthorityFields = {
   authorizationGeneration: z.number().int().nonnegative(),
   characterId: z.number().int().positive(),
   characterLifecycleId: z.uuid(),

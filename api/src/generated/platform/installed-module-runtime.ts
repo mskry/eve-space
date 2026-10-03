@@ -11,6 +11,7 @@ export const installedModuleDefinitions = [
   { moduleId: 'market', defaultEnabled: true },
   { moduleId: 'member-audit', defaultEnabled: false },
   { moduleId: 'organization-activity', defaultEnabled: true },
+  { moduleId: 'trading', defaultEnabled: false },
 ] as const satisfies readonly PlatformInstalledModuleDefinition[]
 export const installedModuleSectionDefinitions = [
   { moduleId: 'member-audit', id: 'overview', kind: 'workspace', defaultEnabled: false },
@@ -131,10 +132,10 @@ export const installedModuleOrganizationAdmissionScopes = [
 export const platformNavigationDefaults = [
   { ownerId: 'core', navigationId: 'core-overview', placement: 'dashboard', order: 10 },
   { ownerId: 'market', navigationId: 'market', placement: 'dashboard', order: 15 },
+  { ownerId: 'trading', navigationId: 'inventory', placement: 'dashboard', order: 16 },
   { ownerId: 'core', navigationId: 'core-characters', placement: 'dashboard', order: 20 },
   { ownerId: 'core', navigationId: 'core-mail', placement: 'dashboard', order: 25 },
   { ownerId: 'core', navigationId: 'core-settings', placement: 'dashboard', order: 30 },
-  { ownerId: 'core', navigationId: 'core-api-explorer', placement: 'dashboard', order: 35 },
   { ownerId: 'core', navigationId: 'core-admin', placement: 'dashboard', order: 40 },
   { ownerId: 'core', navigationId: 'core-character-overview', placement: 'character', order: 10 },
   { ownerId: 'core', navigationId: 'core-character-skills', placement: 'character', order: 20 },

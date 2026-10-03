@@ -57,3 +57,21 @@ Asset page/name representations are shared by the full-inventory collector and b
 reader. Enrichment consumes only its supplied window and charges each backend seam through the
 caller's work admission. Cursor validation and page fingerprints cannot grant ownership; the
 transport-independent admitted-read binding owns before-use and before-release authority checks.
+
+Aggregate inventory reads consume core-admitted personal evidence subjects through the same
+registered asset-page seam. Complete-source bounds and generation checks belong to the source
+reader; pure ancestry, quantity and item conflict rules belong to the asset projection package.
+Enrichment batches type and public physical-root data without custom-name or private-structure
+reads. Host admission owns live authority fencing and public pagination; character reduction
+preserves coverage over the full visible set before applying row filters.
+
+<!-- bmad:context -->
+<!-- Verified 2026-10-03 against 35bf357129965cbf18751d290bc0b29f1a6c5fe7. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+
+## Character skill enrichment
+
+## Conventions that differ from defaults
+
+- Enrich character skills from local `sde_types` and `sde_groups` in one bounded query; retain ESI records with deterministic unknown labels when static rows are missing.
+
+<!-- /bmad:context -->

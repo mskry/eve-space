@@ -20,6 +20,8 @@ interface PersistenceRoutineDefinitionIdentity {
   readonly routineName: string
 }
 
+type RoutineResultTarget = PostgresAstObject & { ResTarget: PostgresAstObject }
+
 export interface CanonicalPersistenceRoutine {
   readonly identity: PersistenceRoutineDefinitionIdentity
   readonly canonicalDefinition: string
@@ -173,6 +175,22 @@ function normalizeRoutineBody(
   })
 }
 
+const normalizeOwningFunctionName = (value: PostgresAstObject, schemaName: string) => {
+  const names = astStringList(value.funcname)
+  if (names.length !== 2 || names[0] !== schemaName) return value
+  return { ...value, funcname: [{ String: { sval: names[1]! } }] }
+}
+
+const isRoutineResultTarget = (
+  value: PostgresAstObject,
+  parentKind?: string,
+  parentField?: string,
+): value is RoutineResultTarget =>
+  ((parentKind === 'SelectStmt' && parentField === 'targetList') ||
+    ((parentKind === 'InsertStmt' || parentKind === 'DeleteStmt') &&
+      parentField === 'returningList')) &&
+  isAstObject(value.ResTarget)
+
 function normalizeRoutineAst(
   value: PostgresAstValue,
   routine: {
@@ -237,12 +255,7 @@ function normalizeRoutineAst(
       ),
     }
   }
-  if (
-    ((parentKind === 'SelectStmt' && parentField === 'targetList') ||
-      ((parentKind === 'InsertStmt' || parentKind === 'DeleteStmt') &&
-        parentField === 'returningList')) &&
-    isAstObject(value.ResTarget)
-  ) {
+  if (isRoutineResultTarget(value, parentKind, parentField)) {
     return {
       ResTarget: normalizeRoutineAst(
         removeImplicitSelectTargetName(value.ResTarget),
@@ -255,7 +268,12 @@ function normalizeRoutineAst(
     }
   }
 
-  const relationNormalizedValue = removeImplicitRelationAlias(value, scopedRelationAliases)
+  const functionNormalizedValue =
+    parentKind === 'FuncCall' ? normalizeOwningFunctionName(value, routine.schemaName) : value
+  const relationNormalizedValue = removeImplicitRelationAlias(
+    functionNormalizedValue,
+    scopedRelationAliases,
+  )
   const normalizedValue =
     typeof relationNormalizedValue.relname === 'string'
       ? removeOwningSchemaQualification(relationNormalizedValue, routine.schemaName)

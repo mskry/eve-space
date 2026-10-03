@@ -84,7 +84,7 @@
     "postinstall": "pnpm build:nuxt:dependencies && nuxt prepare && lefthook install",
     "graphql:generate": "pnpm registry:generate && tsx scripts/generate-graphql.ts --write",
     "graphql:check": "tsx scripts/generate-graphql.ts --check && pnpm graphql:types",
-    "graphql:types": "pnpm --filter @eve-space/platform-module-contract exec tsc --noEmit --project ../../tests/fixtures/graphql-contract-types/tsconfig.json && pnpm --filter @eve-space/market-nuxt typecheck:graphql",
+    "graphql:types": "pnpm --filter @eve-space/platform-module-contract exec tsc --noEmit --project ../../tests/fixtures/graphql-contract-types/tsconfig.json && pnpm --filter @eve-space/market-nuxt typecheck:graphql && pnpm --filter @eve-space/trading-nuxt typecheck:graphql",
     "test:graphql:packages": "pnpm graphql:check && pnpm --filter @eve-space/platform-module-conformance build:public-interface && pnpm --filter @eve-space/market-nuxt build && pnpm --filter @eve-space/platform-module-conformance exec node scripts/smoke-public-interface.ts --market-graphql"
   },
   "dependencies": {
@@ -110,7 +110,9 @@
     "nuxt": "catalog:",
     "pinia": "catalog:",
     "reka-ui": "catalog:",
-    "vue": "catalog:"
+    "vue": "catalog:",
+    "@eve-space/trading-manifest": "workspace:*",
+    "@eve-space/trading-nuxt": "workspace:*"
   },
   "devDependencies": {
     "@eve-space/platform-module-conformance": "workspace:*",

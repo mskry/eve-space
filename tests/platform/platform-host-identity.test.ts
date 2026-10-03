@@ -17,6 +17,7 @@ vi.mock('../../app/queries/organization', () => ({
 vi.mock('../../app/utils/api-client', () => ({ createApiClient: mocks.createApiClient }))
 vi.mock('../../app/query-persistence/runtime', () => ({
   readOrganizationReadiness: () => organizationReady,
+  readOrganizationRevision: () => ref(1),
 }))
 
 import { usePlatformHostIdentity } from '../../app/composables/usePlatformHostIdentity'
@@ -40,10 +41,11 @@ beforeEach(() => {
   mocks.createApiClient.mockReturnValue(mocks.api)
   mocks.organizationContextQuery.mockReturnValue({ key: ['organization-context'] })
   mocks.useQuery.mockReturnValue({ data: organization })
+  mocks.useQueryCache.mockReturnValue({ getQueryData: () => authSession.value })
   vi.stubGlobal('useRuntimeConfig', () => ({ public: { apiBase: 'https://api.example.test' } }))
   vi.stubGlobal(
     'useAuthSession',
-    vi.fn(() => ({ authSession })),
+    vi.fn(() => ({ authSession, authVerificationStatus: ref('verified') })),
   )
   vi.stubGlobal(
     'useCharacterRoster',

@@ -191,7 +191,8 @@ export const installedModuleResources = [
     persistence: {
       materialization: [
         { operationId: 'write-evidence-continuation' },
-        { operationId: 'promote-evidence-observation' },
+        { operationId: 'backfill-asset-inventory' },
+        { operationId: 'promote-asset-inventory' },
         { operationId: 'purge-evidence' },
       ],
       projection: [{ operationId: 'read-active-evidence-continuation' }],

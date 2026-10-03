@@ -17,6 +17,9 @@ const modulesByTier = {
   ],
   'read-projection': [
     'assets',
+    'inventory-source',
+    'inventory-enrichment',
+    'inventory-reduction',
     'asset-cursor',
     'asset-connection',
     'asset-pages',
@@ -83,6 +86,8 @@ const allowedPackagesByTier: Record<CharacterTier, ReadonlySet<string>> = {
   'pure-leaf': new Set(['zod']),
   'read-projection': new Set([
     '@eve-space/core-eve-projections/assets',
+    '@eve-space/core-eve-projections/asset-inventory',
+    '@eve-space/platform-module-contract/inventory',
     '@eve-space/core-eve-projections/current-observation',
     '@eve-space/core-eve-projections/skill-queue',
     '@eve-space/core-eve-projections/trained-skills',
@@ -108,6 +113,18 @@ const allowedCrossSubsystemImportsByModule = new Map(
       'api/src/esi-gateway/feature-execution',
     ],
     'asset-cursor': ['api/src/esi-gateway/feature-execution'],
+    'inventory-source': [
+      'api/src/esi-gateway/failures',
+      'api/src/inventory-policy',
+      'api/src/auth/read-policy',
+    ],
+    'inventory-reduction': ['api/src/auth/inventory-admission', 'api/src/inventory-policy'],
+    'inventory-enrichment': [
+      'api/src/db/client',
+      'api/src/db/schema',
+      'api/src/universe/names',
+      'api/src/universe/static-locations',
+    ],
     'asset-pages': ['api/src/esi-gateway/feature-execution', 'api/src/type-guards'],
     'asset-work': ['api/src/auth/read-work'],
     'asset-batches': [],

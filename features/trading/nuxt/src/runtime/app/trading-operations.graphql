@@ -1,0 +1,195 @@
+fragment TradingInventoryStatus on TradingInventoryView {
+  version
+  scope
+  corporationId
+  fingerprint
+  traversalComplete
+  sourcesComplete
+  expectedSubjects
+  coverageCounts {
+    includedCurrent
+    includedStale
+    authorizationRequired
+    neverCollected
+    unavailable
+    incomplete
+    beyondRetention
+    conflictingSource
+  }
+}
+fragment TradingInventoryClock on TradingInventorySource {
+  observationId
+  observedAt
+  validatedAt
+  freshUntil
+  retainedUntil
+}
+fragment TradingInventoryGroups on TradingInventoryGroupPage {
+  endCursor
+  hasNextPage
+  rows {
+    key
+    typeId
+    typeName
+    groupId
+    categoryId
+    blueprint
+    location {
+      key
+      id
+      name
+      state
+    }
+    currentQuantity
+    staleQuantity
+  }
+}
+query TradingPersonalInventory(
+  $characterIds: [EveId!]
+  $filters: TradingInventoryFilters
+  $first: Int = 50
+  $after: String
+) {
+  trading {
+    personalInventory(
+      characterIds: $characterIds
+      filters: $filters
+      first: $first
+      after: $after
+    ) {
+      ...TradingInventoryStatus
+      groups {
+        ...TradingInventoryGroups
+      }
+    }
+  }
+}
+query TradingCorporationInventory(
+  $corporationId: EveId!
+  $filters: TradingInventoryFilters
+  $first: Int = 50
+  $after: String
+) {
+  trading {
+    corporationInventory(
+      corporationId: $corporationId
+      filters: $filters
+      first: $first
+      after: $after
+    ) {
+      ...TradingInventoryStatus
+      groups {
+        ...TradingInventoryGroups
+      }
+    }
+  }
+}
+query TradingPersonalHolders(
+  $characterIds: [EveId!]
+  $groupKey: String!
+  $first: Int = 50
+  $after: String
+) {
+  trading {
+    personalInventory(
+      characterIds: $characterIds
+      kind: holders
+      groupKey: $groupKey
+      first: $first
+      after: $after
+    ) {
+      ...TradingInventoryStatus
+      holders {
+        endCursor
+        hasNextPage
+        rows {
+          characterId
+          userId
+          characterName
+          groupKey
+          currentQuantity
+          staleQuantity
+          source {
+            ...TradingInventoryClock
+          }
+        }
+      }
+    }
+  }
+}
+query TradingCorporationHolders(
+  $corporationId: EveId!
+  $groupKey: String!
+  $first: Int = 50
+  $after: String
+) {
+  trading {
+    corporationInventory(
+      corporationId: $corporationId
+      kind: holders
+      groupKey: $groupKey
+      first: $first
+      after: $after
+    ) {
+      ...TradingInventoryStatus
+      holders {
+        endCursor
+        hasNextPage
+        rows {
+          characterId
+          userId
+          characterName
+          groupKey
+          currentQuantity
+          staleQuantity
+          source {
+            ...TradingInventoryClock
+          }
+        }
+      }
+    }
+  }
+}
+query TradingPersonalCoverage($characterIds: [EveId!], $first: Int = 50, $after: String) {
+  trading {
+    personalInventory(characterIds: $characterIds, kind: coverage, first: $first, after: $after) {
+      ...TradingInventoryStatus
+      coverage {
+        endCursor
+        hasNextPage
+        rows {
+          characterId
+          characterName
+          state
+          source {
+            ...TradingInventoryClock
+          }
+        }
+      }
+    }
+  }
+}
+query TradingCorporationCoverage($corporationId: EveId!, $first: Int = 50, $after: String) {
+  trading {
+    corporationInventory(
+      corporationId: $corporationId
+      kind: coverage
+      first: $first
+      after: $after
+    ) {
+      ...TradingInventoryStatus
+      coverage {
+        endCursor
+        hasNextPage
+        rows {
+          characterId
+          characterName
+          state
+          source {
+            ...TradingInventoryClock
+          }
+        }
+      }
+    }
+  }
+}

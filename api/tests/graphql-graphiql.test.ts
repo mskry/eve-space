@@ -8,14 +8,14 @@ import { analyzeGraphQLSelection } from '../src/graphql/execution-policy.js'
 
 test('serves a self-hosted GraphiQL page with host security headers', async () => {
   const app = new Hono().use('*', secureHeaders()).route(
-    '/api/graphql',
+    '/graphql',
     createGraphQLHostAdapter(
       buildSchema('type Query { independentField: String }'),
       (request) => ({ signal: request.signal }),
       [{ field: 'Query.independentField', protected: false, cost: 1, sourceCost: 0 }],
     ),
   )
-  const response = await app.request('/api/graphql', { headers: { Accept: 'text/html' } })
+  const response = await app.request('/graphql', { headers: { Accept: 'text/html' } })
   expect(response.status).toBe(200)
   expect(response.headers.get('Content-Type')).toContain('text/html')
   expect(response.headers.get('Cache-Control')).toBe('no-store')

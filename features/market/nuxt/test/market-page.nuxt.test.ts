@@ -184,7 +184,7 @@ const mountDirectMarketPage = async (options: DirectMarketPageOptions = {}) => {
         ),
       )
     }
-    if (url.endsWith('/api/graphql')) {
+    if (url.endsWith('/graphql')) {
       // SAFETY: this intercepts the configured transport’s serialized generated documents and variables.
       const body = JSON.parse(String(init?.body)) as {
         query: string

@@ -1,5 +1,9 @@
 import type { CoreDataProductId } from '@eve-space/core-data-contract'
 import type { PlatformGraphQLContribution } from './graphql.js'
+import type {
+  PlatformInventoryConsumerDeclaration,
+  PlatformInventoryProviderDeclaration,
+} from './inventory.js'
 import type { PlatformActivityProviderContribution } from './activity.js'
 import type {
   PlatformPersistenceContributionReferences,
@@ -25,7 +29,7 @@ import type {
   PlatformReviewerPanelDeclaration,
 } from './nuxt.js'
 
-export const platformModuleHostContractVersion = '1.1.0'
+export const platformModuleHostContractVersion = '1.2.0'
 
 export interface PlatformModuleRelease {
   readonly publisherPackage: string
@@ -111,6 +115,8 @@ export interface PlatformModuleManifest {
   readonly sections?: readonly PlatformModuleSectionContribution[]
   readonly server: {
     readonly graphql?: readonly PlatformGraphQLContribution[]
+    readonly inventoryProviders?: readonly PlatformInventoryProviderDeclaration[]
+    readonly inventoryConsumers?: readonly PlatformInventoryConsumerDeclaration[]
     readonly package: string
     readonly routes: readonly PlatformRouteContribution[]
     readonly migrations: readonly PlatformMigrationContribution[]

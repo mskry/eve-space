@@ -60,6 +60,7 @@ export interface EsiLoadResult<Data> {
 export interface EsiCachedResult<Data> {
   data: Data
   cachedUntil: string
+  readableUntil?: string
   validatedAt: string
   source: 'esi' | 'cache' | 'not-modified'
   stale: boolean

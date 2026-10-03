@@ -1501,6 +1501,7 @@ function toCachedResult<Data>(
   return {
     data: envelope.data,
     cachedUntil: new Date(envelope.freshUntil).toISOString(),
+    readableUntil: new Date(envelope.staleUntil).toISOString(),
     validatedAt: envelope.validatedAt,
     source,
     stale,

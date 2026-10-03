@@ -82,7 +82,7 @@ test('renders returned history and rejects a late uncollected read without refet
   const originalFetch = globalThis.fetch
   vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
     const path = new URL(input instanceof Request ? input.url : String(input)).pathname
-    if (path === '/api/graphql') {
+    if (path === '/graphql') {
       // SAFETY: the generated executor serializes the document into the outgoing JSON request.
       const body = JSON.parse(String(init?.body)) as { query: string }
       if (body.query.includes('query MarketItem'))
@@ -168,7 +168,7 @@ test('polls the exact GraphQL history resource, pauses with the tab, times out, 
   const originalFetch = globalThis.fetch
   vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
     const path = new URL(input instanceof Request ? input.url : String(input)).pathname
-    if (path === '/api/graphql') {
+    if (path === '/graphql') {
       // SAFETY: the generated executor serializes the document into the outgoing JSON request.
       const { query } = JSON.parse(String(init?.body)) as { query: string }
       if (query.includes('query MarketItem'))

@@ -147,6 +147,7 @@ export default defineConfig({
         'packages/platform-module-conformance/src/conformance.ts',
         'packages/platform-module-conformance/src/source-policy.ts',
         'packages/platform-module-contract/src/compiler.ts',
+        'packages/platform-module-contract/src/inventory.ts',
         'packages/platform-module-contract/src/publisher.ts',
         'packages/platform-module-contract/src/validation.ts',
         'packages/platform-module-persistence-policy/src/module-migration-ast-policy.ts',

@@ -43,6 +43,21 @@ it('allows deferred GraphQL read definitions while rejecting eager helper argume
   )
 })
 
+it('allows deferred inventory providers and refuses eager provider arguments', () => {
+  const deferred = serverSource(`
+    import { definePlatformInventoryProvider } from '@eve-space/platform-module-contract/inventory'
+    export const provider = definePlatformInventoryProvider(({ persistence }) => async () => persistence.readAssetInventory())
+  `)
+  expect(serverSourceBoundaryViolations(deferred)).toStrictEqual([])
+  const eager = serverSource(`
+    import { definePlatformInventoryProvider } from '@eve-space/platform-module-contract/inventory'
+    export const provider = definePlatformInventoryProvider(loadSnapshot())
+  `)
+  expect(serverSourceBoundaryViolations(eager)).toContainEqual(
+    expect.stringContaining('provider has an executable initializer'),
+  )
+})
+
 describe('feature package dependency allowlists', () => {
   it('accepts only reviewed server dependencies and package-local exports', () => {
     expect(

@@ -4,6 +4,14 @@ export const registerPlatformRuntime = () => {
   const resolver = createResolver(import.meta.url)
   addImports([
     {
+      from: resolver.resolve('./runtime/app/composables/usePlatformInventoryCorporations'),
+      name: 'usePlatformInventoryCorporations',
+    },
+    {
+      from: resolver.resolve('./runtime/app/composables/usePlatformInventoryQuery'),
+      name: 'usePlatformInventoryQuery',
+    },
+    {
       from: resolver.resolve('./runtime/app/composables/usePlatformGraphQL'),
       name: 'usePlatformGraphQL',
     },

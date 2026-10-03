@@ -275,6 +275,7 @@ export type Query = {
   readonly market: Maybe<MarketRead>
   readonly ownedCharacter: Maybe<OwnedCharacter>
   readonly ownedCharacters: Maybe<OwnedCharacterConnection>
+  readonly trading: Maybe<TradingRead>
 }
 
 export type QueryOwnedCharacterArgs = {
@@ -284,6 +285,125 @@ export type QueryOwnedCharacterArgs = {
 export type QueryOwnedCharactersArgs = {
   after: InputMaybe<Scalars['String']['input']>
   first?: Scalars['Int']['input']
+}
+
+export type TradingInventoryCoverage = {
+  readonly characterId: Scalars['EveId']['output']
+  readonly characterName: Scalars['String']['output']
+  readonly source: Maybe<TradingInventorySource>
+  readonly state: Scalars['String']['output']
+}
+
+export type TradingInventoryCoverageCounts = {
+  readonly authorizationRequired: Scalars['Int']['output']
+  readonly beyondRetention: Scalars['Int']['output']
+  readonly conflictingSource: Scalars['Int']['output']
+  readonly includedCurrent: Scalars['Int']['output']
+  readonly includedStale: Scalars['Int']['output']
+  readonly incomplete: Scalars['Int']['output']
+  readonly neverCollected: Scalars['Int']['output']
+  readonly unavailable: Scalars['Int']['output']
+}
+
+export type TradingInventoryCoveragePage = {
+  readonly endCursor: Maybe<Scalars['String']['output']>
+  readonly hasNextPage: Scalars['Boolean']['output']
+  readonly rows: ReadonlyArray<TradingInventoryCoverage>
+}
+
+export type TradingInventoryFilters = {
+  readonly categoryId: InputMaybe<Scalars['EveId']['input']>
+  readonly groupId: InputMaybe<Scalars['EveId']['input']>
+  readonly locationKey: InputMaybe<Scalars['String']['input']>
+  readonly typeId: InputMaybe<Scalars['EveId']['input']>
+}
+
+export type TradingInventoryGroup = {
+  readonly blueprint: Scalars['String']['output']
+  readonly categoryId: Maybe<Scalars['EveId']['output']>
+  readonly currentQuantity: Scalars['BigInteger']['output']
+  readonly groupId: Maybe<Scalars['EveId']['output']>
+  readonly key: Scalars['String']['output']
+  readonly location: TradingInventoryLocation
+  readonly staleQuantity: Scalars['BigInteger']['output']
+  readonly typeId: Scalars['EveId']['output']
+  readonly typeName: Maybe<Scalars['String']['output']>
+}
+
+export type TradingInventoryGroupPage = {
+  readonly endCursor: Maybe<Scalars['String']['output']>
+  readonly hasNextPage: Scalars['Boolean']['output']
+  readonly rows: ReadonlyArray<TradingInventoryGroup>
+}
+
+export type TradingInventoryHolder = {
+  readonly characterId: Scalars['EveId']['output']
+  readonly characterName: Scalars['String']['output']
+  readonly currentQuantity: Scalars['BigInteger']['output']
+  readonly groupKey: Scalars['String']['output']
+  readonly source: TradingInventorySource
+  readonly staleQuantity: Scalars['BigInteger']['output']
+  readonly userId: Scalars['UUID']['output']
+}
+
+export type TradingInventoryHolderPage = {
+  readonly endCursor: Maybe<Scalars['String']['output']>
+  readonly hasNextPage: Scalars['Boolean']['output']
+  readonly rows: ReadonlyArray<TradingInventoryHolder>
+}
+
+export type TradingInventoryKind = 'coverage' | 'groups' | 'holders'
+
+export type TradingInventoryLocation = {
+  readonly id: Maybe<Scalars['EveId']['output']>
+  readonly key: Scalars['String']['output']
+  readonly name: Maybe<Scalars['String']['output']>
+  readonly state: Scalars['String']['output']
+}
+
+export type TradingInventorySource = {
+  readonly freshUntil: Scalars['UTCTime']['output']
+  readonly observationId: Scalars['String']['output']
+  readonly observedAt: Scalars['UTCTime']['output']
+  readonly retainedUntil: Scalars['UTCTime']['output']
+  readonly validatedAt: Scalars['UTCTime']['output']
+}
+
+export type TradingInventoryView = {
+  readonly corporationId: Maybe<Scalars['EveId']['output']>
+  readonly coverage: TradingInventoryCoveragePage
+  readonly coverageCounts: TradingInventoryCoverageCounts
+  readonly expectedSubjects: Scalars['Int']['output']
+  readonly fingerprint: Scalars['String']['output']
+  readonly groups: TradingInventoryGroupPage
+  readonly holders: TradingInventoryHolderPage
+  readonly scope: Scalars['String']['output']
+  readonly sourcesComplete: Scalars['Boolean']['output']
+  readonly traversalComplete: Scalars['Boolean']['output']
+  readonly version: Scalars['Int']['output']
+}
+
+export type TradingRead = {
+  readonly corporationInventory: Maybe<TradingInventoryView>
+  readonly personalInventory: Maybe<TradingInventoryView>
+}
+
+export type TradingReadCorporationInventoryArgs = {
+  after: InputMaybe<Scalars['String']['input']>
+  corporationId: Scalars['EveId']['input']
+  filters: InputMaybe<TradingInventoryFilters>
+  first?: InputMaybe<Scalars['Int']['input']>
+  groupKey: InputMaybe<Scalars['String']['input']>
+  kind?: InputMaybe<TradingInventoryKind>
+}
+
+export type TradingReadPersonalInventoryArgs = {
+  after: InputMaybe<Scalars['String']['input']>
+  characterIds: InputMaybe<ReadonlyArray<Scalars['EveId']['input']>>
+  filters: InputMaybe<TradingInventoryFilters>
+  first?: InputMaybe<Scalars['Int']['input']>
+  groupKey: InputMaybe<Scalars['String']['input']>
+  kind?: InputMaybe<TradingInventoryKind>
 }
 
 export type ExplorerMarketQueryVariables = Exact<{ [key: string]: never }>

@@ -6,6 +6,8 @@
   "ignoreIssues": {
     "app/generated/graphql-operations.ts": ["types"],
     "features/market/nuxt/src/runtime/app/market-graphql.ts": ["types"],
+    // Generated operation types and schema/operation fingerprints form the published contract.
+    "features/trading/nuxt/src/runtime/app/trading-graphql.ts": ["exports", "types"],
   },
   "workspaces": {
     ".": {
@@ -54,6 +56,7 @@
         "@eve-space/member-audit-manifest",
         "@eve-space/market-manifest",
         "@eve-space/organization-activity-manifest",
+        "@eve-space/trading-manifest",
         "zod",
       ],
     },
@@ -97,6 +100,14 @@
     "features/market/nuxt": {
       // Negative contract fixtures are compiled directly by the feature's typecheck scripts.
       "entry": ["test/types/*.ts"],
+    },
+    "features/trading/nuxt": {
+      "entry": [
+        // Resolved from the installed manifest and registered as a Nuxt route.
+        "src/runtime/app/pages/TradingPage.vue",
+        // Negative contract fixtures are compiled directly by typecheck:graphql.
+        "test/types/*.ts",
+      ],
     },
     "packages/esi-client": {
       // Generated artifacts and generator helpers are validated by this package's dedicated suite.
