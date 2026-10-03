@@ -3,7 +3,7 @@ import type { Redis } from 'ioredis'
 import { isNonnegativeSafeInteger, isPositiveSafeInteger } from '../../type-guards.js'
 import type { EsiRepresentationIdentity } from './identity.js'
 import { cacheCoordinationSentinelKey } from './keys.js'
-import type { EsiRequestLease } from './runtime-ports.js'
+import type { EsiRequestLease, EsiResourceMutationIntent } from './runtime-ports.js'
 
 const coordinationIdentityVersion = 'v2'
 const keyPrefix = `eve-space:${coordinationIdentityVersion}:esi-resilience`
@@ -14,6 +14,13 @@ const revisionPrincipalPattern = /^character-[1-9]\d*$/
 
 function identityKey(identity: EsiRepresentationIdentity) {
   return `${identity.operation}:${identity.coordinationDigest}`
+}
+
+const resourceRevisionKey = (namespace: string, principal: string) => {
+  if (!revisionNamespacePattern.test(namespace) || !revisionPrincipalPattern.test(principal)) {
+    throw new Error('Invalid ESI resource revision identity')
+  }
+  return `${keyPrefix}:revision:${namespace}:${principal}`
 }
 
 export async function initializeCacheNamespace(coordination: Redis) {
@@ -117,12 +124,18 @@ export async function getCommittedEsiFence(connection: Redis, identity: EsiRepre
   return value === null ? undefined : Number(value)
 }
 
-export async function getEsiResourceRevision(
+export const getEsiResourceRevision = async (
   connection: Redis,
   namespace: string,
   principal: string,
-) {
-  const value = await connection.get(resourceRevisionKey(namespace, principal))
+) => {
+  const key = resourceRevisionKey(namespace, principal)
+  const value = await connection.eval(
+    "if redis.call('scard', KEYS[2]) > 0 then return redis.error_reply('resource mutation unresolved') end; return redis.call('get', KEYS[1])",
+    2,
+    key,
+    `${key}:pending`,
+  )
   if (value === null) {
     return 0
   }
@@ -131,6 +144,37 @@ export async function getEsiResourceRevision(
     throw new Error('Invalid ESI resource revision')
   }
   return revision
+}
+
+export const beginEsiResourceMutation = async (
+  connection: Redis,
+  intent: EsiResourceMutationIntent,
+) => {
+  await connection.sadd(
+    `${resourceRevisionKey(intent.namespace, intent.principal)}:pending`,
+    intent.token,
+  )
+}
+
+export const completeEsiResourceMutation = async (
+  connection: Redis,
+  intent: EsiResourceMutationIntent,
+) => {
+  const key = resourceRevisionKey(intent.namespace, intent.principal)
+  const value = Number(
+    await connection.eval(
+      "local current = tonumber(redis.call('get', KEYS[1]) or '0'); if redis.call('sismember', KEYS[2], ARGV[1]) == 0 then return current end; if current >= tonumber(ARGV[2]) then return redis.error_reply('resource revision exhausted') end; local revision = redis.call('incr', KEYS[1]); redis.call('srem', KEYS[2], ARGV[1]); return revision",
+      2,
+      key,
+      `${key}:pending`,
+      intent.token,
+      Number.MAX_SAFE_INTEGER,
+    ),
+  )
+  if (!isNonnegativeSafeInteger(value)) {
+    throw new Error('Invalid ESI resource revision')
+  }
+  return value
 }
 
 export async function incrementEsiResourceRevision(
@@ -150,11 +194,4 @@ export async function incrementEsiResourceRevision(
     throw new Error('Invalid ESI resource revision')
   }
   return value
-}
-
-function resourceRevisionKey(namespace: string, principal: string) {
-  if (!revisionNamespacePattern.test(namespace) || !revisionPrincipalPattern.test(principal)) {
-    throw new Error('Invalid ESI resource revision identity')
-  }
-  return `${keyPrefix}:revision:${namespace}:${principal}`
 }

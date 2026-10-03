@@ -25,6 +25,43 @@ const sharedOwnerAndPlatformOperations = new Set([
   'wallet-transactions',
 ])
 
+const isFetchExpression = (expression, declarations) => {
+  const value = resolveInitializer(expression, declarations)
+  if (ts.isIdentifier(value)) {
+    return value.text === 'fetch'
+  }
+  if (!ts.isPropertyAccessExpression(value) && !ts.isElementAccessExpression(value)) {
+    return false
+  }
+  const object = resolveInitializer(value.expression, declarations)
+  const name = ts.isPropertyAccessExpression(value)
+    ? value.name.text
+    : staticStringValue(value.argumentExpression, declarations)
+  return ts.isIdentifier(object) && object.text === 'globalThis' && name === 'fetch'
+}
+
+const hasDirectEsiFetch = (path, source) => {
+  const sourceFile = ts.createSourceFile(
+    path,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    scriptKind(path),
+  )
+  const declarations = variableInitializers(sourceFile)
+  let found = false
+  visit(sourceFile, (node) => {
+    if (!ts.isCallExpression(node) || !isFetchExpression(node.expression, declarations)) {
+      return
+    }
+    const target = staticStringValue(node.arguments[0], declarations)
+    if (target?.includes('esi.evetech.net')) {
+      found = true
+    }
+  })
+  return found
+}
+
 const root = resolveRoot(process.argv.slice(2))
 const apiSourceRoot = join(root, 'api', 'src')
 const apiSources = await loadSources(root, apiSourceRoot, new Set(['.ts']))
@@ -654,7 +691,7 @@ function moduleTransportViolations(path, source) {
   if (hasNonLiteralDynamicImport(path, source)) {
     findings.push(`${path}: feature server code uses a dynamic import that cannot be verified`)
   }
-  if (/(?:^|[^\w$])(?:globalThis\.)?fetch\s*\(/m.test(source)) {
+  if (hasDirectEsiFetch(path, source) || /(?:^|[^\w$])(?:globalThis\.)?fetch\s*\(/m.test(source)) {
     findings.push(`${path}: feature server code performs direct fetch instead of shared ESI egress`)
   }
   if (
@@ -780,27 +817,6 @@ function hasRuntimeModuleImport(path, source, matches) {
     }
   })
 
-  return found
-}
-
-function hasDirectEsiFetch(path, source) {
-  const sourceFile = ts.createSourceFile(
-    path,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    scriptKind(path),
-  )
-  let found = false
-  visit(sourceFile, (node) => {
-    if (!ts.isCallExpression(node) || calledFunctionName(node.expression) !== 'fetch') {
-      return
-    }
-    const target = stringLiteralValue(node.arguments[0])
-    if (target?.includes('esi.evetech.net')) {
-      found = true
-    }
-  })
   return found
 }
 

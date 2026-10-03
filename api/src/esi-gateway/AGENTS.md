@@ -26,7 +26,7 @@ This subsystem uses support, representation, contract, infrastructure, execution
 - Accepted runtime work includes request-lifecycle finalization. Runtime close must stop admission and await active response bodies, issued renewals, and permit release before local state or process-owned dependencies are closed.
 - The SDK owns one typed protocol attempt, its deadline, protocol metadata, and policy-neutral failure classification. The gateway owns authorization, SDK binding, cache and stale policy, retries, permits, cooldowns, resource revisions, and telemetry.
 - The execution implementation owns authorization resolution, transport, caching, retries, request collapse, fencing, cooldown recording, telemetry, and resource revisions.
-- One operation uses exactly one execution path. While migrating, operations may sit on either path, but never layer the registered interface over the older public execution methods.
+- Each representation and invocation selects one execution path. Reviewed shared operations may retain both canonical core and platform wire representations; `sharedOwnerAndPlatformOperations` in `scripts/verify-esi-egress.mjs` is the enforced allowlist. Both paths use the same execution owner and must never dispatch through each other.
 - Retire the old seam rather than wrapping it. Compatibility shims are not an acceptable migration artifact.
 
 ## Representations
@@ -34,7 +34,7 @@ This subsystem uses support, representation, contract, infrastructure, execution
 - A representation owns input encoding, cache-identity projection, SDK binding, and, for core reads, canonical result mapping. Every cached result belongs to exactly one.
 - Cache identity includes the representation name and version. Registration rejects duplicate and inconsistent registrations.
 - Callers do not supply per-call mappers for cached results.
-- Changing what a representation means requires a representation-version increment. Two concurrent representations of one operation require distinct names in cache identity.
+- Changing a mapper or cache schema requires the owning operation catalog's representation-version increment; the current factory has no independent version field, so this also invalidates shared platform wire entries. Two concurrent representations of one operation require distinct names in cache identity.
 - Derive an operation's required scope from its registered representation rather than looking it up separately at the call site.
 
 ## Identity Projection
@@ -57,6 +57,9 @@ This subsystem uses support, representation, contract, infrastructure, execution
 - Generated request schemas validate headers loosely and retain unrecognized keys, so dynamic dispatch must constrain headers itself rather than trusting the schema.
 - Generic SDK mutation execution requires both `allowGenericMutations: true` on the adapter and `confirmMutation: true` on the invocation, and only for catalog-declared mutations. Undeclared mutations fail before any network activity.
 - Read-like POST operations stay on the read path and never receive mutation confirmation.
+- Revision-sensitive mutations durably register an intent in coordination Redis before dispatch. If registration cannot be acknowledged, fail before ESI execution. Once dispatch starts, caller cancellation cannot replace the mutation outcome or interrupt its invalidation finalizer.
+- Completion atomically advances the revision and removes only that mutation's intent. Pending intents block all revision-sensitive cache reuse and publication across runtimes; reads may execute uncached. Only the originating runtime may automatically repair an intent whose upstream execution has settled. Orphaned intents require quiescent recovery as documented in `docs/esi-gateway-invalidation.md`; they never expire into cache eligibility.
+- Runtime close joins issued cache-lease renewals before releasing leases and clearing local state. Renewal commands must be serialized.
 
 ## Platform Execution
 

@@ -22,7 +22,6 @@
     "api/tests/auth/tokens.test.ts:complexity(complexity):7891b8b4aa970a5475dc30c56c802043f25a29561de9cb81e4ad758a39bf9a10": 1,
     "api/tests/db/module-migration-runner.test.ts:complexity(complexity):7c906640fb95ae98e43d6275d7e05f48e62b6a2959e56bdb1dac7ea3c766ea7a": 1,
     "api/tests/esi-gateway/identity.test.ts:complexity(complexity):de7bef3c849383fcf354a6ba0285574347fb52dddca08ec589a4822e9903c5b4": 1,
-    "api/tests/esi-gateway/runtime-test-adapters.ts:complexity(complexity):ac81697e0859ee9edb0e988e6acdefd80971647f1967c5cdcf307e61184c98df": 1,
     "api/tests/integration/postgres/character-transfer.test.ts:complexity(complexity):3b46f5f57ea796542c73b02914693fdb1d7e7596d8a92e38eeccc4ca584344d6": 1,
     "api/tests/integration/postgres/character-transfer.test.ts:complexity(complexity):d936bf32723d24c18090a43891b09b5f1eb361e0c3266e19f601656ee8db9043": 1,
     "api/tests/integration/postgres/domain-event-producers.test.ts:complexity(complexity):95873c4f76c04d16ccd6b852a18ef15d056b2755e500628185727bd3f345ab66": 1,

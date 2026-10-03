@@ -66,6 +66,32 @@ describe('ESI egress verification', () => {
     }
   })
 
+  test('rejects local URL constants and aliases of the global fetch function', async () => {
+    const fixture = await createEgressFixture({
+      'features/alpha/server/src/fetch-alias.ts':
+        "const request = globalThis.fetch; const endpoint = 'https://esi.evetech.net/latest/status'; export const load = () => request(endpoint)",
+      'api/src/characters/url-constant.ts':
+        "const endpoint = 'https://esi.evetech.net/latest/status'; export const load = () => fetch(endpoint)",
+      'api/src/characters/fetch-alias.ts':
+        "const request = globalThis.fetch; const alias = request; export const load = () => alias('https://esi.evetech.net/latest/status')",
+      'api/src/characters/computed-fetch.ts':
+        "const host = 'https://esi.evetech.net'; const endpoint = host + '/latest/status'; const request = globalThis['fetch']; export const load = () => request(endpoint)",
+    })
+    try {
+      const stderr = await verifierFailure(fixture)
+      expect(stderr).toContain(
+        'features/alpha/server/src/fetch-alias.ts: feature server code performs direct fetch instead of shared ESI egress',
+      )
+      for (const name of ['url-constant', 'fetch-alias', 'computed-fetch']) {
+        expect(stderr).toContain(
+          `api/src/characters/${name}.ts: direct ESI fetch bypasses the shared transport`,
+        )
+      }
+    } finally {
+      await rm(fixture, { force: true, recursive: true })
+    }
+  })
+
   test('reserves SDK construction and generic mutation gates for the execution owner', async () => {
     const fixture = await createEgressFixture({
       'api/src/esi-gateway/internal/execution-runtime.ts': `

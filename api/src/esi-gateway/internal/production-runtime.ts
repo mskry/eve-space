@@ -12,7 +12,8 @@ import {
   getCommittedEsiFence,
   getEsiRequestLeaseTtl,
   getEsiResourceRevision,
-  incrementEsiResourceRevision,
+  beginEsiResourceMutation,
+  completeEsiResourceMutation,
   initializeCacheNamespace,
   releaseEsiRequestLease,
   renewEsiRequestLease,
@@ -139,8 +140,8 @@ const createProductionCoordinationPorts = (
   getRequestLeaseTtl: (identity) => getEsiRequestLeaseTtl(coordination, identity),
   getResourceRevision: (namespace, principal) =>
     getEsiResourceRevision(coordination, namespace, principal),
-  incrementResourceRevision: (namespace, principal) =>
-    incrementEsiResourceRevision(coordination, namespace, principal),
+  beginResourceMutation: (intent) => beginEsiResourceMutation(coordination, intent),
+  completeResourceMutation: (intent) => completeEsiResourceMutation(coordination, intent),
   initializeCacheNamespace: () => initializeCacheNamespace(coordination),
   recordResponse: (operation, principal, metadata, localState) =>
     recordEsiResponse({

@@ -527,67 +527,175 @@ describe('ESI execution runtime behavior', () => {
     expect(getAuthorization).toHaveBeenCalledTimes(2)
     expect(fetch).toHaveBeenCalledTimes(2)
   })
+})
 
-  test('marks a failed mutation revision and repairs it before the next read', async () => {
+describe('ESI mutation lifecycle', () => {
+  test('durably gates other runtimes after completion failure and disposable cache loss', async () => {
     const cache = new Map<string, string>()
-    const cacheSet = vi.fn(async (key: string, value: string) => {
-      cache.set(key, value)
-    })
-    const cacheDelete = vi.fn(async (key: string) => {
-      cache.delete(key)
-    })
-    let repairRevision = false
-    const incrementResourceRevision = vi.fn(async () => {
-      if (!repairRevision) {
+    const pending = new Set<string>()
+    let revision = 0
+    let completionAvailable = false
+    const completeResourceMutation = vi.fn(async (intent: { token: string }) => {
+      if (!completionAvailable) {
         throw new Error('coordination unavailable')
       }
-      return 9
+      if (pending.delete(intent.token)) revision += 1
+      return revision
     })
-    const fetch = vi
-      .fn()
-      .mockReturnValueOnce(new Response(null, { status: 204 }))
-      .mockReturnValueOnce(jsonResponse({ labels: [], total_unread_count: 3 }))
-    const mutationRelease = vi.fn()
-    const acquireRequestPermit = vi.fn(async () => requestPermit(mutationRelease))
-    const ports = createRuntimeTestPorts({
-      fetch,
-      overrides: {
-        cache: {
-          delete: cacheDelete,
-          get: async (key) => cache.get(key) ?? null,
-          set: cacheSet,
-        },
-        coordination: coordinatedOverrides({
-          acquireRequestLease: vi.fn(async () => ownerLease),
-          commitFence: vi.fn(async () => true),
-          incrementResourceRevision,
-          acquireRequestPermit,
-        }),
+    const coordination = coordinatedOverrides({
+      acquireRequestLease: vi.fn(async () => ownerLease),
+      commitFence: vi.fn(async () => true),
+      getResourceRevision: async () => {
+        if (pending.size) throw new Error('resource mutation unresolved')
+        return revision
       },
-      response: undefined,
+      beginResourceMutation: async (intent) => {
+        pending.add(intent.token)
+      },
+      completeResourceMutation,
     })
-    const runtime = createRuntimeTestExecution(ports)
-    runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
-
+    const cachePorts = {
+      get: async (key: string) => cache.get(key) ?? null,
+      set: async (key: string, value: string) => {
+        cache.set(key, value)
+      },
+    }
+    const readerFetch = vi.fn()
+    const reader = createRuntimeTestExecution(
+      createRuntimeTestPorts({
+        fetch: readerFetch,
+        response: { labels: [], total_unread_count: 3 },
+        overrides: { coordination, cache: cachePorts },
+      }),
+    )
+    const writerFetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockImplementation(() => jsonResponse({ labels: [], total_unread_count: 3 }))
+    const writer = createRuntimeTestExecution(
+      createRuntimeTestPorts({
+        fetch: writerFetch,
+        response: undefined,
+        overrides: { coordination, cache: cachePorts },
+      }),
+    )
+    runtimeMocks.getProductionRuntime.mockResolvedValue(reader)
+    await mailLabelsRead.execute({ characterId, subjectLifecycleId })
+    expect(cache.size).toBe(1)
+    runtimeMocks.getProductionRuntime.mockResolvedValue(writer)
     await expect(
       deleteMail.execute({ characterId, mailId: 50, subjectLifecycleId }),
     ).rejects.toThrow('ESI resource revision is temporarily unavailable')
-    expect(incrementResourceRevision).toHaveBeenCalledTimes(3)
-    expect(acquireRequestPermit).toHaveBeenCalledOnce()
-    expect(mutationRelease).toHaveBeenCalledOnce()
-    expect(cacheSet).toHaveBeenCalledWith(expect.stringContaining(':revision-repair:mailbox:'), '1')
+    expect(completeResourceMutation).toHaveBeenCalledTimes(3)
+    expect(pending.size).toBe(1)
 
-    repairRevision = true
+    cache.clear()
+    runtimeMocks.getProductionRuntime.mockResolvedValue(reader)
     await expect(
       mailLabelsRead.execute({ characterId, subjectLifecycleId }),
     ).resolves.toMatchObject({ data: 3, source: 'esi' })
+    expect(readerFetch).toHaveBeenCalledTimes(2)
+    expect(cache.size).toBe(0)
 
-    expect(incrementResourceRevision).toHaveBeenCalledTimes(4)
-    expect(cacheDelete).toHaveBeenCalledWith(expect.stringContaining(':revision-repair:mailbox:'))
-    const published = cacheSet.mock.calls.map(([, value]) => value).find((value) => value !== '1')
-    expect(JSON.parse(published as string)).toMatchObject({
-      resourceRevision: { namespace: 'mailbox', value: 9 },
+    completionAvailable = true
+    runtimeMocks.getProductionRuntime.mockResolvedValue(writer)
+    await mailLabelsRead.execute({ characterId, subjectLifecycleId })
+    expect(pending.size).toBe(0)
+    expect(revision).toBe(1)
+    const published = [...cache.values()].map((value) => JSON.parse(value))
+    expect(published).toContainEqual(
+      expect.objectContaining({
+        resourceRevision: { namespace: 'mailbox', value: 1 },
+      }),
+    )
+    runtimeMocks.getProductionRuntime.mockResolvedValue(reader)
+    await mailLabelsRead.execute({ characterId, subjectLifecycleId })
+    expect(readerFetch).toHaveBeenCalledTimes(3)
+    await Promise.all([reader.close(), writer.close()])
+  })
+
+  test('fails before dispatch when durable mutation intent cannot be acknowledged', async () => {
+    const fetch = vi.fn()
+    const beginResourceMutation = vi.fn(async () => {
+      throw new Error('coordination unavailable')
     })
+    const runtime = createRuntimeTestExecution(
+      createRuntimeTestPorts({
+        fetch,
+        response: undefined,
+        overrides: { coordination: { beginResourceMutation } },
+      }),
+    )
+    runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
+    await expect(
+      deleteMail.execute({ characterId, mailId: 50, subjectLifecycleId }),
+    ).rejects.toThrow('ESI resource revision is temporarily unavailable')
+    expect(fetch).not.toHaveBeenCalled()
+    await runtime.close()
+  })
+
+  test('cancellation during intent registration prevents dispatch and finalizes the intent', async () => {
+    const controller = new AbortController()
+    let acknowledge!: () => void
+    const beginResourceMutation = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          acknowledge = resolve
+        }),
+    )
+    const completeResourceMutation = vi.fn(async () => 1)
+    const fetch = vi.fn()
+    const runtime = createRuntimeTestExecution(
+      createRuntimeTestPorts({
+        fetch,
+        response: undefined,
+        overrides: { coordination: { beginResourceMutation, completeResourceMutation } },
+      }),
+    )
+    runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
+    const caught = deleteMail
+      .execute({ characterId, mailId: 50, subjectLifecycleId, signal: controller.signal })
+      .catch((error: Error) => error)
+    await vi.waitFor(() => expect(beginResourceMutation).toHaveBeenCalledOnce())
+    controller.abort(new Error('cancel before dispatch'))
+    acknowledge()
+    await expect(caught).resolves.toBe(controller.signal.reason)
+    expect(fetch).not.toHaveBeenCalled()
+    expect(completeResourceMutation).toHaveBeenCalledOnce()
+    await runtime.close()
+  })
+
+  test('invalidates an uncertain dispatched mutation after caller cancellation', async () => {
+    const controller = new AbortController()
+    const failure = new TypeError('network unavailable')
+    let failFetch!: (reason: TypeError) => void
+    const fetch = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((_resolve, reject) => {
+            failFetch = reject
+          }),
+      )
+      .mockRejectedValue(failure)
+    const completeResourceMutation = vi.fn(async () => 1)
+    const runtime = createRuntimeTestExecution(
+      createRuntimeTestPorts({
+        fetch,
+        response: undefined,
+        overrides: { coordination: { completeResourceMutation } },
+      }),
+    )
+    runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
+    const caught = deleteMail
+      .execute({ characterId, mailId: 50, subjectLifecycleId, signal: controller.signal })
+      .catch((error: Error) => error)
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+    controller.abort(new Error('cancel after dispatch'))
+    failFetch(failure)
+    await expect(caught).resolves.toMatchObject({ cause: failure, code: 'ESI_TRANSPORT_ERROR' })
+    expect(completeResourceMutation).toHaveBeenCalledOnce()
+    await runtime.close()
   })
 
   test('preserves the existing retry count for an ambiguous mutation transport failure', async () => {
@@ -595,12 +703,12 @@ describe('ESI execution runtime behavior', () => {
     const fetch = vi.fn().mockRejectedValue(failure)
     const release = vi.fn()
     const acquireRequestPermit = vi.fn(async () => requestPermit(release))
-    const incrementResourceRevision = vi.fn(async () => 2)
+    const completeResourceMutation = vi.fn(async () => 2)
     const runtime = createRuntimeTestExecution(
       createRuntimeTestPorts({
         fetch,
         overrides: {
-          coordination: { acquireRequestPermit, incrementResourceRevision },
+          coordination: { acquireRequestPermit, completeResourceMutation },
         },
         response: undefined,
       }),
@@ -614,7 +722,7 @@ describe('ESI execution runtime behavior', () => {
     expect(fetch).toHaveBeenCalledTimes(3)
     expect(acquireRequestPermit).toHaveBeenCalledTimes(3)
     expect(release).toHaveBeenCalledTimes(3)
-    expect(incrementResourceRevision).toHaveBeenCalledOnce()
+    expect(completeResourceMutation).toHaveBeenCalledOnce()
   })
 
   test('lets a dispatched mutation finish despite later caller cancellation', async () => {
@@ -631,12 +739,12 @@ describe('ESI execution runtime behavior', () => {
     )
     const release = vi.fn()
     const acquireRequestPermit = vi.fn(async () => requestPermit(release))
-    const incrementResourceRevision = vi.fn(async () => 2)
+    const completeResourceMutation = vi.fn(async () => 2)
     const runtime = createRuntimeTestExecution(
       createRuntimeTestPorts({
         fetch,
         overrides: {
-          coordination: { acquireRequestPermit, incrementResourceRevision },
+          coordination: { acquireRequestPermit, completeResourceMutation },
         },
         response: undefined,
       }),
@@ -655,7 +763,7 @@ describe('ESI execution runtime behavior', () => {
     expect(fetch).toHaveBeenCalledOnce()
     expect(acquireRequestPermit).toHaveBeenCalledOnce()
     expect(release).toHaveBeenCalledOnce()
-    expect(incrementResourceRevision).toHaveBeenCalledOnce()
+    expect(completeResourceMutation).toHaveBeenCalledOnce()
   })
 })
 
