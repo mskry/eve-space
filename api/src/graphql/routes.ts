@@ -28,7 +28,7 @@ export const graphqlRoutes = createGraphQLHostAdapter(
   (context) => {
     const requestId = z.uuid().safeParse(context.get('logger')?.getContext().requestId)
     recordDiagnostic('api.request.failed', {
-      context: { method: context.req.method, path: '/api/graphql' },
+      context: { method: context.req.method, path: '/graphql' },
       correlationId: requestId.success ? requestId.data : undefined,
     })
   },

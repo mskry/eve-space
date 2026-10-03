@@ -34,7 +34,7 @@ assert.ok(marketGraphQLIdentity.every(identity => identity.length === 64))
 const operationSource = await readFile(new URL('./node_modules/@eve-space/market-nuxt/src/runtime/app/market-operations.graphql', import.meta.url), 'utf8')
 assert.equal(marketGraphQLIdentity[1], createHash('sha256').update(operationSource).digest('hex'))
 globalThis.fetch = async (url, init) => {
-  assert.equal(url, 'https://api.example.test/api/graphql')
+  assert.equal(url, 'https://api.example.test/graphql')
   assert.equal(init.method, 'POST')
   const body = JSON.parse(init.body)
   assert.equal(body.query, MarketProfilesDocument.toString())

@@ -433,7 +433,7 @@ Detailed logs are in `/tmp/graphql-section5-{coverage,postgres,registry,lint,for
 
 ## Guarded HTTP execution (section 6)
 
-`/api/graphql` is mounted in the chained Hono app. It accepts one GET query or POST
+`/graphql` is mounted in the chained Hono app. It accepts one GET query or POST
 `application/json` envelope. Yoga uses the original request, with its CORS, landing page,
 HTTP batching, uploads, parser cache and response cache disabled. Responses are non-streaming
 JSON even if the caller advertises streaming media. Mutations, subscriptions, `@defer` and
@@ -597,8 +597,8 @@ Logs use `/tmp/graphql-section6-{coverage,postgres,redis,registry,core-contract,
 
 ## Generated frontend contract and API explorer
 
-`/api-explorer` is a public dashboard destination linking to the standard GraphiQL viewer at
-`/api/graphql`. The viewer discovers the endpoint's schema through introspection. It has no
+The standard GraphiQL viewer is available directly at the API's `/graphql` endpoint.
+The viewer discovers the endpoint's schema through introspection. It has no
 module inventory, Market-specific UI, character selector, custom result adapter or installation
 logic. Schema composition controls which fields exist; the API's per-field admission controls
 which data a request may read. Visible schema fields confer no authority.
@@ -656,7 +656,7 @@ The platform Nuxt module registers `usePlatformGraphQL()` through its normal aut
 It captures `runtimeConfig.public.apiBase` and returns a typed executor; constructing it performs
 no request or startup work.
 
-Both executors send JSON POST requests to the configured `/api/graphql` endpoint with
+Both executors send JSON POST requests to the configured `/graphql` endpoint with
 `credentials: 'include'`, `cache: 'no-store'`, and a 16-second deadline composed with the caller's
 abort signal. They preserve HTTP 200 partial envelopes and HTTP 400 GraphQL rejection envelopes;
 other HTTP failures use the safe API error contract. Aborted or expired requests cannot release
@@ -758,7 +758,7 @@ standalone viewer's memory/reset semantics. The comprehensive integration review
 Build and check the installed registry, composed SDL/fingerprint and generated operation artifacts
 before building API and Nuxt. Release the API, installed module packages/registry, frontend and
 dependency lockfile as one compatible artifact set. Check schema drift, startup persistence
-attestation, `/health`, representative existing Hono routes and `/api/graphql`; a successful
+attestation, `/health`, representative existing Hono routes and `/graphql`; a successful
 source test is not a successful deployment probe. The worker consumes the same installed server
 inventory, so verify its health when that inventory changes.
 

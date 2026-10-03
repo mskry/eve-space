@@ -91,7 +91,7 @@ const character = {
   subjectLifecycleId: '11111111-1111-4111-8111-111111111111',
 }
 const request = (query: string, method = 'POST', headers = {}, signal?: AbortSignal) =>
-  app.request(`/api/graphql${method === 'GET' ? `?query=${encodeURIComponent(query)}` : ''}`, {
+  app.request(`/graphql${method === 'GET' ? `?query=${encodeURIComponent(query)}` : ''}`, {
     method,
     signal,
     headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000', ...headers },
@@ -313,16 +313,16 @@ test('preserves host methods, media, security, CORS and safe validation envelope
   expect(invalid.status).toBe(400)
   expect(await invalid.text()).not.toContain('unknown_private_secret')
   expect(invalid.headers.get('X-Content-Type-Options')).toBe('nosniff')
-  const head = await app.request('/api/graphql', { method: 'HEAD' })
+  const head = await app.request('/graphql', { method: 'HEAD' })
   expect(head.status).toBe(405)
   expect(await head.text()).toBe('')
-  const preflight = await app.request('/api/graphql', {
+  const preflight = await app.request('/graphql', {
     method: 'OPTIONS',
     headers: { Origin: 'http://localhost:3000', 'Access-Control-Request-Method': 'POST' },
   })
   expect(preflight.status).toBe(204)
   expect(preflight.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:3000')
-  const forbidden = await app.request('/api/graphql', {
+  const forbidden = await app.request('/graphql', {
     method: 'POST',
     headers: { Origin: 'https://untrusted.invalid', 'Content-Type': 'text/plain' },
     body: '{}',

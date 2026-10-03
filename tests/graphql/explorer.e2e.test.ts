@@ -5,7 +5,7 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { buildSchema, GraphQLError } from 'graphql'
-import { $fetch, createPage, setup } from '@nuxt/test-utils/e2e'
+import { createPage, setup } from '@nuxt/test-utils/e2e'
 import type { Page } from '@playwright/test'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createGraphQLHostAdapter } from '../../api/src/graphql/host-adapter'
@@ -86,7 +86,7 @@ const app = new Hono()
     context.json({ enabledModuleIds: [], shellNavigationOrder: { character: [], dashboard: [] } }),
   )
   .route(
-    '/api/graphql',
+    '/graphql',
     createGraphQLHostAdapter(
       schema,
       (request): ViewerContext => ({
@@ -180,36 +180,17 @@ describe('standard GraphiQL production journey', async () => {
     pages.clear()
   })
 
-  it('keeps SSR generic and discovers arbitrary fields without third-party requests or persisted queries', async () => {
-    const html = await $fetch('/api-explorer')
-    expect(html).toContain('Open GraphiQL')
-    expect(
-      requests.filter((request) => new URL(request.url).pathname === '/api/graphql'),
-    ).toHaveLength(0)
-    const page = await createPage('/api-explorer')
+  it('discovers arbitrary fields directly without third-party requests or persisted queries', async () => {
+    const page = await createPage()
     pages.add(page)
-    const hydrationWarnings: string[] = []
-    page.on('console', (message) => {
-      if (message.text().toLowerCase().includes('hydration')) hydrationWarnings.push(message.text())
-    })
-    await page.setViewportSize({ width: 390, height: 844 })
-    await page.reload()
-    const viewerLink = page.getByRole('link', { name: 'Open GraphiQL', exact: true })
-    await viewerLink.waitFor()
-    expect(await page.title()).toBe('API Explorer // EVE Space')
-    await viewerLink.focus()
-    expect(await viewerLink.evaluate((link) => link === document.activeElement)).toBe(true)
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
-    expect(hydrationWarnings).toEqual([])
-    await page.setViewportSize({ width: 1280, height: 900 })
     const externalRequests: string[] = []
     page.on('request', (request) => {
       if (request.url().startsWith('https://')) externalRequests.push(request.url())
     })
-    await page.getByRole('link', { name: 'Open GraphiQL', exact: true }).click()
+    await page.goto(`${apiOrigin}/graphql`)
     await execute(page, '{ publicValue }')
     await expect.poll(() => responseText(page)).toContain('123456789012345678.12345')
-    expect(page.url()).toBe(`${apiOrigin}/api/graphql`)
+    expect(page.url()).toBe(`${apiOrigin}/graphql`)
     expect(
       await page.evaluate(() =>
         Object.keys(localStorage).filter((key) => key.startsWith('graphiql')),
@@ -218,15 +199,15 @@ describe('standard GraphiQL production journey', async () => {
     expect(externalRequests).toEqual([])
     expect(
       requests.filter(
-        (request) => request.method === 'POST' && new URL(request.url).pathname === '/api/graphql',
+        (request) => request.method === 'POST' && new URL(request.url).pathname === '/graphql',
       ).length,
     ).toBeGreaterThan(0)
   })
 
   it('renders partial field errors without retrying or retaining output after reload', async () => {
-    const page = await createPage('/api-explorer')
+    const page = await createPage()
     pages.add(page)
-    await page.getByRole('link', { name: 'Open GraphiQL', exact: true }).click()
+    await page.goto(`${apiOrigin}/graphql`)
     await execute(page, '{ publicValue }')
     await expect.poll(() => responseText(page)).toContain('123456789012345678.12345')
     const attempts = requests.filter((request) => request.method === 'POST').length
@@ -241,12 +222,12 @@ describe('standard GraphiQL production journey', async () => {
   })
 
   it('executes credentialed owned pages and mixed subjects, showing scope and restart outcomes', async () => {
-    const page = await createPage('/api-explorer')
+    const page = await createPage()
     pages.add(page)
     await page
       .context()
       .addCookies([{ name: 'viewer_owner', value: 'fixture-owner', url: apiOrigin }])
-    await page.getByRole('link', { name: 'Open GraphiQL', exact: true }).click()
+    await page.goto(`${apiOrigin}/graphql`)
     await execute(page, assetQuery())
     await expect.poll(() => responseText(page)).toContain('1000000000001')
     expect(await responseText(page)).toContain('fixture-1')
@@ -275,12 +256,12 @@ describe('standard GraphiQL production journey', async () => {
   })
 
   it('clears private viewer output on reload and reevaluates a changed or missing session', async () => {
-    const page = await createPage('/api-explorer')
+    const page = await createPage()
     pages.add(page)
     await page
       .context()
       .addCookies([{ name: 'viewer_owner', value: 'fixture-owner', url: apiOrigin }])
-    await page.getByRole('link', { name: 'Open GraphiQL', exact: true }).click()
+    await page.goto(`${apiOrigin}/graphql`)
     await execute(page, assetQuery())
     await expect.poll(() => responseText(page)).toContain('1000000000001')
     await page
@@ -302,6 +283,6 @@ describe('standard GraphiQL production journey', async () => {
         ...Object.keys(sessionStorage).filter((key) => key.startsWith('graphiql')),
       ]),
     ).toEqual([])
-    expect(page.url()).toBe(`${apiOrigin}/api/graphql`)
+    expect(page.url()).toBe(`${apiOrigin}/graphql`)
   })
 })

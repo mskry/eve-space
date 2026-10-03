@@ -24,7 +24,7 @@ Create one row per distinct request and access policy; split rows when execution
 | `path:line`                 | Subject, page, filters         | Mount, event, prefetch, recovery | Method and full path | Middleware + subject check | Registered representation / operation ID, or none | Policy reference and partition, or none |
 
 For GraphQL, split inventory rows by selected field/access strategy even when all requests use
-`/api/graphql`. Include introspection, generic viewer execution, curated generated operations,
+`/graphql`. Include introspection, generic viewer execution, curated generated operations,
 and direct client examples. Record operation/schema identity and result-changing variables,
 including explicit subjects, revisions, observations and cursors. A public endpoint mount or
 visible schema does not establish that every selected field is public. Trace execution and

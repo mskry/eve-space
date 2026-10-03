@@ -7,7 +7,7 @@ let alphaEnabled = true
 let dashboardOrderComplete = true
 let graphqlRequests = 0
 const apiServer = await startCorsJsonApi((request) => {
-  if (request.url === '/api/graphql') {
+  if (request.url === '/graphql') {
     graphqlRequests += 1
     return { body: { data: { publicValue: 'Public platform value' } } }
   }

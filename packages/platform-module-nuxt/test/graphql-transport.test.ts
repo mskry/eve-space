@@ -63,7 +63,7 @@ describe('platform GraphQL transport', () => {
     expect(await executeTypedGraphQL('https://api.example.test/', document, { id: '7' })).toEqual(
       envelope,
     )
-    expect(fetch.mock.calls[0]?.[0]).toBe('https://api.example.test/api/graphql')
+    expect(fetch.mock.calls[0]?.[0]).toBe('https://api.example.test/graphql')
     expect(await readGraphQLFieldError(envelope.errors[0]!)).toMatchObject({
       status: 503,
       code: 'SOURCE_UNAVAILABLE',

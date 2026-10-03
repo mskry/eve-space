@@ -58,7 +58,7 @@ const mountVerifiedGraphQLClient = async () => {
 describe('generated application GraphQL client', () => {
   it('uses credentialed POST and preserves exact decimals and partial field errors', async () => {
     queryServer.use(
-      http.post('http://localhost/api/graphql', async ({ request }) => {
+      http.post('http://localhost/graphql', async ({ request }) => {
         expect(request.credentials).toBe('include')
         expect(await request.json()).toMatchObject({ query: ExplorerMarketDocument.toString() })
         return HttpResponse.json({
@@ -88,13 +88,13 @@ describe('generated application GraphQL client', () => {
     const request = vi.fn(() =>
       HttpResponse.json({ errors: [{ message: 'Invalid query.' }] }, { status: 400 }),
     )
-    queryServer.use(http.post('http://localhost/api/graphql', request))
+    queryServer.use(http.post('http://localhost/graphql', request))
     expect(
       (await executeTypedGraphQL('http://localhost', ExplorerMarketDocument, {})).errors,
     ).toEqual([{ message: 'Invalid query.' }])
     expect(request).toHaveBeenCalledOnce()
     queryServer.use(
-      http.post('http://localhost/api/graphql', () =>
+      http.post('http://localhost/graphql', () =>
         HttpResponse.json({ message: 'Unavailable.' }, { status: 503 }),
       ),
     )
@@ -216,7 +216,7 @@ describe('generated application GraphQL client', () => {
           { message: 'Log in.', extensions: { code: 'AUTH_REQUIRED', status: 401 } },
         ],
       }
-      queryServer.use(http.post('http://localhost/api/graphql', () => HttpResponse.json(envelope)))
+      queryServer.use(http.post('http://localhost/graphql', () => HttpResponse.json(envelope)))
       const options =
         operation === 'assets'
           ? ownedAssetsGraphQLQuery(context, { characterId: '7001', first: 25 })
@@ -241,7 +241,7 @@ describe('generated application GraphQL client', () => {
     queryCache.setQueryData(privateKey, { name: 'Current pilot' })
     queryCache.setQueryData(siblingKey, { name: 'Other pilot' })
     queryServer.use(
-      http.post('http://localhost/api/graphql', () =>
+      http.post('http://localhost/graphql', () =>
         HttpResponse.json({ errors: [{ message: code, extensions: { code } }] }),
       ),
     )
@@ -258,7 +258,7 @@ describe('generated application GraphQL client', () => {
     const privateKey = PRIVATE_QUERY_KEYS.characterOverview(7002)
     queryCache.setQueryData(privateKey, { name: 'Current owner data' })
     queryServer.use(
-      http.post('http://localhost/api/graphql', () => {
+      http.post('http://localhost/graphql', () => {
         controller.abort()
         return HttpResponse.json({
           errors: [{ message: 'Log in.', extensions: { code: 'AUTH_REQUIRED' } }],
@@ -278,7 +278,7 @@ describe('generated application GraphQL client', () => {
     const privateKey = PRIVATE_QUERY_KEYS.characterOverview(7002)
     queryCache.setQueryData(privateKey, { name: 'Current owner data' })
     queryServer.use(
-      http.post('http://localhost/api/graphql', () => {
+      http.post('http://localhost/graphql', () => {
         admitted = false
         return HttpResponse.json({
           errors: [{ message: 'Log in.', extensions: { code: 'AUTH_REQUIRED' } }],

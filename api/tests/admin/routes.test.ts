@@ -144,7 +144,6 @@ const shellNavigationOrder = {
     { ownerId: 'market', navigationId: 'market' },
     { ownerId: 'core', navigationId: 'core-characters' },
     { ownerId: 'core', navigationId: 'core-mail' },
-    { ownerId: 'core', navigationId: 'core-api-explorer' },
     { ownerId: 'core', navigationId: 'core-settings' },
     { ownerId: 'core', navigationId: 'core-admin' },
   ],

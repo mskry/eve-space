@@ -89,17 +89,6 @@ export interface PlatformCoreNavigationEntry extends PlatformNavigationDefault {
 export const platformCoreNavigation = [
   {
     audience: 'public',
-    description: 'Explore the application GraphQL schema and bounded reads',
-    icon: 'overview',
-    label: 'API Explorer',
-    navigationId: 'core-api-explorer',
-    order: 35,
-    ownerId: 'core',
-    path: '/api-explorer',
-    placement: 'dashboard',
-  },
-  {
-    audience: 'public',
     description: 'System and identity summary',
     icon: 'overview',
     label: 'Overview',

@@ -521,7 +521,7 @@ const read = definePlatformGraphQLRead(({ capabilities }) => capabilities.persis
 const value = await read({ parent: {}, args: {}, subject: null, capabilities: { persistence: { readValue: async () => 'graphql-public-contract' } } })
 if (value !== 'graphql-public-contract') throw new Error('GraphQL contract package failed at runtime')
 globalThis.fetch = async (url, init) => {
-  if (url !== 'https://api.example.test/api/graphql' || init.method !== 'POST')
+  if (url !== 'https://api.example.test/graphql' || init.method !== 'POST')
     throw new Error('Packaged GraphQL transport used the wrong endpoint or method')
   const request = JSON.parse(init.body)
   if (request.variables.id !== '7' || init.credentials !== 'include')

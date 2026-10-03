@@ -120,7 +120,7 @@ fields.history!.resolve = async (_parent, args) => {
     profileRevision: 1,
   }
 }
-app.use('/api/graphql', async (context, next) => {
+app.use('/graphql', async (context, next) => {
   const body = await context.req.raw.clone().json()
   marketFixtureRequests.push({
     query: body.query,
@@ -144,7 +144,7 @@ app.use('/api/graphql', async (context, next) => {
   await next()
 })
 app.route(
-  '/api/graphql',
+  '/graphql',
   createGraphQLHostAdapter(schema, (request) => ({ signal: request.signal }), policies),
 )
 app.post('/__fixture/graphql-state', async (context) => {

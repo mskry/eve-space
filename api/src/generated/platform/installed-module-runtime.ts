@@ -134,7 +134,6 @@ export const platformNavigationDefaults = [
   { ownerId: 'core', navigationId: 'core-characters', placement: 'dashboard', order: 20 },
   { ownerId: 'core', navigationId: 'core-mail', placement: 'dashboard', order: 25 },
   { ownerId: 'core', navigationId: 'core-settings', placement: 'dashboard', order: 30 },
-  { ownerId: 'core', navigationId: 'core-api-explorer', placement: 'dashboard', order: 35 },
   { ownerId: 'core', navigationId: 'core-admin', placement: 'dashboard', order: 40 },
   { ownerId: 'core', navigationId: 'core-character-overview', placement: 'character', order: 10 },
   { ownerId: 'core', navigationId: 'core-character-skills', placement: 'character', order: 20 },

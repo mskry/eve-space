@@ -31,7 +31,7 @@ const paging = useMarketOrderPaging(
   computed(() => props.book),
   computed(() => props.side),
 )
-const { loading, canPrevious: canPreviousPage } = paging
+const { loading } = paging
 const rows = computed(() => paging.page.value.rows)
 const hasMore = computed(() => paging.page.value.hasMore)
 const pageIndex = computed(() => paging.page.value.index)
@@ -164,7 +164,6 @@ const movePage = async (action: PageAction) => {
 }
 const nextPage = () => movePage(paging.next)
 const previousPage = () => movePage(paging.previous)
-const restoreFirstPage = () => movePage(paging.first)
 const retryPage = () => movePage(paging.retry)
 
 const onScroll = () => {
@@ -328,19 +327,6 @@ const onScroll = () => {
       </p>
       <p v-else-if="!hasMore" class="market-order-table__status">End of order book</p>
     </div>
-    <nav
-      v-if="rows.length && (hasMore || pageIndex > 0)"
-      class="market-order-table__pages"
-      :aria-label="`${heading} order pages`"
-    >
-      <button type="button" :disabled="loading || pageIndex === 0" @click="restoreFirstPage">
-        First orders
-      </button>
-      <button type="button" :disabled="loading || !canPreviousPage" @click="previousPage">
-        Previous orders
-      </button>
-      <button type="button" :disabled="loading || !hasMore" @click="nextPage">Next orders</button>
-    </nav>
     <output v-if="rows.length" class="sr-only" aria-live="polite"
       >Showing {{ pageIndex * pageSize + 1 }}–{{ pageIndex * pageSize + rows.length }}
       {{ heading.toLowerCase() }} orders.</output
@@ -370,12 +356,6 @@ const onScroll = () => {
   max-height: clamp(19rem, 58dvh, 42rem);
   display: flex;
   flex-direction: column;
-}
-.market-order-table__pages {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
 }
 .market-order-table__header {
   display: flex;

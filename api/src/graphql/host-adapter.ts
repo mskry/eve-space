@@ -106,7 +106,7 @@ export const createGraphQLHostAdapter = <Context extends GraphQLHostContext>(
       timeout: 16_000,
     },
     renderGraphiQL: renderApplicationGraphiQL,
-    graphqlEndpoint: '/api/graphql',
+    graphqlEndpoint: '/graphql',
     landingPage: false,
     logging: false,
     maskedErrors: { isDev: false },

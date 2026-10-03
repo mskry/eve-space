@@ -220,9 +220,9 @@ initial side subsequently fails. Rejected operations remain query failures.
 profile/revision/type/observation/side/100/exact-cursor keys. Each displayed side has at most 100
 rows. Source expiry caps ten-second reuse; detached entries expire after five minutes and retain
 the shared explicit nonpersistence classification. Previous traversal reuses eligible cache entries
-and the latest 50 issued page-start cursors. At the retention boundary, Previous is disabled and
-First remains usable. No browser code decodes a cursor or reconstructs a row tuple. Native paging
-buttons and existing scroll traversal share loading/retry and local sorting behavior.
+and the latest 50 issued page-start cursors. At the retention boundary, backward traversal stops.
+No browser code decodes a cursor or reconstructs a row tuple. Scroll traversal retains
+loading/retry and local sorting behavior.
 
 Type, profile, profile revision and observation changes synchronously reset traversal, cancel the
 Colada transport and fence obsolete cache release. `MARKET_OBSERVATION_UNAVAILABLE` clears the
@@ -287,7 +287,7 @@ Quickbar, accessible history alternatives, profile eligibility and local order s
 
 ### Final consumer-to-mounted-field inventory
 
-All generated operations below send JSON POST to `/api/graphql`, mounted at
+All generated operations below send JSON POST to `/graphql`, mounted at
 `api/src/index.ts:68` behind the existing exact-origin CSRF/CORS policy. `graphql/routes.ts`
 binds the application schema and `graphql/request-execution.ts` calls shared module admission
 with a null session for each `strategy: public` read. The enabled Market contribution and
