@@ -52,7 +52,7 @@ interface CharacterAuthorizationPort {
   ): Promise<Result>
 }
 
-export interface CacheRedisPort {
+interface CacheRedisPort {
   get(key: string): Promise<string | null>
   set(key: string, value: string, ttlMs?: number): Promise<void>
   delete(key: string): Promise<void>
@@ -72,7 +72,8 @@ export interface CoordinationPort {
   commitFence(identity: EsiRepresentationIdentity, lease: EsiRequestLease): Promise<boolean>
   getCommittedFence(identity: EsiRepresentationIdentity): Promise<number | undefined>
   getResourceRevision(namespace: string, principal: string): Promise<number>
-  incrementResourceRevision(namespace: string, principal: string): Promise<number>
+  beginResourceMutation(intent: EsiResourceMutationIntent): Promise<void>
+  completeResourceMutation(intent: EsiResourceMutationIntent): Promise<number>
   acquireRequestPermit(options: {
     readonly operation: EsiOperation
     readonly principal?: string
@@ -112,11 +113,10 @@ export interface RuntimeLocalQuotaStatePort {
   globalCooldownUntil: number
 }
 
-export interface BoundedStringSetPort {
-  has(value: string): boolean
-  add(value: string): void
-  delete(value: string): void
-  clear(): void
+export interface EsiResourceMutationIntent {
+  readonly namespace: string
+  readonly principal: string
+  readonly token: string
 }
 
 export interface EsiExecutionRuntimePorts {

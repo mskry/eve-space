@@ -25,7 +25,7 @@ beforeEach(() => {
 })
 
 describe('ESI execution path selection', () => {
-  test('selects exactly one catalog-validated core or platform path per operation', () => {
+  test('validates core or platform coverage and unique platform definitions', () => {
     expect(() => assertEsiPlatformExecutionConfiguration()).not.toThrow()
     expect(() => assertCoreEsiOperation('status')).not.toThrow()
     expect(() => assertPlatformEsiOperation('organization-activity-campaign-list')).not.toThrow()

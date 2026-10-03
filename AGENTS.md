@@ -243,7 +243,7 @@ These rules apply to every source directory. Keep a directory flat by default, w
 ## ESI And Caching
 
 - Use `@evespace/esi-client` rather than ad hoc ESI fetch calls.
-- Core API code must construct generated SDK domain clients with `fetch: createEsiTransport(operation, principal?)`. Do not use the SDK default transport or call ESI through raw `fetch`; `scripts/verify-esi-egress.mjs` enforces this boundary. Feature server modules use platform ESI dispatch and must not import the SDK at runtime.
+- Core callers use registered gateway representations. Only the gateway execution owner constructs SDK clients with its scoped transport. Do not use the SDK default transport or call ESI through raw `fetch`; `scripts/verify-esi-egress.mjs` checks this boundary, including local URL constants and fetch aliases. Feature server modules use platform ESI dispatch and must not import the SDK at runtime.
 - Discover endpoint paths, required scopes, route-specific cache behavior, and OpenAPI `x-rate-limit` metadata through the EVE API Explorer before implementing an ESI integration.
 - The reviewed organization operation catalog is recorded in `docs/organization-platform.md`. Re-review it before implementation when the requested compatibility date or SDK version changes.
 - Register every ESI call in the reviewed operation metadata and executable catalog, and bind it to the matching generated SDK operation descriptor. Preserve startup validation of operation IDs, compatibility dates, scopes, executable definitions, and catalog contracts.
@@ -262,7 +262,7 @@ These rules apply to every source directory. Keep a directory flat by default, w
 - For cursor-paginated routes, treat `before` and `after` tokens as opaque. Initial collection pages backward with `before`; persist the initial `after` token for incremental updates. Deduplicate by keeping existing records from `before` pages and replacing them from `after` pages.
 - Public and character-owned resource DTOs use bounded L1 plus disposable shared Cache Redis envelopes; private entries are generation-bound and are never served stale in normal operation.
 - Treat serialized Cache Redis envelopes as untrusted input. Reject malformed JSON, unsupported envelope versions, invalid shapes, incoherent freshness windows, mismatched authorization generations or resource revisions, and uncommitted fences as cache misses.
-- Cache Redis owns disposable shared envelopes and lossy ESI telemetry. Queue/coordination Redis owns durable cooldowns, concurrency permits, request-collapse leases, and fencing; do not move those responsibilities between Redis instances.
+- Cache Redis owns disposable shared envelopes and lossy ESI telemetry. Queue/coordination Redis owns durable cooldowns, concurrency permits, request-collapse leases, fencing, resource revisions, and mutation invalidation intents; do not move those responsibilities between Redis instances.
 - Private entries carry an outage-only stale window bounded by their retention. It is released solely when the refresh failure classifies as `esi-unavailable` or `esi-cooldown`, never on ordinary expiry or on `response-invalid`. Generation binding still applies, so a refreshed or revoked token invalidates the entry regardless.
 
 ## Persistence

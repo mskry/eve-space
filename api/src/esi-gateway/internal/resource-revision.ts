@@ -1,9 +1,8 @@
+import { randomUUID } from 'node:crypto'
 import type { EsiOperationContract } from './contract-types.js'
-import { cacheResourceRevisionRepairKey } from './keys.js'
 import type {
-  BoundedStringSetPort,
-  CacheRedisPort,
   CoordinationPort,
+  EsiResourceMutationIntent,
   RuntimeTimingPort,
 } from './runtime-ports.js'
 import { recordEsiCoordinationFailure } from './telemetry-counters.js'
@@ -11,6 +10,7 @@ import type { EsiCacheAuthorization, EsiResourceRevision } from './types.js'
 
 const advanceAttempts = 3
 const retryDelayMs = 100
+const maximumLocalRepairs = 1000
 
 class EsiResourceRevisionUnavailableError extends Error {
   constructor() {
@@ -19,26 +19,14 @@ class EsiResourceRevisionUnavailableError extends Error {
   }
 }
 
-/**
- * Per-principal revisions that invalidate every representation derived from them.
- *
- * An advance that cannot reach coordination leaves representations that may already be behind, so
- * the failure is recorded as a repair marker and every later resolve repairs it before it is
- * allowed to hand back a revision.
- */
 export class EsiResourceRevisionRegistry {
   constructor(
-    private readonly cache: CacheRedisPort,
     private readonly coordination: CoordinationPort,
-    private readonly unrepaired: BoundedStringSetPort,
+    private readonly repairs: Map<string, EsiResourceMutationIntent>,
     private readonly timing: Pick<RuntimeTimingPort, 'wait'>,
     private readonly invalidateLocalCache: () => void,
   ) {}
 
-  /**
-   * The revision to bind representations to: undefined when the contract declares none, or null
-   * when coordination cannot be trusted and the caller must bypass the cache entirely.
-   */
   async resolve(
     policy: EsiOperationContract,
     authorization: EsiCacheAuthorization | undefined,
@@ -49,28 +37,18 @@ export class EsiResourceRevisionRegistry {
     if (!policy.resourceRevision) {
       return undefined
     }
-    if (authorization?.kind !== 'character') {
+    if (authorization?.kind !== 'character' || !principal) {
       throw new Error('Revision-sensitive ESI operation is missing character authorization')
     }
     const namespace = policy.resourceRevision.namespace
-    if (!principal) {
-      throw new Error('Revision-sensitive ESI operation is missing a principal')
-    }
-    const keys = this.#keys(namespace, principal)
-
-    const needsRepair = await this.#needsRepair(keys)
-    signal?.throwIfAborted()
-    if (needsRepair === undefined) {
-      return null
-    }
-
     try {
-      const value = needsRepair
-        ? await this.coordination.incrementResourceRevision(namespace, principal)
-        : await this.coordination.getResourceRevision(namespace, principal)
-      if (needsRepair) {
-        await this.#clearRepair(keys)
+      for (const intent of this.repairs.values()) {
+        if (intent.namespace === namespace && intent.principal === principal) {
+          // oxlint-disable-next-line no-await-in-loop
+          await this.complete(intent)
+        }
       }
+      const value = await this.coordination.getResourceRevision(namespace, principal)
       signal?.throwIfAborted()
       return { namespace, value }
     } catch {
@@ -80,19 +58,35 @@ export class EsiResourceRevisionRegistry {
     }
   }
 
-  /** Advances the revision after a mutation, retrying before it gives up and marks a repair. */
-  async advance(policy: EsiOperationContract, principal: string) {
+  async begin(policy: EsiOperationContract, principal: string) {
     if (!policy.resourceRevision) {
+      return undefined
+    }
+    const intent: EsiResourceMutationIntent = {
+      namespace: policy.resourceRevision.namespace,
+      principal,
+      token: randomUUID(),
+    }
+    try {
+      await this.coordination.beginResourceMutation(intent)
+      return intent
+    } catch {
+      // A lost Redis reply may still have recorded intent; no upstream mutation was dispatched.
+      this.#rememberRepair(intent)
+      recordEsiCoordinationFailure()
+      throw new EsiResourceRevisionUnavailableError()
+    }
+  }
+
+  async complete(intent: EsiResourceMutationIntent | undefined) {
+    if (!intent) {
       return
     }
-    const namespace = policy.resourceRevision.namespace
-    const keys = this.#keys(namespace, principal)
     for (let attempt = 1; attempt <= advanceAttempts; attempt += 1) {
       try {
         // oxlint-disable-next-line no-await-in-loop
-        await this.coordination.incrementResourceRevision(namespace, principal)
-        // oxlint-disable-next-line no-await-in-loop
-        await this.#clearRepair(keys)
+        await this.coordination.completeResourceMutation(intent)
+        this.repairs.delete(intent.token)
         return
       } catch {
         if (attempt < advanceAttempts) {
@@ -102,33 +96,14 @@ export class EsiResourceRevisionRegistry {
       }
     }
     this.invalidateLocalCache()
-    this.unrepaired.add(keys.unrepaired)
-    await this.cache.set(keys.repair, '1').catch(() => {})
+    this.#rememberRepair(intent)
     recordEsiCoordinationFailure()
     throw new EsiResourceRevisionUnavailableError()
   }
 
-  #keys(namespace: string, principal: string) {
-    return {
-      repair: cacheResourceRevisionRepairKey(namespace, principal),
-      unrepaired: `${namespace}:${principal}`,
+  #rememberRepair(intent: EsiResourceMutationIntent) {
+    if (this.repairs.size < maximumLocalRepairs) {
+      this.repairs.set(intent.token, intent)
     }
-  }
-
-  async #needsRepair(keys: { unrepaired: string; repair: string }) {
-    if (this.unrepaired.has(keys.unrepaired)) {
-      return true
-    }
-    try {
-      return (await this.cache.get(keys.repair)) !== null
-    } catch {
-      recordEsiCoordinationFailure()
-      return
-    }
-  }
-
-  async #clearRepair(keys: { unrepaired: string; repair: string }) {
-    this.unrepaired.delete(keys.unrepaired)
-    await this.cache.delete(keys.repair).catch(() => {})
   }
 }

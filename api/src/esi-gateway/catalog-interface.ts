@@ -174,7 +174,7 @@ export function narrowPlatformEsiOperationOutput<Operation extends PlatformEsiOp
   return data as PlatformEsiOperationOutput<Operation>
 }
 
-/** Verifies that every catalog operation has exactly one callable or platform execution path. */
+/** Validates execution coverage and unique platform definitions, including reviewed shared operations. */
 export function assertEsiPlatformExecutionConfiguration(): void {
   const duplicateOperations = Object.keys(corePlatformEsiOperationDefinitions).filter((operation) =>
     Object.hasOwn(installedModuleEsiOperationDefinitions, operation),

@@ -6,7 +6,6 @@ import {
   EsiTransportError,
 } from '@evespace/esi-client'
 import { describe, expect, test } from 'vitest'
-import { getEsiOperationContract } from '../../src/esi-gateway/internal/catalog-access.js'
 import {
   classifyEsiOperationFailure,
   classifyEsiRefreshFailure,
@@ -14,7 +13,6 @@ import {
   getEsiFailureStatus,
 } from '../../src/esi-gateway/failures.js'
 import {
-  shouldAdvanceRevisionAfterMutationError,
   isEsiMutationOutcomeUnknown,
   shouldRetryEsiError,
   toEsiQuotaError,
@@ -178,7 +176,6 @@ describe('application ESI failure compatibility', () => {
   })
 
   test('treats typed transport and invalid-response failures as mutation-ambiguous', () => {
-    const mutation = getEsiOperationContract('mail-send')
     const failures = [
       new EsiTransportError({ operationId, phase: 'request', reason: 'network' }),
       new EsiResponseParseError({ operationId, status: 200 }),
@@ -186,11 +183,9 @@ describe('application ESI failure compatibility', () => {
     ]
 
     for (const failure of failures) {
-      expect(shouldAdvanceRevisionAfterMutationError(mutation, failure)).toBe(true)
+      expect(isEsiMutationOutcomeUnknown(failure)).toBe(true)
     }
-    expect(
-      shouldAdvanceRevisionAfterMutationError(mutation, new EsiNotModifiedError({ operationId })),
-    ).toBe(false)
+    expect(isEsiMutationOutcomeUnknown(new EsiNotModifiedError({ operationId }))).toBe(false)
   })
 
   test('returns a safe stable classification without retaining raw dependency errors', () => {
