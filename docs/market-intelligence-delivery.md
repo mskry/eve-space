@@ -59,3 +59,76 @@ disabled-profile read rejection, and obsolete-batch/publication fences. Its fixt
 were removed afterward. Superseded raw books remain subject to normal 15-minute retention.
 See [the fetching review](market-batch-staging-fetching-review.md) for commands, test results,
 and runtime evidence.
+
+## Broad history schema upgrade
+
+Apply the existing `market-001-initial.sql`, `market-002-collected-publication.sql`, and
+`market-003-batch-staging.sql` identities unchanged, followed by
+`market-004-intelligence-collection.sql`, `market-005-history-convergence.sql`,
+`market-006-intelligence-generations.sql`, `market-007-intelligence-reads.sql`, and
+`market-008-intelligence-evidence.sql`.
+The API migrates and attests named routines before accepting traffic; deploy the matching worker
+afterwards. Migration 004 introduces disabled-by-default policy and atomic catalogue universes.
+Migration 005 introduces canonical source metadata and the `converge-market-history`,
+`read-market-history-source`, and `cleanup-market-history-retention` routines, plus bounded
+`list-due-market-history-collection-profiles`, `list-due-market-history-targets`, and
+`record-market-history-item-failure` operations. Existing daily
+rows seed conservative legacy source state; the upgrade does not start broad collection.
+
+To stop broad collection, disable its profile intelligence policy through administrator
+configuration. Keep PostgreSQL data, applied migration identities, and routine attestations.
+Do not reverse migrations by dropping tables or deleting ledger rows. Restore an earlier binary
+only after checking its additive-schema and installed-routine compatibility; otherwise retain
+the matching binaries with broad policy disabled. Explicit watched/demand history remains an
+independent policy path.
+
+## Profile planning cadence
+
+The host's `profile-work-planner` scheduler runs every
+`QUEUE_PROFILE_WORK_PLANNER_INTERVAL_MS` (default 30,000; accepted range 1,000–900,000).
+Its handler plans only profile-keyed work through the existing semantic producer and its
+pause, high-water and active/waiting coalescing gates. Admitted profile jobs dispatch
+immediately, leaving the interval available for execution before the next planning pass.
+General affiliation, compliance, resource and maintenance planning continues on `QUEUE_PLANNER_SCHEDULE` (default every 15 minutes). Due and unfinished
+profile work remains in PostgreSQL across queue loss and worker restarts. This scheduling
+cadence does not bypass source expiry, gateway cooldowns, or resource request budgets.
+
+## Intelligence rollout acceptance
+
+Migration 006 adds frozen generation inputs, resumable derived outputs, complete publication,
+and current-plus-one-prior retention. Migration 007 adds the read-only intelligence routines.
+Coverage uses the effective policy exclusions, including defaults for profiles without a
+saved policy row. Migration 008 captures each new generation input's effective collection
+deadline atomically, including retry deferrals, and labels retained legacy history in range reads.
+Existing generations keep their evidence and cursors; their historical due deadlines are unknown
+and remain null rather than being reconstructed from current mutable state. The original
+006/007 routines remain installed alongside the new snapshot and retained-evidence operations.
+
+Deploy the generated persistence, GraphQL, migration and worker inventories together. These
+migrations preserve existing source rows and do not enable a broad intelligence policy.
+
+Start with the watched-type profile above. Confirm definitions, live coverage, one complete
+report, correct regional history versus station book labels, and a continuation cursor while
+a replacement publishes. Only then explicitly enable intelligence on one bounded full-region
+profile in `10000058`, with the reviewed ignored-group preset. Record the eligible/excluded
+counts and verify the catalogue revision before accepting the first sweep.
+
+Observe oldest due work, never-attempted and stale-success counts, failed-last-attempt subsets,
+source expiry and retry times, generation age and dirty progress, queue backlog age and
+high-water/coalescing outcomes, actual upstream history starts, gateway cooldowns and database
+heap/index/WAL growth. Reports must publish only after every frozen input has a derived row;
+source failures must retain labelled earlier evidence without presenting a partial generation.
+
+Require two consecutive complete daily cycles before considering a larger region: all eligible
+sources are attempted before their next expiry, successful sources validate within their daily
+window, failure retry times are respected, backlog age recovers between cycles, and generation
+publication remains within the product's chosen freshness target. There is no automatic
+promotion. The [synthetic capacity evidence](market-intelligence-capacity.md) establishes a
+local bound; live ESI latency, other registered work and upstream cooldowns need this daily gate.
+
+To roll back broad collection, disable the intelligence policy first. Watched/demand history
+remains independent, so disable the profile as well if all public collection must stop.
+Current revision fences immediately retire policy-bound reports; preserve stored history,
+generations, migration/attestation records and queue volumes. Keep matching API/worker binaries
+unless an earlier pair has been checked for compatibility with every additive routine.
+See the [scoped fetching review](market-intelligence-fetching-review.md) for verification.

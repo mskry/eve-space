@@ -21,7 +21,7 @@ describe('core-data product catalog', () => {
     expect(getCoreDataProductDefinition('market-catalogue')).toMatchObject({
       method: 'marketCatalogue',
       networkAllowed: false,
-      permittedContexts: ['route', 'graphql-read'],
+      permittedContexts: ['route', 'resource-projection', 'graphql-read'],
       requestBound: 32_000,
     })
     expect(getCoreDataProductDefinition('published-type-groups')).toMatchObject({

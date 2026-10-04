@@ -191,9 +191,11 @@ describe('character Assets production route', async () => {
     await expect
       .poll(() => page.locator('.nuxt-route-announcer [role="status"]').textContent())
       .toBe('Manifest Pilot // Character Assets // EVE Space')
-    expect(
-      await page.locator('#main-content').evaluate((element) => document.activeElement === element),
-    ).toBe(true)
+    await expect
+      .poll(() =>
+        page.locator('#main-content').evaluate((element) => document.activeElement === element),
+      )
+      .toBe(true)
   })
 
   it('announces a distinct loaded title for every character child route', async () => {

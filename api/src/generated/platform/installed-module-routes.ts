@@ -52,7 +52,10 @@ const module0Route0 = module0Route0Factory(
   createPlatformPublicRouteCapabilities('market', 'catalogue', ['market-catalogue'] as const),
 )
 const module0Route1 = module0Route1Factory(
-  createPlatformModuleRouteCapabilities('market', 'profiles', ['market-station-regions'] as const),
+  createPlatformModuleRouteCapabilities('market', 'profiles', [
+    'market-station-regions',
+    'market-catalogue',
+  ] as const),
 )
 const module0Route2 = module0Route2Factory(
   createPlatformPublicRouteCapabilities('market', 'public-books', [

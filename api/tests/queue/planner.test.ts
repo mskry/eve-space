@@ -51,7 +51,7 @@ test('runs installed resource maintenance from the production planner', async ()
   expect(mocks.allianceExecutor).toHaveBeenCalledWith(expect.objectContaining({ signal }))
   expect(mocks.groupRules).toHaveBeenCalledWith(expect.objectContaining({ signal }))
   expect(mocks.maintenance).toHaveBeenCalledWith({ signal })
-  expect(mocks.profiles).toHaveBeenCalledWith(expect.objectContaining({ signal }))
+  expect(mocks.profiles).not.toHaveBeenCalled()
   expect(mocks.repairCollection.mock.invocationCallOrder[0]).toBeLessThan(
     mocks.maintenance.mock.invocationCallOrder[0]!,
   )

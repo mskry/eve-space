@@ -45,3 +45,30 @@ The profile-keyed planner now tests four configured profiles as a durable Postgr
 An isolated PostgreSQL 17 Testcontainer applied the proposed Market-module schema and inserted 1,000 representative numeric order rows with its primary and type/side/price indexes. `pg_total_relation_size` grew by **303,104 bytes**, or **303.104 bytes per order including index growth** (`market-storage-measure.test.ts`). At that density the measured 404,567-order Forge book requires approximately 123 MB of PostgreSQL order rows and indexes, excluding headers, pages, other indexes, WAL, table churn, and vacuum. One current and one prior book would occupy roughly 246 MB before those extras; continuous five-minute full-book replacement can generate tens of gigabytes of daily write traffic. These are extrapolations from a single representative page, not production disk or write-throughput measurements.
 
 Initial retention policy: keep the current complete raw observation for as long as it remains current, even through collection failures; after successful replacement keep superseded raw observations for a **15-minute rollback horizon**, then delete them and failed staging. Retain compact derived metrics for **30 days**, daily history for **one year** where ESI supplies it, and hourly non-executable reference prices for **30 days**. Expose the actual available date/time range rather than suggesting older metrics still exist. At five-minute full-region refresh, a 15-minute horizon may temporarily retain three superseded books in addition to the current book; capacity planning must allow at least roughly 492 MB of measured-density order rows and indexes per such profile plus WAL/vacuum overhead. Enable only a measured low-volume profile first, monitor real gateway latency, PostgreSQL growth and queue age, and re-evaluate these ceilings before enabling The Forge full-region mode.
+
+## Broad history metadata review, 2026-10-04
+
+Rechecked the [official Explorer](https://developers.eveonline.com/api-explorer) and its
+[live OpenAPI metadata](https://esi.evetech.net/meta/openapi.json), without requesting live
+market history. Metadata SHA-256:
+`9a9a0f4af77216300e960cfd2576c9baac085a8170022e40c928c28622d80fc6`.
+`GetMarketsRegionIdHistory` remains a public read with required `region_id` and `type_id`,
+minimum compatibility date `2020-01-01`, daily 11:05 expiry, validator headers, and no page,
+calendar-range argument, or `x-rate-limit` declaration. The official
+[compatibility-date list](https://esi.evetech.net/meta/compatibility-dates) still resolves
+the configured `2026-08-23` request date to `2026-08-18`; this change does not advance it.
+Runtime cache metadata continues to determine when validation is due.
+
+The gateway now owns an unconditional 1,000-ms minimum admission spacing under canonical
+SDK identity `GetMarketsRegionIdHistory`. It is an application ceiling, separate from
+upstream route buckets and the legacy global error cooldown. Cache hits do not consume
+admission, retries and representations share it, longer upstream cooldowns take precedence,
+and unavailable coordination defers history rather than using a process-local fallback.
+
+At 10,646 regional targets plus optional PLEX, 10,647 starts require approximately three
+hours at that floor alone. Sixteen targets per job and one pass every 30 seconds instead
+require 666 history passes, approximately five hours 33 minutes under ideal conditions.
+These are calculated lower bounds, not daily-cycle guarantees. Reconciliation, derivation,
+queue capacity, expired sources, actual request duration and upstream cooldowns lengthen
+completion. Use the synthetic interleaved capacity evidence and the monitored small-region
+daily-cycle gate before enabling broad regional collection.

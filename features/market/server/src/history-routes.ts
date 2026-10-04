@@ -20,7 +20,7 @@ const historyParams = z.strictObject({
 })
 const emptyBody = z.strictObject({})
 
-type MarketHistory = NonNullable<Awaited<ReturnType<MarketHistoryReads['readMarketHistory']>>>
+type MarketHistory = NonNullable<Awaited<ReturnType<MarketHistoryReads['readMarketHistorySource']>>>
 type DemandCapabilities = PlatformModuleRouteCapabilities<
   MarketHistoryDemandWrites & MarketProfileReads & MarketHistoryReads,
   readonly ['market-catalogue']
@@ -30,6 +30,7 @@ type DemandProfile = Awaited<ReturnType<MarketProfileReads['listMarketProfiles']
 const readyHistory = (history: MarketHistory | null) => {
   if (
     history?.status !== 'observed' ||
+    history.retainedEvidence ||
     !history.freshUntil ||
     Date.parse(history.freshUntil) <= Date.now()
   ) {
@@ -112,7 +113,7 @@ export const marketHistoryDemandRoutes = ({ coreData, persistence }: DemandCapab
       if (demand === 'unavailable') {
         return context.json({ code: 'MARKET_HISTORY_DEMAND_LIMIT' }, 429)
       }
-      const cached = readyHistory(await persistence.readMarketHistory({ profileId, typeId }))
+      const cached = readyHistory(await persistence.readMarketHistorySource({ profileId, typeId }))
       if (cached) return context.json({ status: 'ready' as const, history: cached }, 200)
       const requester = context.var.onDemandProfile
       if (!requester) return context.json({ code: 'MARKET_HISTORY_COLLECTION_UNAVAILABLE' }, 503)
@@ -120,7 +121,9 @@ export const marketHistoryDemandRoutes = ({ coreData, persistence }: DemandCapab
         { profileId, revision: profile.revision, typeId },
         context.req.raw.signal,
       )
-      const collected = readyHistory(await persistence.readMarketHistory({ profileId, typeId }))
+      const collected = readyHistory(
+        await persistence.readMarketHistorySource({ profileId, typeId }),
+      )
       if (collected) return context.json({ status: 'ready' as const, history: collected }, 200)
       if (outcome === 'completed' || outcome === 'unavailable') {
         return context.json({ code: 'MARKET_HISTORY_COLLECTION_UNAVAILABLE' }, 503)

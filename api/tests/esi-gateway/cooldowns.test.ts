@@ -374,7 +374,7 @@ const evaluateAtomicPermit = (
   key: string,
   args: Array<string | number>,
 ) => {
-  const [globalKey, scopedKey, pacingKey, limit, ttl, owner] = args
+  const [globalKey, scopedKey, pacingKey, , limit, ttl, owner] = args
   const now = Date.now()
   const retryAt = Math.max(
     Number(values.get(String(globalKey)) ?? 0),

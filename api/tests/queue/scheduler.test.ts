@@ -259,3 +259,33 @@ test('holds a lease across a run far longer than its TTL while renewals confirm'
   await expect(run).resolves.toMatchObject({ executed: true })
   vi.useRealTimers()
 })
+
+test('registers independent profile planning at its interval while retaining the general cron', async () => {
+  const { registerSchedulers, profileWorkPlannerSchedulerId } =
+    await import('../../src/queue/scheduler.js')
+  const { env } = await import('../../src/env.js')
+  const upsertJobScheduler = vi.fn().mockResolvedValue({})
+  const queue = {
+    upsertJobScheduler,
+    getBackend: () => ({ client: Promise.resolve({ set: vi.fn() }) }),
+  }
+  // SAFETY: Registration uses only upsertJobScheduler and the backend client's set command.
+  await registerSchedulers(queue as never)
+  expect(upsertJobScheduler).toHaveBeenCalledWith(
+    profileWorkPlannerSchedulerId,
+    { every: env.QUEUE_PROFILE_WORK_PLANNER_INTERVAL_MS },
+    expect.objectContaining({
+      name: 'profile-work-planner',
+      data: { operationId: 'profile-work-planner' },
+    }),
+  )
+  expect(upsertJobScheduler).toHaveBeenCalledWith(
+    diagnosticSchedulerId,
+    { pattern: env.QUEUE_PLANNER_SCHEDULE },
+    expect.objectContaining({ name: 'planner' }),
+  )
+  expect(getJobScheduler('profile-work-planner')).toEqual({
+    overlap: 'skip',
+    schedulerId: profileWorkPlannerSchedulerId,
+  })
+})

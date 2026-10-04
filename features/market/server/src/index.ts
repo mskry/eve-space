@@ -1,6 +1,17 @@
 export { catalogueRoutes } from './catalogue-routes.js'
 export { marketGraphQL } from './graphql.js'
 export { profileRoutes } from './profile-routes.js'
+export {
+  readMarketIntelligencePolicyOperation,
+  saveMarketIntelligencePolicyOperation,
+  readMarketIntelligenceUniverseOperation,
+  beginMarketIntelligenceUniverseOperation,
+  stageMarketIntelligenceTargetsOperation,
+  stageMarketIntelligenceExclusionsOperation,
+  activateMarketIntelligenceUniverseOperation,
+  listDueMarketIntelligenceReconciliationsOperation,
+  recordMarketIntelligenceReconciliationOperation,
+} from './intelligence-persistence.js'
 export { marketOrdersResource } from './profile-collection.js'
 export { marketBookRoutes } from './book-routes.js'
 export { marketReferencePricesResource } from './reference-prices-resource.js'
@@ -32,6 +43,12 @@ export {
   listDueMarketHistoryProfilesOperation,
   listDueMarketHistoryTypesOperation,
   upsertMarketHistoryOperation,
+  convergeMarketHistoryOperation,
+  listDueMarketHistoryCollectionProfilesOperation,
+  listDueMarketHistoryTargetsOperation,
+  recordMarketHistoryItemFailureOperation,
+  readMarketHistorySourceOperation,
+  cleanupMarketHistoryRetentionOperation,
   recordMarketHistoryFailureOperation,
   readMarketHistoryOperation,
   storeMarketMetricsOperation,
@@ -55,3 +72,24 @@ export {
   referencePricesOperation,
   structureOrdersOperation,
 } from './operations.js'
+export {
+  recordMarketIntelligenceCatalogueOperation,
+  listDueMarketIntelligenceDerivationsOperation,
+  selectMarketIntelligenceWorkOperation,
+  beginMarketIntelligenceGenerationOperation,
+  legacyBeginMarketIntelligenceGenerationOperation,
+  readMarketIntelligenceInputPageOperation,
+  stageMarketIntelligenceOutputsOperation,
+  publishMarketIntelligenceGenerationOperation,
+  cleanupMarketIntelligenceGenerationsOperation,
+} from './intelligence-generation-persistence.js'
+
+export {
+  readMarketIntelligenceGenerationOperation,
+  readMarketIntelligencePageOperation,
+  readMarketIntelligenceItemOperation,
+  readMarketIntelligenceCoverageOperation,
+  legacyReadMarketIntelligenceCoverageOperation,
+  readMarketIntelligenceHistoryRangeOperation,
+  legacyReadMarketIntelligenceHistoryRangeOperation,
+} from './intelligence-read-persistence.js'

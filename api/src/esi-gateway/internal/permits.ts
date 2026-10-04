@@ -6,6 +6,7 @@ import {
   acquireLocalEsiRequestPermit,
   advanceLocalEsiPacing,
   getEsiPacingPolicy,
+  getEsiMinimumStartPolicy,
   getLocalEsiCooldownUntil,
   getLocalEsiPacing,
 } from './local-quota.js'
@@ -34,12 +35,20 @@ if pacing then
   if not nextAt then return redis.error_reply('Invalid ESI pacing state') end
   if tonumber(nextAt) > now then return {3, tonumber(nextAt) - now} end
 end
+local minimumInterval = tonumber(ARGV[4])
+if minimumInterval > 0 then
+  local minimumNext = tonumber(redis.call('get', KEYS[5]) or '0')
+  if minimumNext > now then return {4, minimumNext - now} end
+end
 redis.call('zremrangebyscore', KEYS[1], '-inf', now)
 if redis.call('zcard', KEYS[1]) >= tonumber(ARGV[1]) then return {0, 0} end
 redis.call('zadd', KEYS[1], now + tonumber(ARGV[2]), ARGV[3])
 redis.call('pexpire', KEYS[1], ARGV[2])
 if pacing then
   redis.call('set', KEYS[4], (now + tonumber(interval)) .. ':' .. expiresAt .. ':' .. interval, 'KEEPTTL')
+end
+if minimumInterval > 0 then
+  redis.call('set', KEYS[5], now + minimumInterval, 'PX', minimumInterval)
 end
 return {1, 0}
 `
@@ -112,7 +121,10 @@ export async function acquireEsiRequestPermit(options: {
       }
       // oxlint-disable-next-line no-await-in-loop
       await timing.wait(
-        Math.min(permitPollMs, Math.max(1, deadline - timing.now())),
+        Math.min(
+          result.kind === 'paced' ? result.retryAfterMs : permitPollMs,
+          Math.max(1, deadline - timing.now()),
+        ),
         options.signal,
       )
     }
@@ -121,6 +133,9 @@ export async function acquireEsiRequestPermit(options: {
     options.signal?.throwIfAborted()
     if (error instanceof EsiQuotaError) {
       throw error
+    }
+    if (getEsiMinimumStartPolicy(options.operation)) {
+      throw new EsiQuotaError(1, timing.now())
     }
     return acquireLocalPermit(
       options.operation,
@@ -170,25 +185,28 @@ async function tryAcquireDistributedPermit(
 ): Promise<
   | { kind: 'acquired'; permit: EsiRequestPermit }
   | { kind: 'full' }
-  | { kind: 'deferred'; retryAfterMs: number }
+  | { kind: 'deferred' | 'paced'; retryAfterMs: number }
 > {
   const key = `${esiQuotaCoordinationPrefix}:concurrency:${operation}`
   const ownerToken = randomUUID()
   const policy = getEsiPacingPolicy(operation, concurrency)
+  const minimumStart = getEsiMinimumStartPolicy(operation)
   const group = policy?.group
   const scopedCooldownKey = group
     ? `${esiQuotaCoordinationPrefix}:cooldown:group:${group}:${principal}`
     : `${esiQuotaCoordinationPrefix}:cooldown:operation:${operation}:${principal}`
   const rawResult = await connection.eval(
     atomicAdmission,
-    4,
+    5,
     key,
     `${esiQuotaCoordinationPrefix}:cooldown:global`,
     scopedCooldownKey,
     group ? esiPacingKey(group, principal) : `${esiQuotaCoordinationPrefix}:pacing:none`,
+    `${esiQuotaCoordinationPrefix}:minimum-start:${minimumStart?.operationId ?? 'none'}`,
     concurrency,
     concurrencyLeaseTtlMs,
     ownerToken,
+    minimumStart?.intervalMs ?? 0,
   )
   if (!Array.isArray(rawResult) || rawResult.length !== 2) {
     throw new Error('Invalid ESI admission result')
@@ -207,6 +225,7 @@ async function tryAcquireDistributedPermit(
   if (result.code === 2 || result.code === 3) {
     return { kind: 'deferred', retryAfterMs: result.retryAfterMs }
   }
+  if (result.code === 4) return { kind: 'paced', retryAfterMs: result.retryAfterMs }
   if (result.code !== 1) {
     throw new Error('Invalid ESI admission result')
   }

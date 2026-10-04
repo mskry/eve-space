@@ -99,10 +99,7 @@ describe('core-data capabilities', () => {
     expect(mocks.loadPublishedTypeGroupsProduct).not.toHaveBeenCalled()
   })
 
-  test('exposes the market catalogue only to a declared route', async () => {
-    expect(() => createCoreDataCapability(['market-catalogue'], 'resource-projection')).toThrow(
-      'not permitted',
-    )
+  test('exposes the market catalogue to declared local resource and route readers', async () => {
     expect(() => createCoreDataCapability(['market-catalogue'], 'activity-provider')).toThrow(
       'not permitted',
     )
@@ -111,6 +108,13 @@ describe('core-data capabilities', () => {
     expect(mocks.loadMarketCatalogueProduct).not.toHaveBeenCalled()
     await route.marketCatalogue({ kind: 'tree' })
     expect(mocks.loadMarketCatalogueProduct).toHaveBeenCalledOnce()
+    const signal = new AbortController().signal
+    const resource = createCoreDataCapability(['market-catalogue'], 'resource-projection', signal)
+    await resource.marketCatalogue({ kind: 'search-index' })
+    expect(mocks.loadMarketCatalogueProduct).toHaveBeenLastCalledWith({
+      kind: 'search-index',
+      signal,
+    })
   })
 
   test('limits station-to-region evidence to declared route and resource projections', async () => {

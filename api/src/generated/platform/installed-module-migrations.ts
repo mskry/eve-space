@@ -28,6 +28,36 @@ export const installedModuleMigrations = [
     exportPath: './migrations/market-003-batch-staging.sql',
   },
   {
+    moduleId: 'market',
+    name: 'market-004-intelligence-collection.sql',
+    packageName: '@eve-space/market-server',
+    exportPath: './migrations/market-004-intelligence-collection.sql',
+  },
+  {
+    moduleId: 'market',
+    name: 'market-005-history-convergence.sql',
+    packageName: '@eve-space/market-server',
+    exportPath: './migrations/market-005-history-convergence.sql',
+  },
+  {
+    moduleId: 'market',
+    name: 'market-006-intelligence-generations.sql',
+    packageName: '@eve-space/market-server',
+    exportPath: './migrations/market-006-intelligence-generations.sql',
+  },
+  {
+    moduleId: 'market',
+    name: 'market-007-intelligence-reads.sql',
+    packageName: '@eve-space/market-server',
+    exportPath: './migrations/market-007-intelligence-reads.sql',
+  },
+  {
+    moduleId: 'market',
+    name: 'market-008-intelligence-evidence.sql',
+    packageName: '@eve-space/market-server',
+    exportPath: './migrations/market-008-intelligence-evidence.sql',
+  },
+  {
     moduleId: 'member-audit',
     name: 'member-audit-001-baseline.sql',
     packageName: '@eve-space/member-audit-server',

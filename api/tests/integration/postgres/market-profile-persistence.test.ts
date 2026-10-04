@@ -47,9 +47,6 @@ let referenceReads: ReturnType<
 let referenceWrites: ReturnType<
   (typeof installedModulePersistenceCapabilityFactories.resourceMaterializations)['market/reference-prices']
 >
-let historyReads: ReturnType<
-  (typeof installedModulePersistenceCapabilityFactories.routes)['market/daily-history']
->
 let historyDemand: ReturnType<
   (typeof installedModulePersistenceCapabilityFactories.routes)['market/daily-history-demand']
 >
@@ -108,8 +105,6 @@ beforeAll(async () => {
     installedModulePersistenceCapabilityFactories.resourceMaterializations[
       'market/reference-prices'
     ](invoke)
-  historyReads =
-    installedModulePersistenceCapabilityFactories.routes['market/daily-history'](invoke)
   historyDemand =
     installedModulePersistenceCapabilityFactories.routes['market/daily-history-demand'](invoke)
   historyProjection =
@@ -1261,7 +1256,7 @@ test('bounds public full-region history demand and converges independent daily r
     expectedRevision: 0,
     requestId: randomUUID(),
   })
-  expect(await historyReads.readMarketHistory({ profileId, typeId: 34 })).toBeNull()
+  expect(await historyProjection.readMarketHistory({ profileId, typeId: 34 })).toBeNull()
   for (const typeId of Array.from({ length: 256 }, (_, index) => index + 34)) {
     expect(
       await historyDemand.requestMarketHistoryDemand({
@@ -1325,7 +1320,7 @@ test('bounds public full-region history demand and converges independent daily r
       days,
     }),
   ).toStrictEqual({ outcome: 'applied' })
-  expect(await historyReads.readMarketHistory({ profileId, typeId: 34 })).toMatchObject({
+  expect(await historyProjection.readMarketHistory({ profileId, typeId: 34 })).toMatchObject({
     status: 'observed',
     days: [{ date, averageIsk: '6.42', volume: 100 }],
   })
@@ -1354,7 +1349,7 @@ test('bounds public full-region history demand and converges independent daily r
       days: [{ ...days[0]!, averageIsk: '9.00' }],
     }),
   ).toStrictEqual({ outcome: 'obsolete' })
-  expect(await historyReads.readMarketHistory({ profileId, typeId: 34 })).toMatchObject({
+  expect(await historyProjection.readMarketHistory({ profileId, typeId: 34 })).toMatchObject({
     days: [{ date, averageIsk: '6.50' }],
   })
   expect(
@@ -1379,7 +1374,7 @@ test('bounds public full-region history demand and converges independent daily r
       days: [],
     }),
   ).toStrictEqual({ outcome: 'applied' })
-  expect(await historyReads.readMarketHistory({ profileId, typeId: 35 })).toMatchObject({
+  expect(await historyProjection.readMarketHistory({ profileId, typeId: 35 })).toMatchObject({
     status: 'observed',
     days: [],
   })
@@ -1440,7 +1435,7 @@ test('reconstructs finite watched history without demand and gates failures by p
       now: new Date(now.getTime() + 360_000).toISOString(),
     }),
   ).toStrictEqual([])
-  expect(await historyReads.readMarketHistory({ profileId, typeId: 34 })).toBeNull()
+  expect(await historyProjection.readMarketHistory({ profileId, typeId: 34 })).toBeNull()
 })
 
 test('backs off one requested history type without suspending the profile', async () => {
@@ -1482,7 +1477,7 @@ test('backs off one requested history type without suspending the profile', asyn
       now: now.toISOString(),
     }),
   ).toMatchObject([{ profileId, revision: 1 }])
-  expect(await historyReads.readMarketHistory({ profileId, typeId: 34 })).toMatchObject({
+  expect(await historyProjection.readMarketHistory({ profileId, typeId: 34 })).toMatchObject({
     status: 'uncollected',
   })
   expect(await dueTypes(new Date(now.getTime() + 360_000), 34)).toMatchObject([{ typeId: 34 }])
@@ -1500,7 +1495,7 @@ test('backs off one requested history type without suspending the profile', asyn
       days: [],
     }),
   ).toStrictEqual({ outcome: 'applied' })
-  expect(await historyReads.readMarketHistory({ profileId, typeId: 34 })).toMatchObject({
+  expect(await historyProjection.readMarketHistory({ profileId, typeId: 34 })).toMatchObject({
     status: 'observed',
   })
   expect(
@@ -1572,7 +1567,7 @@ test('prunes obsolete history demand bindings without erasing daily source stati
     expectedRevision: 1,
     requestId: randomUUID(),
   })
-  expect(await historyReads.readMarketHistory({ profileId, typeId: 34 })).toBeNull()
+  expect(await historyProjection.readMarketHistory({ profileId, typeId: 34 })).toBeNull()
   expect(await historyWrites.cleanupMarketHistoryDemands({ now: now.toISOString() })).toStrictEqual(
     {
       outcome: 'checked',
@@ -2043,8 +2038,10 @@ test('upgrades and attests batch staging without losing complete or staged obser
   try {
     await runMigrations(upgraded)
     const [currentSet] = await loadMarketMigrationSets()
-    const oldOperations = currentSet!.persistenceOperations!.filter(
-      (operation) => operation.migration !== 'market-003-batch-staging.sql',
+    const oldOperations = currentSet!.persistenceOperations!.filter((operation) =>
+      currentSet!.migrations
+        .slice(0, 2)
+        .some((migration) => migration.name === operation.migration),
     )
     await runModuleMigrationSets(upgraded, [
       {

@@ -141,3 +141,184 @@ query MarketHistory($profileId: UUID!, $typeId: EveId!) {
     }
   }
 }
+
+fragment MarketIntelligenceGenerationFields on MarketIntelligenceGeneration {
+  generationId
+  profileRevision
+  policyRevision
+  catalogueRevision {
+    buildNumber
+    ingestVersion
+    ingestedAt
+  }
+  formulaVersion
+  anchorDate
+  bookScope
+  historyScope
+  publishedAt
+  expiresAt
+}
+fragment MarketIntelligenceMetricFields on MarketIntelligenceMetric {
+  value
+  nullReason
+  observedDays
+  windowDays
+  complete
+}
+query MarketPriceMovers($profileId: UUID!, $after: String) {
+  market {
+    intelligence(
+      input: { profileId: $profileId, sort: weekPriceChangePercent, first: 25, after: $after }
+    ) {
+      generation {
+        ...MarketIntelligenceGenerationFields
+      }
+      total
+      omittedNullSortCount
+      nextCursor
+      rows {
+        typeId
+        name
+        historySource {
+          validatedAt
+          freshUntil
+        }
+        metrics {
+          weekPriceChangePercent {
+            ...MarketIntelligenceMetricFields
+          }
+        }
+      }
+    }
+  }
+}
+query MarketSupply($profileId: UUID!, $after: String) {
+  market {
+    intelligence(
+      input: {
+        profileId: $profileId
+        sort: daysSupply10Percent
+        direction: ASC
+        first: 25
+        after: $after
+      }
+    ) {
+      generation {
+        ...MarketIntelligenceGenerationFields
+      }
+      total
+      omittedNullSortCount
+      nextCursor
+      rows {
+        typeId
+        name
+        historySource {
+          validatedAt
+          freshUntil
+        }
+        bookSource {
+          observationId
+          validatedAt
+          freshUntil
+        }
+        metrics {
+          daysSupply10Percent {
+            ...MarketIntelligenceMetricFields
+          }
+        }
+      }
+    }
+  }
+}
+query MarketUnderpricing($profileId: UUID!, $after: String) {
+  market {
+    intelligence(
+      input: {
+        profileId: $profileId
+        sort: underpriceMonthPercent
+        direction: ASC
+        first: 25
+        after: $after
+      }
+    ) {
+      generation {
+        ...MarketIntelligenceGenerationFields
+      }
+      total
+      omittedNullSortCount
+      nextCursor
+      rows {
+        typeId
+        name
+        historySource {
+          validatedAt
+          freshUntil
+        }
+        bookSource {
+          observationId
+          validatedAt
+          freshUntil
+        }
+        metrics {
+          underpriceMonthPercent {
+            ...MarketIntelligenceMetricFields
+          }
+        }
+      }
+    }
+  }
+}
+query MarketTradedValue($profileId: UUID!, $after: String) {
+  market {
+    intelligence(
+      input: { profileId: $profileId, sort: anchorTradedValueIsk, first: 25, after: $after }
+    ) {
+      generation {
+        ...MarketIntelligenceGenerationFields
+      }
+      total
+      omittedNullSortCount
+      nextCursor
+      rows {
+        typeId
+        name
+        historySource {
+          validatedAt
+          freshUntil
+        }
+        metrics {
+          anchorTradedValueIsk {
+            ...MarketIntelligenceMetricFields
+          }
+        }
+      }
+    }
+  }
+}
+query MarketVolumeSpikes($profileId: UUID!, $after: String) {
+  market {
+    intelligence(
+      input: { profileId: $profileId, sort: anchorVolumeSpike, first: 25, after: $after }
+    ) {
+      generation {
+        ...MarketIntelligenceGenerationFields
+      }
+      total
+      omittedNullSortCount
+      nextCursor
+      rows {
+        typeId
+        name
+        historySource {
+          validatedAt
+          freshUntil
+        }
+        metrics {
+          anchorVolumeSpike {
+            ...MarketIntelligenceMetricFields
+          }
+        }
+      }
+    }
+  }
+}

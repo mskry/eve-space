@@ -157,7 +157,7 @@ EVE Space is an EVE organization application with a Nuxt UI, Hono API, and separ
 
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **eve-space** (52312 symbols, 125470 relationships, 723 execution flows).
+This project is indexed by GitNexus as **eve-space** (54418 symbols, 131221 relationships, 747 execution flows).
 
 > Index stale? Run `node .gitnexus/run.cjs analyze --index-only` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? Bootstrap with `npx`, `bunx`, or `pnpm dlx` — e.g. `bunx gitnexus@latest analyze` (npm 11 npx crash; #1939).
 

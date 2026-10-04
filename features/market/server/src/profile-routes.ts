@@ -13,14 +13,24 @@ import type {
 } from './persistence.js'
 import { validateMarketPublicProfile } from './profiles.js'
 import { marketCollectionBounds } from './market-bounds.js'
+import type {
+  MarketIntelligencePolicyReads,
+  MarketIntelligencePolicyWrites,
+} from './intelligence-persistence.js'
+import {
+  marketIntelligenceBounds,
+  validateMarketIntelligencePolicy,
+} from './intelligence-policy.js'
 
 type ProfilePersistence = MarketProfileReads &
   MarketProfileWrites &
   MarketProfileDueReads &
+  MarketIntelligencePolicyReads &
+  MarketIntelligencePolicyWrites &
   Pick<MarketBookReads, 'readMarketObservation'>
 type ProfileCapabilities = PlatformModuleRouteCapabilities<
   ProfilePersistence,
-  readonly ['market-station-regions']
+  readonly ['market-station-regions', 'market-catalogue']
 >
 
 const positiveId = z.number().int().positive().safe()
@@ -34,9 +44,61 @@ const body = z.strictObject({
 })
 const params = z.strictObject({ profileId: z.uuid() })
 const statusQuery = z.strictObject({ typeId: z.coerce.number().int().positive().safe() })
+const intelligenceBody = z.strictObject({
+  enabled: z.boolean(),
+  ignoredGroupIds: z.array(positiveId).max(marketIntelligenceBounds.maximumIgnoredGroups),
+  expectedProfileRevision: positiveId,
+  expectedPolicyRevision: z.number().int().nonnegative().safe(),
+})
 
 export const profileRoutes = ({ coreData, persistence }: ProfileCapabilities) =>
   new Hono<PlatformAdministratorRouteEnv>()
+    .get('/:profileId/intelligence', zValidator('param', params), async (context) => {
+      const policy = await persistence.readMarketIntelligencePolicy(context.req.valid('param'))
+      if (!policy) return context.json({ code: 'MARKET_PROFILE_UNAVAILABLE' }, 404)
+      return context.json({ policy }, 200)
+    })
+    .put(
+      '/:profileId/intelligence',
+      zValidator('param', params),
+      zValidator('json', intelligenceBody),
+      async (context) => {
+        const { profileId } = context.req.valid('param')
+        const { expectedProfileRevision, expectedPolicyRevision, ...input } =
+          context.req.valid('json')
+        const profiles = await persistence.listMarketProfiles({ enabledOnly: false })
+        const profile = profiles.find((entry) => entry.profileId === profileId)
+        if (!profile) return context.json({ code: 'MARKET_PROFILE_UNAVAILABLE' }, 404)
+        if (profile.revision !== expectedProfileRevision)
+          return context.json({ code: 'MARKET_PROFILE_OBSOLETE' }, 409)
+        const tree = await coreData.marketCatalogue({ kind: 'tree' }).catch(() => null)
+        if (!tree || tree.kind !== 'tree')
+          return context.json({ code: 'MARKET_PROFILE_SOURCE_UNAVAILABLE' }, 503)
+        let policy
+        try {
+          policy = validateMarketIntelligencePolicy(input, profile, tree)
+        } catch (error) {
+          if (error instanceof TypeError || error instanceof RangeError)
+            return context.json(
+              { code: 'INVALID_MARKET_INTELLIGENCE_POLICY', message: error.message },
+              400,
+            )
+          throw error
+        }
+        const result = await persistence.saveMarketIntelligencePolicy({
+          profileId,
+          profileRevision: expectedProfileRevision,
+          expectedPolicyRevision,
+          ...policy,
+          ignoredGroupIds: [...policy.ignoredGroupIds],
+          catalogueRevision: tree.revision,
+          requestId: crypto.randomUUID(),
+        })
+        if (result.outcome === 'obsolete')
+          return context.json({ code: 'MARKET_INTELLIGENCE_POLICY_OBSOLETE' }, 409)
+        return context.json({ profileId, policyRevision: result.revision }, 200)
+      },
+    )
     .get('/', async (context) => {
       const profiles = await persistence.listMarketProfiles({ enabledOnly: false })
       return context.json({ profiles }, 200)

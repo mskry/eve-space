@@ -89,7 +89,11 @@ describe('core-data contract', () => {
     expect(MARKET_CATALOGUE_MAX_GROUPS).toBe(4_000)
     expect(MARKET_CATALOGUE_MAX_TYPES).toBe(32_000)
     expect(MARKET_CATALOGUE_GROUP_PAGE_SIZE).toBe(100)
-    expect(contract.permittedContexts).toStrictEqual(['route', 'graphql-read'])
+    expect(contract.permittedContexts).toStrictEqual([
+      'route',
+      'resource-projection',
+      'graphql-read',
+    ])
     expect(contract.requestBound).toBe(MARKET_CATALOGUE_MAX_TYPES)
     expectTypeOf<CoreDataProductResult<'market-catalogue'>>().toEqualTypeOf<MarketCatalogueResult>()
     expectTypeOf<CoreDataMethodsFor<readonly ['market-catalogue']>>().toHaveProperty(

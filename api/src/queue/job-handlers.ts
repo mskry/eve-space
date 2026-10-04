@@ -24,6 +24,7 @@ import {
 import { outboxRelayStore, runOutboxRelayBatch } from './outbox-relay.js'
 import type { QueuePlanningContext } from './planning-context.js'
 import { runQueuePlanner } from './planner.js'
+import { runProfileWorkPlanner } from './profile-work-planner.js'
 import { processInstalledResourceBatch } from './resource-batch-processor.js'
 
 export interface JobExecutionContext extends QueuePlanningContext {
@@ -123,6 +124,13 @@ const jobHandlers = {
     classifyError: retryable,
     async process(_payload, context) {
       await runQueuePlanner(context)
+    },
+  }),
+  'profile-work-planner': handler({
+    name: 'profile-work-planner',
+    classifyError: retryable,
+    async process(_payload, context) {
+      await runProfileWorkPlanner(context)
     },
   }),
   'resource-batch': handler({

@@ -46,6 +46,8 @@ type MarketHistory {
   profileId: UUID!
   profileRevision: BigInteger!
   regionId: EveId!
+  retainedEvidence: Boolean!
+  source: MarketHistorySource
   status: String!
   typeId: EveId!
   validatedAt: UTCTime
@@ -58,6 +60,219 @@ type MarketHistoryDay {
   lowIsk: Decimal!
   orderCount: BigInteger!
   volume: BigInteger!
+}
+
+type MarketHistorySource {
+  contentRevision: BigInteger!
+  freshUntil: UTCTime
+  lastAttemptAt: UTCTime!
+  lastFailureClass: String
+  responseCount: Int
+  responseFrom: UTCDate
+  responseThrough: UTCDate
+  state: String!
+  validatedAt: UTCTime!
+}
+
+type MarketIntelligenceBookSource {
+  freshUntil: UTCTime!
+  observationId: UUID!
+  observedAt: UTCTime!
+  validatedAt: UTCTime!
+}
+
+type MarketIntelligenceCatalogueRevision {
+  buildNumber: BigInteger!
+  ingestVersion: Int!
+  ingestedAt: UTCTime!
+}
+
+type MarketIntelligenceCoverage {
+  bookScope: String!
+  catalogueRevision: MarketIntelligenceCatalogueRevision
+  evaluatedAt: UTCTime!
+  excludedTypeCount: Int
+  generation: MarketIntelligenceFrozenCoverage
+  historyScope: String!
+  ignoredGroupIds: [EveId!]!
+  live: MarketIntelligenceCoverageCounts!
+  policyEnabled: Boolean!
+  policyRevision: BigInteger!
+  profileId: UUID!
+  profileRevision: BigInteger!
+  regionId: EveId!
+}
+
+type MarketIntelligenceCoverageCounts {
+  eligibleCount: Int!
+  emptySource: Int!
+  failedLastAttempt: Int!
+  failedWithoutSuccess: Int!
+  freshSuccess: Int!
+  latestAttemptAt: UTCTime
+  neverAttempted: Int!
+  oldestDueAt: UTCTime
+  staleSuccess: Int!
+}
+
+enum MarketIntelligenceDirection {
+  ASC
+  DESC
+}
+
+type MarketIntelligenceFrozenCoverage {
+  counts: MarketIntelligenceCoverageCounts!
+  evaluatedAt: UTCTime!
+  generation: MarketIntelligenceGeneration!
+}
+
+type MarketIntelligenceGeneration {
+  anchorDate: UTCDate!
+  bookScope: String!
+  catalogueRevision: MarketIntelligenceCatalogueRevision!
+  createdAt: UTCTime!
+  excludedTypeCount: Int!
+  expiresAt: UTCTime
+  formulaVersion: Int!
+  generationId: UUID!
+  historyScope: String!
+  policyRevision: BigInteger!
+  profileId: UUID!
+  profileRevision: BigInteger!
+  publishedAt: UTCTime!
+  regionId: EveId!
+  targetCount: Int!
+}
+
+type MarketIntelligenceHistoryRange {
+  days: [MarketHistoryDay!]!
+  from: UTCDate!
+  profileId: UUID!
+  profileRevision: BigInteger!
+  regionId: EveId!
+  retainedEvidence: Boolean!
+  source: MarketIntelligenceHistorySource
+  through: UTCDate!
+  typeId: EveId!
+}
+
+type MarketIntelligenceHistorySource {
+  contentRevision: BigInteger!
+  freshUntil: UTCTime
+  lastAttemptAt: UTCTime
+  lastFailureClass: String
+  state: String!
+  validatedAt: UTCTime
+}
+
+input MarketIntelligenceInput {
+  after: String
+  direction: MarketIntelligenceDirection = DESC
+  first: Int = 25
+  generationId: UUID
+  groupIds: [EveId!]
+  includeStale: Boolean = false
+  minimumAverageDailyOrders: Decimal = "5"
+  minimumAverageDailyValueIsk: Decimal = "5000000000"
+  minimumBaselineDays: Int = 0
+  profileId: UUID!
+  sort: MarketIntelligenceSort = anchorTradedValueIsk
+  typeIds: [EveId!]
+}
+
+type MarketIntelligenceItem {
+  generation: MarketIntelligenceGeneration
+  row: MarketIntelligenceRow
+  status: String!
+  typeId: EveId!
+}
+
+type MarketIntelligenceMetric {
+  complete: Boolean
+  denominator: BigInteger
+  nullReason: String
+  numerator: BigInteger
+  observedDays: Int
+  value: Decimal
+  windowDays: Int
+}
+
+type MarketIntelligenceMetricDefinition {
+  decimalPlaces: Int!
+  formula: String!
+  formulaVersion: Int!
+  id: MarketIntelligenceSort!
+  includesAnchor: Boolean!
+  rounding: String!
+  source: String!
+  unit: String!
+  windowDays: Int
+}
+
+type MarketIntelligenceMetrics {
+  anchorTradedValueIsk: MarketIntelligenceMetric!
+  anchorVolumeSpike: MarketIntelligenceMetric!
+  averageDailyOrders: MarketIntelligenceMetric!
+  averageDailyValueIsk: MarketIntelligenceMetric!
+  baselineMonthIsk: MarketIntelligenceMetric!
+  baselineWeekIsk: MarketIntelligenceMetric!
+  baselineYearIsk: MarketIntelligenceMetric!
+  bestAskIsk: MarketIntelligenceMetric!
+  bestBidIsk: MarketIntelligenceMetric!
+  daysSupply: MarketIntelligenceMetric!
+  daysSupply10Percent: MarketIntelligenceMetric!
+  sellDepth: MarketIntelligenceMetric!
+  sellDepth5Percent: MarketIntelligenceMetric!
+  sellDepth10Percent: MarketIntelligenceMetric!
+  spreadIsk: MarketIntelligenceMetric!
+  spreadPercent: MarketIntelligenceMetric!
+  underpriceMonthPercent: MarketIntelligenceMetric!
+  underpriceYearPercent: MarketIntelligenceMetric!
+  weekPriceChangePercent: MarketIntelligenceMetric!
+  weekTradedValueIsk: MarketIntelligenceMetric!
+  weekVolumeSpike: MarketIntelligenceMetric!
+}
+
+type MarketIntelligencePage {
+  generation: MarketIntelligenceGeneration!
+  hasMore: Boolean!
+  nextCursor: String
+  omittedNullSortCount: Int!
+  rows: [MarketIntelligenceRow!]!
+  total: Int!
+}
+
+type MarketIntelligenceRow {
+  bookSource: MarketIntelligenceBookSource
+  groupId: EveId!
+  historySource: MarketIntelligenceHistorySource!
+  metrics: MarketIntelligenceMetrics!
+  name: String!
+  typeId: EveId!
+}
+
+enum MarketIntelligenceSort {
+  anchorTradedValueIsk
+  anchorVolumeSpike
+  averageDailyOrders
+  averageDailyValueIsk
+  baselineMonthIsk
+  baselineWeekIsk
+  baselineYearIsk
+  bestAskIsk
+  bestBidIsk
+  daysSupply
+  daysSupply10Percent
+  sellDepth
+  sellDepth5Percent
+  sellDepth10Percent
+  spreadIsk
+  spreadPercent
+  underpriceMonthPercent
+  underpriceYearPercent
+  weekPriceChangePercent
+  weekTradedValueIsk
+  weekVolumeSpike
 }
 
 type MarketObservation {
@@ -124,6 +339,16 @@ type MarketRead {
   catalogueRevision: MarketCatalogueRevision
   catalogueType(revision: String!, typeId: EveId!): MarketCatalogueTypeResult
   history(profileId: UUID!, typeId: EveId!): MarketHistory
+  historyRange(
+    from: UTCDate!
+    profileId: UUID!
+    through: UTCDate!
+    typeId: EveId!
+  ): MarketIntelligenceHistoryRange
+  intelligence(input: MarketIntelligenceInput!): MarketIntelligencePage
+  intelligenceCoverage(profileId: UUID!): MarketIntelligenceCoverage
+  intelligenceItem(generationId: UUID, profileId: UUID!, typeId: EveId!): MarketIntelligenceItem
+  intelligenceMetricDefinitions: [MarketIntelligenceMetricDefinition!]!
   orders(
     after: String
     first: Int = 100

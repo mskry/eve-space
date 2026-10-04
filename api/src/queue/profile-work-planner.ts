@@ -115,15 +115,20 @@ export const runProfileWorkPlanner = async (
   )
   const ordered = planned.flat().toSorted(comparePlannedEntries)
   const prefix = ordered.slice(0, Math.min(profileWorkLimit, admission.remainingCapacity))
+  const upstream = prefix.filter(({ entry }) => entry.localWorkPending !== true)
   const cooldowns = await (options.cooldowns ?? getResourcePlanningCooldowns)(
-    prefix.map(({ candidate, resource }) =>
+    upstream.map(({ candidate, resource }) =>
       createResourcePlanningCooldownRequest(candidate, resource),
     ),
   )
   signal?.throwIfAborted()
-  if (cooldowns.length !== prefix.length) throw new Error('Profile cooldown batch is incomplete')
-  const firstCooldown = cooldowns.findIndex(({ active }) => active)
-  const admitted = prefix.slice(0, firstCooldown === -1 ? prefix.length : firstCooldown)
+  if (cooldowns.length !== upstream.length) throw new Error('Profile cooldown batch is incomplete')
+  const cooled = new Set(upstream.filter((_, index) => cooldowns[index]!.active))
+  const firstCooldown = prefix.findIndex((entry) => cooled.has(entry))
+  const admitted = prefix.filter(
+    ({ entry }, index) =>
+      firstCooldown === -1 || index < firstCooldown || entry.localWorkPending === true,
+  )
   const results = await producer.enqueueMany(
     admitted.map(({ entry, resource }) => createProfileCommand(entry, resource)),
     { preservePausedState: true, signal },

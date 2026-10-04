@@ -204,6 +204,7 @@ describe('ESI resilience Redis coordination', () => {
       mget: vi.fn().mockRejectedValue(new Error('unavailable')),
     }
     await recordEsiResponse({
+      // SAFETY: This unavailable Redis double implements the eval command reached by response recording.
       connection: unavailable as never,
       metadata: { headers: {}, retryAfterSeconds: 12, status: 429 },
       operation: 'wallet-balance',
@@ -1739,4 +1740,134 @@ test('propagates a GraphQL disconnect through a registered asset body and releas
   await vi.waitFor(() => expect(releases()).toHaveLength(1))
   expect(next).not.toHaveBeenCalled()
   expect(fetch).toHaveBeenCalledOnce()
+})
+
+describe('minimum history start admission', () => {
+  const operation = 'market-region-history' as const
+  const minimumKey = `${esiQuotaCoordinationPrefix}:minimum-start:GetMarketsRegionIdHistory`
+
+  test('shares the unconditional floor across replicas and principals without spending a slot on cancellation or full concurrency', async () => {
+    const follower = createClient(coordinationContainer)
+    try {
+      const first = await acquireEsiRequestPermit({
+        connection: coordination,
+        operation,
+        concurrency: 1,
+        queueTimeoutMs: 100,
+      })
+      const firstNext = Number(await coordination.get(minimumKey))
+      await expect(
+        acquireEsiRequestPermit({
+          connection: follower,
+          operation,
+          principal: 'different-principal',
+          concurrency: 1,
+          queueTimeoutMs: 30,
+        }),
+      ).rejects.toBeInstanceOf(EsiQuotaError)
+      expect(Number(await coordination.get(minimumKey))).toBe(firstNext)
+      const controller = new AbortController()
+      const pending = acquireEsiRequestPermit({
+        connection: follower,
+        operation,
+        concurrency: 2,
+        queueTimeoutMs: 3000,
+        signal: controller.signal,
+      })
+      controller.abort(new Error('history disconnected'))
+      await expect(pending).rejects.toThrow('history disconnected')
+      expect(Number(await coordination.get(minimumKey))).toBe(firstNext)
+      await first.release()
+      const second = await acquireEsiRequestPermit({
+        connection: follower,
+        operation,
+        principal: 'different-principal',
+        concurrency: 2,
+        queueTimeoutMs: 3000,
+        localState: createEsiExecutionRuntimeState(1).localQuota,
+      })
+      expect(Number(await follower.get(minimumKey)) - firstNext).toBeGreaterThanOrEqual(1000)
+      await second.release()
+    } finally {
+      follower.disconnect()
+    }
+  })
+
+  test('defers history when durable coordination is unavailable and honors a longer Retry-After', async () => {
+    const unavailable = { eval: vi.fn().mockRejectedValue(new Error('coordination offline')) }
+    await expect(
+      acquireEsiRequestPermit({
+        connection: unavailable as never,
+        operation,
+        concurrency: 2,
+        queueTimeoutMs: 100,
+      }),
+    ).rejects.toBeInstanceOf(EsiQuotaError)
+    await recordEsiResponse({
+      connection: coordination,
+      operation,
+      metadata: { headers: {}, status: 429, retryAfterSeconds: 7 },
+    })
+    await expect(
+      acquireEsiRequestPermit({
+        connection: coordination,
+        operation,
+        concurrency: 2,
+        queueTimeoutMs: 100,
+      }),
+    ).rejects.toMatchObject({ retryAfterSeconds: 7 })
+    expect(await coordination.get(minimumKey)).toBeNull()
+  })
+
+  test('registered history representations and retries share admission while a cache hit consumes none', async () => {
+    const starts: number[] = []
+    const fetch = vi.fn(async () => {
+      starts.push(Date.now())
+      return Response.json([], {
+        headers: {
+          'Cache-Control': 'public, max-age=3600',
+          Expires: new Date(Date.now() + 3600000).toUTCString(),
+          Date: new Date().toUTCString(),
+        },
+      })
+    })
+    vi.stubGlobal('fetch', fetch)
+    const [{ operationRegistry }, { createPublicEsiRead }] = await Promise.all([
+      import('@evespace/esi-client/operations'),
+      import('../../../src/esi-gateway/feature-execution.js'),
+    ])
+    const representation = (name: string) =>
+      createPublicEsiRead({
+        name,
+        operation,
+        descriptor: operationRegistry.GetMarketsRegionIdHistory.transport,
+        cacheSchema: operationRegistry.GetMarketsRegionIdHistory.responseSchema,
+        encodeRequest: (input: { regionId: number; typeId: number }) => ({
+          path: { region_id: input.regionId },
+          query: { type_id: input.typeId },
+        }),
+        map: ({ data }) => data,
+      })
+    const first = representation('history-floor-first')
+    const input = { regionId: 10000002, typeId: 34 }
+    await expect(first.execute(input)).resolves.toMatchObject({ source: 'esi' })
+    const next = await coordination.get(minimumKey)
+    await expect(first.execute(input)).resolves.toMatchObject({ source: 'cache' })
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(await coordination.get(minimumKey)).toBe(next)
+    const second = representation('history-floor-second')
+    await expect(second.execute({ ...input, typeId: 35 })).resolves.toMatchObject({ source: 'esi' })
+    expect(starts[1]! - starts[0]!).toBeGreaterThanOrEqual(995)
+    fetch.mockImplementationOnce(async () => {
+      starts.push(Date.now())
+      return Response.json({ error: 'temporary' }, { status: 503 })
+    })
+    await expect(second.execute({ ...input, typeId: 36 })).resolves.toMatchObject({ source: 'esi' })
+    expect(fetch).toHaveBeenCalledTimes(4)
+    expect(starts[2]! - starts[1]!).toBeGreaterThanOrEqual(995)
+    expect(starts[3]! - starts[2]!).toBeGreaterThanOrEqual(995)
+    const { getProductionEsiExecutionRuntime } =
+      await import('../../../src/esi-gateway/internal/production-runtime.js')
+    await (await getProductionEsiExecutionRuntime()).close()
+  })
 })

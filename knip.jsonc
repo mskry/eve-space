@@ -5,8 +5,9 @@
   // Codegen exports the composed schema types alongside curated operation types.
   "ignoreIssues": {
     "app/generated/graphql-operations.ts": ["types"],
-    "features/market/nuxt/src/runtime/app/market-graphql.ts": ["types"],
     // Generated operation types and schema/operation fingerprints form the published contract.
+    // Market also publishes intelligence example documents before their UI consumers exist.
+    "features/market/nuxt/src/runtime/app/market-graphql.ts": ["exports", "types"],
     "features/trading/nuxt/src/runtime/app/trading-graphql.ts": ["exports", "types"],
   },
   "workspaces": {
