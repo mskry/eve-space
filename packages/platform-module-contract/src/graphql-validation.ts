@@ -1,5 +1,10 @@
-import type { PlatformGraphQLContribution, PlatformGraphQLReadDeclaration } from './graphql.js'
+import {
+  platformGraphQLStrategies,
+  type PlatformGraphQLContribution,
+  type PlatformGraphQLReadDeclaration,
+} from './graphql.js'
 import type { PlatformModuleManifest } from './manifest.js'
+import { inventoryGraphQLIssues } from './inventory-graphql-validation.js'
 import { isPlatformContributionId } from './identifiers.js'
 import { platformOrganizationAudiences } from './server.js'
 import { validateCoreDataProducts, type PlatformModuleValidationAuthorities } from './validation.js'
@@ -47,12 +52,16 @@ const subjectIssues = (read: PlatformGraphQLReadDeclaration) => {
     issues.push('owned-character requires an exact subject argument')
   if (
     read.subjectArgument &&
-    (read.strategy !== 'owned-character' || !namePattern.test(read.subjectArgument))
+    (!['owned-character', 'personal-inventory', 'reviewer-corporation-inventory'].includes(
+      read.strategy,
+    ) ||
+      !namePattern.test(read.subjectArgument))
   )
     issues.push('invalid subject argument')
   if (
     read.requiredScope &&
-    (read.strategy !== 'owned-character' || !read.requiredScope.startsWith('esi-'))
+    (!['owned-character', 'personal-inventory'].includes(read.strategy) ||
+      !read.requiredScope.startsWith('esi-'))
   )
     issues.push('invalid owned-character scope')
   return issues
@@ -74,6 +83,15 @@ const organizationIssues = (
     read.organization.requiredPermission,
     ...(read.organization.additionalRequiredPermissions ?? []),
   ]) {
+    const consumer = manifest.server.inventoryConsumers?.find(
+      ({ id }) => id === read.inventoryConsumerId,
+    )
+    if (
+      read.strategy === 'reviewer-corporation-inventory' &&
+      consumer?.scope === 'corporation' &&
+      permission === consumer.sourcePermission
+    )
+      continue
     if (
       !manifest.permissions?.some(
         ({ key, audiences }) =>
@@ -87,13 +105,9 @@ const organizationIssues = (
 
 const securityIssues = (manifest: PlatformModuleManifest, read: PlatformGraphQLReadDeclaration) => {
   const issues = [...subjectIssues(read), ...organizationIssues(manifest, read)]
-  const supportedStrategies: readonly string[] = [
-    'public',
-    'authenticated-session',
-    'owned-character',
-    'organization-member',
-  ]
-  if (!supportedStrategies.includes(read.strategy)) issues.push('unsupported GraphQL strategy')
+  if (!platformGraphQLStrategies.includes(read.strategy))
+    issues.push('unsupported GraphQL strategy')
+  issues.push(...inventoryGraphQLIssues(manifest, read))
   if (read.sectionId && !manifest.sections?.some(({ id }) => id === read.sectionId))
     issues.push('unknown section')
   return issues

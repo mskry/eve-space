@@ -41,15 +41,18 @@ This subsystem uses support, representation, contract, infrastructure, execution
 
 - Array-valued identity requires an explicit operation-specific projector. Never infer identity by walking an input object for a matching property.
 - Equivalent sets must produce one identity, and distinct sets must not collide. Empty, oversized, and malformed inputs fail closed.
-- The recursive lookup in `identity.ts` is reachable only from SDK-envelope-shaped inputs. Moving an array-body operation onto envelope-shaped representation input exposes it to that path, so a projector must exist before the move.
+- The recursive lookup in `internal/identity.ts` is reachable only from SDK-envelope-shaped inputs. Moving an array-body operation onto envelope-shaped representation input exposes it to that path, so a projector must exist before the move.
 
 ## Authorization
 
 - Generated operation authority has two kinds: public and OAuth. It carries canonical request-subject bindings, the exact scope, and an optional reviewed corporation-role predicate; an empty role inventory means no operation-specific role check. It does not choose a credential strategy.
 - Resource compilation selects a public, current-owned-character, current-managed-member-character, or current-managed-corporation-source binding for each operation usage. Owned-character corporation inputs must match current affiliation; managed-corporation inputs must match the exact registered source. A managed-member usage retains organization version, account and character lifecycles, section/disclosure/activation admission, generation, and scope. These are not application permissions.
 - Organization and deployment lifecycle generation checks are caller-side concerns layered above a public-authorized operation. They stay with the caller and do not migrate into a representation.
-- A character ID selects credentials and required scopes. The gateway resolves tokens internally and rechecks the operation scope; it does not grant ownership from a character ID. Ownership stays with `middleware/owned-character.ts`, while platform resource guards own the reviewed resource credential binding and source/role fence before each call.
+- A character ID selects credentials and required scopes. The gateway resolves tokens internally and rechecks the operation scope; it does not grant ownership from a character ID. Ownership stays with `api/src/middleware/owned-character.ts`, while platform resource guards own the reviewed resource credential binding and source/role fence before each call.
 - Tokens, credentials, and principal strings never cross the feature-facing seam.
+- Read results expose an optional `readableUntil` deadline from the admitted cache envelope's
+  stale window. Aggregate source readers use it to fence evidence expiry; it does not extend
+  retention, authorize stale fallback, or enter the existing HTTP result-metadata DTO.
 
 ## Requests And Mutations
 
@@ -84,3 +87,14 @@ revision and authorization lifecycle/generation. Caller cancellation detaches th
 last waiter aborts the source. Every private caller still verifies its own authorization before
 release. Track the shared source through finalization during runtime close, retain SDK attempt
 deadlines, and keep waiter state separate from result caches and mutation execution.
+
+<!-- bmad:context -->
+<!-- Verified 2026-10-03 against 35bf357129965cbf18751d290bc0b29f1a6c5fe7. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+
+## ESI gateway protocol and cache policy
+
+## Where things are
+
+- For gateway operations, cache, transport, cancellation, rate limits, or response-validation changes, read `docs/esi-gateway-cache-policy.md`.
+
+<!-- /bmad:context -->

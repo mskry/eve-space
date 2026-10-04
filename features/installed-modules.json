@@ -20,6 +20,13 @@
         "package": "@eve-space/market-manifest",
         "export": "./manifest"
       }
+    },
+    {
+      "moduleId": "trading",
+      "manifest": {
+        "package": "@eve-space/trading-manifest",
+        "export": "./manifest"
+      }
     }
   ]
 }

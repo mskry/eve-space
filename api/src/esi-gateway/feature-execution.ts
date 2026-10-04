@@ -95,6 +95,7 @@ export interface EsiReadResultMetadata {
 }
 
 export interface EsiReadResult<Data> extends EsiReadResultMetadata {
+  readonly readableUntil?: string
   readonly data: Data
   readonly source: 'esi' | 'cache' | 'not-modified'
   readonly quota: EsiReadQuota
@@ -253,6 +254,7 @@ function toEsiReadResult<Data>(result: EsiCachedResult<Data>): EsiReadResult<Dat
     source: result.source,
     validatedAt: result.validatedAt,
     cachedUntil: result.cachedUntil,
+    ...(result.readableUntil && { readableUntil: result.readableUntil }),
     stale: result.stale,
     ...(result.retryAt && { retryAt: result.retryAt }),
     ...(result.refreshFailureClass && { refreshFailureClass: result.refreshFailureClass }),

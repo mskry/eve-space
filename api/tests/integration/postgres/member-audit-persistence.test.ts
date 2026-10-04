@@ -103,6 +103,7 @@ test('retains the squashed baseline and applies the current-observation migratio
     expect([...migrations]).toStrictEqual([
       { name: 'member-audit-001-baseline.sql' },
       { name: 'member-audit-002-current-observation.sql' },
+      { name: 'member-audit-003-asset-inventory.sql' },
     ])
   } finally {
     await upgradeConnection.end()
@@ -849,8 +850,8 @@ test('attests the declared routines and denies the runtime role direct table acc
   `
 
   expect(state).toStrictEqual({
-    attestationCount: 14,
-    migrationCount: 2,
+    attestationCount: 18,
+    migrationCount: 3,
     moduleTableAccess: false,
     publicTableAccess: false,
     routineAccess: true,

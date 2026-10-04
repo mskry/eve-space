@@ -38,6 +38,7 @@ describe('core migration manifest', () => {
       '018_current_observation_audit.sql',
       '019_market_group_icon.sql',
       '020_sde_solar_system_region.sql',
+      '021_inventory_access_audit.sql',
     ])
   })
 
@@ -61,7 +62,7 @@ describe('core migration manifest', () => {
     expect(() =>
       assertCoreMigrationManifest([
         ...activeCoreMigrationManifest,
-        { name: '021_next.sql', sha256: migrationSha256('select 1;') },
+        { name: '022_next.sql', sha256: migrationSha256('select 1;') },
       ]),
     ).toThrow('match the accepted frozen inventory')
     expect(() =>
@@ -69,7 +70,7 @@ describe('core migration manifest', () => {
         ...activeCoreMigrationManifest,
         { name: '001_reused.sql', sha256: migrationSha256('select 1;') },
       ]),
-    ).toThrow('append a unique sequence after 20')
+    ).toThrow('append a unique sequence after 21')
   })
 })
 

@@ -17,7 +17,7 @@ import type { ModulePersistenceRoutineDescriptor } from '../../src/db/module-per
 describe('module persistence attestation', () => {
   test('pins the installed contract fingerprint after registered migrations', () => {
     expect(installedModulePersistenceContractFingerprint).toBe(
-      '2f15fc73d4042ae47fbf360829f77bb05f1a47616304b10a28d59ec10f365bdc',
+      'e56b51c5fbde9b96df4c8ba1ba92eb3d8300386a870fdf57b57a8769c75ade9e',
     )
     expect(
       persistenceContractFingerprintFor(installedModulePersistenceOperations, installedModuleIds),

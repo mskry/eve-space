@@ -2,7 +2,12 @@
 
 import type { PlatformInstalledModuleMigrationDescriptor } from '@eve-space/platform-module-contract/installed'
 
-export const installedModuleIds = ['market', 'member-audit', 'organization-activity'] as const
+export const installedModuleIds = [
+  'market',
+  'member-audit',
+  'organization-activity',
+  'trading',
+] as const
 export const installedModuleMigrations = [
   {
     moduleId: 'market',
@@ -33,6 +38,12 @@ export const installedModuleMigrations = [
     name: 'member-audit-002-current-observation.sql',
     packageName: '@eve-space/member-audit-server',
     exportPath: './migrations/member-audit-002-current-observation.sql',
+  },
+  {
+    moduleId: 'member-audit',
+    name: 'member-audit-003-asset-inventory.sql',
+    packageName: '@eve-space/member-audit-server',
+    exportPath: './migrations/member-audit-003-asset-inventory.sql',
   },
   {
     moduleId: 'organization-activity',

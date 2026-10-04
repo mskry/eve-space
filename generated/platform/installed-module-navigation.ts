@@ -15,4 +15,16 @@ export const installedModuleNavigation = [
     order: 15,
     pageName: 'eve-market-overview',
   },
+  {
+    moduleId: 'trading',
+    id: 'inventory',
+    label: 'Trading',
+    description: 'Observed inventory across your characters',
+    to: '/trading',
+    icon: 'market',
+    audience: 'authenticated',
+    placement: 'dashboard',
+    order: 16,
+    pageName: 'eve-trading-inventory',
+  },
 ] as const satisfies readonly PlatformInstalledNavigation[]

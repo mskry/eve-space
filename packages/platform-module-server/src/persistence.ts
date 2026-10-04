@@ -49,6 +49,7 @@ export interface PlatformInstalledPersistenceOperationDescriptor {
     readonly resourceProjections: readonly string[]
     readonly resourceMaterializations: readonly string[]
     readonly graphqlReads?: readonly string[]
+    readonly inventoryProviders?: readonly string[]
   }
 }
 

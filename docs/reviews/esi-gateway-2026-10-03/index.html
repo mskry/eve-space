@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ESI gateway — engineering assessment</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-padding-top: 2rem;
+      }
+      body {
+        margin: 0;
+        color: #182b45;
+        background: #f3f5f8;
+        font:
+          16px/1.65 system-ui,
+          sans-serif;
+      }
+      a {
+        color: #175b85;
+        text-underline-offset: 3px;
+      }
+      a:focus-visible,
+      summary:focus-visible {
+        outline: 3px solid #175b85;
+        outline-offset: 4px;
+      }
+      .skip {
+        position: absolute;
+        left: 1rem;
+        top: -5rem;
+        background: white;
+        padding: 0.5rem;
+      }
+      .skip:focus {
+        top: 1rem;
+      }
+      header {
+        background: #162b45;
+        color: #f7f9ff;
+        padding: 2.3rem max(1.3rem, calc((100vw - 1100px) / 2));
+      }
+      header p {
+        max-width: 800px;
+      }
+      header a {
+        color: #c6e8ff;
+      }
+      header strong {
+        font-size: 1.7rem;
+      }
+      nav {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+      }
+      main {
+        max-width: 1100px;
+        margin: 2rem auto;
+        padding: 2rem 2.5rem;
+        background: white;
+        border-radius: 14px;
+      }
+      h1 {
+        font-size: 2rem;
+        line-height: 1.2;
+      }
+      h2 {
+        margin-top: 2.8rem;
+        font-size: 1.4rem;
+      }
+      h3 {
+        font-size: 1.1rem;
+      }
+      code {
+        font:
+          0.85em/1.4 ui-monospace,
+          monospace;
+        background: #edf2f7;
+        padding: 0.13rem 0.3rem;
+        border-radius: 4px;
+        overflow-wrap: anywhere;
+      }
+      li {
+        margin: 0.6rem 0;
+      }
+      .table {
+        overflow-x: auto;
+        margin: 1.2rem 0;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.9rem;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid #dbe3ed;
+        padding: 0.8rem;
+      }
+      th {
+        background: #edf2f7;
+      }
+      figure {
+        margin: 1.5rem 0;
+      }
+      svg {
+        width: 100%;
+        height: auto;
+        min-width: 650px;
+      }
+      figure {
+        overflow-x: auto;
+      }
+      figcaption {
+        font-size: 0.9rem;
+        color: #435976;
+      }
+      .finding {
+        border: 1px solid #dbe3ed;
+        border-left: 5px solid #a36d12;
+        border-radius: 8px;
+        padding: 1rem 1.2rem;
+        margin: 1rem 0;
+      }
+      .finding.high {
+        border-left-color: #a93939;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 650;
+        line-height: 1.5;
+      }
+      .finding p:last-child {
+        margin-bottom: 0;
+      }
+      footer {
+        max-width: 1100px;
+        margin: 2rem auto;
+        padding: 0 2rem;
+        color: #435976;
+        font-size: 0.9rem;
+      }
+      @media (max-width: 700px) {
+        main {
+          padding: 1.3rem;
+          margin: 1rem;
+          border-radius: 8px;
+        }
+        header {
+          padding: 2rem 1.3rem;
+        }
+        h1 {
+          font-size: 1.7rem;
+        }
+      }
+      @media print {
+        body {
+          background: white;
+        }
+        header {
+          background: white;
+          color: #182b45;
+          padding: 0;
+        }
+        header a {
+          color: #175b85;
+        }
+        main {
+          padding: 0;
+          margin: 0;
+          max-width: none;
+        }
+        details {
+          break-inside: avoid;
+        }
+        .skip,
+        nav {
+          display: none;
+        }
+        figure {
+          overflow: visible;
+        }
+        svg {
+          min-width: 0;
+        }
+        a {
+          color: inherit;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to assessment</a>
+    <header>
+      <p>ENGINEERING ASSESSMENT · 3 OCTOBER 2026</p>
+      <strong>Retain the design. Repair convergence and shutdown.</strong>
+      <p>
+        Two high-priority invalidation failures and one lifecycle gap reproduced through controlled
+        probes. Existing checks pass: 365 tests, dependency boundaries and egress.
+      </p>
+      <nav aria-label="Assessment sections">
+        <a href="#architecture-assessment">Architecture</a><a href="#findings">Findings</a
+        ><a href="#fetching-compliance-evidence">Compliance</a
+        ><a href="#verification">Verification</a><a href="report.md">Markdown report</a>
+      </nav>
+    </header>
+    <main id="main" tabindex="-1">
+      <h1 id="esi-gateway-architecture-evaluation">ESI gateway architecture evaluation</h1>
+      <p>
+        The architecture is sound in its main boundaries, but its invalidation and shutdown
+        contracts need correction. Retain the gateway and its public interfaces. Two reproduced
+        invalidation failures are the highest priorities; a reproduced lease-renewal drain failure
+        follows. Passing structural checks and the existing unit suite do not cover these
+        combinations.
+      </p>
+      <h2 id="scope-and-evidence">Scope and evidence</h2>
+      <ul>
+        <li>
+          Date: 2026-10-03. Commit: <code>35bf357129965cbf18751d290bc0b29f1a6c5fe7</code>, plus the
+          current working tree.
+        </li>
+        <li>Audience: the user&#x27;s own engineering decision-making, as requested.</li>
+        <li>
+          Reviewed: <code>api/src/esi-gateway</code>, its public interfaces and internal execution
+          paths, gateway dependency and egress verifiers, relevant architecture guidance, current
+          ESI specifications, and archived deepening, Effect-lifecycle, and rate-admission designs.
+          Wallet and mail mounts were sampled to establish the caller boundary.
+        </li>
+        <li>
+          The working tree already contained substantial unrelated work, including changes to
+          gateway guidance. Existing files were preserved. This evaluation makes no production
+          implementation changes.
+        </li>
+        <li>
+          Three independent BMad reviewer lenses covered the architecture rubric, adversarial
+          consistency, and reconciliation with current code. Their full findings are in
+          <a href="reviews/">reviews/</a>.
+        </li>
+        <li>
+          GitNexus reported an index three commits behind HEAD. A concept query returned malformed
+          symbol/path data, and an exact symbol context lookup failed. Refresh attempts failed with
+          <code>ERR_PNPM_IGNORED_BUILDS</code>. No codebase-memory coverage tool was exposed.
+          Material findings use exact source and behavioral probes; there is no complete graph or
+          absence-of-defects claim.
+        </li>
+        <li>
+          BMad&#x27;s project configuration/memory scripts and <code>uv</code> were unavailable.
+          This is a validation report using the installed skill, not a newly created architecture
+          spine or a repaired BMad installation.
+        </li>
+      </ul>
+      <h2 id="architecture-assessment">Architecture assessment</h2>
+      <p>
+        The implemented paradigm is
+        <strong>ports and adapters behind a policy-owning gateway</strong>. Features declare a
+        representation and call a small typed Promise interface; the gateway owns protocol binding,
+        token resolution, caching, retries, quota admission, coordination, and lifecycle. The SDK
+        owns one typed protocol attempt.
+      </p>
+      <figure>
+        <svg viewBox="0 0 1000 470" role="img" aria-labelledby="diagram-title diagram-desc">
+          <title id="diagram-title">Gateway ownership and execution</title>
+          <desc id="diagram-desc">
+            Core callers and installed modules use distinct interfaces sharing a gateway runtime.
+            The runtime accesses authorization, disposable data caches, durable coordination, and
+            scoped SDK execution to EVE ESI.
+          </desc>
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+              <path d="M0 0 L8 4 L0 8 Z" fill="#566b86" />
+            </marker>
+          </defs>
+          <g fill="none" stroke="#566b86" stroke-width="2" marker-end="url(#arrow)">
+            <path d="M250 85 V120 H500 V150" />
+            <path d="M750 85 V120 H500" />
+            <path d="M500 230 V270 H125 V300" />
+            <path d="M500 270 H375 V300" />
+            <path d="M500 270 H625 V300" />
+            <path d="M500 270 H875 V300" />
+            <path d="M875 370 V400" />
+          </g>
+          <g stroke="#b5c2d4" fill="#f4f7fb">
+            <rect x="100" y="20" width="300" height="65" rx="10" />
+            <rect x="600" y="20" width="300" height="65" rx="10" />
+            <rect x="290" y="150" width="420" height="80" rx="12" fill="#e4f0f4" />
+            <rect x="15" y="300" width="220" height="70" rx="10" />
+            <rect x="265" y="300" width="220" height="70" rx="10" />
+            <rect x="515" y="300" width="220" height="70" rx="10" />
+            <rect x="765" y="300" width="220" height="70" rx="10" />
+            <rect x="790" y="400" width="170" height="45" rx="10" />
+          </g>
+          <g fill="#182b45" font-family="system-ui,sans-serif" text-anchor="middle" font-size="17">
+            <text x="250" y="46">Core callable representations</text>
+            <text x="250" y="69" font-size="14">Canonical mapping before caching</text>
+            <text x="750" y="46">Platform operation dispatch</text>
+            <text x="750" y="69" font-size="14">Wire caching before module mapping</text>
+            <text x="500" y="183" font-weight="700">Gateway execution runtime</text>
+            <text x="500" y="207" font-size="14">
+              Authorization, caching, retries, quota and lifecycle
+            </text>
+            <text x="125" y="328">Authorization ports</text>
+            <text x="125" y="351" font-size="13">Lifecycle, scope and generation</text>
+            <text x="375" y="328">L1 + Cache Redis</text>
+            <text x="375" y="351" font-size="13">Disposable values and telemetry</text>
+            <text x="625" y="328">Coordination Redis</text>
+            <text x="625" y="351" font-size="13">Durable admission and fencing</text>
+            <text x="875" y="328">Scoped SDK attempt</text>
+            <text x="875" y="351" font-size="13">Body, observation and permit</text>
+            <text x="875" y="429">EVE ESI</text>
+          </g>
+        </svg>
+        <figcaption>
+          Preserve these owners. Correct mutation convergence and lease finalization within the
+          existing boundaries.
+        </figcaption>
+      </figure>
+      <div class="table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Dimension</th>
+              <th scope="col">Assessment</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Public interface depth</td>
+              <td>
+                Strong. Factories hide registration order, credentials, transport and cache
+                machinery. Read results expose intentional freshness and failure metadata.
+              </td>
+            </tr>
+            <tr>
+              <td>Ownership</td>
+              <td>
+                Strong. Application authorization remains with callers; gateway credential checks do
+                not infer ownership from a character ID. SDK protocol facts and application policy
+                have different owners.
+              </td>
+            </tr>
+            <tr>
+              <td>Dependency direction</td>
+              <td>
+                Explicit and mechanically checked. Pure/support, infrastructure, execution and
+                observability responsibilities have an allowlist and cycle checks.
+              </td>
+            </tr>
+            <tr>
+              <td>Representation identity</td>
+              <td>
+                Names, versions, normalized inputs, authorization lifecycles/generations and
+                resource revisions have identifiable owners. Core canonical and platform wire
+                representations remain distinct.
+              </td>
+            </tr>
+            <tr>
+              <td>State and invalidation</td>
+              <td>
+                Requires correction. The mutation cancellation and repair-marker failures below
+                break the intended convergence after external mutations.
+              </td>
+            </tr>
+            <tr>
+              <td>Lifecycle</td>
+              <td>
+                Upstream permits span body consumption and metadata observation. Cache-collapse
+                lease renewals have a separate drain gap.
+              </td>
+            </tr>
+            <tr>
+              <td>Operations</td>
+              <td>
+                Redis roles, namespace recovery, conservative coordination degradation, telemetry,
+                shutdown order and capacity guidance are documented. Distributed deployment behavior
+                was not exercised in this review.
+              </td>
+            </tr>
+            <tr>
+              <td>Technology fit</td>
+              <td>
+                Ratified against this checkout: SDK 3.1.0 and pinned Effect 4.0.0-rc.115. Effect
+                remains confined to the internal attempt lifecycle. No new technology binding,
+                upgrade or claim about latest releases is made.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The 1,560-line execution runtime concentrates substantial orchestration, but file size alone
+        does not justify another public seam or a broad rewrite. Correct the identified contracts
+        first. Any later extraction should isolate a cohesive internal lifecycle or cache behavior
+        while preserving one execution owner.
+      </p>
+      <h2 id="findings">Findings</h2>
+      <details
+        class="finding high"
+        id="f1-high-cancellation-can-suppress-invalidation-after-an-uncertain-mutation"
+        open
+      >
+        <summary>
+          F1 — HIGH — Cancellation can suppress invalidation after an uncertain mutation
+        </summary>
+        <p>
+          <strong>Trigger:</strong> a caller aborts after a mutation dispatches, and the upstream
+          response fails. The external mutation may already have applied.
+        </p>
+        <p>
+          Mutation dispatch deliberately ignores post-dispatch caller cancellation
+          (<code>api/src/esi-gateway/internal/execution-runtime.ts:589</code>). However, the
+          surrounding retry catch checks the caller signal before preserving the SDK failure
+          (<code>:1166</code>). The raw abort reason replaces the uncertain transport error, so
+          <code>shouldAdvanceRevisionAfterMutationError</code> no longer recognizes an unknown
+          mutation outcome (<code>internal/failure-policy.ts:149</code>). The mailbox revision can
+          remain unchanged.
+        </p>
+        <p>
+          <strong>Observed:</strong> the temporary registered-interface probe returned the
+          caller&#x27;s cancellation error and made zero revision increments after a dispatched
+          transport failure. This proves suppression of invalidation, not whether a real ESI
+          mutation applied.
+        </p>
+        <p>
+          <strong>Expected:</strong> once dispatched, preserve outcome classification long enough to
+          invalidate on uncertain completion, then apply the caller-facing cancellation policy.
+        </p>
+        <p>
+          <strong>Smallest correction:</strong> separate pre-dispatch cancellation from
+          post-dispatch mutation settlement; do not replace the outcome used for revision decisions
+          with an abort reason. Add regression coverage for abort combined with timeout/response
+          failure, retaining the existing successful-after-abort behavior.
+        </p>
+      </details>
+      <details
+        class="finding high"
+        id="f2-high-recovery-of-mutation-revisions-depends-on-disposable-cache-state"
+        open
+      >
+        <summary>
+          F2 — HIGH — Recovery of mutation revisions depends on disposable cache state
+        </summary>
+        <p>
+          <strong>Trigger:</strong> ESI confirms a mutation, coordination revision advancement
+          fails, and the disposable repair marker is subsequently lost while another runtime retains
+          pre-mutation L1 data.
+        </p>
+        <p>
+          <code>EsiResourceRevisionRegistry.advance</code> records a failed advance in a local set
+          and Cache Redis (<code>api/src/esi-gateway/internal/resource-revision.ts:106</code>).
+          Another runtime decides repair is needed using its own local set and that disposable
+          marker (<code>:118</code>). If the marker disappears, a successful read of the old
+          coordination revision allows its old L1 envelope to remain compatible.
+        </p>
+        <p>
+          <strong>Observed:</strong> a two-runtime probe warmed a reader, completed a 204 mutation
+          whose revision increment failed, cleared the disposable marker, and obtained the
+          reader&#x27;s pre-mutation L1 result with revision zero and no repair.
+        </p>
+        <p>
+          <strong>Expected:</strong> losing disposable state cannot make an unresolved external
+          mutation look reconciled. This concerns data invalidation; the probe did not demonstrate
+          an authorization bypass.
+        </p>
+        <p>
+          <strong>Smallest correction:</strong> give revision-repair intent a durable owner and an
+          explicit recovery/admission contract. Merely moving a best-effort write onto the same
+          unreachable Redis is insufficient: establish durable intent before dispatch, or otherwise
+          keep revision-sensitive reads gated until recovery can prove convergence. Preserve
+          disposable-cache loss as a safe miss.
+        </p>
+      </details>
+      <details
+        class="finding medium"
+        id="f3-medium-runtime-shutdown-does-not-join-issued-cache-lease-renewals"
+      >
+        <summary>F3 — MEDIUM — Runtime shutdown does not join issued cache-lease renewals</summary>
+        <p>
+          <code>#renewLease</code> schedules fire-and-forget asynchronous renewals
+          (<code>api/src/esi-gateway/internal/execution-runtime.ts:1266</code>). The request
+          finalizer stops the timer and releases the lease, but does not join an already issued
+          renewal (<code>:1117</code>). <code>close()</code> waits for tracked operations, so it can
+          finish before that renewal settles (<code>:1443</code>). This differs from the carefully
+          supervised upstream-permit lifecycle.
+        </p>
+        <p>
+          <strong>Observed:</strong> the probe held an issued request-lease renewal pending and saw
+          runtime closure resolve before settling it.
+        </p>
+        <p>
+          <strong>Expected:</strong> closing the gateway drains accepted work that may still use
+          process-owned dependencies, including issued coordination commands.
+        </p>
+        <p>
+          <strong>Smallest correction:</strong> serialize renewal, retain the issued promise, stop
+          further scheduling, and await settlement before release and operation completion. Keep
+          request-collapse lease lifetime distinct from upstream concurrency permit lifetime.
+        </p>
+      </details>
+      <details
+        class="finding medium"
+        id="f4-medium-the-documented-exclusive-execution-path-rule-contradicts-required-dual-registrations"
+      >
+        <summary>
+          F4 — MEDIUM — The documented exclusive execution-path rule contradicts required dual
+          registrations
+        </summary>
+        <p>
+          The gateway guide requires exactly one path per operation
+          (<code>api/src/esi-gateway/AGENTS.md:29</code>). The egress verifier deliberately requires
+          both core callable and platform registrations for ten operations
+          (<code>scripts/verify-esi-egress.mjs:15</code>, <code>:94</code>). The catalog
+          initializer&#x27;s comment also promises exclusivity
+          (<code>api/src/esi-gateway/catalog-interface.ts:177</code>).
+        </p>
+        <p>
+          Two independently built callers can follow incompatible instructions: one removes a
+          registration to satisfy the prose, while another retains it to satisfy verification. This
+          is a contract defect; it does not demonstrate duplicate network dispatch or a cache
+          collision.
+        </p>
+        <p>
+          <strong>Smallest correction:</strong> document one selected execution path per
+          representation/invocation, with reviewed shared operations allowed distinct canonical core
+          and platform wire representations. Link to the allowlist and identify version ownership.
+          Preserve archived designs as history rather than removing working registrations to satisfy
+          stale wording.
+        </p>
+      </details>
+      <details
+        class="finding medium"
+        id="f5-medium-the-egress-verifier-misses-ordinary-raw-fetch-patterns"
+      >
+        <summary>F5 — MEDIUM — The egress verifier misses ordinary raw-fetch patterns</summary>
+        <p>
+          The direct-fetch detector checks a callee named <code>fetch</code> and a directly literal
+          ESI URL (<code>scripts/verify-esi-egress.mjs:786</code>). Its actual fixture behavior
+          rejects a literal direct fetch but accepts both a same-file URL constant and an alias of
+          <code>globalThis.fetch</code>.
+        </p>
+        <p>
+          <strong>Observed:</strong> disposable fixtures ran through the real verifier; the two
+          bypass forms exited zero. No network requests occurred and no production bypass was
+          established.
+        </p>
+        <p>
+          <strong>Smallest correction:</strong> resolve ordinary local URL constants and fetch
+          aliases using the existing AST machinery, with focused rejection fixtures. Document
+          remaining dynamic limitations. A green verifier is evidence for its checked patterns, not
+          proof of all possible egress.
+        </p>
+      </details>
+      <h2 id="contract-follow-ups-and-recommendations">Contract follow-ups and recommendations</h2>
+      <ul>
+        <li>
+          <strong>MEDIUM, acknowledged spec conflict:</strong> cached wallet results return empty
+          quota, while <code>openspec/specs/esi-resilience/spec.md:257</code> requires the captured
+          quota snapshot.
+          <code
+            >openspec/changes/archive/2026-09-12-deepen-esi-module-interface/reconciliation.md:31</code
+          >
+          explicitly deferred this discrepancy. Decide whether to adopt empty cached quota in the
+          active spec or make a separate envelope change. Historical quota must remain descriptive
+          and must not become admission state.
+        </li>
+        <li>
+          <strong>LOW, provenance gap:</strong>
+          <code>docs/organization-platform.md:184</code> records SDK 3.0.1; the current SDK is
+          3.1.0. Later core metadata review dates do not clearly link that organization&#x27;s
+          review to the current generated facts. Reconcile provenance without inventing a live
+          endpoint review.
+        </li>
+        <li>
+          <strong>LOW, evolution guidance:</strong> a feature mapper/schema change requires an
+          operation-catalog representation-version bump; the factory has no independent version
+          field. Document that owner and its effect on shared platform caches. Independent
+          versioning is a future choice only if independent evolution becomes necessary.
+        </li>
+      </ul>
+      <h2 id="fetching-compliance-evidence">Fetching compliance evidence</h2>
+      <p>
+        This is a gateway architecture assessment, not a complete browser-to-ESI or organization
+        admission audit. Frontend queries, SSR, restored browser presentation and module admission
+        graphs are outside scope. The sampled mounts establish where ownership is checked; they do
+        not certify every caller.
+      </p>
+      <div class="table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Path / interface</th>
+              <th scope="col">Identity and execution</th>
+              <th scope="col">Mounted authorization / mapping</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>GET /api/me/characters/:characterId/wallet</code></td>
+              <td>Character and lifecycle; <code>wallet-balance-core</code> registered read</td>
+              <td>
+                Root mount <code>api/src/index.ts:75</code>; parameter validation, session and
+                owned-character middleware in <code>api/src/characters/finance-routes.ts:50</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Mail mutations under <code>/api/me/characters/:characterId/mail</code></td>
+              <td>
+                Character/lifecycle and mutation inputs; registered mutation with mailbox revision
+              </td>
+              <td>
+                Root mount <code>api/src/index.ts:76</code>; route-owned
+                validation/session/ownership; the probe calls the gateway directly to isolate
+                post-admission behavior
+              </td>
+            </tr>
+            <tr>
+              <td><code>executePlatformEsiOperation</code></td>
+              <td>Catalog-validated inputs and explicit public or character-lifecycle binding</td>
+              <td>
+                Gateway verifies scope/generation; platform callers own resource admission and
+                mapping after validated wire-cache retrieval. Full module routes were not audited.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Check IDs</th>
+              <th scope="col">Result</th>
+              <th scope="col">Evidence and limit</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>MOD-01–04</td>
+              <td>PASS within gateway scope</td>
+              <td>
+                Public seams, representation registration, SDK binding and interface tests; browser
+                consumers not evaluated
+              </td>
+            </tr>
+            <tr>
+              <td>MOD-05</td>
+              <td>N/A</td>
+              <td>Browser query-persistence interface is outside scope</td>
+            </tr>
+            <tr>
+              <td>MOD-06</td>
+              <td>BLOCKED for exhaustive claim</td>
+              <td>Dependency checks pass; no exhaustive helper/type duplication audit</td>
+            </tr>
+            <tr>
+              <td>AUTH-04</td>
+              <td>PASS for sampled wallet mount</td>
+              <td>Validation/session/owned-character ordering; gateway scope/lifecycle rechecks</td>
+            </tr>
+            <tr>
+              <td>AUTH-01–03, AUTH-05–07</td>
+              <td>N/A to full compliance certification</td>
+              <td>Browser execution, organization authority and presentation gates not audited</td>
+            </tr>
+            <tr>
+              <td>QUERY-01, QUERY-04</td>
+              <td>PASS within gateway scope</td>
+              <td>
+                Registered identity, schemas and representation tests; no browser key/contract
+                certification
+              </td>
+            </tr>
+            <tr>
+              <td>QUERY-06</td>
+              <td>FAIL</td>
+              <td>F1 and F2 reproduce broken mutation invalidation</td>
+            </tr>
+            <tr>
+              <td>Other QUERY checks; PERSIST-01–10</td>
+              <td>N/A</td>
+              <td>Browser result retention and application DTO transport are outside scope</td>
+            </tr>
+            <tr>
+              <td>TIME-01, TIME-02, TIME-05</td>
+              <td>PASS for covered gateway cases</td>
+              <td>
+                Freshness, conditional 304, generation-bound private stale and failure-policy unit
+                tests pass
+              </td>
+            </tr>
+            <tr>
+              <td>TIME-03–04, TIME-06–07</td>
+              <td>N/A</td>
+              <td>Browser restoration, presentation and refresh scheduling are outside scope</td>
+            </tr>
+            <tr>
+              <td>ESI-01</td>
+              <td>BLOCKED for complete review provenance</td>
+              <td>
+                Local registration consistency checks pass; the organization SDK review link remains
+                unresolved, and no live endpoint review was performed
+              </td>
+            </tr>
+            <tr>
+              <td>ESI-02</td>
+              <td>PASS for local consistency</td>
+              <td>
+                Compatibility/validation ownership and narrow bloodlines exception; no live endpoint
+                review
+              </td>
+            </tr>
+            <tr>
+              <td>ESI-03</td>
+              <td>FAIL; distributed execution BLOCKED</td>
+              <td>F2 exposes disposable repair state; real Redis integration was not run</td>
+            </tr>
+            <tr>
+              <td>ESI-04</td>
+              <td>PASS for covered cases</td>
+              <td>
+                Identity, malformed envelope, generation, fence and waiter unit scenarios pass; no
+                complete distributed claim
+              </td>
+            </tr>
+            <tr>
+              <td>ESI-05</td>
+              <td>PASS for covered SDK/permit cases</td>
+              <td>
+                Permit/body/deadline tests pass. F3 separately fails the broader runtime-close
+                contract for cache-collapse leases
+              </td>
+            </tr>
+            <tr>
+              <td>ESI-06–07</td>
+              <td>PASS for existing unit scenarios, with F1 qualification</td>
+              <td>
+                Pacing/cooldown/retry tests pass; mutation failure classification needs correction
+              </td>
+            </tr>
+            <tr>
+              <td>ESI-08–09</td>
+              <td>N/A</td>
+              <td>Pagination collectors and name-resolution orchestration are outside scope</td>
+            </tr>
+            <tr>
+              <td>ESI-10</td>
+              <td>PASS for existing secrecy/failure scenarios, with F1 qualification</td>
+              <td>
+                Interface secrecy/redaction/failure tests pass; post-dispatch cancellation loses
+                useful classification
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        PASS means only the stated scope and evidence. It does not extend to distributed deployments
+        or unreviewed callers.
+      </p>
+      <h2 id="verification">Verification</h2>
+      <div class="table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Exact command / check</th>
+              <th scope="col">Result</th>
+              <th scope="col">Evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>pnpm exec node scripts/verify-esi-egress.mjs</code></td>
+              <td>Exit 0 on current source</td>
+              <td>
+                <a href="evidence/egress.log.txt">runner log</a>; F5 separately probes limitations
+              </td>
+            </tr>
+            <tr>
+              <td><code>pnpm exec tsx scripts/verify-esi-gateway-boundaries.ts</code></td>
+              <td>Exit 0</td>
+              <td><a href="evidence/boundaries.log.txt">runner log</a></td>
+            </tr>
+            <tr>
+              <td><code>pnpm --filter @eve-space/api test tests/esi-gateway</code></td>
+              <td>Exit 0; 31 files, 365 tests passed</td>
+              <td><a href="evidence/tests.log.txt">runner log</a></td>
+            </tr>
+            <tr>
+              <td>
+                <code
+                  >pnpm --filter @eve-space/api test
+                  tests/esi-gateway/architecture-adversarial-probe.test.ts</code
+                >
+              </td>
+              <td>Exit 0; 3 probes reproduced F1–F3</td>
+              <td>
+                Temporary repository test removed; reproduction source retained in
+                <a href="evidence/">evidence/</a>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Installed <code>lint_spine.py</code> applied to <code>docs/architecture.md</code>
+              </td>
+              <td>Zero mechanical findings</td>
+              <td>Existing prose has no AD blocks; this is not proof of decision completeness</td>
+            </tr>
+            <tr>
+              <td>Three independent reviewers</td>
+              <td>Complete</td>
+              <td>
+                <a href="reviews/review-rubric.md">Rubric</a>,
+                <a href="reviews/review-adversarial.md">adversarial</a>,
+                <a href="reviews/review-reality.md">reality</a>
+              </td>
+            </tr>
+            <tr>
+              <td>GitNexus refresh</td>
+              <td>Unsuccessful</td>
+              <td>
+                <a href="evidence/index.log.txt">runner log</a>; stale/malformed graph evidence
+                excluded
+              </td>
+            </tr>
+            <tr>
+              <td>Real Redis integration, deployment probes, live ESI</td>
+              <td>Not run</td>
+              <td>
+                Distributed/runtime certification remains blocked; no deployment or dependency
+                behavior was changed
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The behavioral probes use controlled adapters, not production EVE accounts or network
+        mutations. Their passing assertions demonstrate the reported failures and must be changed
+        into desired-behavior regressions when implementing corrections.
+      </p>
+      <h2 id="recommended-next-work">Recommended next work</h2>
+      <p>
+        Use <code>bmad-spec</code> to reconcile the execution-path, mutation-settlement and
+        durable-repair contracts with the active specs, keeping established ownership intact. Then
+        create bounded implementation tickets with <code>bmad-ticket</code>: first F1/F2
+        invalidation, then F3 renewal drain, followed by F4/F5 contract and enforcement corrections.
+        The cached-quota and version-provenance choices can be separate follow-ups.
+      </p>
+      <p>
+        No broad gateway replacement, dependency upgrade or new public executor abstraction is
+        justified by this evaluation.
+      </p>
+    </main>
+    <footer>
+      Read-only evaluation of commit 35bf357 plus the existing working tree. No production
+      implementation changes. Expand each finding for evidence and proposed correction.
+    </footer>
+  </body>
+</html>

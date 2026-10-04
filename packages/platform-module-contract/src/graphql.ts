@@ -1,12 +1,27 @@
 import type { CoreDataMethodsFor, CoreDataProductId } from '@eve-space/core-data-contract'
+import type {
+  PlatformInventoryScope,
+  PlatformPersonalInventoryCapabilities,
+  PlatformCorporationInventoryCapabilities,
+} from './inventory.js'
 import type { PlatformPersistenceOperationReference } from './persistence.js'
 import type { PlatformOrganizationContributionAuthorization } from './server.js'
 
-export type PlatformGraphQLStrategy =
-  | 'public'
-  | 'authenticated-session'
-  | 'owned-character'
-  | 'organization-member'
+export const platformGraphQLStrategies = [
+  'public',
+  'authenticated-session',
+  'owned-character',
+  'organization-member',
+  'personal-inventory',
+  'reviewer-corporation-inventory',
+] as const
+
+export type PlatformGraphQLStrategy = (typeof platformGraphQLStrategies)[number]
+
+export type PlatformGraphQLInventoryCapabilities<Scope extends PlatformInventoryScope> =
+  Scope extends 'personal'
+    ? PlatformPersonalInventoryCapabilities
+    : PlatformCorporationInventoryCapabilities
 
 export interface PlatformGraphQLListPolicy {
   readonly argument?: string
@@ -19,6 +34,7 @@ export interface PlatformGraphQLReadDeclaration {
   readonly field: string
   readonly strategy: PlatformGraphQLStrategy
   readonly subjectArgument?: string
+  readonly inventoryConsumerId?: string
   readonly requiredScope?: string
   readonly organization?: PlatformOrganizationContributionAuthorization
   readonly sectionId?: string
@@ -37,7 +53,7 @@ export interface PlatformGraphQLContribution {
   readonly reads: readonly PlatformGraphQLReadDeclaration[]
 }
 
-export interface PlatformGraphQLReadCapabilities<
+interface PlatformGraphQLReadCapabilitiesBase<
   ProductIds extends readonly CoreDataProductId[] = readonly [],
   Persistence extends object = object,
 > {
@@ -49,6 +65,15 @@ export interface PlatformGraphQLReadCapabilities<
     noStore(): void
   }
 }
+
+export type PlatformGraphQLReadCapabilities<
+  ProductIds extends readonly CoreDataProductId[] = readonly [],
+  Persistence extends object = object,
+  Inventory extends PlatformInventoryScope = never,
+> = PlatformGraphQLReadCapabilitiesBase<ProductIds, Persistence> &
+  ([Inventory] extends [never]
+    ? object
+    : { readonly inventory: PlatformGraphQLInventoryCapabilities<Inventory> })
 
 export interface PlatformGraphQLReadInput<Capabilities extends object = object> {
   readonly parent: unknown

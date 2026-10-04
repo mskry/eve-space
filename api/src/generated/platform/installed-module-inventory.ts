@@ -69,4 +69,26 @@ export const installedModuleInventory = [
     publisherPackage: '@eve-space/organization-activity-manifest',
     releaseVersion: '0.1.0',
   },
+  {
+    moduleId: 'trading',
+    packages: {
+      manifest: {
+        integrity: 'workspace',
+        name: '@eve-space/trading-manifest',
+        version: '0.1.0',
+      },
+      nuxt: {
+        integrity: 'workspace',
+        name: '@eve-space/trading-nuxt',
+        version: '0.1.0',
+      },
+      server: {
+        integrity: 'workspace',
+        name: '@eve-space/trading-server',
+        version: '0.1.0',
+      },
+    },
+    publisherPackage: '@eve-space/trading-manifest',
+    releaseVersion: '0.1.0',
+  },
 ] as const satisfies readonly PlatformInstalledModuleProvenance[]

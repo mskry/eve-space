@@ -19,6 +19,8 @@ import {
   TypeNameMetaFieldDef,
   SchemaMetaFieldDef,
   TypeMetaFieldDef,
+  TypeInfo,
+  visitWithTypeInfo,
   type GraphQLSchema,
   type GraphQLObjectType,
   type SelectionNode,
@@ -281,15 +283,19 @@ export const analyzeGraphQLSelection = (
     introspectionCost: 0,
   }
   // Skipped protected selections remain non-storeable; overclassification is safe.
-  visit(document, {
-    Field: (node) => {
-      if (
-        node.name.value.startsWith('__') ||
-        policies.some((policy) => policy.protected && policy.field.endsWith(`.${node.name.value}`))
-      )
-        totals.private = true
-    },
-  })
+  const typeInfo = new TypeInfo(schema)
+  visit(
+    document,
+    visitWithTypeInfo(typeInfo, {
+      Field: (node) => {
+        if (
+          node.name.value.startsWith('__') ||
+          policyByField.get(`${typeInfo.getParentType()?.name}.${node.name.value}`)?.protected
+        )
+          totals.private = true
+      },
+    }),
+  )
   if (
     operation.selectionSet.selections.some(
       (node) => node.kind === Kind.FIELD && !policyByField.has(`${root.name}.${node.name.value}`),

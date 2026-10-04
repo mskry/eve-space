@@ -1,0 +1,188 @@
+{
+  "id": "trading",
+  "release": {
+    "publisherPackage": "@eve-space/trading-manifest",
+    "version": "0.1.0",
+    "hostContractRange": "^1.2.0"
+  },
+  "icon": "market",
+  "defaultEnabled": false,
+  "permissions": [
+    {
+      "key": "trading.inventory.corporation.read",
+      "label": "Read corporation inventory",
+      "purpose": "Review observed assets for current admitted corporation members.",
+      "audiences": ["hr", "director"],
+      "sensitivity": "sensitive",
+      "reviewAllowed": false
+    }
+  ],
+  "server": {
+    "package": "@eve-space/trading-server",
+    "routes": [],
+    "migrations": [],
+    "persistenceOperations": [],
+    "resources": [],
+    "esiOperations": [],
+    "activityProviders": [],
+    "inventoryConsumers": [
+      {
+        "id": "personal",
+        "contractVersion": 1,
+        "scope": "personal",
+        "provider": "core.character-assets",
+        "maximumSubjects": 20,
+        "maximumPageSize": 100
+      },
+      {
+        "id": "corporation",
+        "contractVersion": 1,
+        "scope": "corporation",
+        "provider": {
+          "moduleId": "member-audit",
+          "providerId": "assets-inventory",
+          "optional": true
+        },
+        "requiredPermission": "trading.inventory.corporation.read",
+        "sourcePermission": "member-audit.assets.read",
+        "maximumSubjects": 250,
+        "maximumPageSize": 100
+      }
+    ],
+    "graphql": [
+      {
+        "id": "inventory",
+        "exportName": "tradingGraphQL",
+        "rootField": "trading",
+        "types": [
+          "TradingRead",
+          "TradingInventoryKind",
+          "TradingInventoryFilters",
+          "TradingInventoryView",
+          "TradingInventoryCoverageCounts",
+          "TradingInventoryGroupPage",
+          "TradingInventoryHolderPage",
+          "TradingInventoryCoveragePage",
+          "TradingInventoryGroup",
+          "TradingInventoryLocation",
+          "TradingInventoryHolder",
+          "TradingInventorySource",
+          "TradingInventoryCoverage"
+        ],
+        "reads": [
+          {
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "id": "root",
+            "field": "Query.trading",
+            "strategy": "authenticated-session"
+          },
+          {
+            "cost": 1,
+            "sourceCost": 20,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "id": "personal",
+            "field": "TradingRead.personalInventory",
+            "strategy": "personal-inventory",
+            "inventoryConsumerId": "personal",
+            "subjectArgument": "characterIds",
+            "list": {
+              "argument": "first",
+              "defaultSize": 50,
+              "maximum": 100
+            },
+            "requiredScope": "esi-assets.read_assets.v1"
+          },
+          {
+            "cost": 1,
+            "sourceCost": 250,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "id": "corporation",
+            "field": "TradingRead.corporationInventory",
+            "strategy": "reviewer-corporation-inventory",
+            "inventoryConsumerId": "corporation",
+            "subjectArgument": "corporationId",
+            "list": {
+              "argument": "first",
+              "defaultSize": 50,
+              "maximum": 100
+            },
+            "organization": {
+              "audience": "hr",
+              "requiredPermission": "trading.inventory.corporation.read",
+              "additionalRequiredPermissions": ["member-audit.assets.read"]
+            }
+          },
+          {
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "id": "group-rows",
+            "field": "TradingInventoryGroupPage.rows",
+            "strategy": "authenticated-session",
+            "list": {
+              "defaultSize": 100,
+              "maximum": 100
+            }
+          },
+          {
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "id": "holder-rows",
+            "field": "TradingInventoryHolderPage.rows",
+            "strategy": "authenticated-session",
+            "list": {
+              "defaultSize": 100,
+              "maximum": 100
+            }
+          },
+          {
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "id": "coverage-rows",
+            "field": "TradingInventoryCoveragePage.rows",
+            "strategy": "authenticated-session",
+            "list": {
+              "defaultSize": 100,
+              "maximum": 100
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "nuxt": {
+    "package": "@eve-space/trading-nuxt",
+    "pages": [
+      {
+        "id": "inventory",
+        "name": "eve-trading-inventory",
+        "path": "/trading",
+        "file": "src/runtime/app/pages/TradingPage.vue",
+        "extensionPoint": "root",
+        "audience": "authenticated"
+      }
+    ],
+    "navigation": [
+      {
+        "id": "inventory",
+        "label": "Trading",
+        "description": "Observed inventory across your characters",
+        "to": "/trading",
+        "audience": "authenticated",
+        "placement": "dashboard",
+        "order": 16,
+        "pageName": "eve-trading-inventory"
+      }
+    ]
+  }
+}

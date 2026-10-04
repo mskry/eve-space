@@ -111,7 +111,7 @@ const manifest = {
     },
   ],
   release: {
-    hostContractRange: '^1.0.0',
+    hostContractRange: '^1.2.0',
     publisherPackage: '@eve-space/member-audit-manifest',
     version: '0.1.0',
   },
@@ -218,10 +218,61 @@ const manifest = {
   ],
   server: {
     activityProviders: [],
+    inventoryProviders: [
+      {
+        id: 'assets-inventory',
+        exportName: 'memberAssetInventoryProvider',
+        contractVersion: 1,
+        scope: 'corporation',
+        sectionId: 'assets',
+        requiredPermission: 'member-audit.assets.read',
+        maximumSubjects: 250,
+        maximumPageSize: 100,
+        persistenceOperations: [
+          { operationId: 'read-inventory-sources' },
+          { operationId: 'read-asset-inventory' },
+        ],
+      },
+    ],
     esiOperations: [],
-    migrations: [{ name: 'member-audit-001-baseline.sql' }],
+    migrations: [
+      { name: 'member-audit-001-baseline.sql' },
+      { name: 'member-audit-003-asset-inventory.sql' },
+    ],
     package: '@eve-space/member-audit-server',
     persistenceOperations: [
+      {
+        id: 'backfill-asset-inventory',
+        method: 'backfillAssetInventory',
+        mode: 'write',
+        revision: 1,
+        exportName: 'backfillAssetInventoryOperation',
+        migration: 'member-audit-003-asset-inventory.sql',
+      },
+      {
+        id: 'promote-asset-inventory',
+        method: 'promoteAssetInventory',
+        mode: 'write',
+        revision: 1,
+        exportName: 'promoteAssetInventoryOperation',
+        migration: 'member-audit-003-asset-inventory.sql',
+      },
+      {
+        id: 'read-asset-inventory',
+        method: 'readAssetInventory',
+        mode: 'read',
+        revision: 1,
+        exportName: 'readAssetInventoryOperation',
+        migration: 'member-audit-003-asset-inventory.sql',
+      },
+      {
+        id: 'read-inventory-sources',
+        method: 'readInventorySources',
+        mode: 'read',
+        revision: 1,
+        exportName: 'readInventorySourcesOperation',
+        migration: 'member-audit-003-asset-inventory.sql',
+      },
       {
         id: 'write-skill-snapshot',
         method: 'writeSkillSnapshot',
@@ -343,7 +394,8 @@ const manifest = {
           projection: [{ operationId: 'read-active-evidence-continuation' }],
           materialization: [
             { operationId: 'write-evidence-continuation' },
-            { operationId: 'promote-evidence-observation' },
+            { operationId: 'backfill-asset-inventory' },
+            { operationId: 'promote-asset-inventory' },
             { operationId: 'purge-evidence' },
           ],
         },

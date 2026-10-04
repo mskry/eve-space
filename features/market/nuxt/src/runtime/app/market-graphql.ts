@@ -1,6 +1,6 @@
 import type { GraphQLDocument } from '@eve-space/platform-module-nuxt/runtime'
 export const marketGraphQLIdentity = [
-  '478d0773cede08173d13df04a8eb626229e0fc409fbcfb0c361a3a63ff3b839a',
+  'db521f41b113d4aad6001b48d2a6032c247c070c04ce24435e638b2673e0a876',
   'b07176a4ef61276714d1fa21fbd9f1740979fe5b3b154e89d7da45104978a929',
 ] as const
 /** Internal type. DO NOT USE DIRECTLY. */

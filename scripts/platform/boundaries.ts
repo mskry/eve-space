@@ -5,6 +5,8 @@ import { isTransportDependency } from '../transport-dependency.js'
 
 const modulesByTier = {
   adapter: [
+    'inventory-source-admission',
+    'inventory-access-audit',
     'guarded-read-capabilities',
     'collection-state-store',
     'core-read-capabilities',
@@ -35,6 +37,7 @@ const modulesByTier = {
   ],
   entry: ['collection-state-repair'],
   representation: [
+    'inventory-cursor',
     'collection-state',
     'current-observation-status',
     'module-navigation',
@@ -44,6 +47,11 @@ const modulesByTier = {
     'resource-subject',
   ],
   service: [
+    'inventory-browser-admission',
+    'inventory-capabilities',
+    'inventory-personal-read',
+    'inventory-corporation-read',
+    'inventory-admission',
     'module-context-capabilities',
     'read-enablement',
     'read-admission',
@@ -62,7 +70,12 @@ const modulesByTier = {
     'reviewer-search-capabilities',
   ],
   state: ['module-runtime-cache'],
-  transport: ['module-route-composition', 'organization-review-routes', 'routes'],
+  transport: [
+    'inventory-routes',
+    'module-route-composition',
+    'organization-review-routes',
+    'routes',
+  ],
 } as const
 
 type PlatformTier = keyof typeof modulesByTier
@@ -93,6 +106,8 @@ const allowedImportTiersBySourceTier: Record<PlatformTier, readonly PlatformTier
 }
 
 const allowedRepresentationPackages = new Set([
+  '../inventory-policy.js',
+  '@eve-space/platform-module-contract/inventory',
   '@eve-space/platform-module-contract/identifiers',
   '@eve-space/platform-module-contract/nuxt',
   '@eve-space/platform-module-contract/resources',

@@ -22,7 +22,7 @@ const installedReadOperations: readonly PlatformInstalledPersistenceOperationDes
 export interface ModuleReadPersistenceDeclaration {
   readonly moduleId: string
   readonly contributionId: string
-  readonly grant: 'routes' | 'graphqlReads'
+  readonly grant: 'routes' | 'graphqlReads' | 'inventoryProviders'
   readonly operations: readonly PlatformPersistenceOperationReference[]
 }
 

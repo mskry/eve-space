@@ -538,7 +538,7 @@ describe('platform module declarations', () => {
     )
     const emitted = JSON.parse(canonical) as PlatformModuleManifest
 
-    expect(platformModuleHostContractVersion).toBe('1.1.0')
+    expect(platformModuleHostContractVersion).toBe('1.2.0')
     expect(canonical.endsWith('\n')).toBe(true)
     expect(emitted.permissions?.map(({ key }) => key)).toStrictEqual(['alpha.review', 'alpha.view'])
     expect(emitted.permissionProfiles?.[0]?.permissions).toStrictEqual([

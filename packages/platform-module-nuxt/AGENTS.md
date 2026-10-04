@@ -1,5 +1,7 @@
 # Platform Nuxt module
 
+The aggregate inventory query surface keeps private values in component memory, separate from Colada/persistence and SSR payloads. Its lifecycle controller owns admission windows, retained values and request generations. Runtime composables adapt live host identity, module/section state and browser lifecycle events to that controller; the Trading feature supplies generated read operations and presentation only. Unknown verdicts suspend presentation; known invalidation clears it. Dispose browser listeners, timers and requests on scope teardown.
+
 The module entry orchestrates Nuxt Kit registration. Registration and file-resolution
 adapters depend on pure navigation/page transformations and shared runtime types.
 Pure transformations must not depend on registration adapters or Nuxt Kit.

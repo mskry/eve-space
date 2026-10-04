@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { assetsResource } from '../src/asset-resource.js'
+import type { InventoryMaterializationPersistence } from '../src/inventory-persistence.js'
 import {
   materializeEvidenceObservation,
   type EvidenceObservation,
@@ -146,22 +147,29 @@ describe('member-audit evidence resources', () => {
     const writeEvidenceContinuation = vi
       .fn()
       .mockResolvedValue({ outcome: 'applied' as const, revision: 1 })
-    const promoteEvidenceObservation = vi.fn().mockResolvedValue({ outcome: 'applied' as const })
-    const persistence: EvidenceMaterializationPersistence = {
-      promoteEvidenceObservation,
+    const promoteAssetInventory = vi.fn().mockResolvedValue({ outcome: 'applied' as const })
+    const backfillAssetInventory = vi.fn().mockResolvedValue({ projected: 0 })
+    const persistence: InventoryMaterializationPersistence = {
+      backfillAssetInventory,
+      promoteAssetInventory,
       writeEvidenceContinuation,
     }
     await assetsResource.materialize(
       evidenceMaterializationContext(collected.data, persistence, 'assets'),
     )
 
+    expect(backfillAssetInventory).toHaveBeenCalledWith({
+      subjects: [
+        expect.objectContaining({ observationId: null, characterId: subject.characterId }),
+      ],
+    })
     expect(writeEvidenceContinuation).toHaveBeenCalledWith(
       expect.objectContaining({
         checkpoint: expect.objectContaining({ complete: true }),
         records: [],
       }),
     )
-    expect(promoteEvidenceObservation).toHaveBeenCalledWith(
+    expect(promoteAssetInventory).toHaveBeenCalledWith(
       expect.objectContaining({ expectedRevision: 1, resourceId: 'assets' }),
     )
   })

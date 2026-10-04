@@ -18,6 +18,7 @@ import { corporationRoutes } from './corporations/routes.js'
 import { cacheAdmissionRoutes } from './cache-admission/routes.js'
 import { healthRoutes } from './system/health-routes.js'
 import { moduleRuntimeRoutes } from './platform/routes.js'
+import { inventoryBrowserRoutes } from './platform/inventory-routes.js'
 import { organizationReviewerPlatformRoutes } from './platform/organization-review-routes.js'
 import { publicCharacterRoutes } from './characters/public-routes.js'
 import { statusRoutes } from './system/status-routes.js'
@@ -65,6 +66,7 @@ export const app = new Hono<{ Variables: HonoLogLayerVariables }>()
   .route('/health', healthRoutes)
   .route('/api/status', statusRoutes)
   .route('/api/modules', moduleRuntimeRoutes)
+  .route('/api/inventory', inventoryBrowserRoutes)
   .route('/api/modules', installedModuleRoutes)
   .route('/graphql', graphqlRoutes)
   .route('/api/universe', universeRoutes)

@@ -156,3 +156,32 @@ describe('platform GraphQL transport', () => {
     ).rejects.toThrow('Connection failed')
   })
 })
+
+it('accepts generated nested input fields and omits undefined fields from wire variables and identity', async () => {
+  const { normalizeGraphQLVariables } = await import('../src/runtime/graphql-variables.js')
+  const filtered: GraphQLDocument<
+    { value: string },
+    {
+      filters: { typeId: string | null | undefined; groupId?: string | null }
+    }
+  > = { toString: () => 'query Filter($filters: FilterInput) { value(filters: $filters) }' }
+  const variables = { filters: { typeId: undefined, groupId: '18' } }
+  const normalized = normalizeGraphQLVariables(variables)
+  expect(normalized).toEqual({ filters: { groupId: '18' } })
+  expect(normalizeGraphQLVariables({ filters: { typeId: null, groupId: '18' } })).not.toEqual(
+    normalized,
+  )
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (_url, init: RequestInit) => {
+      expect(JSON.parse(String(init.body))).toEqual({
+        query: filtered.toString(),
+        variables: normalized,
+      })
+      return Response.json({ data: { value: '12' } })
+    }),
+  )
+  expect(await executeTypedGraphQL('https://api.example.test', filtered, variables)).toEqual({
+    data: { value: '12' },
+  })
+})

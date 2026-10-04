@@ -166,6 +166,126 @@ type Query {
   market: MarketRead
   ownedCharacter(characterId: EveId!): OwnedCharacter
   ownedCharacters(after: String, first: Int): OwnedCharacterConnection
+  trading: TradingRead
+}
+
+type TradingInventoryCoverage {
+  characterId: EveId!
+  characterName: String!
+  source: TradingInventorySource
+  state: String!
+}
+
+type TradingInventoryCoverageCounts {
+  authorizationRequired: Int!
+  beyondRetention: Int!
+  conflictingSource: Int!
+  includedCurrent: Int!
+  includedStale: Int!
+  incomplete: Int!
+  neverCollected: Int!
+  unavailable: Int!
+}
+
+type TradingInventoryCoveragePage {
+  endCursor: String
+  hasNextPage: Boolean!
+  rows: [TradingInventoryCoverage!]!
+}
+
+input TradingInventoryFilters {
+  categoryId: EveId
+  groupId: EveId
+  locationKey: String
+  typeId: EveId
+}
+
+type TradingInventoryGroup {
+  blueprint: String!
+  categoryId: EveId
+  currentQuantity: BigInteger!
+  groupId: EveId
+  key: String!
+  location: TradingInventoryLocation!
+  staleQuantity: BigInteger!
+  typeId: EveId!
+  typeName: String
+}
+
+type TradingInventoryGroupPage {
+  endCursor: String
+  hasNextPage: Boolean!
+  rows: [TradingInventoryGroup!]!
+}
+
+type TradingInventoryHolder {
+  characterId: EveId!
+  characterName: String!
+  currentQuantity: BigInteger!
+  groupKey: String!
+  source: TradingInventorySource!
+  staleQuantity: BigInteger!
+  userId: UUID!
+}
+
+type TradingInventoryHolderPage {
+  endCursor: String
+  hasNextPage: Boolean!
+  rows: [TradingInventoryHolder!]!
+}
+
+enum TradingInventoryKind {
+  coverage
+  groups
+  holders
+}
+
+type TradingInventoryLocation {
+  id: EveId
+  key: String!
+  name: String
+  state: String!
+}
+
+type TradingInventorySource {
+  freshUntil: UTCTime!
+  observationId: String!
+  observedAt: UTCTime!
+  retainedUntil: UTCTime!
+  validatedAt: UTCTime!
+}
+
+type TradingInventoryView {
+  corporationId: EveId
+  coverage: TradingInventoryCoveragePage!
+  coverageCounts: TradingInventoryCoverageCounts!
+  expectedSubjects: Int!
+  fingerprint: String!
+  groups: TradingInventoryGroupPage!
+  holders: TradingInventoryHolderPage!
+  scope: String!
+  sourcesComplete: Boolean!
+  traversalComplete: Boolean!
+  version: Int!
+}
+
+type TradingRead {
+  corporationInventory(
+    after: String
+    corporationId: EveId!
+    filters: TradingInventoryFilters
+    first: Int = 50
+    groupKey: String
+    kind: TradingInventoryKind = groups
+  ): TradingInventoryView
+  personalInventory(
+    after: String
+    characterIds: [EveId!]
+    filters: TradingInventoryFilters
+    first: Int = 50
+    groupKey: String
+    kind: TradingInventoryKind = groups
+  ): TradingInventoryView
 }
 
 scalar UTCDate

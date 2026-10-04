@@ -17,6 +17,7 @@ import {
 } from '@eve-space/platform-module-persistence-policy/persistence-policy'
 import ts from 'typescript'
 import { readGraphQLArtifactContributions } from './graphql-artifact.js'
+import { validateInventoryProviderArtifacts } from './inventory-artifact.js'
 import {
   platformModulePackageManifestIssues,
   platformModuleRelativeImportIssues,
@@ -380,6 +381,7 @@ const validateExecutableInventory = async (
     environment === 'server'
       ? [
           ...(manifest.server.graphql ?? []),
+          ...(manifest.server.inventoryProviders ?? []),
           ...manifest.server.routes,
           ...manifest.server.persistenceOperations,
           ...manifest.server.resources,
@@ -421,6 +423,27 @@ const validateGraphQLArtifact = async (
         'artifact',
         `server/${rootEntry}`,
         'GraphQL descriptor, SDL and executable read inventories must match exactly.',
+      ),
+    )
+  }
+}
+
+const validateInventoryArtifact = async (
+  manifest: PlatformModuleManifest,
+  view: PackageView,
+  rootEntry: string | undefined,
+  issues: PlatformModuleConformanceIssue[],
+) => {
+  if (!rootEntry || !manifest.server.inventoryProviders?.length) return
+  try {
+    await validateInventoryProviderArtifacts(view, rootEntry, manifest.server.inventoryProviders)
+  } catch {
+    issues.push(
+      issue(
+        'INVENTORY_PROVIDER_MISMATCH',
+        'artifact',
+        `server/${rootEntry}`,
+        'Inventory providers must export exactly declared static callable factories.',
       ),
     )
   }
@@ -469,6 +492,7 @@ const validateRuntimeArtifact = async (
 
   if (environment === 'server') {
     await validateGraphQLArtifact(manifest, view, rootEntry, issues)
+    await validateInventoryArtifact(manifest, view, rootEntry, issues)
     await validateMigrations(manifest, packageManifest, view, issues)
   } else {
     await validateNuxtInventory(manifest, packageManifest, view, issues)

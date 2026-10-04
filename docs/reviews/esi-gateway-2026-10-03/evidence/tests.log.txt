@@ -1,0 +1,10 @@
+$ vitest run tests/esi-gateway
+
+ RUN  v4.1.11 /Users/ms/code/eve-space/api
+
+
+ Test Files  31 passed (31)
+      Tests  365 passed (365)
+   Start at  14:11:12
+   Duration  4.68s (transform 2.40s, setup 0ms, import 6.65s, tests 9.05s, environment 1ms)
+

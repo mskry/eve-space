@@ -17,6 +17,13 @@ export {
 export { trainedSkillsResource } from './skill-resources.js'
 export { currentShipResource, currentLocationResource } from './current-observation-resources.js'
 export { assetsResource } from './asset-resource.js'
+export {
+  backfillAssetInventoryOperation,
+  promoteAssetInventoryOperation,
+  readAssetInventoryOperation,
+  readInventorySourcesOperation,
+} from './inventory-persistence.js'
+export { memberAssetInventoryProvider } from './inventory-provider.js'
 export { mailDetailsResource, mailHeadersResource } from './mail-resources.js'
 export {
   walletBalanceResource,

@@ -1,5 +1,7 @@
 # Platform Engineering Guide
 
+Browser aggregate admission is a metadata-only service over the same installed declarations and full core bindings as GraphQL. Its transport validates selectors, uses live member sessions and emits private no-store responses. Corporation discovery calls organization-owned current-snapshot storage only after exact reviewer admission; it does not read module evidence. Neither metadata endpoint authorizes a later inventory read or grants browser persistence.
+
 These instructions apply to `api/src/platform` in addition to the repository-wide guide.
 
 ## Dependency Direction
@@ -41,3 +43,11 @@ entry, and transport tiers. Exact file membership belongs in
 - Materialization and successful collection-state advancement remain atomic.
 - Batch classification must correlate every attempted subject exactly once.
 - Queue payloads contain stable identities only and never private ESI data or credentials.
+
+Inventory capabilities compose exact installed consumers with core subject-set admission and
+source-owned personal/provider reads. Source pages, enrichment and provider persistence share
+the caller's finite work admission; checks inside an occupied slot use slot-local work. Pure
+cursor parsing depends on the shared inventory digest policy and public DTO contract. Personal
+pagination consumes complete source reductions; corporation pagination wraps source checkpoints
+and merges visible coverage-only subjects without granting them evidence authority. GraphQL
+owns propagation of the original guard through its nested DTO projections.

@@ -6,7 +6,7 @@ internal seams themselves.
 
 `transitionOrganizationQueries()` closes organization readiness, cancels and removes the entire
 organization query subtree, and starts one durable scoped invalidation. The application-level
-`queries/organization-readiness.ts` module observes verified session state from the application root,
+`app/queries/organization-readiness.ts` module observes verified session state from the application root,
 serializes live admission and context reloads, and matches the transition revision before reopening
 mounted consumers. A detached stable-key entry remains canonical when another consumer mounts during
 recovery. Views read readiness and can request a retry without coordinating those steps. Failed

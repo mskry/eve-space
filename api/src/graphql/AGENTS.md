@@ -25,3 +25,9 @@ does not acquire a backend slot; each granted capability does, with queued autho
 The GraphiQL renderer is a transport leaf. It uses the standard self-hosted Yoga viewer with
 memory-only editor state. It depends on no installed inventory, application field names or
 authorization decisions; introspection and execution pass through the existing endpoint gates.
+
+Aggregate inventory execution resolves exact generated consumers through the platform inventory
+capability owner. Request-local parent bindings carry the original inventory authority and source
+clock checks into nested row projections; projection authentication cannot replace aggregate
+admission. Cursor decoding and provider/source pagination remain below GraphQL transport, and
+no request-local inventory binding or result survives a request.

@@ -389,3 +389,77 @@ evidence release, or a purge-SLO breach as a privacy incident.
    evidence remains unreadable throughout.
 6. Re-enable only after authorization and disclosure regressions pass, representative section
    capacity is accepted, purge completion is verified, and the incident owner approves the rollout.
+
+## Aggregate Inventory Projection
+
+Migration `member-audit-003-asset-inventory.sql` is additive and module-owned. Apply it through
+normal API startup before running the matching API/worker pair. Do not reverse earlier migrations
+or copy Member Audit inventory into a core/Trading table. Its four attested routines are:
+
+| Operation                  | Mode  | Exact capability owner          |
+| -------------------------- | ----- | ------------------------------- |
+| `backfill-asset-inventory` | Write | Assets resource materialization |
+| `promote-asset-inventory`  | Write | Assets resource materialization |
+| `read-inventory-sources`   | Read  | `assets-inventory` provider     |
+| `read-asset-inventory`     | Read  | `assets-inventory` provider     |
+
+The assets resource retains its existing continuation write and purge grants. Wallet/mail retain
+`promote-evidence-observation`; the inventory provider receives no write, full-snapshot, arbitrary
+SQL, or core-storage grant. Module runtime roles remain unable to read core private tables or
+write module tables directly. Provider semantics are documented in
+[the module contract](../features/member-audit/docs/inventory-provider.md).
+
+Complete asset promotion and compact projection publication commit together. A failed projection
+write rolls back the replacement snapshot, projection and continuation cleanup. Incomplete staging
+publishes no replacement. Ready headers distinguish complete-empty observations from missing or
+unsupported projections. Indexed compact rows support set-based group/holder reads; aggregate
+queries never fan out through per-character JSON snapshot reads.
+
+Backfill is opportunistic within current-authority assets materialization, before staging the
+next replacement, and uses at most one subject per collection invocation. The attested backfill
+operation accepts at most 20 distinct exact-authority subjects per batch, with an optional pinned
+observation; it reads only valid latest complete module snapshots and is idempotent. It does not
+invent a second ESI collector or backfill every character during migration/request handling.
+An existing complete snapshot remains an explicit `incomplete` coverage gap until projection
+readiness succeeds. Failures retry through normal collection; never report an unready snapshot
+as zero holdings or as a completed backfill.
+
+Asset retention remains latest-complete/current-authority, without age-only expiry. Source clock
+and readiness are separate from authority. Replacement removes the prior projection; source
+snapshot deletion cascades through projection headers and items. Existing authority/account/
+organization purge operations and resource-maintenance scheduling therefore own the derived rows
+under the same immediate read revocation and 24-hour physical purge deadline. Re-entry, transfer,
+reauthorization and disable/re-enable cannot revive an earlier authority tuple. Rollback to an
+older API/worker pair may leave extra derived rows, but current-source observation/authority
+rechecks prevent them from being read; the source purge cascade remains installed.
+
+Corporation inventory release remains independently gated by
+[EVE-16](https://linear.app/byteover/issue/EVE-16/deliver-member-audit-as-a-reviewer-backoffice-module):
+accepted reviewer-purpose disclosure and exact-character authorization, module/assets enablement,
+representative multi-page collection and projection readiness, 250-character query/deadline and
+storage capacity, queue/ESI pressure, content-free access auditing and measured invalidation/purge
+throughput. Installation, green tests or an enabled personal inventory view do not satisfy those
+target-deployment gates. Task 2.2 was resolved on 2026-10-03: reviewer roles and permissions apply organization-wide across all current managed alliance corporations, while each inventory request selects one corporation. See [inventory admission](trading-inventory-admission.md). Finished Trading wiring, presentation, measured bounds and deployment evidence are recorded in [Trading operations](trading-inventory-operations.md); EVE-16 acceptance remains a separate corporation release gate.
+
+### Group 4 implementation verification
+
+Verified on 2026-10-03 against the working tree based on
+`35bf357129965cbf18751d290bc0b29f1a6c5fe7`:
+
+| Affected check                                                                                                         | Result                                                                                                                        |
+| ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Member Audit server tests                                                                                              | 50 passed, including provider races/cancellation and existing collection/routes                                               |
+| API inventory, admission guard and routine canonicalization units                                                      | 42 passed                                                                                                                     |
+| Member Audit inventory/persistence and inventory-admission PostgreSQL suites                                           | 37 passed in ephemeral PostgreSQL 17, including upgrade, rollback, wrong tuples, privacy cascade and core-bound source clocks |
+| GraphQL contribution and module-package boundary suites                                                                | 269 passed; existing source/consumer permission policies and eager-provider refusal covered                                   |
+| API/installed server typechecks, registry consistency, affected lint and module/platform/character/contract boundaries | Passed                                                                                                                        |
+
+The owning-schema routine-call normalization now preserves the same attestation across PostgreSQL
+search paths while retaining different fingerprints for foreign-schema calls. Inventory declaration
+validation accepts HR/director permissions with `reviewAllowed: false`; that flag still controls
+access while the viewer is under compliance review, not permission to inspect another member.
+
+These are source and ephemeral-service checks. They do not establish the 250-character production
+query plan, representative deployment capacity, target privacy/purge throughput, Compose probes,
+or the later Trading end-to-end fetching review. Repository-wide hooks and CI retain their normal
+matrix; no deployment or local persistent database migration was performed for this task group.

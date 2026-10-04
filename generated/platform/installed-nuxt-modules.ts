@@ -3,4 +3,5 @@
 import module0 from '@eve-space/market-nuxt'
 import module1 from '@eve-space/member-audit-nuxt'
 import module2 from '@eve-space/organization-activity-nuxt'
-export const installedNuxtModules = [module0, module1, module2] as const
+import module3 from '@eve-space/trading-nuxt'
+export const installedNuxtModules = [module0, module1, module2, module3] as const

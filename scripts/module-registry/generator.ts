@@ -70,6 +70,7 @@ export const generatedRegistryPaths = [
   'api/src/generated/platform/installed-module-on-demand.ts',
   'api/src/generated/platform/installed-module-graphql.ts',
   'api/src/generated/platform/installed-module-graphql.graphql',
+  'api/src/generated/platform/installed-module-inventory-providers.ts',
 ] as const
 
 interface ReviewedPersistenceRoutine extends CanonicalPersistenceRoutine {
@@ -182,11 +183,44 @@ const renderGraphQLContributions = (compiled: CompiledPlatformModules) => {
   return `${generatedHeader}import type { PlatformInstalledGraphQLContribution } from '@eve-space/platform-module-contract/graphql'\n${imports}\nexport const installedGraphQLContributions = [${entries.join(',\n')}] as const satisfies readonly PlatformInstalledGraphQLContribution[]\n`
 }
 
+const renderInventoryBindings = (compiled: CompiledPlatformModules) => {
+  const manifests = readCompiledPlatformModules(compiled)
+  const providers = manifests.flatMap((manifest) =>
+    (manifest.server.inventoryProviders ?? []).map((provider) => ({ manifest, provider })),
+  )
+  const imports = renderServerImports(
+    providers.map(({ manifest, provider }, index) => ({
+      exportName: provider.exportName,
+      localName: `inventoryProvider${index}`,
+      packageName: manifest.server.package,
+    })),
+  )
+  const entries = providers.map(
+    ({ manifest, provider }, index) =>
+      `{ ...${JSON.stringify({ ...provider, moduleId: manifest.id, publisherPackage: manifest.release.publisherPackage })}, definition: inventoryProvider${index} }`,
+  )
+  const consumers = manifests.flatMap((manifest) =>
+    (manifest.server.inventoryConsumers ?? []).map((declaration) => ({
+      moduleId: manifest.id,
+      declaration,
+      providerAvailable:
+        declaration.scope === 'personal' ||
+        providers.some(
+          ({ manifest: source, provider }) =>
+            declaration.provider.moduleId === source.id &&
+            declaration.provider.providerId === provider.id,
+        ),
+    })),
+  )
+  return `${generatedHeader}import type { PlatformInstalledInventoryProvider, PlatformInstalledInventoryConsumer } from '@eve-space/platform-module-contract/inventory'\n${imports}\nexport const installedInventoryProviders = [${entries.join(',\n')}] as const satisfies readonly PlatformInstalledInventoryProvider[]\n\nexport const installedInventoryConsumers = ${JSON.stringify(consumers)} as const satisfies readonly PlatformInstalledInventoryConsumer[]\n`
+}
+
 const canonicalGraphQLRead = (read: PlatformGraphQLReadDeclaration) => ({
   id: read.id,
   field: read.field,
   strategy: read.strategy,
   subjectArgument: read.subjectArgument,
+  inventoryConsumerId: read.inventoryConsumerId,
   requiredScope: read.requiredScope,
   sectionId: read.sectionId,
   cost: read.cost,
@@ -261,6 +295,7 @@ export const generateRegistryFiles = function generateRegistryFiles(
     [generatedRegistryPaths[14], renderOnDemandResources(compiled)],
     [generatedRegistryPaths[15], renderGraphQLContributions(compiled)],
     [generatedRegistryPaths[16], graphqlSDL],
+    [generatedRegistryPaths[17], renderInventoryBindings(compiled)],
   ])
 } satisfies PlatformRegistryRenderer
 
@@ -801,6 +836,13 @@ function renderPersistenceCapabilityFactories(
     operations.map(({ manifest, operation }, index) => [`${manifest.id}/${operation.id}`, index]),
   )
   const factories = manifests.flatMap((manifest, moduleIndex) => [
+    ...(manifest.server.inventoryProviders ?? []).map((provider, providerIndex) => ({
+      group: 'inventoryProviders' as const,
+      key: `${manifest.id}/${provider.id}`,
+      manifest,
+      name: `createModule${moduleIndex}InventoryProvider${providerIndex}Persistence`,
+      references: provider.persistenceOperations,
+    })),
     ...manifest.server.routes.map((route, routeIndex) => ({
       group: 'routes' as const,
       key: `${manifest.id}/${route.id}`,
@@ -864,6 +906,7 @@ function renderPersistenceCapabilityFactories(
     'resourceProjections',
     'resourceMaterializations',
     'graphqlReads',
+    'inventoryProviders',
   ] as const
   const catalogs = groups
     .map((group) => {
@@ -877,6 +920,13 @@ function renderPersistenceCapabilityFactories(
   return `${declarations}\nexport const installedModulePersistenceCapabilityFactories = {${catalogs}\n} as const\n\nexport type InstalledModuleResourceProjectionPersistence<\n  Key extends keyof typeof installedModulePersistenceCapabilityFactories.resourceProjections,\n> = ReturnType<(typeof installedModulePersistenceCapabilityFactories.resourceProjections)[Key]>\n\nexport type InstalledModuleResourceMaterializationPersistence<\n  Key extends keyof typeof installedModulePersistenceCapabilityFactories.resourceMaterializations,\n> = ReturnType<(typeof installedModulePersistenceCapabilityFactories.resourceMaterializations)[Key]>\n`
 }
 
+const inventoryProviderGrants = (manifest: PlatformModuleManifest, operationId: string) =>
+  (manifest.server.inventoryProviders ?? [])
+    .filter((provider) =>
+      provider.persistenceOperations.some((reference) => reference.operationId === operationId),
+    )
+    .map(({ id }) => id)
+
 function persistenceOperationGrants(manifest: PlatformModuleManifest, operationId: string) {
   const referencesOperation = (references: readonly { readonly operationId: string }[]) =>
     references.some((reference) => reference.operationId === operationId)
@@ -885,8 +935,10 @@ function persistenceOperationGrants(manifest: PlatformModuleManifest, operationI
       .filter((read) => referencesOperation(read.persistenceOperations))
       .map((read) => `${contribution.id}/${read.id}`),
   )
+  const inventoryProviders = inventoryProviderGrants(manifest, operationId)
   return {
     ...(graphqlReads.length && { graphqlReads }),
+    ...(inventoryProviders.length && { inventoryProviders }),
     activityProviders: manifest.server.activityProviders
       .filter((provider) => referencesOperation(provider.persistenceOperations))
       .map(({ id }) => id),

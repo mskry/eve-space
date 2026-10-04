@@ -117,6 +117,7 @@ describe('callable ESI feature execution', () => {
 
     await expect(status.execute(undefined)).resolves.toStrictEqual({
       cachedUntil: '2026-09-01T11:01:00.000Z',
+      readableUntil: '2026-09-01T12:01:00.000Z',
       data: { playerCount: 12 },
       quota: {
         errorRemaining: 99,
@@ -268,6 +269,7 @@ describe('callable ESI feature execution', () => {
     await expect(wallet.execute(input)).resolves.toStrictEqual({
       authorizationGeneration: 1,
       cachedUntil: '2026-09-02T11:01:00.000Z',
+      readableUntil: '2026-09-03T11:01:00.000Z',
       data: 10,
       quota: {},
       refreshFailureClass: 'esi-unavailable',

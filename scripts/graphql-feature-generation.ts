@@ -23,7 +23,11 @@ const typedOperationStrings = (document: DocumentNode) =>
     })
     .join('\n')
 
-export const generateFeatureGraphQL = async (sdl: string, source: string) => {
+export const generateFeatureGraphQL = async (
+  sdl: string,
+  source: string,
+  identityName = 'marketGraphQLIdentity',
+) => {
   const schema = buildSchema(sdl)
   const document = parse(source)
   const errors = validate(schema, document)
@@ -58,5 +62,5 @@ export const generateFeatureGraphQL = async (sdl: string, source: string) => {
   const schemaIdentity = createHash('sha256').update(sdl).digest('hex')
   const operationIdentity = createHash('sha256').update(source).digest('hex')
   const identity = JSON.stringify([schemaIdentity, operationIdentity])
-  return `import type { GraphQLDocument } from '@eve-space/platform-module-nuxt/runtime'\nexport const marketGraphQLIdentity = ${identity} as const\n${generated}\n${typedOperationStrings(document)}\n`
+  return `import type { GraphQLDocument } from '@eve-space/platform-module-nuxt/runtime'\nexport const ${identityName} = ${identity} as const\n${generated}\n${typedOperationStrings(document)}\n`
 }
