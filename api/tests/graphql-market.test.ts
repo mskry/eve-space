@@ -38,6 +38,7 @@ vi.mock('../src/platform/module-route-capabilities.js', () => ({
 }))
 
 import { installedGraphQLContributions } from '../src/generated/platform/installed-module-graphql.js'
+import { installedModulePersistenceOperations } from '../src/generated/platform/installed-module-persistence.js'
 import { createContributionResolvers } from '../src/graphql/contribution-resolvers.js'
 import { applicationScalars } from '../src/graphql/scalars.js'
 import { createGraphQLReadExecution } from '../src/graphql/request-execution.js'
@@ -119,8 +120,8 @@ beforeEach(() => {
     'read-market-intelligence-generation': fixture.readMarketIntelligenceGeneration,
     'read-market-intelligence-page': fixture.readMarketIntelligencePage,
     'read-market-intelligence-item': fixture.readMarketIntelligenceItem,
-    'read-market-intelligence-coverage': fixture.readMarketIntelligenceCoverage,
-    'read-market-intelligence-history-range': fixture.readMarketIntelligenceHistoryRange,
+    'read-market-intelligence-coverage-snapshot': fixture.readMarketIntelligenceCoverage,
+    'read-market-intelligence-history-range-retained': fixture.readMarketIntelligenceHistoryRange,
   }
   const coreDataMethods = {
     'market-catalogue': fixture.marketCatalogue,
@@ -135,7 +136,9 @@ beforeEach(() => {
           ),
         )
         .map(([id, method]) => [
-          id.replaceAll(/-([a-z])/g, (_, letter: string) => letter.toUpperCase()),
+          installedModulePersistenceOperations.find(
+            (operation) => operation.moduleId === 'market' && operation.operationId === id,
+          )!.method,
           method,
         ]),
     ),
