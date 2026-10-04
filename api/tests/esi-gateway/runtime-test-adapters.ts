@@ -23,6 +23,34 @@ export function createRuntimeTestExecution(
   return createEsiExecutionRuntime(ports, { ...runtimeTestConfig, ...config })
 }
 
+const createRuntimeTestCoordination = (): EsiExecutionRuntimePorts['coordination'] => ({
+  acquireRequestLease: async () => undefined,
+  acquireRequestPermit: async () => ({
+    coordinationAvailable: false,
+    ttlMs: 30_000,
+    renew: async () => true,
+    release: async () => {},
+  }),
+  commitFence: async () => false,
+  getCommittedFence: async () => undefined,
+  getRequestCooldowns: async ({ requests }) =>
+    requests.map(() => ({
+      active: false,
+      retryAfterSeconds: null,
+      coordinationAvailable: true,
+    })),
+  getRequestLeaseTtl: async () => 0,
+  getResourceRevision: async () => 0,
+  beginResourceMutation: async () => {},
+  completeResourceMutation: async () => 1,
+  initializeCacheNamespace: async () => {
+    throw new Error('coordination unavailable')
+  },
+  recordResponse: async () => {},
+  releaseRequestLease: async () => true,
+  renewRequestLease: async () => true,
+})
+
 export function createRuntimeTestPorts(options: {
   readonly response: unknown
   readonly fetch: (
@@ -49,30 +77,7 @@ export function createRuntimeTestPorts(options: {
       ...options.overrides?.cache,
     },
     coordination: {
-      acquireRequestLease: async () => undefined,
-      acquireRequestPermit: async () => ({
-        coordinationAvailable: false,
-        ttlMs: 30_000,
-        renew: async () => true,
-        release: async () => {},
-      }),
-      commitFence: async () => false,
-      getCommittedFence: async () => undefined,
-      getRequestCooldowns: async ({ requests }) =>
-        requests.map(() => ({
-          active: false,
-          retryAfterSeconds: null,
-          coordinationAvailable: true,
-        })),
-      getRequestLeaseTtl: async () => 0,
-      getResourceRevision: async () => 0,
-      incrementResourceRevision: async () => 1,
-      initializeCacheNamespace: async () => {
-        throw new Error('coordination unavailable')
-      },
-      recordResponse: async () => {},
-      releaseRequestLease: async () => true,
-      renewRequestLease: async () => true,
+      ...createRuntimeTestCoordination(),
       ...options.overrides?.coordination,
     },
     timing: {

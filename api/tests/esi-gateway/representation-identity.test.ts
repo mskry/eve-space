@@ -52,8 +52,8 @@ describe('ESI representation-scoped identity', () => {
     )
   })
 
-  test('the v3 cache identity prefix is in effect', () => {
-    expect(cacheIdentityVersion).toBe('v3')
+  test('the v4 cache identity prefix is in effect', () => {
+    expect(cacheIdentityVersion).toBe('v4')
     const identity = createEsiRepresentationIdentity({
       compatibilityDate,
       inputs: { characterId: 1 },
@@ -61,6 +61,6 @@ describe('ESI representation-scoped identity', () => {
       representationName: 'character-skills-core',
       representationVersion: 'v2',
     })
-    expect(cacheEnvelopeKey('namespace-one', identity)).toContain(':v3:')
+    expect(cacheEnvelopeKey('namespace-one', identity)).toContain(':v3:v4:')
   })
 })

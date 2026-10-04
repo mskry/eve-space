@@ -203,6 +203,81 @@ describe('isolated ESI execution runtime', () => {
     expect(release).toHaveBeenCalledOnce()
   })
 
+  test.each([true, false])(
+    'drains issued cache-lease renewal before release (renewed=%s)',
+    async (renewed) => {
+      let finishFetch!: (response: Response) => void
+      let finishRenewal!: (value: boolean) => void
+      let tick!: () => void
+      const stop = vi.fn()
+      const releaseRequestLease = vi.fn(async () => true)
+      const renewRequestLease = vi.fn(
+        () =>
+          new Promise<boolean>((resolve, reject) => {
+            finishRenewal = (value) =>
+              value ? resolve(true) : reject(new Error('redis unavailable'))
+          }),
+      )
+      const fetch = vi.fn(
+        () =>
+          new Promise<Response>((resolve) => {
+            finishFetch = resolve
+          }),
+      )
+      const runtime = createEsiExecutionRuntime(
+        createRuntimeTestPorts({
+          fetch,
+          response: undefined,
+          overrides: {
+            coordination: {
+              initializeCacheNamespace: async () => 'lease-drain',
+              acquireRequestLease: async () => ({
+                key: 'lease',
+                ownerToken: 'owner',
+                fence: 1,
+                ttlMs: 30_000,
+              }),
+              commitFence: async () => true,
+              releaseRequestLease,
+              renewRequestLease,
+            },
+            timing: {
+              repeat: (operation) => {
+                tick = operation
+                return stop
+              },
+            },
+          },
+        }),
+        runtimeTestConfig,
+      )
+      const execution = runtime.executeRepresentation(statusRepresentation(), {})
+      await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+      tick()
+      await vi.waitFor(() => expect(renewRequestLease).toHaveBeenCalledOnce())
+      tick()
+      expect(renewRequestLease).toHaveBeenCalledOnce()
+      const close = runtime.close()
+      const closed = vi.fn()
+      void close.then(closed)
+      finishFetch(
+        new Response(JSON.stringify(statusResponse(1)), {
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+      await vi.waitFor(() => expect(stop).toHaveBeenCalledOnce())
+      tick()
+      expect(renewRequestLease).toHaveBeenCalledOnce()
+      expect(releaseRequestLease).not.toHaveBeenCalled()
+      expect(closed).not.toHaveBeenCalled()
+      finishRenewal(renewed)
+      await execution
+      await close
+      expect(releaseRequestLease).toHaveBeenCalledOnce()
+      expect(closed).toHaveBeenCalledOnce()
+    },
+  )
+
   test('waits for body settlement and an in-flight renewal before completing close', async () => {
     vi.useFakeTimers()
     let bodyController: ReadableStreamDefaultController<Uint8Array> | undefined

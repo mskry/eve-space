@@ -44,7 +44,6 @@ import { EsiResourceRevisionRegistry } from './resource-revision.js'
 import {
   classifyEsiRefreshFailure,
   isStaleUsableForFailure,
-  shouldAdvanceRevisionAfterMutationError,
   shouldRetryEsiError,
   toEsiQuotaError,
 } from './failure-policy.js'
@@ -211,9 +210,8 @@ class EsiExecutionRuntimeImplementation {
     private readonly state: ReturnType<typeof createEsiExecutionRuntimeState>,
   ) {
     this.#resourceRevisions = new EsiResourceRevisionRegistry(
-      ports.cache,
       ports.coordination,
-      state.unrepairedResourceRevisions,
+      state.resourceRevisionRepairs,
       ports.timing,
       () => state.l1.clear(),
     )
@@ -800,34 +798,42 @@ class EsiExecutionRuntimeImplementation {
       throw new Error(`ESI operation ${mutation.operation} is not a character mutation`)
     }
     const principal = characterEsiPrincipal(mutation.characterId)
-    let load: EsiCanonicalLoad<Data>
+    const load = await this.ports.authorization.withAuthorization(
+      mutation.characterId,
+      subjectLifecycleId,
+      policy.authorization.scope,
+      (authority) =>
+        this.#settleCharacterMutation(mutation, policy, principal, authority.accessToken),
+      mutation.signal,
+    )
+    return { data: await load.map(), meta: load.meta }
+  }
+
+  async #settleCharacterMutation<Data>(
+    mutation: EsiExecutionResource<Data>,
+    policy: EsiOperationContract,
+    principal: string,
+    accessToken: string,
+  ) {
+    mutation.signal?.throwIfAborted()
+    const intent = await this.#resourceRevisions.begin(policy, principal)
     try {
-      load = await this.ports.authorization.withAuthorization(
-        mutation.characterId,
-        subjectLifecycleId,
-        policy.authorization.scope,
-        (authority) =>
-          this.#loadWithRetry(
-            {
-              inputs: mutation.inputs,
-              load: () => mutation.load({ accessToken: authority.accessToken, principal }, {}),
-              operation: mutation.operation,
-              signal: mutation.signal,
-            },
-            {},
-            undefined,
-            policy,
-          ),
-        mutation.signal,
+      mutation.signal?.throwIfAborted()
+      return await this.#loadWithRetry(
+        {
+          inputs: mutation.inputs,
+          load: () => mutation.load({ accessToken, principal }, {}),
+          operation: mutation.operation,
+        },
+        {},
+        undefined,
+        policy,
       )
     } catch (error) {
-      if (shouldAdvanceRevisionAfterMutationError(policy, error)) {
-        await this.#resourceRevisions.advance(policy, principal)
-      }
       throw toEsiQuotaError(error, this.ports.timing.now())
+    } finally {
+      await this.#resourceRevisions.complete(intent)
     }
-    await this.#resourceRevisions.advance(policy, principal)
-    return { data: await load.map(), meta: load.meta }
   }
 
   async #getCharacterAuthorized<Data>(
@@ -1115,7 +1121,7 @@ class EsiExecutionRuntimeImplementation {
       }
       return await this.#mapAndPublish(resolvedContext, load, lease)
     } finally {
-      stopRenewal?.()
+      await stopRenewal?.()
       await this.#releaseLease(lease)
     }
   }
@@ -1262,10 +1268,30 @@ class EsiExecutionRuntimeImplementation {
     if (!lease) {
       return
     }
-    return this.ports.timing.repeat(
-      () => void this.ports.coordination.renewRequestLease(lease).catch(() => {}),
+    let pending: Promise<void> | undefined
+    let stopped = false
+    const stop = this.ports.timing.repeat(
+      () => {
+        if (stopped || pending) {
+          return
+        }
+        pending = Promise.resolve()
+          .then(() => this.ports.coordination.renewRequestLease(lease))
+          .then(
+            () => {},
+            () => {},
+          )
+          .finally(() => {
+            pending = undefined
+          })
+      },
       Math.floor(lease.ttlMs / 2),
     )
+    return async () => {
+      stopped = true
+      stop()
+      await pending
+    }
   }
 
   async #releaseLease(lease: EsiRequestLease | undefined) {

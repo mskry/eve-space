@@ -141,7 +141,7 @@ EVE Space is an EVE organization application with a Nuxt UI, Hono API, and separ
 
 ### ESI And Caching
 
-- Execute core ESI reads and mutations through registered representations in `api/src/esi-gateway/feature-execution.ts`; installed feature server modules use platform ESI dispatch and must not import the SDK at runtime. Only the gateway execution owner constructs SDK clients and binds transport. Do not use SDK default transport or raw ESI `fetch` in application code; preserve `scripts/verify-esi-egress.mjs`.
+- Execute core ESI reads and mutations through registered representations in `api/src/esi-gateway/feature-execution.ts`; installed feature server modules use platform ESI dispatch and must not import the SDK at runtime. Only the gateway execution owner constructs SDK clients and binds transport. Do not use SDK default transport or raw ESI `fetch` in application code; preserve `scripts/verify-esi-egress.mjs`, including its checks for local URL constants and fetch aliases.
 - Discover endpoint paths, required scopes, route-specific cache behavior, and OpenAPI `x-rate-limit` metadata through the EVE API Explorer before implementing an ESI integration.
 - The reviewed organization operation catalog is recorded in `docs/organization-platform.md`. Re-review it before implementation when the requested compatibility date or SDK version changes.
 - Register every ESI call in the reviewed operation metadata and executable catalog, and bind it to the matching generated SDK operation descriptor. Preserve startup validation of operation IDs, compatibility dates, scopes, executable definitions, and catalog contracts.
@@ -149,7 +149,7 @@ EVE Space is an EVE organization application with a Nuxt UI, Hono API, and separ
 - Preserve `X-Compatibility-Date` on ESI requests. The compatibility date is not a future date and API changes take effect at 11:00 UTC.
 - Account for both ESI rate-limit systems: route-group floating-window buckets and the legacy global error limit. Do not operate at either limit; spread periodic work and slow down as `X-Ratelimit-Remaining` approaches zero.
 - For cursor-paginated routes, treat `before` and `after` tokens as opaque. Initial collection pages backward with `before`; persist the initial `after` token for incremental updates. Deduplicate by keeping existing records from `before` pages and replacing them from `after` pages.
-- Cache Redis owns disposable shared envelopes and lossy ESI telemetry. Queue/coordination Redis owns durable cooldowns, concurrency permits, request-collapse leases, and fencing; do not move those responsibilities between Redis instances.
+- Cache Redis owns disposable shared envelopes and lossy ESI telemetry. Queue/coordination Redis owns durable cooldowns, concurrency permits, request-collapse leases, fencing, resource revisions, and mutation invalidation intents; do not move those responsibilities between Redis instances.
 
 <!-- /bmad:context -->
 

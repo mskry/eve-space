@@ -46,7 +46,6 @@ export const usePlatformInventoryQuery = <Result>(
       query.suspend()
       return false
     }
-    query.suspend()
     try {
       await runtime.ensureRuntimeState()
     } catch {
@@ -59,7 +58,10 @@ export const usePlatformInventoryQuery = <Result>(
       )
       return false
     }
-    if (!mounted || access.value?.status !== 'verified') return false
+    if (!mounted || access.value?.status !== 'verified') {
+      query.suspend()
+      return false
+    }
     return query.check()
   }
   const refresh = async () => {

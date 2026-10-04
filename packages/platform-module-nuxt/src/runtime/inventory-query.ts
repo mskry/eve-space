@@ -36,16 +36,17 @@ export const createPlatformInventoryQuery = <Result>(dependencies: {
   const status = shallowRef<InventoryQueryStatus>('idle')
   const retained = shallowRef<Result>()
   const error = shallowRef<Error>()
+  const renewing = shallowRef(false)
   let admission: PlatformInventoryAdmission | undefined
   let generation = 0
   let active = new AbortController()
   let expiry: ReturnType<typeof setTimeout> | undefined
 
-  const cancel = () => {
+  const cancel = (preserveExpiry = false) => {
     generation += 1
     active.abort()
     active = new AbortController()
-    clearTimeout(expiry)
+    if (!preserveExpiry) clearTimeout(expiry)
   }
   const invalidate = (reason?: Error) => {
     cancel()
@@ -58,8 +59,15 @@ export const createPlatformInventoryQuery = <Result>(dependencies: {
     cancel()
     status.value = 'unavailable'
   }
+  const canRenewAdmission = () =>
+    admission?.ownerId === dependencies.ownerId() &&
+    (status.value === 'ready' ||
+      status.value === 'loading' ||
+      (status.value === 'checking' && renewing.value))
   const check = async () => {
-    cancel()
+    const preserveAdmission = canRenewAdmission()
+    cancel(preserveAdmission)
+    renewing.value = preserveAdmission
     const current = generation
     status.value = 'checking'
     error.value = undefined
@@ -81,10 +89,12 @@ export const createPlatformInventoryQuery = <Result>(dependencies: {
       if (admission && admission.fingerprint !== verdict.fingerprint) retained.value = undefined
       admission = verdict
       status.value = 'ready'
+      clearTimeout(expiry)
       expiry = setTimeout(suspend, Math.min(60_000, verdict.validForMilliseconds))
       return true
     } catch (error_) {
       if (current !== generation) return false
+      clearTimeout(expiry)
       const problem =
         error_ instanceof Error ? error_ : new Error('Inventory verification unavailable.')
       if (knownDenial(problem)) {
@@ -125,7 +135,11 @@ export const createPlatformInventoryQuery = <Result>(dependencies: {
     status,
     error,
     data: computed(() =>
-      status.value === 'ready' || status.value === 'loading' ? retained.value : undefined,
+      status.value === 'ready' ||
+      status.value === 'loading' ||
+      (status.value === 'checking' && renewing.value)
+        ? retained.value
+        : undefined,
     ),
     check,
     run,

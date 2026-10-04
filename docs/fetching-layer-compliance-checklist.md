@@ -35,7 +35,7 @@ query-cache consumer.
 
 - [ ] **MOD-01** — Browser feature code requests application DTOs through the established query/client infrastructure. EVE token resolution, refresh, encryption, ESI caching, and upstream coordination stay server-owned.
 - [ ] **MOD-02** — The SDK owns one typed protocol attempt, response validation, its request deadline, metadata, and policy-neutral failure classification. Application retries, caching, OAuth refresh, and shared limit coordination have a clearly identified server owner.
-- [ ] **MOD-03** — Core feature callers use the registered gateway execution interface. SDK construction and `createEsiTransport(operation, principal?)` binding remain in the allowed server implementation. Installed feature modules use platform dispatch and do not import SDK runtime code.
+- [ ] **MOD-03** — Core feature callers use the registered gateway execution interface. SDK construction and scoped transport binding remain in the gateway execution owner. Installed feature modules use platform dispatch and do not import SDK runtime code.
 - [ ] **MOD-04** — Gateway representations own cache identity, SDK binding, and canonical mapping where required. Meaning changes increment representation versions. The documented platform wire-cache exception maps results before materialization or HTTP exposure.
 - [ ] **MOD-05** — Query-persistence consumers use `app/query-persistence/runtime.ts`; they do not coordinate its internal state, envelope, storage, or notification adapters. Dependency direction follows the scoped guide and mechanical verifier.
 - [ ] **MOD-06** — Shared helpers and types have one owner. Feature pages do not duplicate session/restoration state machines, retry decisions, or freshness calculations.

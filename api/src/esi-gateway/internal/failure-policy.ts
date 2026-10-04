@@ -7,7 +7,6 @@ import {
   EsiTransportError,
 } from '@evespace/esi-client'
 import { TokenRefreshUnavailableError } from '../../auth/token-errors.js'
-import type { EsiOperationContract } from './contract-types.js'
 import { esiCooldownFallbackSeconds, getLegacyErrorCooldownSeconds } from './policy.js'
 import { EsiQuotaError } from './quota-error.js'
 import type { EsiCachedResult } from './types.js'
@@ -143,19 +142,6 @@ export function toEsiQuotaError(error: unknown, now = Date.now()) {
   }
   const failure = classifyEsiOperationFailure(error)
   return failure.kind === 'quota' ? new EsiQuotaError(failure.retryAfterSeconds, now) : error
-}
-
-export function shouldAdvanceRevisionAfterMutationError(
-  policy: EsiOperationContract,
-  error: unknown,
-) {
-  const failure = classifyEsiOperationFailure(error)
-  return (
-    isEsiMutationOutcomeUnknown(error) ||
-    (policy.mutation?.appliedOnMissing === true &&
-      failure.kind === 'http' &&
-      failure.status === 404)
-  )
 }
 
 function unavailableFailure(status: number | undefined): EsiFailure {

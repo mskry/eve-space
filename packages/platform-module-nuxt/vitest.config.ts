@@ -4,6 +4,7 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   resolve: {
     alias: {
+      '#imports': 'nuxt/app',
       '#build/eve-space-platform/query-admission-scopes': fileURLToPath(
         new URL('./test/support/query-admission-scopes.ts', import.meta.url),
       ),

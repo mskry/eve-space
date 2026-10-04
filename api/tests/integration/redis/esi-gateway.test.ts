@@ -7,6 +7,8 @@ import { z } from 'zod'
 import { createDeferred } from '../../support/deferred.js'
 import {
   acquireEsiRequestLease,
+  beginEsiResourceMutation,
+  completeEsiResourceMutation,
   commitEsiFence,
   getCommittedEsiFence,
   getEsiRequestLeaseTtl,
@@ -1009,6 +1011,67 @@ describe('ESI resilience Redis coordination', () => {
     })
     expect(transportSignal?.aborted).toBe(true)
     await expect(coordination.zcard(key)).resolves.toBe(0)
+  })
+})
+
+describe('durable resource invalidation', () => {
+  test('durable mutation intents survive cache loss and complete idempotently', async () => {
+    const first = { namespace: 'mailbox', principal: 'character-90000001', token: 'first' }
+    const second = { ...first, token: 'second' }
+    await beginEsiResourceMutation(coordination, first)
+    await beginEsiResourceMutation(coordination, first)
+    await beginEsiResourceMutation(coordination, second)
+    await cache.flushdb()
+    await expect(
+      getEsiResourceRevision(coordination, first.namespace, first.principal),
+    ).rejects.toThrow('resource mutation unresolved')
+    await expect(
+      getEsiResourceRevision(coordination, first.namespace, 'character-90000002'),
+    ).resolves.toBe(0)
+    await expect(completeEsiResourceMutation(coordination, first)).resolves.toBe(1)
+    await expect(completeEsiResourceMutation(coordination, first)).resolves.toBe(1)
+    await expect(
+      getEsiResourceRevision(coordination, first.namespace, first.principal),
+    ).rejects.toThrow('resource mutation unresolved')
+    await expect(completeEsiResourceMutation(coordination, second)).resolves.toBe(2)
+    await expect(
+      getEsiResourceRevision(coordination, first.namespace, first.principal),
+    ).resolves.toBe(2)
+  })
+
+  test('keeps a cached runtime gated while another runtime has unresolved durable intent', async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(esiResponse({ body: 'before' }, 30))
+      .mockResolvedValueOnce(esiResponse({ body: 'after' }, 30))
+      .mockResolvedValueOnce(esiResponse({ body: 'reconciled' }, 30))
+    vi.stubGlobal('fetch', fetch)
+    const reader = await mailRepresentation()
+    const input = { characterId: 90_000_001, mailId: 7 }
+    await execute(reader, input, { subjectLifecycleId })
+    await expect(execute(reader, input, { subjectLifecycleId })).resolves.toMatchObject({
+      data: { body: 'before' },
+      source: 'cache',
+    })
+    const writer = new Redis(coordination.options)
+    const intent = { namespace: 'mailbox', principal: 'character-90000001', token: 'unsettled' }
+    try {
+      await beginEsiResourceMutation(writer, intent)
+      await cache.flushdb()
+      await expect(execute(reader, input, { subjectLifecycleId })).resolves.toMatchObject({
+        data: { body: 'after' },
+        source: 'esi',
+      })
+      expect(await cache.keys('eve-space:esi-cache:*')).toHaveLength(0)
+      await completeEsiResourceMutation(writer, intent)
+      await expect(execute(reader, input, { subjectLifecycleId })).resolves.toMatchObject({
+        data: { body: 'reconciled' },
+        source: 'esi',
+      })
+      expect(fetch).toHaveBeenCalledTimes(3)
+    } finally {
+      await writer.quit()
+    }
   })
 })
 
