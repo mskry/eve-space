@@ -29,6 +29,50 @@ const day = z.strictObject({
   orderCount: intelligenceQuantity,
 })
 
+const coverageInputSchema = z.strictObject(profile)
+const coverageOutputSchema = z
+  .strictObject(profile)
+  .extend({
+    profileRevision: intelligenceQuantity,
+    regionId: intelligenceId,
+    bookScope: z.enum(['region', 'stations', 'global-plex']),
+    historyScope: z.enum(['region', 'global-plex']),
+    policyRevision: intelligenceQuantity,
+    policyEnabled: z.boolean(),
+    ignoredGroupIds: z.array(intelligenceId).max(256),
+    catalogueRevision: z.nullable(intelligenceCatalogueRevision),
+    excludedTypeCount: z.nullable(counts),
+    evaluatedAt: intelligenceTime,
+    live: intelligenceCoverageCounts,
+    generation: z
+      .strictObject({
+        generation: intelligenceGeneration,
+        evaluatedAt: intelligenceTime,
+        counts: intelligenceCoverageCounts,
+      })
+      .nullable(),
+  })
+  .nullable()
+
+const historyRangeInputSchema = z.strictObject(profile).extend({
+  typeId: intelligenceId,
+  from: z.iso.date(),
+  through: z.iso.date(),
+})
+const historyRangeOutputSchema = z
+  .strictObject(profile)
+  .extend({
+    profileRevision: intelligenceQuantity,
+    regionId: intelligenceId,
+    typeId: intelligenceId,
+    from: z.iso.date(),
+    through: z.iso.date(),
+    retainedEvidence: z.boolean(),
+    source: z.nullable(intelligenceHistorySource),
+    days: z.array(day).max(365),
+  })
+  .nullable()
+
 export const readMarketIntelligenceGenerationOperation = definePlatformPersistenceOperation({
   id: 'read-market-intelligence-generation',
   method: 'readMarketIntelligenceGeneration',
@@ -93,70 +137,55 @@ export const readMarketIntelligenceItemOperation = definePlatformPersistenceOper
   maximumOutputBytes: 32768,
 })
 export const readMarketIntelligenceCoverageOperation = definePlatformPersistenceOperation({
-  id: 'read-market-intelligence-coverage',
+  id: 'read-market-intelligence-coverage-snapshot',
   method: 'readMarketIntelligenceCoverage',
-  revision: 1,
+  revision: 2,
   mode: 'read',
-  inputSchema: z.strictObject(profile),
-  outputSchema: z
-    .strictObject(profile)
-    .extend({
-      profileRevision: intelligenceQuantity,
-      regionId: intelligenceId,
-      bookScope: z.enum(['region', 'stations', 'global-plex']),
-      historyScope: z.enum(['region', 'global-plex']),
-      policyRevision: intelligenceQuantity,
-      policyEnabled: z.boolean(),
-      ignoredGroupIds: z.array(intelligenceId).max(256),
-      catalogueRevision: z.nullable(intelligenceCatalogueRevision),
-      excludedTypeCount: z.nullable(counts),
-      evaluatedAt: intelligenceTime,
-      live: intelligenceCoverageCounts,
-      generation: z
-        .strictObject({
-          generation: intelligenceGeneration,
-          evaluatedAt: intelligenceTime,
-          counts: intelligenceCoverageCounts,
-        })
-        .nullable(),
-    })
-    .nullable(),
+  inputSchema: coverageInputSchema,
+  outputSchema: coverageOutputSchema,
   maximumInputBytes: 256,
   maximumOutputBytes: 32768,
 })
-export const readMarketIntelligenceHistoryRangeOperation = definePlatformPersistenceOperation({
-  id: 'read-market-intelligence-history-range',
-  method: 'readMarketIntelligenceHistoryRange',
+export const legacyReadMarketIntelligenceCoverageOperation = definePlatformPersistenceOperation({
+  id: 'read-market-intelligence-coverage',
+  method: 'legacyReadMarketIntelligenceCoverage',
   revision: 1,
   mode: 'read',
-  inputSchema: z.strictObject(profile).extend({
-    typeId: intelligenceId,
-    from: z.iso.date(),
-    through: z.iso.date(),
-  }),
-  outputSchema: z
-    .strictObject(profile)
-    .extend({
-      profileRevision: intelligenceQuantity,
-      regionId: intelligenceId,
-      typeId: intelligenceId,
-      from: z.iso.date(),
-      through: z.iso.date(),
-      retainedEvidence: z.boolean(),
-      source: z.nullable(intelligenceHistorySource),
-      days: z.array(day).max(365),
-    })
-    .nullable(),
+  inputSchema: coverageInputSchema,
+  outputSchema: coverageOutputSchema,
+  maximumInputBytes: 256,
+  maximumOutputBytes: 32768,
+})
+
+export const readMarketIntelligenceHistoryRangeOperation = definePlatformPersistenceOperation({
+  id: 'read-market-intelligence-history-range-retained',
+  method: 'readMarketIntelligenceHistoryRange',
+  revision: 2,
+  mode: 'read',
+  inputSchema: historyRangeInputSchema,
+  outputSchema: historyRangeOutputSchema,
   maximumInputBytes: 512,
   maximumOutputBytes: 524288,
 })
+export const legacyReadMarketIntelligenceHistoryRangeOperation = definePlatformPersistenceOperation(
+  {
+    id: 'read-market-intelligence-history-range',
+    method: 'legacyReadMarketIntelligenceHistoryRange',
+    revision: 1,
+    mode: 'read',
+    inputSchema: historyRangeInputSchema,
+    outputSchema: historyRangeOutputSchema,
+    maximumInputBytes: 512,
+    maximumOutputBytes: 524288,
+  },
+)
 
 const marketIntelligenceReadPersistenceOperations = {
   'read-market-intelligence-generation': readMarketIntelligenceGenerationOperation,
   'read-market-intelligence-page': readMarketIntelligencePageOperation,
   'read-market-intelligence-item': readMarketIntelligenceItemOperation,
-  'read-market-intelligence-coverage': readMarketIntelligenceCoverageOperation,
-  'read-market-intelligence-history-range': readMarketIntelligenceHistoryRangeOperation,
+  'read-market-intelligence-coverage-snapshot': readMarketIntelligenceCoverageOperation,
+  'read-market-intelligence-history-range-retained': readMarketIntelligenceHistoryRangeOperation,
 } as const
 export type MarketIntelligenceReads = PlatformPersistenceMethodsFor<
   typeof marketIntelligenceReadPersistenceOperations,
@@ -164,7 +193,7 @@ export type MarketIntelligenceReads = PlatformPersistenceMethodsFor<
     'read-market-intelligence-generation',
     'read-market-intelligence-page',
     'read-market-intelligence-item',
-    'read-market-intelligence-coverage',
-    'read-market-intelligence-history-range',
+    'read-market-intelligence-coverage-snapshot',
+    'read-market-intelligence-history-range-retained',
   ]
 >

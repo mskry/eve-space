@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   compilePlatformModules,
@@ -17,10 +16,7 @@ import {
 import { readGraphQLArtifactContributions } from '@eve-space/platform-module-conformance/graphql-artifact'
 import { coreModuleValidationAuthorities } from '../../scripts/module-registry/authorities'
 import { canonicalizePersistenceRoutineSql } from '@eve-space/platform-module-persistence-policy/persistence-policy'
-import {
-  generateRegistryFiles,
-  loadInstalledModuleManifests,
-} from '../../scripts/module-registry/generator'
+import { generateRegistryFiles } from '../../scripts/module-registry/generator'
 import { platformModuleContractImportViolations } from '../../scripts/verify-platform-module-contract-boundaries'
 import type {
   PlatformInventoryConsumerDeclaration,
@@ -744,9 +740,26 @@ describe('Trading package composition', () => {
           .inventoryConsumers,
       ).toHaveLength(2)
       const routines = present
-        ? (
-            await loadInstalledModuleManifests(fileURLToPath(new URL('../..', import.meta.url)))
-          ).persistenceRoutines.filter((routine) => routine.identity.moduleId === 'member-audit')
+        ? await Promise.all(
+            memberAudit.server.persistenceOperations.map(async (operation) =>
+              Object.assign(
+                await canonicalizePersistenceRoutineSql({
+                  moduleId: memberAudit.id,
+                  operationId: operation.id,
+                  mode: operation.mode,
+                  revision: operation.revision,
+                  sql: readFileSync(
+                    new URL(
+                      `../../features/member-audit/server/migrations/${operation.migration}`,
+                      import.meta.url,
+                    ),
+                    'utf8',
+                  ),
+                }),
+                { migration: operation.migration },
+              ),
+            ),
+          )
         : []
       const output = generateRegistryFiles(
         compiled,

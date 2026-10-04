@@ -179,6 +179,9 @@
       },
       {
         "name": "market-007-intelligence-reads.sql"
+      },
+      {
+        "name": "market-008-intelligence-evidence.sql"
       }
     ],
     "persistenceOperations": [
@@ -600,10 +603,10 @@
       },
       {
         "id": "begin-market-intelligence-generation",
-        "method": "beginMarketIntelligenceGeneration",
+        "method": "legacyBeginMarketIntelligenceGeneration",
         "revision": 1,
         "mode": "write",
-        "exportName": "beginMarketIntelligenceGenerationOperation",
+        "exportName": "legacyBeginMarketIntelligenceGenerationOperation",
         "migration": "market-006-intelligence-generations.sql"
       },
       {
@@ -672,18 +675,18 @@
       },
       {
         "id": "read-market-intelligence-coverage",
-        "method": "readMarketIntelligenceCoverage",
+        "method": "legacyReadMarketIntelligenceCoverage",
         "revision": 1,
         "mode": "read",
-        "exportName": "readMarketIntelligenceCoverageOperation",
+        "exportName": "legacyReadMarketIntelligenceCoverageOperation",
         "migration": "market-007-intelligence-reads.sql"
       },
       {
         "id": "read-market-intelligence-history-range",
-        "method": "readMarketIntelligenceHistoryRange",
+        "method": "legacyReadMarketIntelligenceHistoryRange",
         "revision": 1,
         "mode": "read",
-        "exportName": "readMarketIntelligenceHistoryRangeOperation",
+        "exportName": "legacyReadMarketIntelligenceHistoryRangeOperation",
         "migration": "market-007-intelligence-reads.sql"
       },
       {
@@ -693,6 +696,30 @@
         "mode": "write",
         "exportName": "recordMarketIntelligenceCatalogueOperation",
         "migration": "market-006-intelligence-generations.sql"
+      },
+      {
+        "id": "begin-market-intelligence-generation-snapshot",
+        "method": "beginMarketIntelligenceGeneration",
+        "revision": 2,
+        "mode": "write",
+        "exportName": "beginMarketIntelligenceGenerationOperation",
+        "migration": "market-008-intelligence-evidence.sql"
+      },
+      {
+        "id": "read-market-intelligence-coverage-snapshot",
+        "method": "readMarketIntelligenceCoverage",
+        "revision": 2,
+        "mode": "read",
+        "exportName": "readMarketIntelligenceCoverageOperation",
+        "migration": "market-008-intelligence-evidence.sql"
+      },
+      {
+        "id": "read-market-intelligence-history-range-retained",
+        "method": "readMarketIntelligenceHistoryRange",
+        "revision": 2,
+        "mode": "read",
+        "exportName": "readMarketIntelligenceHistoryRangeOperation",
+        "migration": "market-008-intelligence-evidence.sql"
       }
     ],
     "resources": [
@@ -851,7 +878,7 @@
               "operationId": "select-market-intelligence-work"
             },
             {
-              "operationId": "begin-market-intelligence-generation"
+              "operationId": "begin-market-intelligence-generation-snapshot"
             },
             {
               "operationId": "stage-market-intelligence-outputs"
@@ -1235,7 +1262,7 @@
             "sourceCost": 1000,
             "persistenceOperations": [
               {
-                "operationId": "read-market-intelligence-coverage"
+                "operationId": "read-market-intelligence-coverage-snapshot"
               }
             ],
             "coreDataProducts": []
@@ -1248,7 +1275,7 @@
             "sourceCost": 365,
             "persistenceOperations": [
               {
-                "operationId": "read-market-intelligence-history-range"
+                "operationId": "read-market-intelligence-history-range-retained"
               }
             ],
             "coreDataProducts": []

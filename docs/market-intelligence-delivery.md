@@ -65,7 +65,8 @@ and runtime evidence.
 Apply the existing `market-001-initial.sql`, `market-002-collected-publication.sql`, and
 `market-003-batch-staging.sql` identities unchanged, followed by
 `market-004-intelligence-collection.sql`, `market-005-history-convergence.sql`,
-`market-006-intelligence-generations.sql`, and `market-007-intelligence-reads.sql`.
+`market-006-intelligence-generations.sql`, `market-007-intelligence-reads.sql`, and
+`market-008-intelligence-evidence.sql`.
 The API migrates and attests named routines before accepting traffic; deploy the matching worker
 afterwards. Migration 004 introduces disabled-by-default policy and atomic catalogue universes.
 Migration 005 introduces canonical source metadata and the `converge-market-history`,
@@ -97,7 +98,11 @@ cadence does not bypass source expiry, gateway cooldowns, or resource request bu
 Migration 006 adds frozen generation inputs, resumable derived outputs, complete publication,
 and current-plus-one-prior retention. Migration 007 adds the read-only intelligence routines.
 Coverage uses the effective policy exclusions, including defaults for profiles without a
-saved policy row.
+saved policy row. Migration 008 captures each new generation input's effective collection
+deadline atomically, including retry deferrals, and labels retained legacy history in range reads.
+Existing generations keep their evidence and cursors; their historical due deadlines are unknown
+and remain null rather than being reconstructed from current mutable state. The original
+006/007 routines remain installed alongside the new snapshot and retained-evidence operations.
 
 Deploy the generated persistence, GraphQL, migration and worker inventories together. These
 migrations preserve existing source rows and do not enable a broad intelligence policy.

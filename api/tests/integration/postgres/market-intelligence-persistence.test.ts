@@ -65,6 +65,7 @@ beforeAll(async () => {
     expectedRevision: 0,
     requestId: randomUUID(),
   })
+  await connection`insert into eve_module_market.market_daily_history (region_id,type_id,day,average,highest,lowest,volume,order_count,validated_at) values (10000002,39,timezone('UTC',now())::date-1,10,12,8,10,2,now()-interval '2 days')`
   await runModuleMigrationSets(connection, [set!])
 })
 
@@ -81,6 +82,45 @@ const capability = () => ({
   ...installedModulePersistenceCapabilityFactories.resourceMaterializations['market/daily-history'](
     invoke,
   ),
+})
+
+test('labels retained legacy range evidence after upgrade without claiming validated history is retained', async () => {
+  const read =
+    installedModulePersistenceCapabilityFactories.graphqlReads[
+      'market/public-market/intelligence-history-range'
+    ](invoke)
+  const date = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10)
+  const query = { profileId: initialProfileId, typeId: 39, from: date, through: date }
+  expect(await read.readMarketIntelligenceHistoryRange(query)).toMatchObject({
+    retainedEvidence: true,
+    source: { state: 'legacy' },
+    days: [{ date, volume: '10' }],
+  })
+  const absentDate = new Date(Date.now() - 3 * 86_400_000).toISOString().slice(0, 10)
+  expect(
+    await read.readMarketIntelligenceHistoryRange({
+      ...query,
+      from: absentDate,
+      through: absentDate,
+    }),
+  ).toMatchObject({ retainedEvidence: false, source: { state: 'legacy' }, days: [] })
+  await connection`update eve_module_market.market_history_sources set source_state='supplied',fresh_until=now()+interval '1 day' where region_id=10000002 and type_id=39`
+  expect(await read.readMarketIntelligenceHistoryRange(query)).toMatchObject({
+    retainedEvidence: false,
+    source: { state: 'supplied' },
+    days: [{ date }],
+  })
+  await connection`update eve_module_market.market_history_sources set source_state='empty' where region_id=10000002 and type_id=39`
+  expect(await read.readMarketIntelligenceHistoryRange(query)).toMatchObject({
+    retainedEvidence: true,
+  })
+  expect(
+    await read.readMarketIntelligenceHistoryRange({
+      ...query,
+      from: absentDate,
+      through: absentDate,
+    }),
+  ).toMatchObject({ retainedEvidence: false, source: { state: 'empty' }, days: [] })
 })
 
 test('upgrades current installations with disabled policy and atomically activates only complete revision-fenced universes', async () => {

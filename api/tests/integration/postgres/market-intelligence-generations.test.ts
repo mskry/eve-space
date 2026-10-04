@@ -589,6 +589,138 @@ test('retains current and one expiring prior generation, reconstructs dirty work
   ).toEqual({ removed: 1 })
 })
 
+test.each([false, true])(
+  'freezes retry deadlines and reads older generations with due target present: %s',
+  async (includeDue) => {
+    const store = persistence()
+    const targetProfileId = randomUUID()
+    const targetIds = includeDue ? [5000, 5001, 5002] : [5000, 5001]
+    await store.saveMarketProfile({
+      profileId: targetProfileId,
+      regionId: 10000043,
+      mode: 'watched-types',
+      stationIds: [],
+      watchedTypeIds: targetIds,
+      enabled: true,
+      expectedRevision: 0,
+      requestId: randomUUID(),
+    })
+    await store.selectMarketIntelligenceWork({
+      profileId: targetProfileId,
+      profileRevision: 1,
+      reconciliationDue: false,
+      historyDue: false,
+    })
+    await store.recordMarketIntelligenceCatalogue({
+      profileId: targetProfileId,
+      profileRevision: 1,
+      catalogueRevision: revision,
+    })
+    const now = Date.now()
+    const future = new Date(now + 3_600_000).toISOString()
+    const due = new Date(now - 30_000).toISOString()
+    await connection`update eve_module_market.market_profiles set updated_at=now()-interval '2 hours' where profile_id=${targetProfileId}`
+    await store.convergeMarketHistory({
+      ...history(),
+      profileId: targetProfileId,
+      regionId: 10000043,
+      typeId: 5001,
+      policyRevision: null,
+      universeId: null,
+      attemptedAt: new Date(now - 7_200_000).toISOString(),
+      validatedAt: new Date(now - 7_200_000).toISOString(),
+      freshUntil: new Date(now - 3_600_000).toISOString(),
+    })
+    for (const typeId of targetIds) {
+      expect(
+        await store.recordMarketHistoryItemFailure({
+          profileId: targetProfileId,
+          expectedRevision: 1,
+          regionId: 10000043,
+          typeId,
+          policyRevision: null,
+          universeId: null,
+          attemptId: randomUUID(),
+          attemptedAt: new Date(now - 60_000).toISOString(),
+          retryAt: typeId === 5002 ? due : future,
+          failureClass: 'esi-unavailable',
+        }),
+      ).toEqual({ outcome: 'recorded' })
+    }
+    const input = {
+      profileId: targetProfileId,
+      profileRevision: 1,
+      policyRevision: 0,
+      universeId: null,
+      generationId: randomUUID(),
+      cursorSecret: randomUUID(),
+      catalogueRevision: revision,
+      ignoredTypeIds: [],
+      excludedTypeCount: 0,
+      excludedGroupIds: [],
+      watchedTargets: targetIds.map((typeId) => ({
+        typeId,
+        groupId: 1,
+        groupIds: [1],
+        name: String(typeId),
+      })),
+    }
+    expect(await store.beginMarketIntelligenceGeneration(input)).toEqual({ outcome: 'started' })
+    const deadlines =
+      await connection`select type_id,effective_due_at from eve_module_market.market_intelligence_inputs where generation_id=${input.generationId} order by type_id`
+    expect(deadlines.map((row) => row.effective_due_at.toISOString())).toEqual(
+      includeDue ? [future, future, due] : [future, future],
+    )
+    const live = (await readers().readMarketIntelligenceCoverage({ profileId: targetProfileId }))!
+      .live
+    const expectedDueAt = includeDue ? Date.parse(due) : null
+    expect(live.oldestDueAt === null ? null : Date.parse(live.oldestDueAt)).toBe(expectedDueAt)
+    await connection`update eve_module_market.market_history_collection_state set next_due_at=now()+interval '2 hours' where profile_id=${targetProfileId}`
+    await connection`update eve_module_market.market_history_sources set fresh_until=now()+interval '2 hours' where region_id=10000043 and type_id=5001`
+    await derive(
+      targetProfileId,
+      vi.fn(async () => ({ kind: 'revision', revision })),
+    )
+    const coverage = await readers().readMarketIntelligenceCoverage({ profileId: targetProfileId })
+    expect(coverage).toMatchObject({
+      live: { oldestDueAt: null },
+      generation: {
+        counts: {
+          staleSuccess: 1,
+          failedWithoutSuccess: includeDue ? 2 : 1,
+        },
+      },
+    })
+    const frozenDueAt = coverage!.generation!.counts.oldestDueAt
+    expect(frozenDueAt === null ? null : Date.parse(frozenDueAt)).toBe(expectedDueAt)
+    await connection`update eve_module_market.market_intelligence_controls set last_started_at=now()-interval '6 minutes' where profile_id=${targetProfileId}`
+    const legacyInput = { ...input, generationId: randomUUID(), cursorSecret: randomUUID() }
+    const [legacy] =
+      await connection`select eve_module_market.persist_begin_market_intelligence_generation(${connection.json(legacyInput)}) as result`
+    expect(legacy?.result).toEqual({ outcome: 'started' })
+    await derive(
+      targetProfileId,
+      vi.fn(async () => ({ kind: 'revision', revision })),
+    )
+    const historical = await readers().readMarketIntelligenceCoverage({
+      profileId: targetProfileId,
+    })
+    expect(historical?.generation?.counts.oldestDueAt).toBeNull()
+    expect(
+      (
+        await readers().readMarketIntelligenceGeneration({
+          profileId: targetProfileId,
+          generationId: input.generationId,
+        })
+      )?.generation.generationId,
+    ).toBe(input.generationId)
+    await connection`delete from eve_module_market.market_history_collection_state where profile_id=${targetProfileId}`
+    await connection`delete from eve_module_market.market_profiles where profile_id=${targetProfileId}`
+    await connection`delete from eve_module_market.market_history_sources where region_id=10000043 and type_id in ${connection(targetIds)}`
+    await connection`delete from eve_module_market.market_daily_history where region_id=10000043 and type_id in ${connection(targetIds)}`
+  },
+)
+
 test('watched and Global PLEX reports preserve scope, exclusions and uncollected rows and detect catalogue-only changes', async () => {
   const store = persistence()
   const watchedId = randomUUID()

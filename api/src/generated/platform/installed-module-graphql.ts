@@ -187,7 +187,9 @@ export const installedGraphQLContributions = [
           cost: 1,
           sourceCost: 365,
           coreDataProducts: [],
-          persistenceOperations: [{ operationId: 'read-market-intelligence-history-range' }],
+          persistenceOperations: [
+            { operationId: 'read-market-intelligence-history-range-retained' },
+          ],
         },
         {
           id: 'intelligence',
@@ -208,7 +210,7 @@ export const installedGraphQLContributions = [
           cost: 1,
           sourceCost: 1000,
           coreDataProducts: [],
-          persistenceOperations: [{ operationId: 'read-market-intelligence-coverage' }],
+          persistenceOperations: [{ operationId: 'read-market-intelligence-coverage-snapshot' }],
         },
         {
           id: 'intelligence-item',

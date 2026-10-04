@@ -77,6 +77,7 @@ export {
   listDueMarketIntelligenceDerivationsOperation,
   selectMarketIntelligenceWorkOperation,
   beginMarketIntelligenceGenerationOperation,
+  legacyBeginMarketIntelligenceGenerationOperation,
   readMarketIntelligenceInputPageOperation,
   stageMarketIntelligenceOutputsOperation,
   publishMarketIntelligenceGenerationOperation,
@@ -88,5 +89,7 @@ export {
   readMarketIntelligencePageOperation,
   readMarketIntelligenceItemOperation,
   readMarketIntelligenceCoverageOperation,
+  legacyReadMarketIntelligenceCoverageOperation,
   readMarketIntelligenceHistoryRangeOperation,
+  legacyReadMarketIntelligenceHistoryRangeOperation,
 } from './intelligence-read-persistence.js'

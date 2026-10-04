@@ -52,6 +52,12 @@ export const installedModuleMigrations = [
     exportPath: './migrations/market-007-intelligence-reads.sql',
   },
   {
+    moduleId: 'market',
+    name: 'market-008-intelligence-evidence.sql',
+    packageName: '@eve-space/market-server',
+    exportPath: './migrations/market-008-intelligence-evidence.sql',
+  },
+  {
     moduleId: 'member-audit',
     name: 'member-audit-001-baseline.sql',
     packageName: '@eve-space/member-audit-server',

@@ -29,6 +29,19 @@ const frozenInput = z.strictObject(target.shape).extend({
   metricsInput: intelligenceMetricInput,
 })
 
+const beginGenerationInputSchema = z.strictObject(fence).extend({
+  generationId: z.uuid(),
+  cursorSecret: z.uuid(),
+  ignoredTypeIds: z.array(id).max(16),
+  policyRevision: z.number().int().nonnegative().safe(),
+  universeId: z.uuid().nullable(),
+  catalogueRevision: z.nullable(catalogueRevision),
+  watchedTargets: z.array(target).max(16),
+  excludedTypeCount: z.number().int().min(0).max(32000),
+  excludedGroupIds: z.array(id).max(4000),
+})
+const beginGenerationOutputSchema = z.strictObject({ outcome: z.enum(['started', 'deferred']) })
+
 export const listDueMarketIntelligenceDerivationsOperation = definePlatformPersistenceOperation({
   id: 'list-due-market-intelligence-derivations',
   method: 'listDueMarketIntelligenceDerivations',
@@ -57,25 +70,26 @@ export const selectMarketIntelligenceWorkOperation = definePlatformPersistenceOp
   maximumOutputBytes: 256,
 })
 export const beginMarketIntelligenceGenerationOperation = definePlatformPersistenceOperation({
-  id: 'begin-market-intelligence-generation',
+  id: 'begin-market-intelligence-generation-snapshot',
   method: 'beginMarketIntelligenceGeneration',
-  revision: 1,
+  revision: 2,
   mode: 'write',
-  inputSchema: z.strictObject(fence).extend({
-    generationId: z.uuid(),
-    cursorSecret: z.uuid(),
-    ignoredTypeIds: z.array(id).max(16),
-    policyRevision: z.number().int().nonnegative().safe(),
-    universeId: z.uuid().nullable(),
-    catalogueRevision: z.nullable(catalogueRevision),
-    watchedTargets: z.array(target).max(16),
-    excludedTypeCount: z.number().int().min(0).max(32000),
-    excludedGroupIds: z.array(id).max(4000),
-  }),
-  outputSchema: z.strictObject({ outcome: z.enum(['started', 'deferred']) }),
+  inputSchema: beginGenerationInputSchema,
+  outputSchema: beginGenerationOutputSchema,
   maximumInputBytes: platformPersistencePayloadMaximumBytes,
   maximumOutputBytes: 256,
 })
+export const legacyBeginMarketIntelligenceGenerationOperation = definePlatformPersistenceOperation({
+  id: 'begin-market-intelligence-generation',
+  method: 'legacyBeginMarketIntelligenceGeneration',
+  revision: 1,
+  mode: 'write',
+  inputSchema: beginGenerationInputSchema,
+  outputSchema: beginGenerationOutputSchema,
+  maximumInputBytes: platformPersistencePayloadMaximumBytes,
+  maximumOutputBytes: 256,
+})
+
 export const readMarketIntelligenceInputPageOperation = definePlatformPersistenceOperation({
   id: 'read-market-intelligence-input-page',
   method: 'readMarketIntelligenceInputPage',
@@ -140,7 +154,7 @@ const marketIntelligenceGenerationPersistenceOperations = {
   'record-market-intelligence-catalogue': recordMarketIntelligenceCatalogueOperation,
   'list-due-market-intelligence-derivations': listDueMarketIntelligenceDerivationsOperation,
   'select-market-intelligence-work': selectMarketIntelligenceWorkOperation,
-  'begin-market-intelligence-generation': beginMarketIntelligenceGenerationOperation,
+  'begin-market-intelligence-generation-snapshot': beginMarketIntelligenceGenerationOperation,
   'read-market-intelligence-input-page': readMarketIntelligenceInputPageOperation,
   'stage-market-intelligence-outputs': stageMarketIntelligenceOutputsOperation,
   'publish-market-intelligence-generation': publishMarketIntelligenceGenerationOperation,
@@ -155,7 +169,7 @@ export type MarketIntelligenceGenerationWrites = PlatformPersistenceMethodsFor<
   readonly [
     'record-market-intelligence-catalogue',
     'select-market-intelligence-work',
-    'begin-market-intelligence-generation',
+    'begin-market-intelligence-generation-snapshot',
     'stage-market-intelligence-outputs',
     'publish-market-intelligence-generation',
     'cleanup-market-intelligence-generations',

@@ -116,7 +116,7 @@ export const installedModuleResources = [
         { operationId: 'cleanup-market-history-retention' },
         { operationId: 'record-market-history-item-failure' },
         { operationId: 'select-market-intelligence-work' },
-        { operationId: 'begin-market-intelligence-generation' },
+        { operationId: 'begin-market-intelligence-generation-snapshot' },
         { operationId: 'stage-market-intelligence-outputs' },
         { operationId: 'publish-market-intelligence-generation' },
         { operationId: 'cleanup-market-intelligence-generations' },

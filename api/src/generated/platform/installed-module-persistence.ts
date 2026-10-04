@@ -59,7 +59,7 @@ import {
   recordMarketHistoryItemFailureOperation as module0PersistenceOperation49,
   listDueMarketIntelligenceDerivationsOperation as module0PersistenceOperation50,
   selectMarketIntelligenceWorkOperation as module0PersistenceOperation51,
-  beginMarketIntelligenceGenerationOperation as module0PersistenceOperation52,
+  legacyBeginMarketIntelligenceGenerationOperation as module0PersistenceOperation52,
   readMarketIntelligenceInputPageOperation as module0PersistenceOperation53,
   stageMarketIntelligenceOutputsOperation as module0PersistenceOperation54,
   publishMarketIntelligenceGenerationOperation as module0PersistenceOperation55,
@@ -68,9 +68,12 @@ import {
   readMarketIntelligenceGenerationOperation as module0PersistenceOperation58,
   readMarketIntelligencePageOperation as module0PersistenceOperation59,
   readMarketIntelligenceItemOperation as module0PersistenceOperation60,
-  readMarketIntelligenceCoverageOperation as module0PersistenceOperation61,
-  readMarketIntelligenceHistoryRangeOperation as module0PersistenceOperation62,
+  legacyReadMarketIntelligenceCoverageOperation as module0PersistenceOperation61,
+  legacyReadMarketIntelligenceHistoryRangeOperation as module0PersistenceOperation62,
   recordMarketIntelligenceCatalogueOperation as module0PersistenceOperation63,
+  beginMarketIntelligenceGenerationOperation as module0PersistenceOperation64,
+  readMarketIntelligenceCoverageOperation as module0PersistenceOperation65,
+  readMarketIntelligenceHistoryRangeOperation as module0PersistenceOperation66,
 } from '@eve-space/market-server'
 import {
   writeSkillSnapshotOperation as module1PersistenceOperation0,
@@ -1309,7 +1312,7 @@ export const installedModulePersistenceOperations = [
   {
     moduleId: 'market',
     operationId: 'begin-market-intelligence-generation',
-    method: 'beginMarketIntelligenceGeneration',
+    method: 'legacyBeginMarketIntelligenceGeneration',
     revision: 1,
     mode: 'write',
     migration: 'market-006-intelligence-generations.sql',
@@ -1318,13 +1321,13 @@ export const installedModulePersistenceOperations = [
     definitionFingerprint: '88547963a508ad7c8a707000ef0124b9733aa57bdfa4df85240769d8586f9fcd',
     definition: module0PersistenceOperation52 satisfies PlatformPersistenceOperationDefinition<
       'begin-market-intelligence-generation',
-      'beginMarketIntelligenceGeneration',
+      'legacyBeginMarketIntelligenceGeneration',
       1,
       'write'
     >,
     grants: {
       activityProviders: [],
-      resourceMaterializations: ['daily-history'],
+      resourceMaterializations: [],
       resourceProjections: [],
       routes: [],
     },
@@ -1519,7 +1522,7 @@ export const installedModulePersistenceOperations = [
   {
     moduleId: 'market',
     operationId: 'read-market-intelligence-coverage',
-    method: 'readMarketIntelligenceCoverage',
+    method: 'legacyReadMarketIntelligenceCoverage',
     revision: 1,
     mode: 'read',
     migration: 'market-007-intelligence-reads.sql',
@@ -1528,12 +1531,11 @@ export const installedModulePersistenceOperations = [
     definitionFingerprint: '32b4a119a7068dedde2263de9a7939ba8c374f02a4d97e50feefe9b8e49ad20e',
     definition: module0PersistenceOperation61 satisfies PlatformPersistenceOperationDefinition<
       'read-market-intelligence-coverage',
-      'readMarketIntelligenceCoverage',
+      'legacyReadMarketIntelligenceCoverage',
       1,
       'read'
     >,
     grants: {
-      graphqlReads: ['public-market/intelligence-coverage'],
       activityProviders: [],
       resourceMaterializations: [],
       resourceProjections: [],
@@ -1543,7 +1545,7 @@ export const installedModulePersistenceOperations = [
   {
     moduleId: 'market',
     operationId: 'read-market-intelligence-history-range',
-    method: 'readMarketIntelligenceHistoryRange',
+    method: 'legacyReadMarketIntelligenceHistoryRange',
     revision: 1,
     mode: 'read',
     migration: 'market-007-intelligence-reads.sql',
@@ -1552,12 +1554,11 @@ export const installedModulePersistenceOperations = [
     definitionFingerprint: 'f7c2b6df1d3cecc430b43aa8549fe166378a0f4a71c9960fa6bb842e5d5d26bb',
     definition: module0PersistenceOperation62 satisfies PlatformPersistenceOperationDefinition<
       'read-market-intelligence-history-range',
-      'readMarketIntelligenceHistoryRange',
+      'legacyReadMarketIntelligenceHistoryRange',
       1,
       'read'
     >,
     grants: {
-      graphqlReads: ['public-market/intelligence-history-range'],
       activityProviders: [],
       resourceMaterializations: [],
       resourceProjections: [],
@@ -1583,6 +1584,77 @@ export const installedModulePersistenceOperations = [
     grants: {
       activityProviders: [],
       resourceMaterializations: ['daily-history'],
+      resourceProjections: [],
+      routes: [],
+    },
+  },
+  {
+    moduleId: 'market',
+    operationId: 'begin-market-intelligence-generation-snapshot',
+    method: 'beginMarketIntelligenceGeneration',
+    revision: 2,
+    mode: 'write',
+    migration: 'market-008-intelligence-evidence.sql',
+    schemaName: 'eve_module_market',
+    routineName: 'persist_begin_market_intelligence_generation_snapshot',
+    definitionFingerprint: '6d50e39c7b4e547b1a6fe8c99d67b5205dc372fdc937fccefb1050c9ff6752b9',
+    definition: module0PersistenceOperation64 satisfies PlatformPersistenceOperationDefinition<
+      'begin-market-intelligence-generation-snapshot',
+      'beginMarketIntelligenceGeneration',
+      2,
+      'write'
+    >,
+    grants: {
+      activityProviders: [],
+      resourceMaterializations: ['daily-history'],
+      resourceProjections: [],
+      routes: [],
+    },
+  },
+  {
+    moduleId: 'market',
+    operationId: 'read-market-intelligence-coverage-snapshot',
+    method: 'readMarketIntelligenceCoverage',
+    revision: 2,
+    mode: 'read',
+    migration: 'market-008-intelligence-evidence.sql',
+    schemaName: 'eve_module_market',
+    routineName: 'persist_read_market_intelligence_coverage_snapshot',
+    definitionFingerprint: '5ffc8d03a7ea42c9a892cfcd39dcff2df33edd7e8dca3a8d8f69de8e9e72faf1',
+    definition: module0PersistenceOperation65 satisfies PlatformPersistenceOperationDefinition<
+      'read-market-intelligence-coverage-snapshot',
+      'readMarketIntelligenceCoverage',
+      2,
+      'read'
+    >,
+    grants: {
+      graphqlReads: ['public-market/intelligence-coverage'],
+      activityProviders: [],
+      resourceMaterializations: [],
+      resourceProjections: [],
+      routes: [],
+    },
+  },
+  {
+    moduleId: 'market',
+    operationId: 'read-market-intelligence-history-range-retained',
+    method: 'readMarketIntelligenceHistoryRange',
+    revision: 2,
+    mode: 'read',
+    migration: 'market-008-intelligence-evidence.sql',
+    schemaName: 'eve_module_market',
+    routineName: 'persist_read_market_intelligence_history_range_retained',
+    definitionFingerprint: 'd8eebe082e279125915820c7d95f2f587b87712e756f000e6e76b91377fac893',
+    definition: module0PersistenceOperation66 satisfies PlatformPersistenceOperationDefinition<
+      'read-market-intelligence-history-range-retained',
+      'readMarketIntelligenceHistoryRange',
+      2,
+      'read'
+    >,
+    grants: {
+      graphqlReads: ['public-market/intelligence-history-range'],
+      activityProviders: [],
+      resourceMaterializations: [],
       resourceProjections: [],
       routes: [],
     },
@@ -2116,7 +2188,7 @@ export const installedModulePersistenceOperations = [
 ] as const satisfies readonly PlatformInstalledPersistenceOperationDescriptor[]
 
 export const installedModulePersistenceContractFingerprint =
-  '7b29be3b0f10ca7add4d77a6fa00b471a449e96ce1637369f80940a41cbbdc00'
+  'eff344b523e672c26d385bba6b574988717935d2b719cb94c6786881da9b24c6'
 
 export const installedModulePersistenceOperationCatalog = {
   'market/list-market-profiles': installedModulePersistenceOperations[0]!,
@@ -2183,28 +2255,32 @@ export const installedModulePersistenceOperationCatalog = {
   'market/read-market-intelligence-coverage': installedModulePersistenceOperations[61]!,
   'market/read-market-intelligence-history-range': installedModulePersistenceOperations[62]!,
   'market/record-market-intelligence-catalogue': installedModulePersistenceOperations[63]!,
-  'member-audit/write-skill-snapshot': installedModulePersistenceOperations[64]!,
-  'member-audit/read-trained-skills-evidence': installedModulePersistenceOperations[65]!,
-  'member-audit/read-asset-evidence': installedModulePersistenceOperations[66]!,
-  'member-audit/read-wallet-evidence': installedModulePersistenceOperations[67]!,
-  'member-audit/read-mail-evidence': installedModulePersistenceOperations[68]!,
-  'member-audit/materialize-current-snapshot': installedModulePersistenceOperations[69]!,
-  'member-audit/read-active-evidence-continuation': installedModulePersistenceOperations[70]!,
-  'member-audit/read-evidence-continuation': installedModulePersistenceOperations[71]!,
-  'member-audit/write-evidence-continuation': installedModulePersistenceOperations[72]!,
-  'member-audit/promote-evidence-observation': installedModulePersistenceOperations[73]!,
-  'member-audit/purge-evidence': installedModulePersistenceOperations[74]!,
-  'member-audit/write-current-observation': installedModulePersistenceOperations[75]!,
-  'member-audit/read-current-observation': installedModulePersistenceOperations[76]!,
-  'member-audit/purge-current-observation': installedModulePersistenceOperations[77]!,
-  'member-audit/backfill-asset-inventory': installedModulePersistenceOperations[78]!,
-  'member-audit/promote-asset-inventory': installedModulePersistenceOperations[79]!,
-  'member-audit/read-asset-inventory': installedModulePersistenceOperations[80]!,
-  'member-audit/read-inventory-sources': installedModulePersistenceOperations[81]!,
-  'organization-activity/read-activity-checkpoint': installedModulePersistenceOperations[82]!,
-  'organization-activity/read-activity-snapshots': installedModulePersistenceOperations[83]!,
+  'market/begin-market-intelligence-generation-snapshot': installedModulePersistenceOperations[64]!,
+  'market/read-market-intelligence-coverage-snapshot': installedModulePersistenceOperations[65]!,
+  'market/read-market-intelligence-history-range-retained':
+    installedModulePersistenceOperations[66]!,
+  'member-audit/write-skill-snapshot': installedModulePersistenceOperations[67]!,
+  'member-audit/read-trained-skills-evidence': installedModulePersistenceOperations[68]!,
+  'member-audit/read-asset-evidence': installedModulePersistenceOperations[69]!,
+  'member-audit/read-wallet-evidence': installedModulePersistenceOperations[70]!,
+  'member-audit/read-mail-evidence': installedModulePersistenceOperations[71]!,
+  'member-audit/materialize-current-snapshot': installedModulePersistenceOperations[72]!,
+  'member-audit/read-active-evidence-continuation': installedModulePersistenceOperations[73]!,
+  'member-audit/read-evidence-continuation': installedModulePersistenceOperations[74]!,
+  'member-audit/write-evidence-continuation': installedModulePersistenceOperations[75]!,
+  'member-audit/promote-evidence-observation': installedModulePersistenceOperations[76]!,
+  'member-audit/purge-evidence': installedModulePersistenceOperations[77]!,
+  'member-audit/write-current-observation': installedModulePersistenceOperations[78]!,
+  'member-audit/read-current-observation': installedModulePersistenceOperations[79]!,
+  'member-audit/purge-current-observation': installedModulePersistenceOperations[80]!,
+  'member-audit/backfill-asset-inventory': installedModulePersistenceOperations[81]!,
+  'member-audit/promote-asset-inventory': installedModulePersistenceOperations[82]!,
+  'member-audit/read-asset-inventory': installedModulePersistenceOperations[83]!,
+  'member-audit/read-inventory-sources': installedModulePersistenceOperations[84]!,
+  'organization-activity/read-activity-checkpoint': installedModulePersistenceOperations[85]!,
+  'organization-activity/read-activity-snapshots': installedModulePersistenceOperations[86]!,
   'organization-activity/materialize-activity-observation':
-    installedModulePersistenceOperations[84]!,
+    installedModulePersistenceOperations[87]!,
 } as const
 
 export function createModule0Route0Persistence(_invoke: PlatformPersistenceOperationInvoker) {
@@ -2437,7 +2513,7 @@ export function createModule0GraphQL0Read13Persistence(
 ) {
   return {
     readMarketIntelligenceHistoryRange: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[62]!,
+      installedModulePersistenceOperations[66]!,
       invoke,
     ),
   }
@@ -2463,7 +2539,7 @@ export function createModule0GraphQL0Read15Persistence(
 ) {
   return {
     readMarketIntelligenceCoverage: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[61]!,
+      installedModulePersistenceOperations[65]!,
       invoke,
     ),
   }
@@ -2722,7 +2798,7 @@ export function createModule0Resource2MaterializationPersistence(
       invoke,
     ),
     beginMarketIntelligenceGeneration: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[52]!,
+      installedModulePersistenceOperations[64]!,
       invoke,
     ),
     stageMarketIntelligenceOutputs: bindPlatformPersistenceOperation(
@@ -2786,11 +2862,11 @@ export function createModule1InventoryProvider0Persistence(
 ) {
   return {
     readAssetInventory: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[80]!,
+      installedModulePersistenceOperations[83]!,
       invoke,
     ),
     readInventorySources: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[81]!,
+      installedModulePersistenceOperations[84]!,
       invoke,
     ),
   }
@@ -2807,7 +2883,7 @@ export function createModule1Route1Persistence(_invoke: PlatformPersistenceOpera
 export function createModule1Route2Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readCurrentObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[76]!,
+      installedModulePersistenceOperations[79]!,
       invoke,
     ),
   }
@@ -2816,7 +2892,7 @@ export function createModule1Route2Persistence(invoke: PlatformPersistenceOperat
 export function createModule1Route3Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readTrainedSkillsEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[65]!,
+      installedModulePersistenceOperations[68]!,
       invoke,
     ),
   }
@@ -2825,7 +2901,7 @@ export function createModule1Route3Persistence(invoke: PlatformPersistenceOperat
 export function createModule1Route4Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readAssetEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[66]!,
+      installedModulePersistenceOperations[69]!,
       invoke,
     ),
   }
@@ -2834,7 +2910,7 @@ export function createModule1Route4Persistence(invoke: PlatformPersistenceOperat
 export function createModule1Route5Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readWalletEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[67]!,
+      installedModulePersistenceOperations[70]!,
       invoke,
     ),
   }
@@ -2843,7 +2919,7 @@ export function createModule1Route5Persistence(invoke: PlatformPersistenceOperat
 export function createModule1Route6Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readMailEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[68]!,
+      installedModulePersistenceOperations[71]!,
       invoke,
     ),
   }
@@ -2868,11 +2944,11 @@ export function createModule1Resource0MaterializationPersistence(
 ) {
   return {
     materializeCurrentSnapshot: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[69]!,
+      installedModulePersistenceOperations[72]!,
       invoke,
     ),
     purgeEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[74]!,
+      installedModulePersistenceOperations[77]!,
       invoke,
     ),
   }
@@ -2883,7 +2959,7 @@ export function createModule1Resource1ProjectionPersistence(
 ) {
   return {
     readActiveEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[70]!,
+      installedModulePersistenceOperations[73]!,
       invoke,
     ),
   }
@@ -2894,19 +2970,19 @@ export function createModule1Resource1MaterializationPersistence(
 ) {
   return {
     writeEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[72]!,
+      installedModulePersistenceOperations[75]!,
       invoke,
     ),
     backfillAssetInventory: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[78]!,
+      installedModulePersistenceOperations[81]!,
       invoke,
     ),
     promoteAssetInventory: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[79]!,
+      installedModulePersistenceOperations[82]!,
       invoke,
     ),
     purgeEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[74]!,
+      installedModulePersistenceOperations[77]!,
       invoke,
     ),
   }
@@ -2923,11 +2999,11 @@ export function createModule1Resource2MaterializationPersistence(
 ) {
   return {
     materializeCurrentSnapshot: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[69]!,
+      installedModulePersistenceOperations[72]!,
       invoke,
     ),
     purgeEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[74]!,
+      installedModulePersistenceOperations[77]!,
       invoke,
     ),
   }
@@ -2938,7 +3014,7 @@ export function createModule1Resource3ProjectionPersistence(
 ) {
   return {
     readActiveEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[70]!,
+      installedModulePersistenceOperations[73]!,
       invoke,
     ),
   }
@@ -2949,15 +3025,15 @@ export function createModule1Resource3MaterializationPersistence(
 ) {
   return {
     writeEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[72]!,
+      installedModulePersistenceOperations[75]!,
       invoke,
     ),
     promoteEvidenceObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[73]!,
+      installedModulePersistenceOperations[76]!,
       invoke,
     ),
     purgeEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[74]!,
+      installedModulePersistenceOperations[77]!,
       invoke,
     ),
   }
@@ -2968,7 +3044,7 @@ export function createModule1Resource4ProjectionPersistence(
 ) {
   return {
     readActiveEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[70]!,
+      installedModulePersistenceOperations[73]!,
       invoke,
     ),
   }
@@ -2979,15 +3055,15 @@ export function createModule1Resource4MaterializationPersistence(
 ) {
   return {
     writeEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[72]!,
+      installedModulePersistenceOperations[75]!,
       invoke,
     ),
     promoteEvidenceObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[73]!,
+      installedModulePersistenceOperations[76]!,
       invoke,
     ),
     purgeEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[74]!,
+      installedModulePersistenceOperations[77]!,
       invoke,
     ),
   }
@@ -2998,7 +3074,7 @@ export function createModule1Resource5ProjectionPersistence(
 ) {
   return {
     readActiveEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[70]!,
+      installedModulePersistenceOperations[73]!,
       invoke,
     ),
   }
@@ -3009,15 +3085,15 @@ export function createModule1Resource5MaterializationPersistence(
 ) {
   return {
     writeEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[72]!,
+      installedModulePersistenceOperations[75]!,
       invoke,
     ),
     promoteEvidenceObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[73]!,
+      installedModulePersistenceOperations[76]!,
       invoke,
     ),
     purgeEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[74]!,
+      installedModulePersistenceOperations[77]!,
       invoke,
     ),
   }
@@ -3028,7 +3104,7 @@ export function createModule1Resource6ProjectionPersistence(
 ) {
   return {
     readActiveEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[70]!,
+      installedModulePersistenceOperations[73]!,
       invoke,
     ),
   }
@@ -3039,15 +3115,15 @@ export function createModule1Resource6MaterializationPersistence(
 ) {
   return {
     writeEvidenceContinuation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[72]!,
+      installedModulePersistenceOperations[75]!,
       invoke,
     ),
     promoteEvidenceObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[73]!,
+      installedModulePersistenceOperations[76]!,
       invoke,
     ),
     purgeEvidence: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[74]!,
+      installedModulePersistenceOperations[77]!,
       invoke,
     ),
   }
@@ -3064,11 +3140,11 @@ export function createModule1Resource7MaterializationPersistence(
 ) {
   return {
     writeCurrentObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[75]!,
+      installedModulePersistenceOperations[78]!,
       invoke,
     ),
     purgeCurrentObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[77]!,
+      installedModulePersistenceOperations[80]!,
       invoke,
     ),
   }
@@ -3085,11 +3161,11 @@ export function createModule1Resource8MaterializationPersistence(
 ) {
   return {
     writeCurrentObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[75]!,
+      installedModulePersistenceOperations[78]!,
       invoke,
     ),
     purgeCurrentObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[77]!,
+      installedModulePersistenceOperations[80]!,
       invoke,
     ),
   }
@@ -3098,7 +3174,7 @@ export function createModule1Resource8MaterializationPersistence(
 export function createModule2Route0Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readActivitySnapshots: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[83]!,
+      installedModulePersistenceOperations[86]!,
       invoke,
     ),
   }
@@ -3107,7 +3183,7 @@ export function createModule2Route0Persistence(invoke: PlatformPersistenceOperat
 export function createModule2Route1Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readActivitySnapshots: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[83]!,
+      installedModulePersistenceOperations[86]!,
       invoke,
     ),
   }
@@ -3118,7 +3194,7 @@ export function createModule2ActivityProvider0Persistence(
 ) {
   return {
     readActivitySnapshots: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[83]!,
+      installedModulePersistenceOperations[86]!,
       invoke,
     ),
   }
@@ -3129,7 +3205,7 @@ export function createModule2Resource0ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[82]!,
+      installedModulePersistenceOperations[85]!,
       invoke,
     ),
   }
@@ -3140,7 +3216,7 @@ export function createModule2Resource0MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[84]!,
+      installedModulePersistenceOperations[87]!,
       invoke,
     ),
   }
@@ -3151,7 +3227,7 @@ export function createModule2Resource1ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[82]!,
+      installedModulePersistenceOperations[85]!,
       invoke,
     ),
   }
@@ -3162,7 +3238,7 @@ export function createModule2Resource1MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[84]!,
+      installedModulePersistenceOperations[87]!,
       invoke,
     ),
   }
@@ -3173,7 +3249,7 @@ export function createModule2Resource2ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[82]!,
+      installedModulePersistenceOperations[85]!,
       invoke,
     ),
   }
@@ -3184,7 +3260,7 @@ export function createModule2Resource2MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[84]!,
+      installedModulePersistenceOperations[87]!,
       invoke,
     ),
   }
@@ -3195,7 +3271,7 @@ export function createModule2Resource3ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[82]!,
+      installedModulePersistenceOperations[85]!,
       invoke,
     ),
   }
@@ -3206,7 +3282,7 @@ export function createModule2Resource3MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[84]!,
+      installedModulePersistenceOperations[87]!,
       invoke,
     ),
   }
@@ -3217,7 +3293,7 @@ export function createModule2Resource4ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[82]!,
+      installedModulePersistenceOperations[85]!,
       invoke,
     ),
   }
@@ -3228,7 +3304,7 @@ export function createModule2Resource4MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[84]!,
+      installedModulePersistenceOperations[87]!,
       invoke,
     ),
   }
@@ -3239,7 +3315,7 @@ export function createModule2Resource5ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[82]!,
+      installedModulePersistenceOperations[85]!,
       invoke,
     ),
   }
@@ -3250,7 +3326,7 @@ export function createModule2Resource5MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[84]!,
+      installedModulePersistenceOperations[87]!,
       invoke,
     ),
   }
@@ -3261,7 +3337,7 @@ export function createModule2Resource6ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[82]!,
+      installedModulePersistenceOperations[85]!,
       invoke,
     ),
   }
@@ -3272,7 +3348,7 @@ export function createModule2Resource6MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[84]!,
+      installedModulePersistenceOperations[87]!,
       invoke,
     ),
   }
