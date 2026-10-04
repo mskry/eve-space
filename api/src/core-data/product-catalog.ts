@@ -81,7 +81,7 @@ export const coreDataProductCatalog = [
     id: 'market-catalogue',
     method: 'marketCatalogue',
     networkAllowed: false,
-    permittedContexts: ['route', 'graphql-read'],
+    permittedContexts: ['route', 'resource-projection', 'graphql-read'],
     requestBound: MARKET_CATALOGUE_MAX_TYPES,
     revisionStrategy: 'committed-sde-projection',
     sensitivity: 'public',

@@ -14,8 +14,13 @@ const fixture = vi.hoisted(() => ({
   readMarketObservation: vi.fn(),
   readMarketReplacementStatus: vi.fn(),
   readMarketOrderRows: vi.fn(),
-  readMarketHistory: vi.fn(),
+  readMarketHistorySource: vi.fn(),
   readMarketReferencePrices: vi.fn(),
+  readMarketIntelligenceGeneration: vi.fn(),
+  readMarketIntelligencePage: vi.fn(),
+  readMarketIntelligenceItem: vi.fn(),
+  readMarketIntelligenceCoverage: vi.fn(),
+  readMarketIntelligenceHistoryRange: vi.fn(),
 }))
 vi.mock('../src/auth/read-admission.js', () => ({
   admitOwnedRead: vi.fn(),
@@ -109,8 +114,13 @@ beforeEach(() => {
     'read-market-observation': fixture.readMarketObservation,
     'read-market-replacement-status': fixture.readMarketReplacementStatus,
     'read-market-order-rows': fixture.readMarketOrderRows,
-    'read-market-history': fixture.readMarketHistory,
+    'read-market-history-source': fixture.readMarketHistorySource,
     'read-market-reference-prices': fixture.readMarketReferencePrices,
+    'read-market-intelligence-generation': fixture.readMarketIntelligenceGeneration,
+    'read-market-intelligence-page': fixture.readMarketIntelligencePage,
+    'read-market-intelligence-item': fixture.readMarketIntelligenceItem,
+    'read-market-intelligence-coverage': fixture.readMarketIntelligenceCoverage,
+    'read-market-intelligence-history-range': fixture.readMarketIntelligenceHistoryRange,
   }
   const coreDataMethods = {
     'market-catalogue': fixture.marketCatalogue,
@@ -163,7 +173,7 @@ beforeEach(() => {
     ],
     complete: false,
   })
-  fixture.readMarketHistory.mockResolvedValue({
+  fixture.readMarketHistorySource.mockResolvedValue({
     status: 'uncollected',
     regionId: 10000058,
     typeId: 34,
@@ -172,6 +182,86 @@ beforeEach(() => {
     days: [],
   })
   fixture.readMarketReferencePrices.mockResolvedValue([])
+  fixture.readMarketIntelligenceGeneration.mockResolvedValue({
+    generation: {
+      generationId: observationId,
+      profileId,
+      profileRevision: '9007199254740993',
+      policyRevision: '7',
+      catalogueRevision: { ...revision, ingestedAt: now },
+      formulaVersion: 1,
+      anchorDate: '2026-10-03',
+      regionId: 10000058,
+      bookScope: 'stations',
+      historyScope: 'region',
+      targetCount: 2,
+      excludedTypeCount: 1,
+      createdAt: now,
+      publishedAt: now,
+      expiresAt: null,
+    },
+    cursorSecret: crypto.randomUUID(),
+  })
+  fixture.readMarketIntelligencePage.mockResolvedValue({
+    total: 1,
+    omittedNullSortCount: 1,
+    rows: [
+      {
+        sortKey: '12345678901234567890.123456',
+        row: {
+          typeId: 34,
+          groupId: 18,
+          name: 'Type',
+          historySource: {
+            state: 'supplied',
+            validatedAt: now,
+            freshUntil: future,
+            contentRevision: '9007199254740993',
+            lastAttemptAt: now,
+            lastFailureClass: null,
+          },
+          bookSource: {
+            observationId,
+            observedAt: '2026-10-03T10:00:00Z',
+            validatedAt: '2026-10-03T10:00:00Z',
+            freshUntil: future,
+          },
+          metrics: {
+            anchorVolumeSpike: {
+              value: '12345678901234567890.123456',
+              numerator: '9007199254740993123456789',
+              denominator: '365',
+              nullReason: null,
+              observedDays: 2,
+              windowDays: 365,
+              complete: false,
+            },
+          },
+        },
+      },
+    ],
+  })
+  fixture.readMarketIntelligenceItem.mockResolvedValue({ status: 'ignored', row: null })
+  fixture.readMarketIntelligenceCoverage.mockResolvedValue({
+    profileId,
+    live: {
+      eligibleCount: 2,
+      neverAttempted: 1,
+      freshSuccess: 1,
+      staleSuccess: 0,
+      failedWithoutSuccess: 0,
+    },
+  })
+  fixture.readMarketIntelligenceHistoryRange.mockResolvedValue({
+    days: [
+      {
+        date: '2026-10-03',
+        averageIsk: '999999999999999.99',
+        volume: '9007199254740993',
+        orderCount: '10000000000000000',
+      },
+    ],
+  })
 })
 
 it('composes the installed public inventory without I/O and reads revision without loading the tree', async () => {
@@ -352,7 +442,7 @@ it('retains independent book/history/reference clocks, exact prices and historic
     volume: 100,
     orderCount: 20,
   }))
-  fixture.readMarketHistory.mockResolvedValue({
+  fixture.readMarketHistorySource.mockResolvedValue({
     status: 'observed',
     regionId: 10000058,
     typeId: 34,
@@ -405,7 +495,7 @@ it('reuses aliased uncollected history without collection intent and closes read
     a: { status: 'uncollected', freshness: 'uncollected' },
     b: { status: 'uncollected' },
   })
-  expect(fixture.readMarketHistory).toHaveBeenCalledOnce()
+  expect(fixture.readMarketHistorySource).toHaveBeenCalledOnce()
   expect(
     contribution.reads.flatMap((read) =>
       read.persistenceOperations.map(({ operationId }) => operationId),
@@ -415,7 +505,64 @@ it('reuses aliased uncollected history without collection intent and closes read
   fixture.enabled = false
   expect((await execute(source, request)).errors).toHaveLength(1)
   expect(fixture.factory).toHaveBeenCalledTimes(calls)
-  expect(fixture.readMarketHistory).toHaveBeenCalledOnce()
+  expect(fixture.readMarketHistorySource).toHaveBeenCalledOnce()
+})
+
+it('labels retained historical rows separately from a fresh empty validation and preserves source clocks losslessly', async () => {
+  const contentTime = '2026-01-01T00:00:00.000Z'
+  fixture.readMarketHistorySource.mockResolvedValue({
+    status: 'observed',
+    regionId: 10000058,
+    typeId: 34,
+    validatedAt: now,
+    freshUntil: future,
+    retainedEvidence: true,
+    source: {
+      state: 'empty',
+      validatedAt: now,
+      freshUntil: future,
+      contentRevision: '9007199254740993',
+      responseCount: 0,
+      responseFrom: null,
+      responseThrough: null,
+      lastAttemptAt: now,
+      lastFailureClass: null,
+    },
+    days: [
+      {
+        date: contentTime.slice(0, 10),
+        averageIsk: '6.42',
+        highIsk: '7.00',
+        lowIsk: '5.00',
+        volume: 100,
+        orderCount: 20,
+      },
+    ],
+  })
+  const result = await execute(
+    `{ market { ${historyQuery} { status freshness retainedEvidence validatedAt freshUntil source { state validatedAt contentRevision responseCount responseFrom responseThrough lastAttemptAt lastFailureClass } days { date averageIsk } } } }`,
+  )
+  expect(result.errors).toBeUndefined()
+  expect(result.data?.market).toMatchObject({
+    history: {
+      status: 'observed',
+      freshness: 'stale',
+      retainedEvidence: true,
+      validatedAt: now,
+      freshUntil: future,
+      source: {
+        state: 'empty',
+        validatedAt: now,
+        contentRevision: '9007199254740993',
+        responseCount: 0,
+        responseFrom: null,
+        responseThrough: null,
+        lastAttemptAt: now,
+        lastFailureClass: null,
+      },
+      days: [{ date: '2026-01-01', averageIsk: '6.42' }],
+    },
+  })
 })
 
 it('bounds reference reads to 100 distinct types and performs no work for invalid lists', async () => {
@@ -435,7 +582,7 @@ it('projects null persistence history as uncollected for an enabled full-region 
   fixture.listMarketProfiles.mockResolvedValue([
     { profileId, revision: 7, regionId: 10000058, mode: 'region', watchedTypeIds: [] },
   ])
-  fixture.readMarketHistory.mockResolvedValue(null)
+  fixture.readMarketHistorySource.mockResolvedValue(null)
   const request = context()
   const result = await execute(
     `{ market { ${historyQuery} { status freshness profileRevision regionId typeId days { date } } } }`,
@@ -473,7 +620,7 @@ it.each([
     .mockResolvedValue([
       { profileId, revision: 8, regionId: 10000002, mode: 'region', watchedTypeIds: [] },
     ])
-  fixture.readMarketHistory.mockResolvedValue(history)
+  fixture.readMarketHistorySource.mockResolvedValue(history)
   const result = await execute(`{ market { ${historyQuery} { profileRevision regionId } } }`)
   expect(result.errors?.[0]?.extensions.code).toBe('MARKET_HISTORY_PROFILE_CHANGED')
   expect(result.data?.market).toMatchObject({ history: null })
@@ -492,6 +639,109 @@ it.each([
     fixture.listMarketProfiles.mockResolvedValue(profiles)
     const result = await execute(`{ market { ${historyQuery} { status } } }`)
     expect(result.errors?.[0]?.extensions.code).toBe('MARKET_HISTORY_PROFILE_UNAVAILABLE')
-    expect(fixture.readMarketHistory).not.toHaveBeenCalled()
+    expect(fixture.readMarketHistorySource).not.toHaveBeenCalled()
   },
 )
+
+it('admits anonymous composable intelligence panels and preserves exact metrics and independent source clocks', async () => {
+  const source = `{ market {
+    intelligenceCoverage(profileId:"${profileId}") { live { eligibleCount neverAttempted freshSuccess } }
+    intelligence(input:{profileId:"${profileId}",sort:anchorVolumeSpike}) { generation { generationId profileRevision bookScope historyScope } total omittedNullSortCount rows { typeId historySource { validatedAt contentRevision } bookSource { validatedAt } metrics { anchorVolumeSpike { value numerator denominator observedDays windowDays complete } } } }
+    historyRange(profileId:"${profileId}",typeId:"34",from:"2026-10-03",through:"2026-10-03") { days { volume orderCount } }
+  } }`
+  expect(analyzeGraphQLSelection(schema, source, undefined, {}, policies).cost).toBeLessThanOrEqual(
+    5000,
+  )
+  const request = context()
+  const result = await execute(source, request)
+  expect(result.errors).toBeUndefined()
+  expect(result.data?.market).toMatchObject({
+    intelligence: {
+      generation: {
+        profileRevision: '9007199254740993',
+        bookScope: 'stations',
+        historyScope: 'region',
+      },
+      rows: [
+        {
+          historySource: { validatedAt: now, contentRevision: '9007199254740993' },
+          bookSource: { validatedAt: '2026-10-03T10:00:00Z' },
+          metrics: {
+            anchorVolumeSpike: {
+              value: '12345678901234567890.123456',
+              numerator: '9007199254740993123456789',
+              denominator: '365',
+              observedDays: 2,
+              complete: false,
+            },
+          },
+        },
+      ],
+    },
+    historyRange: { days: [{ volume: '9007199254740993', orderCount: '10000000000000000' }] },
+  })
+  expect(request.liveSession).not.toHaveBeenCalled()
+  expect(fixture.marketCatalogue).not.toHaveBeenCalled()
+  expect(request.cache.noStore).toHaveBeenCalled()
+})
+
+it('provides definitions without backend work and rejects intelligence bounds with field-addressed errors', async () => {
+  const definitions = await execute(
+    '{ market { intelligenceMetricDefinitions { id unit formulaVersion windowDays } } }',
+  )
+  expect(definitions.errors).toBeUndefined()
+  expect(fixture.readMarketIntelligenceGeneration).not.toHaveBeenCalled()
+  expect(fixture.readMarketIntelligenceCoverage).not.toHaveBeenCalled()
+  expect(fixture.marketCatalogue).not.toHaveBeenCalled()
+  const result = await execute(
+    `{ market { oversized:intelligence(input:{profileId:"${profileId}",first:101}) { total } invalid:intelligence(input:{profileId:"${profileId}",sort:baselineWeekIsk,minimumBaselineDays:8}) { total } } }`,
+  )
+  expect(result.errors?.map(({ path }) => path)).toEqual([
+    ['market', 'oversized'],
+    ['market', 'invalid'],
+  ])
+  expect(fixture.readMarketIntelligenceGeneration).not.toHaveBeenCalled()
+  expect(fixture.readMarketIntelligencePage).not.toHaveBeenCalled()
+})
+
+it('reuses aliased ignored items through read-only capabilities and applies module and profile gates', async () => {
+  const source = `{ market { a:intelligenceItem(profileId:"${profileId}",typeId:"999") { status row { typeId } } b:intelligenceItem(profileId:"${profileId}",typeId:"999") { status } } }`
+  const request = context()
+  const result = await execute(source, request)
+  expect(result.errors).toBeUndefined()
+  expect(result.data?.market).toMatchObject({
+    a: { status: 'ignored', row: null },
+    b: { status: 'ignored' },
+  })
+  expect(fixture.readMarketIntelligenceItem).toHaveBeenCalledOnce()
+  expect(fixture.marketCatalogue).not.toHaveBeenCalled()
+  for (const [declaration] of fixture.factory.mock.calls)
+    expect(
+      declaration.operations.every(({ operationId }: { operationId: string }) =>
+        operationId.startsWith('read-market-intelligence-'),
+      ),
+    ).toBe(true)
+  fixture.readMarketIntelligenceGeneration.mockResolvedValue(null)
+  expect(
+    (await execute(`{ market { intelligence(input:{profileId:"${profileId}"}) { total } } }`))
+      .errors?.[0]?.extensions.code,
+  ).toBe('MARKET_INTELLIGENCE_RESTART_REQUIRED')
+  fixture.factory.mockClear()
+  fixture.enabled = false
+  expect((await execute(source)).errors).toHaveLength(1)
+  expect(fixture.factory).not.toHaveBeenCalled()
+})
+
+it('charges aliased intelligence scans against the existing aggregate operation budget', () => {
+  const small = `{ market { intelligence(input:{profileId:"${profileId}"}) { total } } }`
+  expect(
+    analyzeGraphQLSelection(schema, small, undefined, {}, policies).cost,
+  ).toBeGreaterThanOrEqual(1000)
+  const aliases = Array.from(
+    { length: 6 },
+    (_, index) => `p${index}:intelligence(input:{profileId:"${profileId}",first:1}) { total }`,
+  ).join(' ')
+  expect(() =>
+    analyzeGraphQLSelection(schema, `{market {${aliases}}}`, undefined, {}, policies),
+  ).toThrow('Invalid or excessive read operation.')
+})

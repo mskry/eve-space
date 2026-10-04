@@ -13,12 +13,17 @@ import { schedulerLockKey, schedulerOutcomeKey } from './namespaces.js'
 import { schedulerLockRenewalMs, schedulerLockTtlMs, workerHeartbeatTtlSeconds } from './policy.js'
 
 export const diagnosticSchedulerId = 'diagnostic-planner'
+export const profileWorkPlannerSchedulerId = 'profile-work-planner'
 export const outboxRelaySchedulerId = 'outbox-relay'
 export const eventRetentionSchedulerId = 'domain-event-retention'
 export const diagnosticOverlapPolicy = 'skip' as const
 export const eventRetentionIntervalMs = 24 * 60 * 60 * 1000
 
-type ScheduledJobName = 'planner' | 'outbox-relay' | 'domain-event-retention'
+type ScheduledJobName =
+  | 'planner'
+  | 'profile-work-planner'
+  | 'outbox-relay'
+  | 'domain-event-retention'
 
 interface SchedulerDeclaration<Name extends ScheduledJobName> {
   readonly schedulerId: string
@@ -35,6 +40,13 @@ const schedulerCatalog = [
     payload: { operationId: 'queue-planner' },
     schedule: () => schedulerOptions(diagnosticOverlapPolicy),
     schedulerId: diagnosticSchedulerId,
+  }),
+  scheduler({
+    name: 'profile-work-planner',
+    overlap: diagnosticOverlapPolicy,
+    payload: { operationId: 'profile-work-planner' },
+    schedule: () => intervalSchedulerOptions(env.QUEUE_PROFILE_WORK_PLANNER_INTERVAL_MS),
+    schedulerId: profileWorkPlannerSchedulerId,
   }),
   scheduler({
     name: 'outbox-relay',

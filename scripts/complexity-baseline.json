@@ -27,7 +27,7 @@
     "api/tests/integration/postgres/domain-event-producers.test.ts:complexity(complexity):95873c4f76c04d16ccd6b852a18ef15d056b2755e500628185727bd3f345ab66": 1,
     "api/tests/integration/postgres/multi-process-safety.test.ts:complexity(complexity):5e61e944d7ded781a2a430a7da827ed3b15a84bf3f93b08e65e353f910e03542": 1,
     "api/tests/integration/postgres/organization-storage.test.ts:complexity(complexity):4d6796016a7b7bb4c28cd71585fb986dd04132e91ea2de142d73c5520042da8b": 1,
-    "api/tests/integration/redis/esi-gateway.test.ts:complexity(complexity):34361ce2c71384388bdf0a002f344aa8a17e5cec727847780a2961749b317230": 1,
+    "api/tests/integration/redis/esi-gateway.test.ts:complexity(complexity):8fd8181b8480477c7bde379c156575cf6c4f4a01f2599cda57b586057d7559a2": 1,
     "api/tests/mail/routes.test.ts:complexity(complexity):f489d5a0edd0aaa487e72966c5ede4b37c0c28dcac6f8fcb38230cb0952c7f8e": 1,
     "api/tests/organization/routes.test.ts:complexity(complexity):ee330bc300083abff3dbe1c0c4d485e9b15a7c22579aafc6ea0c1e3a160a33f9": 1,
     "api/tests/platform/module-route-composition.test.ts:complexity(complexity):62cfcb98eb7d4932ca54f32fcb1e5f48906c9e5dae1cd44da2efb560ffba2c25": 1,

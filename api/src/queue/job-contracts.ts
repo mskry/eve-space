@@ -13,6 +13,9 @@ import {
 
 const diagnosticJobPayload = z.object({ operationId: z.literal('queue-diagnostic') }).strict()
 const plannerJobPayload = z.object({ operationId: z.literal('queue-planner') }).strict()
+const profileWorkPlannerJobPayload = z
+  .object({ operationId: z.literal('profile-work-planner') })
+  .strict()
 const domainEventJobPayload = z.object({ eventId: z.uuid() }).strict()
 const outboxRelayJobPayload = z.object({ operationId: z.literal('outbox-relay') }).strict()
 const domainEventRetentionJobPayload = z
@@ -96,6 +99,7 @@ const resourceBatchJobPayload = platformResourceBatchPayloadSchema.safeExtend({
 export interface JobPayloadByName {
   diagnostic: z.infer<typeof diagnosticJobPayload>
   planner: z.infer<typeof plannerJobPayload>
+  'profile-work-planner': z.infer<typeof profileWorkPlannerJobPayload>
   'domain-event': z.infer<typeof domainEventJobPayload>
   'outbox-relay': z.infer<typeof outboxRelayJobPayload>
   'domain-event-retention': z.infer<typeof domainEventRetentionJobPayload>
@@ -225,6 +229,16 @@ const jobContracts = {
     priority: 'none',
     operationIdentity: ({ operationId }) => operationId,
   }),
+  'profile-work-planner': contract({
+    name: 'profile-work-planner',
+    payload: profileWorkPlannerJobPayload,
+    attempts: 3,
+    durability: { kind: 'derived' },
+    activeWorkDeduplication: 'scheduler',
+    delay: 'none',
+    priority: 'none',
+    operationIdentity: ({ operationId }) => operationId,
+  }),
   'resource-batch': contract({
     name: 'resource-batch',
     payload: resourceBatchJobPayload,
@@ -251,7 +265,7 @@ const jobContracts = {
     attempts: 1,
     durability: { kind: 'derived' },
     activeWorkDeduplication: 'simple',
-    delay: 'planner-stagger',
+    delay: 'none',
     priority: 'resource',
     operationIdentity: profileRefreshJobId,
   }),

@@ -33,6 +33,21 @@ const tiers = {
   'read-input': 'representation',
   index: 'entry',
   'market-bounds': 'representation',
+  'intelligence-policy': 'representation',
+  'intelligence-arithmetic': 'representation',
+  'intelligence-metrics': 'representation',
+  'intelligence-representation': 'representation',
+  'intelligence-definitions': 'representation',
+  'intelligence-report': 'representation',
+  'intelligence-query': 'representation',
+  'intelligence-cursor': 'representation',
+  'intelligence-read-persistence': 'declaration',
+  'intelligence-reads': 'read',
+  'graphql-intelligence': 'graphql',
+  'intelligence-persistence': 'declaration',
+  'intelligence-generation-persistence': 'declaration',
+  'intelligence-derivation': 'resource',
+  'intelligence-reconciliation': 'resource',
   'market-derived': 'representation',
   'market-page-collection': 'collection',
   'market-page-batches': 'collection',
@@ -80,7 +95,10 @@ for (const { name, path, source } of sources) {
     if (!specifier.startsWith('.')) continue
     const target = basename(specifier, '.js')
     const targetTier = tiersByModule.get(target)
-    if (!targetTier || !allowed[tier].includes(targetTier)) {
+    const resourceHelper =
+      name === 'history-resource' &&
+      ['intelligence-reconciliation', 'intelligence-derivation'].includes(target)
+    if (!targetTier || (!resourceHelper && !allowed[tier].includes(targetTier))) {
       throw new Error(`Market server import direction: ${name} imports ${target}`)
     }
   }

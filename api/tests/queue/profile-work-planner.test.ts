@@ -3,6 +3,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { env } from '../../src/env.js'
 import { platformResources } from '../../src/platform/resources.js'
 import { profileRefreshJobId } from '../../src/queue/job-contracts.js'
+import type { QueueOutcomeRecorder } from '../../src/queue/outcome-recorder.js'
 import { createInMemoryQueueProducer } from '../../src/queue/producer.js'
 import { runProfileWorkPlanner } from '../../src/queue/profile-work-planner.js'
 
@@ -22,6 +23,12 @@ const anotherProfileId = randomUUID()
 const plan = vi.fn()
 const selectDue = vi.fn()
 const cooldowns = vi.fn()
+const outcomes: QueueOutcomeRecorder = {
+  recordAffiliation: vi
+    .fn<QueueOutcomeRecorder['recordAffiliation']>()
+    .mockResolvedValue(undefined),
+  recordOutbox: vi.fn<QueueOutcomeRecorder['recordOutbox']>().mockResolvedValue(undefined),
+}
 
 beforeEach(() => {
   plan
@@ -83,4 +90,35 @@ test('defers due work during a registered market-order cooldown', async () => {
     ),
   ).toMatchObject({ planned: 0, reason: 'cooldown' })
   expect(producer.commands).toHaveLength(0)
+})
+
+test('admits bounded local work past an upstream cooldown while preserving planner pause state', async () => {
+  plan.mockResolvedValue([
+    { resourceIdentity, profileId, revision: 1, dueAt: '2026-09-28T12:00:00Z' },
+    {
+      resourceIdentity,
+      profileId: anotherProfileId,
+      revision: 1,
+      dueAt: '2026-09-28T12:01:00Z',
+      localWorkPending: true,
+    },
+  ])
+  cooldowns.mockResolvedValue([
+    { active: true, coordinationAvailable: true, retryAfterSeconds: 60 },
+  ])
+  const producer = createInMemoryQueueProducer()
+  const context = { producer, outcomes }
+  const options = { resources: [resource], selectDue, plan, cooldowns }
+  expect(await runProfileWorkPlanner(context, options)).toMatchObject({
+    planned: 1,
+    reason: 'cooldown',
+  })
+  expect(producer.commands).toMatchObject([{ payload: { profileId: anotherProfileId } }])
+  await producer.pausePlanner()
+  expect(await runProfileWorkPlanner(context, options)).toMatchObject({
+    planned: 0,
+    reason: 'cooldown',
+  })
+  expect(producer.plannerPaused).toBe(true)
+  expect(producer.commands).toHaveLength(1)
 })

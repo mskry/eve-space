@@ -298,6 +298,7 @@ export interface PlatformProfileCollectionIdentity {
   readonly profileId: string
   readonly revision: number
   readonly dueAt: string
+  readonly localWorkPending?: boolean
 }
 
 export interface PlatformStructureWorkIdentity {
@@ -365,6 +366,16 @@ export interface PlatformProfileCollectionResourceImplementation<
     readonly operations: PlatformProfileCollectionOperationMethods<Protocol>
     readonly requestBudget: number
     readonly assertCurrent: () => Promise<boolean>
+    readonly classifyFailure: (cause: unknown) => {
+      readonly failureClass:
+        | 'esi-cooldown'
+        | 'esi-unavailable'
+        | 'response-invalid'
+        | 'mapping-failed'
+        | 'persistence-failed'
+        | 'unknown'
+      readonly retryAt: string | null
+    }
     readonly signal: AbortSignal
   }): Promise<'completed' | 'obsolete'>
   onFailure(context: {

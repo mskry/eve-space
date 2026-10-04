@@ -33,7 +33,7 @@
         "namespace": "/market/profiles",
         "exportName": "profileRoutes",
         "authorization": "deployment-administrator",
-        "coreDataProducts": ["market-station-regions"],
+        "coreDataProducts": ["market-station-regions", "market-catalogue"],
         "persistenceOperations": [
           {
             "operationId": "list-market-profiles"
@@ -46,6 +46,12 @@
           },
           {
             "operationId": "read-market-observation"
+          },
+          {
+            "operationId": "read-market-intelligence-policy"
+          },
+          {
+            "operationId": "save-market-intelligence-policy"
           }
         ]
       },
@@ -94,7 +100,7 @@
         "authorization": "public",
         "persistenceOperations": [
           {
-            "operationId": "read-market-history"
+            "operationId": "read-market-history-source"
           }
         ]
       },
@@ -110,7 +116,7 @@
             "operationId": "list-market-profiles"
           },
           {
-            "operationId": "read-market-history"
+            "operationId": "read-market-history-source"
           },
           {
             "operationId": "request-market-history-demand"
@@ -153,9 +159,27 @@
       }
     ],
     "migrations": [
-      { "name": "market-001-initial.sql" },
-      { "name": "market-002-collected-publication.sql" },
-      { "name": "market-003-batch-staging.sql" }
+      {
+        "name": "market-001-initial.sql"
+      },
+      {
+        "name": "market-002-collected-publication.sql"
+      },
+      {
+        "name": "market-003-batch-staging.sql"
+      },
+      {
+        "name": "market-004-intelligence-collection.sql"
+      },
+      {
+        "name": "market-005-history-convergence.sql"
+      },
+      {
+        "name": "market-006-intelligence-generations.sql"
+      },
+      {
+        "name": "market-007-intelligence-reads.sql"
+      }
     ],
     "persistenceOperations": [
       {
@@ -445,6 +469,230 @@
         "mode": "read",
         "exportName": "readMarketReplacementStatusOperation",
         "migration": "market-001-initial.sql"
+      },
+      {
+        "id": "read-market-intelligence-policy",
+        "method": "readMarketIntelligencePolicy",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketIntelligencePolicyOperation",
+        "migration": "market-004-intelligence-collection.sql"
+      },
+      {
+        "id": "save-market-intelligence-policy",
+        "method": "saveMarketIntelligencePolicy",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "saveMarketIntelligencePolicyOperation",
+        "migration": "market-004-intelligence-collection.sql"
+      },
+      {
+        "id": "read-market-intelligence-universe",
+        "method": "readMarketIntelligenceUniverse",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketIntelligenceUniverseOperation",
+        "migration": "market-004-intelligence-collection.sql"
+      },
+      {
+        "id": "begin-market-intelligence-universe",
+        "method": "beginMarketIntelligenceUniverse",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "beginMarketIntelligenceUniverseOperation",
+        "migration": "market-004-intelligence-collection.sql"
+      },
+      {
+        "id": "stage-market-intelligence-targets",
+        "method": "stageMarketIntelligenceTargets",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "stageMarketIntelligenceTargetsOperation",
+        "migration": "market-004-intelligence-collection.sql"
+      },
+      {
+        "id": "activate-market-intelligence-universe",
+        "method": "activateMarketIntelligenceUniverse",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "activateMarketIntelligenceUniverseOperation",
+        "migration": "market-004-intelligence-collection.sql"
+      },
+      {
+        "id": "list-due-market-intelligence-reconciliations",
+        "method": "listDueMarketIntelligenceReconciliations",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "listDueMarketIntelligenceReconciliationsOperation",
+        "migration": "market-004-intelligence-collection.sql"
+      },
+      {
+        "id": "record-market-intelligence-reconciliation",
+        "method": "recordMarketIntelligenceReconciliation",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "recordMarketIntelligenceReconciliationOperation",
+        "migration": "market-004-intelligence-collection.sql"
+      },
+      {
+        "id": "converge-market-history",
+        "method": "convergeMarketHistory",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "convergeMarketHistoryOperation",
+        "migration": "market-005-history-convergence.sql"
+      },
+      {
+        "id": "read-market-history-source",
+        "method": "readMarketHistorySource",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketHistorySourceOperation",
+        "migration": "market-005-history-convergence.sql"
+      },
+      {
+        "id": "cleanup-market-history-retention",
+        "method": "cleanupMarketHistoryRetention",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "cleanupMarketHistoryRetentionOperation",
+        "migration": "market-005-history-convergence.sql"
+      },
+      {
+        "id": "list-due-market-history-collection-profiles",
+        "method": "listDueMarketHistoryCollectionProfiles",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "listDueMarketHistoryCollectionProfilesOperation",
+        "migration": "market-005-history-convergence.sql"
+      },
+      {
+        "id": "list-due-market-history-targets",
+        "method": "listDueMarketHistoryTargets",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "listDueMarketHistoryTargetsOperation",
+        "migration": "market-005-history-convergence.sql"
+      },
+      {
+        "id": "record-market-history-item-failure",
+        "method": "recordMarketHistoryItemFailure",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "recordMarketHistoryItemFailureOperation",
+        "migration": "market-005-history-convergence.sql"
+      },
+      {
+        "id": "list-due-market-intelligence-derivations",
+        "method": "listDueMarketIntelligenceDerivations",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "listDueMarketIntelligenceDerivationsOperation",
+        "migration": "market-006-intelligence-generations.sql"
+      },
+      {
+        "id": "select-market-intelligence-work",
+        "method": "selectMarketIntelligenceWork",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "selectMarketIntelligenceWorkOperation",
+        "migration": "market-006-intelligence-generations.sql"
+      },
+      {
+        "id": "begin-market-intelligence-generation",
+        "method": "beginMarketIntelligenceGeneration",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "beginMarketIntelligenceGenerationOperation",
+        "migration": "market-006-intelligence-generations.sql"
+      },
+      {
+        "id": "read-market-intelligence-input-page",
+        "method": "readMarketIntelligenceInputPage",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketIntelligenceInputPageOperation",
+        "migration": "market-006-intelligence-generations.sql"
+      },
+      {
+        "id": "stage-market-intelligence-outputs",
+        "method": "stageMarketIntelligenceOutputs",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "stageMarketIntelligenceOutputsOperation",
+        "migration": "market-006-intelligence-generations.sql"
+      },
+      {
+        "id": "publish-market-intelligence-generation",
+        "method": "publishMarketIntelligenceGeneration",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "publishMarketIntelligenceGenerationOperation",
+        "migration": "market-006-intelligence-generations.sql"
+      },
+      {
+        "id": "cleanup-market-intelligence-generations",
+        "method": "cleanupMarketIntelligenceGenerations",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "cleanupMarketIntelligenceGenerationsOperation",
+        "migration": "market-006-intelligence-generations.sql"
+      },
+      {
+        "id": "stage-market-intelligence-exclusions",
+        "method": "stageMarketIntelligenceExclusions",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "stageMarketIntelligenceExclusionsOperation",
+        "migration": "market-004-intelligence-collection.sql"
+      },
+      {
+        "id": "read-market-intelligence-generation",
+        "method": "readMarketIntelligenceGeneration",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketIntelligenceGenerationOperation",
+        "migration": "market-007-intelligence-reads.sql"
+      },
+      {
+        "id": "read-market-intelligence-page",
+        "method": "readMarketIntelligencePage",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketIntelligencePageOperation",
+        "migration": "market-007-intelligence-reads.sql"
+      },
+      {
+        "id": "read-market-intelligence-item",
+        "method": "readMarketIntelligenceItem",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketIntelligenceItemOperation",
+        "migration": "market-007-intelligence-reads.sql"
+      },
+      {
+        "id": "read-market-intelligence-coverage",
+        "method": "readMarketIntelligenceCoverage",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketIntelligenceCoverageOperation",
+        "migration": "market-007-intelligence-reads.sql"
+      },
+      {
+        "id": "read-market-intelligence-history-range",
+        "method": "readMarketIntelligenceHistoryRange",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMarketIntelligenceHistoryRangeOperation",
+        "migration": "market-007-intelligence-reads.sql"
+      },
+      {
+        "id": "record-market-intelligence-catalogue",
+        "method": "recordMarketIntelligenceCatalogue",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "recordMarketIntelligenceCatalogueOperation",
+        "migration": "market-006-intelligence-generations.sql"
       }
     ],
     "resources": [
@@ -473,14 +721,30 @@
             }
           ],
           "materialization": [
-            { "operationId": "begin-market-observation" },
-            { "operationId": "stage-market-pages" },
-            { "operationId": "publish-collected-market-observation" },
-            { "operationId": "record-market-failure" },
-            { "operationId": "record-market-type-failure" },
-            { "operationId": "cleanup-market-observations" },
-            { "operationId": "cleanup-market-observation-backlog" },
-            { "operationId": "store-market-metrics" }
+            {
+              "operationId": "begin-market-observation"
+            },
+            {
+              "operationId": "stage-market-pages"
+            },
+            {
+              "operationId": "publish-collected-market-observation"
+            },
+            {
+              "operationId": "record-market-failure"
+            },
+            {
+              "operationId": "record-market-type-failure"
+            },
+            {
+              "operationId": "cleanup-market-observations"
+            },
+            {
+              "operationId": "cleanup-market-observation-backlog"
+            },
+            {
+              "operationId": "store-market-metrics"
+            }
           ]
         }
       },
@@ -526,6 +790,30 @@
             },
             {
               "operationId": "list-market-profiles"
+            },
+            {
+              "operationId": "read-market-intelligence-policy"
+            },
+            {
+              "operationId": "read-market-intelligence-universe"
+            },
+            {
+              "operationId": "list-due-market-intelligence-reconciliations"
+            },
+            {
+              "operationId": "read-market-history-source"
+            },
+            {
+              "operationId": "list-due-market-history-collection-profiles"
+            },
+            {
+              "operationId": "list-due-market-history-targets"
+            },
+            {
+              "operationId": "list-due-market-intelligence-derivations"
+            },
+            {
+              "operationId": "read-market-intelligence-input-page"
             }
           ],
           "materialization": [
@@ -537,9 +825,52 @@
             },
             {
               "operationId": "cleanup-market-history-demands"
+            },
+            {
+              "operationId": "begin-market-intelligence-universe"
+            },
+            {
+              "operationId": "stage-market-intelligence-targets"
+            },
+            {
+              "operationId": "activate-market-intelligence-universe"
+            },
+            {
+              "operationId": "record-market-intelligence-reconciliation"
+            },
+            {
+              "operationId": "converge-market-history"
+            },
+            {
+              "operationId": "cleanup-market-history-retention"
+            },
+            {
+              "operationId": "record-market-history-item-failure"
+            },
+            {
+              "operationId": "select-market-intelligence-work"
+            },
+            {
+              "operationId": "begin-market-intelligence-generation"
+            },
+            {
+              "operationId": "stage-market-intelligence-outputs"
+            },
+            {
+              "operationId": "publish-market-intelligence-generation"
+            },
+            {
+              "operationId": "cleanup-market-intelligence-generations"
+            },
+            {
+              "operationId": "stage-market-intelligence-exclusions"
+            },
+            {
+              "operationId": "record-market-intelligence-catalogue"
             }
           ]
-        }
+        },
+        "coreDataProducts": ["market-catalogue"]
       },
       {
         "id": "structure-orders",
@@ -617,7 +948,25 @@
           "MarketHistory",
           "MarketHistoryDay",
           "MarketReferencePrices",
-          "MarketReferencePrice"
+          "MarketReferencePrice",
+          "MarketHistorySource",
+          "MarketIntelligenceInput",
+          "MarketIntelligenceSort",
+          "MarketIntelligenceDirection",
+          "MarketIntelligenceMetricDefinition",
+          "MarketIntelligenceGeneration",
+          "MarketIntelligenceCatalogueRevision",
+          "MarketIntelligenceHistorySource",
+          "MarketIntelligenceBookSource",
+          "MarketIntelligenceMetric",
+          "MarketIntelligenceMetrics",
+          "MarketIntelligenceRow",
+          "MarketIntelligencePage",
+          "MarketIntelligenceItem",
+          "MarketIntelligenceCoverageCounts",
+          "MarketIntelligenceFrozenCoverage",
+          "MarketIntelligenceCoverage",
+          "MarketIntelligenceHistoryRange"
         ],
         "reads": [
           {
@@ -732,7 +1081,7 @@
                 "operationId": "list-market-profiles"
               },
               {
-                "operationId": "read-market-history"
+                "operationId": "read-market-history-source"
               }
             ],
             "coreDataProducts": []
@@ -831,6 +1180,116 @@
             "list": {
               "defaultSize": 100,
               "maximum": 100
+            }
+          },
+          {
+            "id": "intelligence-definitions",
+            "field": "MarketRead.intelligenceMetricDefinitions",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "list": {
+              "defaultSize": 21,
+              "maximum": 21
+            }
+          },
+          {
+            "id": "intelligence",
+            "field": "MarketRead.intelligence",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 1000,
+            "persistenceOperations": [
+              {
+                "operationId": "read-market-intelligence-generation"
+              },
+              {
+                "operationId": "read-market-intelligence-page"
+              }
+            ],
+            "coreDataProducts": []
+          },
+          {
+            "id": "intelligence-item",
+            "field": "MarketRead.intelligenceItem",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 3,
+            "persistenceOperations": [
+              {
+                "operationId": "read-market-intelligence-generation"
+              },
+              {
+                "operationId": "read-market-intelligence-item"
+              }
+            ],
+            "coreDataProducts": []
+          },
+          {
+            "id": "intelligence-coverage",
+            "field": "MarketRead.intelligenceCoverage",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 1000,
+            "persistenceOperations": [
+              {
+                "operationId": "read-market-intelligence-coverage"
+              }
+            ],
+            "coreDataProducts": []
+          },
+          {
+            "id": "intelligence-history-range",
+            "field": "MarketRead.historyRange",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 365,
+            "persistenceOperations": [
+              {
+                "operationId": "read-market-intelligence-history-range"
+              }
+            ],
+            "coreDataProducts": []
+          },
+          {
+            "id": "intelligence-rows",
+            "field": "MarketIntelligencePage.rows",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "list": {
+              "defaultSize": 100,
+              "maximum": 100
+            }
+          },
+          {
+            "id": "intelligence-ignored-groups",
+            "field": "MarketIntelligenceCoverage.ignoredGroupIds",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "list": {
+              "defaultSize": 256,
+              "maximum": 256
+            }
+          },
+          {
+            "id": "intelligence-history-days",
+            "field": "MarketIntelligenceHistoryRange.days",
+            "strategy": "public",
+            "cost": 1,
+            "sourceCost": 0,
+            "persistenceOperations": [],
+            "coreDataProducts": [],
+            "list": {
+              "defaultSize": 365,
+              "maximum": 365
             }
           }
         ]

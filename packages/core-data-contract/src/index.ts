@@ -294,7 +294,7 @@ export const CORE_DATA_PRODUCT_CONTRACTS = {
     dtoVersion: 1,
     id: 'market-catalogue',
     method: 'marketCatalogue',
-    permittedContexts: ['route', 'graphql-read'],
+    permittedContexts: ['route', 'resource-projection', 'graphql-read'],
     requestBound: MARKET_CATALOGUE_MAX_TYPES,
     sensitivity: 'public',
   },

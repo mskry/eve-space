@@ -62,7 +62,12 @@ describe('durable worker platform', () => {
     platforms.push(platform)
     const handle = await openQueue()
     try {
-      for (const schedulerId of ['diagnostic-planner', 'outbox-relay', 'domain-event-retention']) {
+      for (const schedulerId of [
+        'diagnostic-planner',
+        'profile-work-planner',
+        'outbox-relay',
+        'domain-event-retention',
+      ]) {
         expect(await handle.queue.getJobScheduler(schedulerId)).toBeDefined()
       }
       const { probeQueueStatus } = await import('../../../src/queue/status.js')
@@ -190,6 +195,12 @@ describe('durable worker platform', () => {
       const jobs = await handle.queue.getJobs(['delayed', 'waiting', 'prioritized'])
       expect(jobs.filter((job) => job.name === 'module-profile-refresh')).toHaveLength(2)
       const immediate = createBullMqQueueProducer({ handle, plannerDelay: async () => 60_000 })
+      await immediate.enqueue(profileRefreshCommand({ ...payload, revision: 3 }))
+      const dispatched = (await handle.queue.getJobs(['waiting', 'prioritized'])).find(
+        (job) => job.data.revision === 3,
+      )
+      expect(dispatched).toBeDefined()
+      expect(dispatched?.opts.delay ?? 0).toBe(0)
       const requested = { ...payload, resourceId: 'daily-history', requestedTypeId: 34 }
       await expect(
         immediate.enqueue({ ...profileRefreshCommand(requested), source: 'on-demand' }),
@@ -214,6 +225,50 @@ describe('durable worker platform', () => {
     } finally {
       await handle.queue.drain(true)
       await handle.close()
+    }
+  })
+
+  test('executes one profile work unit per one-second planner pass with a 250-ms handler', async () => {
+    await flushQueueRedis()
+    vi.stubEnv('QUEUE_PROFILE_WORK_PLANNER_INTERVAL_MS', '1000')
+    const handle = await openQueue()
+    const { createBullMqQueueProducer } = await import('../../../src/queue/bullmq-producer.js')
+    const producer = createBullMqQueueProducer({ handle, plannerDelay: async () => 60_000 })
+    const connection = new Redis(redisUrl, { maxRetriesPerRequest: null })
+    let executed = 0
+    const worker = new Worker(
+      handle.queue.name,
+      async () => {
+        await new Promise((resolve) => setTimeout(resolve, 250))
+        executed++
+      },
+      { connection, prefix: handle.queue.opts.prefix },
+    )
+    const payload = {
+      moduleId: 'market',
+      resourceId: 'daily-history',
+      subjectKind: 'deployment' as const,
+      subjectId: '1',
+      subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+      profileId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
+      revision: 1,
+      dueAt: '2026-09-28T12:00:00Z',
+    }
+    try {
+      await worker.waitUntilReady()
+      const outcomes: string[] = []
+      for (let pass = 0; pass < 6; pass++) {
+        outcomes.push((await producer.enqueue(profileRefreshCommand(payload))).status)
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
+      expect(outcomes).toEqual(Array.from({ length: 6 }, () => 'accepted'))
+      expect(executed).toBe(6)
+    } finally {
+      await worker.close()
+      await connection.quit()
+      await handle.queue.drain(true)
+      await handle.close()
+      vi.unstubAllEnvs()
     }
   })
 
@@ -336,7 +391,7 @@ describe('durable worker platform lifecycle', () => {
     try {
       await new Promise((resolve) => setTimeout(resolve, 300))
       expect(await countJobs(inspection.queue, 'waiting', 'diagnostic')).toBe(1)
-      expect(await inspection.queue.getJobSchedulersCount()).toBe(3)
+      expect(await inspection.queue.getJobSchedulersCount()).toBe(4)
       releaseHeartbeat?.()
       const platform = await starting
       platforms.push(platform)

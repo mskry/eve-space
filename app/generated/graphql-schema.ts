@@ -1,2 +1,2 @@
 export const graphqlSchemaFingerprint =
-  'db521f41b113d4aad6001b48d2a6032c247c070c04ce24435e638b2673e0a876'
+  '4adf6b274e370cb4df593458ccadea3169cca63f019ac0755b070b8af87cab9a'

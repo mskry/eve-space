@@ -60,6 +60,7 @@ const fixtures = {
   'domain-event-retention': { operationId: 'domain-event-retention' },
   'outbox-relay': { operationId: 'outbox-relay' },
   planner: { operationId: 'queue-planner' },
+  'profile-work-planner': { operationId: 'profile-work-planner' },
   'resource-batch': resourceBatch,
   'resource-refresh': resourceIdentity,
   'module-profile-refresh': {
@@ -90,6 +91,7 @@ const fixtures = {
 const expected = [
   ['diagnostic', 3, 'derived', undefined, 'planner-simple', 'planner-stagger', 'none'],
   ['planner', 3, 'derived', undefined, 'scheduler', 'none', 'none'],
+  ['profile-work-planner', 3, 'derived', undefined, 'scheduler', 'none', 'none'],
   ['domain-event', 5, 'authoritative', 'outbox', 'job-id', 'none', 'none'],
   ['outbox-relay', 3, 'derived', undefined, 'scheduler', 'none', 'none'],
   ['domain-event-retention', 3, 'derived', undefined, 'scheduler', 'none', 'none'],
@@ -99,7 +101,7 @@ const expected = [
   ['corporation-role-observation', 3, 'derived', undefined, 'simple', 'due-time', 'none'],
   ['resource-refresh', 1, 'derived', undefined, 'simple', 'planner-stagger', 'resource'],
   ['resource-batch', 1, 'derived', undefined, 'simple', 'planner-stagger', 'resource'],
-  ['module-profile-refresh', 1, 'derived', undefined, 'simple', 'planner-stagger', 'resource'],
+  ['module-profile-refresh', 1, 'derived', undefined, 'simple', 'none', 'resource'],
   ['module-structure-refresh', 1, 'derived', undefined, 'simple', 'none', 'resource'],
 ] as const
 

@@ -52,6 +52,13 @@ export const getEsiPacingPolicy = (
   }
 }
 
+export const getEsiMinimumStartPolicy = (operation: EsiOperation) => {
+  const operationId = esiOperationCatalog[operation].audit.esiOperationId
+  return operationId === 'GetMarketsRegionIdHistory'
+    ? ({ operationId, intervalMs: 1_000 } as const)
+    : undefined
+}
+
 const getWindowMilliseconds = (window: string): number => {
   const multipliers = {
     s: 1000,

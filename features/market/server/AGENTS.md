@@ -8,6 +8,17 @@ operation methods and named persistence methods; routes consume declared capabil
 and may call the pure quote collector. The package root exports contributions but owns
 no execution.
 
+`intelligence-representation.ts` owns metric input/result schemas, null reasons, and
+schema-derived TypeScript types. Formula code, report envelopes, and generation persistence
+consume that owner directly. `intelligence-policy.ts` returns profile-scoped targets and
+exclusion metadata for both reconciliation and watched derivation.
+
+The daily-history resource composes bounded catalogue reconciliation and report derivation
+helpers. These helpers use only declared local catalogue products and named Market
+persistence; they own no connection or ESI execution. Watched report work checks the
+catalogue revision independently of upstream source changes. Report cursors use Web Crypto
+with a server-only random key retained with their immutable generation.
+
 Shared public reads depend on representations and injected named read capabilities.
 Hono and GraphQL adapters depend on these reads. GraphQL declarations import only the
 role contract and shared reads; they receive no collection or scheduling capabilities.

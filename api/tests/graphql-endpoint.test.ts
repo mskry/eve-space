@@ -215,7 +215,7 @@ test.each(['revision change', 'disablement'])(
         if (!historyRead) return [profile]
         return change === 'revision change' ? [{ ...profile, revision: 8 }] : []
       }
-      if (operation.operationId === 'read-market-history') {
+      if (operation.operationId === 'read-market-history-source') {
         historyRead = true
         return null
       }

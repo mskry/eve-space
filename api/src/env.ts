@@ -72,6 +72,7 @@ const schema = z.object({
   QUEUE_HIGH_WATER_MARK: positiveInteger.default(1000),
   QUEUE_RESOURCE_PLANNER_PAGE_SIZE: positiveInteger.default(100),
   QUEUE_PLANNER_SCHEDULE: cronSchedule.default('*/15 * * * *'),
+  QUEUE_PROFILE_WORK_PLANNER_INTERVAL_MS: positiveInteger.min(1_000).max(900_000).default(30_000),
   QUEUE_PLANNER_SCHEDULE_OFFSET_MS: optionalNonNegativeInteger,
   QUEUE_PLANNER_INITIAL_DELAY_MAX_MS: positiveInteger.default(60_000),
   QUEUE_LAG_DEGRADED_SECONDS: positiveInteger.default(300),

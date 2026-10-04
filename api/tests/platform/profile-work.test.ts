@@ -335,14 +335,22 @@ test.each([undefined, 48582])(
   async (requestedTypeId) => {
     const historyReads = {
       ...reads,
-      listDueMarketHistoryProfiles: vi.fn(),
-      listDueMarketHistoryTypes: vi
+      listDueMarketHistoryCollectionProfiles: vi.fn(),
+      listDueMarketIntelligenceReconciliations: vi.fn().mockResolvedValue([]),
+      selectMarketIntelligenceWork: vi.fn().mockResolvedValue({ kind: 'history' }),
+      listDueMarketHistoryTargets: vi
         .fn()
         .mockImplementation(async ({ typeId }: { typeId?: number }) => [
-          { regionId: 10000058, typeId: typeId ?? 34, nextDueAt: work.dueAt },
+          {
+            regionId: 10000058,
+            typeId: typeId ?? 34,
+            nextDueAt: work.dueAt,
+            policyRevision: null,
+            universeId: null,
+          },
         ]),
     }
-    const upsertMarketHistory = vi.fn().mockResolvedValue({ outcome: 'applied' })
+    const convergeMarketHistory = vi.fn().mockResolvedValue({ outcome: 'applied' })
     const recordMarketHistoryFailure = vi.fn().mockResolvedValue({ outcome: 'recorded' })
     mocks.guard.mockResolvedValue({
       outcome: 'ready',
@@ -356,7 +364,7 @@ test.each([undefined, 48582])(
       logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
     })
     mocks.write.mockReturnValue({
-      upsertMarketHistory,
+      convergeMarketHistory,
       recordMarketHistoryFailure,
     })
     mocks.esi.mockResolvedValue({
@@ -384,7 +392,9 @@ test.each([undefined, 48582])(
         resources: [historyResource],
       }),
     ).toBe('completed')
-    expect(historyReads.listDueMarketHistoryTypes.mock.calls[0]?.[0]?.typeId).toBe(requestedTypeId)
+    expect(historyReads.listDueMarketHistoryTargets.mock.calls[0]?.[0]?.typeId).toBe(
+      requestedTypeId,
+    )
     expect(mocks.esi).toHaveBeenCalledWith(
       expect.objectContaining({
         operation: 'market-region-history',
@@ -394,7 +404,7 @@ test.each([undefined, 48582])(
         },
       }),
     )
-    expect(upsertMarketHistory).toHaveBeenCalledWith(
+    expect(convergeMarketHistory).toHaveBeenCalledWith(
       expect.objectContaining({
         typeId: requestedTypeId ?? 34,
         days: [
@@ -414,9 +424,10 @@ test.each([undefined, 48582])(
 )
 
 test.each([undefined, 48582])(
-  'records a history failure scoped to the requested type %s',
+  'isolates a history item failure for requested type %s',
   async (requestedTypeId) => {
     const recordMarketHistoryFailure = vi.fn().mockResolvedValue({ outcome: 'recorded' })
+    const recordMarketHistoryItemFailure = vi.fn().mockResolvedValue({ outcome: 'recorded' })
     mocks.guard.mockResolvedValue({
       outcome: 'ready',
       resource: historyResource,
@@ -427,15 +438,24 @@ test.each([undefined, 48582])(
       coreData: {},
       persistence: {
         ...reads,
-        listDueMarketHistoryTypes: vi
-          .fn()
-          .mockResolvedValue([{ regionId: 10000058, typeId: 34, nextDueAt: work.dueAt }]),
+        listDueMarketIntelligenceReconciliations: vi.fn().mockResolvedValue([]),
+        selectMarketIntelligenceWork: vi.fn().mockResolvedValue({ kind: 'history' }),
+        listDueMarketHistoryTargets: vi.fn().mockImplementation(async ({ typeId }) => [
+          {
+            regionId: 10000058,
+            typeId: typeId ?? 34,
+            nextDueAt: work.dueAt,
+            policyRevision: null,
+            universeId: null,
+          },
+        ]),
       },
       logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
     })
     mocks.write.mockReturnValue({
-      upsertMarketHistory: vi.fn(),
+      convergeMarketHistory: vi.fn(),
       recordMarketHistoryFailure,
+      recordMarketHistoryItemFailure,
     })
     mocks.esi.mockRejectedValue(new Error('ESI unavailable'))
     await expect(
@@ -448,9 +468,10 @@ test.each([undefined, 48582])(
         new AbortController().signal,
         { resources: [historyResource] },
       ),
-    ).rejects.toThrow('ESI unavailable')
-    expect(recordMarketHistoryFailure).toHaveBeenCalledOnce()
-    expect(recordMarketHistoryFailure.mock.calls[0]?.[0]?.typeId).toBe(requestedTypeId)
+    ).resolves.toBe('completed')
+    expect(recordMarketHistoryFailure).not.toHaveBeenCalled()
+    expect(recordMarketHistoryItemFailure).toHaveBeenCalledOnce()
+    expect(recordMarketHistoryItemFailure.mock.calls[0]?.[0]?.typeId).toBe(requestedTypeId ?? 34)
   },
 )
 

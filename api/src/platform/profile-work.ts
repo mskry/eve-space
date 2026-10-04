@@ -28,6 +28,7 @@ const profileIdentitySchema = z.strictObject({
   profileId: z.uuid(),
   revision: z.int().positive(),
   dueAt: z.iso.datetime({ offset: true }),
+  localWorkPending: z.boolean().optional(),
 })
 
 export interface PlannedProfileWork {
@@ -36,6 +37,7 @@ export interface PlannedProfileWork {
   readonly revision: number
   readonly dueAt: string
   readonly requestedTypeId?: number
+  readonly localWorkPending?: boolean
 }
 
 const resolveProfileResource = (
@@ -96,12 +98,15 @@ export const planInstalledProfileWork = async (
     }
     if (seen.has(parsed.profileId)) throw new Error('Profile work planner repeated an identity')
     seen.add(parsed.profileId)
-    return {
+    const planned = {
       resourceIdentity: identity,
       profileId: parsed.profileId,
       revision: parsed.revision,
       dueAt: parsed.dueAt,
     }
+    if (parsed.localWorkPending !== undefined)
+      return Object.assign(planned, { localWorkPending: parsed.localWorkPending })
+    return planned
   })
 }
 
@@ -175,6 +180,14 @@ export const executeInstalledProfileWork = async (
       operations: operations as never,
       requestBudget: maximumRequests,
       assertCurrent: ready,
+      classifyFailure: (error) => {
+        const failure = classifyPlatformResourceFailure(error)
+        return {
+          failureClass:
+            failure.failureClass === 'authorization-required' ? 'unknown' : failure.failureClass,
+          retryAt: failure.nextEligibleAt?.toISOString() ?? null,
+        }
+      },
       signal,
     })
   } catch (error) {

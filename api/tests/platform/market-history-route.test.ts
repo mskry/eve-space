@@ -15,7 +15,7 @@ vi.mock('../../src/platform/module-settings.js', () => ({
 import { platformModuleRouteComposers } from '../../src/platform/module-route-composition.js'
 
 const profileId = '00000000-0000-4000-8000-000000000001'
-const readMarketHistory = vi.fn()
+const readMarketHistorySource = vi.fn()
 const listMarketProfiles = vi.fn()
 const requestMarketHistoryDemand = vi.fn()
 const marketCatalogue = vi.fn()
@@ -27,7 +27,7 @@ const app = new Hono()
     '/api/modules/market/history',
     platformModuleRouteComposers.public(
       'market',
-      marketHistoryRoutes({ coreData: {}, persistence: { readMarketHistory }, logger }),
+      marketHistoryRoutes({ coreData: {}, persistence: { readMarketHistorySource }, logger }),
     ),
   )
   .route(
@@ -36,7 +36,7 @@ const app = new Hono()
       'market',
       marketHistoryDemandRoutes({
         coreData: { marketCatalogue },
-        persistence: { listMarketProfiles, requestMarketHistoryDemand, readMarketHistory },
+        persistence: { listMarketProfiles, requestMarketHistoryDemand, readMarketHistorySource },
         logger,
       }),
       requester,
@@ -57,13 +57,15 @@ const app = new Hono()
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.isInstalledModuleContributionEnabled.mockResolvedValue(true)
-  readMarketHistory.mockResolvedValue({
+  readMarketHistorySource.mockResolvedValue({
     status: 'uncollected',
     regionId: 10000058,
     typeId: 34,
     validatedAt: null,
     freshUntil: null,
     days: [],
+    source: null,
+    retainedEvidence: false,
   })
   listMarketProfiles.mockResolvedValue([
     {
@@ -133,7 +135,7 @@ test('disabled Market blocks both history read and intent before feature work', 
       )
     ).status,
   ).toBe(404)
-  expect(readMarketHistory).not.toHaveBeenCalled()
+  expect(readMarketHistorySource).not.toHaveBeenCalled()
   expect(listMarketProfiles).not.toHaveBeenCalled()
   expect(marketCatalogue).not.toHaveBeenCalled()
 })

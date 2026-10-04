@@ -41,6 +41,13 @@ const failures = {
   MARKET_CATALOGUE_REVISION_UNAVAILABLE: [409, 'Market catalogue revision is unavailable.'],
   MARKET_CATALOGUE_TYPE_NOT_FOUND: [404, 'Market catalogue type was not found.'],
   INVALID_MARKET_READ_INPUT: [400, 'Invalid Market read input.'],
+  INVALID_MARKET_BASELINE_COVERAGE: [400, 'Baseline coverage exceeds the selected metric window.'],
+  INVALID_MARKET_HISTORY_RANGE: [400, 'Choose at most 365 retained completed UTC dates.'],
+  MARKET_INTELLIGENCE_PROFILE_UNAVAILABLE: [404, 'Market intelligence profile is unavailable.'],
+  MARKET_INTELLIGENCE_RESTART_REQUIRED: [
+    409,
+    'Market intelligence generation changed or expired. Restart pagination.',
+  ],
   INVENTORY_SCOPE_DENIED: [403, 'Inventory scope is unavailable.'],
   INVENTORY_AUTHORIZATION_CHANGED: [409, 'Inventory authorization changed. Restart this read.'],
   INVENTORY_SOURCE_CHANGED: [409, 'Inventory source changed. Restart pagination.'],

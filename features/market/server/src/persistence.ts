@@ -520,6 +520,143 @@ export const readMarketHistoryOperation = definePlatformPersistenceOperation({
   maximumOutputBytes: 100_000,
 })
 
+const marketHistorySource = z.strictObject({
+  state: z.enum(['legacy', 'supplied', 'empty']),
+  validatedAt: instant,
+  freshUntil: z.nullable(instant),
+  contentRevision: z.string().regex(/^\d{1,32}$/),
+  responseCount: z.number().int().min(0).max(1_000).nullable(),
+  responseFrom: z.iso.date().nullable(),
+  responseThrough: z.iso.date().nullable(),
+  lastAttemptAt: instant,
+  lastFailureClass: z.string().max(80).nullable(),
+})
+
+export const convergeMarketHistoryOperation = definePlatformPersistenceOperation({
+  id: 'converge-market-history',
+  method: 'convergeMarketHistory',
+  revision: 1,
+  mode: 'write',
+  inputSchema: z.lazy(() =>
+    upsertMarketHistoryOperation.inputSchema
+      .safeExtend({
+        policyRevision: z.nullable(revision),
+        universeId: z.uuid().nullable(),
+        attemptedAt: instant,
+      })
+      .refine((input) => (input.policyRevision === null) === (input.universeId === null))
+      .refine((input) => Date.parse(input.freshUntil) > Date.parse(input.validatedAt))
+      .refine((input) => new Set(input.days.map(({ date }) => date)).size === input.days.length),
+  ),
+  outputSchema: z.strictObject({
+    outcome: z.enum(['applied', 'obsolete', 'superseded']),
+    changedRows: z.number().int().min(0).max(1_000),
+  }),
+  maximumInputBytes: platformPersistencePayloadMaximumBytes,
+  maximumOutputBytes: 256,
+})
+
+export const readMarketHistorySourceOperation = definePlatformPersistenceOperation({
+  id: 'read-market-history-source',
+  method: 'readMarketHistorySource',
+  revision: 1,
+  mode: 'read',
+  inputSchema: readMarketHistoryOperation.inputSchema,
+  outputSchema: z.lazy(() =>
+    readMarketHistoryOperation.outputSchema
+      .unwrap()
+      .safeExtend({ source: z.nullable(marketHistorySource), retainedEvidence: z.boolean() })
+      .nullable(),
+  ),
+  maximumInputBytes: 512,
+  maximumOutputBytes: 150_000,
+})
+
+export const cleanupMarketHistoryRetentionOperation = definePlatformPersistenceOperation({
+  id: 'cleanup-market-history-retention',
+  method: 'cleanupMarketHistoryRetention',
+  revision: 1,
+  mode: 'write',
+  inputSchema: z.strictObject({ now: instant, limit: z.number().int().min(1).max(10_000) }),
+  outputSchema: z.strictObject({
+    deletedRows: z.number().int().min(0).max(10_000),
+    pending: z.boolean(),
+  }),
+  maximumInputBytes: 256,
+  maximumOutputBytes: 256,
+})
+
+export type MarketHistoryConvergenceWrites = PlatformPersistenceMethodsFor<
+  typeof operations,
+  readonly ['converge-market-history', 'cleanup-market-history-retention']
+>
+export type MarketHistorySourceReads = PlatformPersistenceMethodsFor<
+  typeof operations,
+  readonly ['read-market-history-source']
+>
+
+export const listDueMarketHistoryCollectionProfilesOperation = definePlatformPersistenceOperation({
+  id: 'list-due-market-history-collection-profiles',
+  method: 'listDueMarketHistoryCollectionProfiles',
+  revision: 1,
+  mode: 'read',
+  inputSchema: listDueMarketHistoryProfilesOperation.inputSchema,
+  outputSchema: listDueMarketHistoryProfilesOperation.outputSchema,
+  maximumInputBytes: 256,
+  maximumOutputBytes: 4_096,
+})
+export const listDueMarketHistoryTargetsOperation = definePlatformPersistenceOperation({
+  id: 'list-due-market-history-targets',
+  method: 'listDueMarketHistoryTargets',
+  revision: 1,
+  mode: 'read',
+  inputSchema: listDueMarketHistoryTypesOperation.inputSchema,
+  outputSchema: z
+    .array(
+      z.strictObject({
+        regionId: positiveId,
+        typeId: positiveId,
+        nextDueAt: instant,
+        policyRevision: z.nullable(revision),
+        universeId: z.uuid().nullable(),
+      }),
+    )
+    .max(16),
+  maximumInputBytes: 512,
+  maximumOutputBytes: 8_192,
+})
+export const recordMarketHistoryItemFailureOperation = definePlatformPersistenceOperation({
+  id: 'record-market-history-item-failure',
+  method: 'recordMarketHistoryItemFailure',
+  revision: 1,
+  mode: 'write',
+  inputSchema: z
+    .strictObject({
+      profileId: z.uuid(),
+      expectedRevision: positiveId,
+      regionId: positiveId,
+      typeId: positiveId,
+      policyRevision: z.nullable(revision),
+      universeId: z.uuid().nullable(),
+      attemptId: z.uuid(),
+      attemptedAt: instant,
+      retryAt: instant,
+      failureClass: recordMarketHistoryFailureOperation.inputSchema.shape.failureClass,
+    })
+    .refine((input) => (input.policyRevision === null) === (input.universeId === null)),
+  outputSchema: z.strictObject({ outcome: z.enum(['recorded', 'obsolete']) }),
+  maximumInputBytes: 1_024,
+  maximumOutputBytes: 256,
+})
+export type MarketHistoryTargetReads = PlatformPersistenceMethodsFor<
+  typeof operations,
+  readonly ['list-due-market-history-collection-profiles', 'list-due-market-history-targets']
+>
+export type MarketHistoryItemFailureWrites = PlatformPersistenceMethodsFor<
+  typeof operations,
+  readonly ['record-market-history-item-failure']
+>
+
 const derivedPrice = z
   .string()
   .regex(/^(?:0|[1-9]\d{0,14})\.\d{2}$/)
@@ -858,6 +995,12 @@ const operations = {
   'upsert-market-history': upsertMarketHistoryOperation,
   'record-market-history-failure': recordMarketHistoryFailureOperation,
   'read-market-history': readMarketHistoryOperation,
+  'converge-market-history': convergeMarketHistoryOperation,
+  'list-due-market-history-collection-profiles': listDueMarketHistoryCollectionProfilesOperation,
+  'list-due-market-history-targets': listDueMarketHistoryTargetsOperation,
+  'record-market-history-item-failure': recordMarketHistoryItemFailureOperation,
+  'read-market-history-source': readMarketHistorySourceOperation,
+  'cleanup-market-history-retention': cleanupMarketHistoryRetentionOperation,
   'store-market-metrics': storeMarketMetricsOperation,
   'list-market-derivation-types': listMarketDerivationTypesOperation,
   'read-market-metrics': readMarketMetricsOperation,
@@ -948,10 +1091,7 @@ export type MarketHistoryWrites = PlatformPersistenceMethodsFor<
   ]
 >
 
-export type MarketHistoryReads = PlatformPersistenceMethodsFor<
-  typeof operations,
-  readonly ['read-market-history']
->
+export type MarketHistoryReads = MarketHistorySourceReads
 
 export type MarketDerivationTypesReads = PlatformPersistenceMethodsFor<
   typeof operations,

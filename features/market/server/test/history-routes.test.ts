@@ -6,11 +6,11 @@ import { marketHistoryDemandRoutes, marketHistoryRoutes } from '../src/history-r
 
 const profileId = '00000000-0000-4000-8000-000000000001'
 const revision = { buildNumber: 1, ingestVersion: 6, ingestedAt: '2026-09-28T12:00:00Z' }
-const historyPersistence = { readMarketHistory: vi.fn() }
+const historyPersistence = { readMarketHistorySource: vi.fn() }
 const demandPersistence = {
   listMarketProfiles: vi.fn(),
   requestMarketHistoryDemand: vi.fn(),
-  readMarketHistory: vi.fn(),
+  readMarketHistorySource: vi.fn(),
 }
 const requester = { request: vi.fn() }
 const coreData = { marketCatalogue: vi.fn() }
@@ -25,7 +25,7 @@ const demand = new Hono<PlatformPublicMutationRouteEnv>()
 
 beforeEach(() => {
   vi.clearAllMocks()
-  historyPersistence.readMarketHistory.mockResolvedValue({
+  historyPersistence.readMarketHistorySource.mockResolvedValue({
     status: 'uncollected',
     regionId: 10000058,
     typeId: 34,
@@ -47,7 +47,7 @@ beforeEach(() => {
     },
   ])
   demandPersistence.requestMarketHistoryDemand.mockResolvedValue({ outcome: 'accepted' })
-  demandPersistence.readMarketHistory.mockResolvedValue({
+  demandPersistence.readMarketHistorySource.mockResolvedValue({
     status: 'uncollected',
     regionId: 10000058,
     typeId: 34,
@@ -82,7 +82,7 @@ const requestHistory = () =>
 
 test('returns fresh committed history immediately without waking the worker', async () => {
   const stored = observedHistory()
-  demandPersistence.readMarketHistory.mockResolvedValue(stored)
+  demandPersistence.readMarketHistorySource.mockResolvedValue(stored)
   const response = await requestHistory()
   expect(response.status).toBe(200)
   expect(await response.json()).toEqual({
@@ -95,7 +95,7 @@ test('returns fresh committed history immediately without waking the worker', as
 test('returns the requested history after an immediately completed worker attempt', async () => {
   const stored = observedHistory()
   requester.request.mockImplementationOnce(async () => {
-    demandPersistence.readMarketHistory.mockResolvedValue(stored)
+    demandPersistence.readMarketHistorySource.mockResolvedValue(stored)
     return 'completed'
   })
   const response = await requestHistory()
@@ -138,7 +138,7 @@ test('a public history deep link reports uncollected coverage without creating d
 })
 
 test('retains the independent source time and available daily rows when history turns stale', async () => {
-  historyPersistence.readMarketHistory.mockResolvedValueOnce({
+  historyPersistence.readMarketHistorySource.mockResolvedValueOnce({
     status: 'observed',
     regionId: 10000058,
     typeId: 34,
@@ -218,4 +218,42 @@ test('checks actual delivery for saved demand whose earlier admission may have b
     { profileId, revision: 1, typeId: 34 },
     expect.any(AbortSignal),
   )
+})
+
+test('labels retained evidence after an empty success as stale while a genuinely empty source stays current', async () => {
+  const stored = {
+    ...observedHistory(),
+    source: { state: 'empty' },
+    retainedEvidence: true,
+    days: [
+      {
+        date: '2026-10-01',
+        averageIsk: '10.00',
+        highIsk: '12.00',
+        lowIsk: '8.00',
+        volume: 10,
+        orderCount: 2,
+      },
+    ],
+  }
+  historyPersistence.readMarketHistorySource.mockResolvedValue(stored)
+  const retained = await history.request(`/profiles/${profileId}/types/34`)
+  expect(await retained.json()).toMatchObject({
+    freshness: 'stale',
+    retainedEvidence: true,
+    source: { state: 'empty' },
+    days: [{ averageIsk: '10.00' }],
+  })
+  expect(retained.headers.get('Cache-Control')).toBe('no-store')
+  historyPersistence.readMarketHistorySource.mockResolvedValue({
+    ...stored,
+    days: [],
+    retainedEvidence: false,
+  })
+  const empty = await history.request(`/profiles/${profileId}/types/34`)
+  expect(await empty.json()).toMatchObject({
+    freshness: 'current',
+    retainedEvidence: false,
+    days: [],
+  })
 })
